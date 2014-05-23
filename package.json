@@ -8,7 +8,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "make test-cov"
+    "test": "make test"
   },
   "keywords": [
     "bpmn",
