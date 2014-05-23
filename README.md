@@ -11,7 +11,7 @@ node-bpmn
     - [Transform BPMN xml to BPMN definition](#transform-bpmn-xml-to-bpmn-definition)
 - [Usage](#usage)
     - [Bpmn.Engine](#bpmnengine)
-        - [`new Engine([activityExecutionModule), ([transformer])`](#new-engineactivityExecutionModule-transformer)
+        - [`new Engine([activityExecutionModule], [transformer])`](#new-engineactivityexecutionmodule-transformer)
 
 # Examples
 
