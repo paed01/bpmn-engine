@@ -8,7 +8,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node node_modules/lab/bin/lab"
+    "test": "make test-cov"
   },
   "keywords": [
     "bpmn",
