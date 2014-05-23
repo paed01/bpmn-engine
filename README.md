@@ -1,6 +1,8 @@
 node-bpmn
 ===========
 
+[![Build Status](https://secure.travis-ci.org/paed01/bpmn-engine.png)](http://travis-ci.org/paed01/bpmn-engine)
+
 ## Introduction
 **node-bpmn** is an serverside BPMN 2.0 processengine based on [camunda/camunda-bpmn.js](https://github.com/camunda/camunda-bpmn.js) developed by [camunda.org](http://camunda.org/).
 
