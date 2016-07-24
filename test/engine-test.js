@@ -145,36 +145,37 @@ lab.experiment('engine', () => {
   });
 
   lab.experiment('original tests', () => {
-    var transformer = new Bpmn.Transformer();
-    var engine = new Bpmn.Engine(Bpmn.ActivityExecution, transformer);
+    const transformer = new Bpmn.Transformer();
+    const engine = new Bpmn.Engine(Bpmn.ActivityExecution, transformer);
 
     lab.experiment('exclusivegateway', () => {
 
       lab.test('should support one diverging flow without a condition', (done) => {
 
-        var processXml = '<?xml version="1.0" encoding="UTF-8"?>' +
-          '<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" ' +
-          'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
-          '<process id="theProcess" isExecutable="true">' +
-          '  <startEvent id="theStart" />' +
-          '  <exclusiveGateway id="decision" />' +
-          '  <endEvent id="end" />' +
-          '  <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />' +
-          '  <sequenceFlow id="flow2" sourceRef="decision" targetRef="end" />' +
-          '</process>' +
-          '</definitions>';
+        const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<process id="theProcess" isExecutable="true">
+  <startEvent id="theStart" />
+  <exclusiveGateway id="decision" />
+  <endEvent id="end" />
+  <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+  <sequenceFlow id="flow2" sourceRef="decision" targetRef="end" />
+</process>
+</definitions>`;
 
         engine.startInstance(processXml, null, null, (err, execution) => {
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
-              var processInstance = execution.getActivityInstance();
+              const processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(3);
-              expect(processInstance.activities[0].activityId).to.eql('theStart');
-              expect(processInstance.activities[1].activityId).to.eql('decision');
-              expect(processInstance.activities[2].activityId).to.eql('end');
+              expect(processInstance.activities.length).to.equal(3);
+              expect(processInstance.activities[0].activityId).to.equal('theStart');
+              expect(processInstance.activities[1].activityId).to.equal('decision');
+              expect(processInstance.activities[2].activityId).to.equal('end');
               done();
             }
           });
@@ -186,21 +187,21 @@ lab.experiment('engine', () => {
 
       lab.test('should not support a single diverging flow with a condition', (done) => {
 
-        var processXml = '<?xml version="1.0" encoding="UTF-8"?>' +
-          '<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" ' +
-          'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
-          '<process id="theProcess" isExecutable="true">' +
-          '<startEvent id="theStart" />' +
-          '<exclusiveGateway id="decision" />' +
-          '<endEvent id="end" />' +
-          '<sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />' +
-          '<sequenceFlow id="flow2" sourceRef="decision" targetRef="end">' +
-          '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-          'this.input <= 50 ' +
-          ']]></conditionExpression>' +
-          '</sequenceFlow>' +
-          '</process>' +
-          '</definitions>';
+        const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <exclusiveGateway id="decision" />
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      this.input <= 50
+      ]]></conditionExpression>
+    </sequenceFlow>
+  </process>
+</definitions>`;
 
         engine.startInstance(processXml, null, null, (err) => {
           expect(err).to.exist();
@@ -275,14 +276,14 @@ lab.experiment('engine', () => {
         }, null, (err, execution) => {
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
               var processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(3);
-              expect(processInstance.activities[0].activityId).to.eql('theStart');
-              expect(processInstance.activities[1].activityId).to.eql('decision');
-              expect(processInstance.activities[2].activityId).to.eql('end1');
+              expect(processInstance.activities.length).to.equal(3);
+              expect(processInstance.activities[0].activityId).to.equal('theStart');
+              expect(processInstance.activities[1].activityId).to.equal('decision');
+              expect(processInstance.activities[2].activityId).to.equal('end1');
               done();
             }
           });
@@ -328,14 +329,14 @@ lab.experiment('engine', () => {
         }, null, (err, execution) => {
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
               var processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(3);
-              expect(processInstance.activities[0].activityId).to.eql('theStart');
-              expect(processInstance.activities[1].activityId).to.eql('decision');
-              expect(processInstance.activities[2].activityId).to.eql('end2');
+              expect(processInstance.activities.length).to.equal(3);
+              expect(processInstance.activities[0].activityId).to.equal('theStart');
+              expect(processInstance.activities[1].activityId).to.equal('decision');
+              expect(processInstance.activities[2].activityId).to.equal('end2');
               done();
             }
           });
@@ -368,15 +369,15 @@ lab.experiment('engine', () => {
         }, null, (err, execution) => {
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
               var processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(4);
-              expect(processInstance.activities[0].activityId).to.eql("theStart");
-              expect(processInstance.activities[1].activityId).to.eql("fork");
-              expect(processInstance.activities[2].activityId).to.eql("end1");
-              expect(processInstance.activities[3].activityId).to.eql("end2");
+              expect(processInstance.activities.length).to.equal(4);
+              expect(processInstance.activities[0].activityId).to.equal("theStart");
+              expect(processInstance.activities[1].activityId).to.equal("fork");
+              expect(processInstance.activities[2].activityId).to.equal("end1");
+              expect(processInstance.activities[3].activityId).to.equal("end2");
 
               done();
             }
@@ -409,16 +410,16 @@ lab.experiment('engine', () => {
         }, null, (err, execution) => {
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
               var processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(5);
-              expect(processInstance.activities[0].activityId).to.eql("theStart");
-              expect(processInstance.activities[1].activityId).to.eql("fork");
-              expect(processInstance.activities[2].activityId).to.eql("join");
-              expect(processInstance.activities[3].activityId).to.eql("join");
-              expect(processInstance.activities[4].activityId).to.eql("end");
+              expect(processInstance.activities.length).to.equal(5);
+              expect(processInstance.activities[0].activityId).to.equal("theStart");
+              expect(processInstance.activities[1].activityId).to.equal("fork");
+              expect(processInstance.activities[2].activityId).to.equal("join");
+              expect(processInstance.activities[3].activityId).to.equal("join");
+              expect(processInstance.activities[4].activityId).to.equal("end");
 
               done();
             }
@@ -445,7 +446,7 @@ lab.experiment('engine', () => {
 
         engine.startInstance(processXml, null, null, (err) => {
           expect(err).to.exist();
-          expect(err.message).to.eql("Activity with id 'theStart' declares default flow with id 'flow1' but has no conditional flows.");
+          expect(err.message).to.equal("Activity with id 'theStart' declares default flow with id 'flow1' but has no conditional flows.");
           done();
         });
 
@@ -487,14 +488,14 @@ lab.experiment('engine', () => {
         }, null, (err, execution) => {
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
               var processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(3);
-              expect(processInstance.activities[0].activityId).to.eql("theStart");
-              expect(processInstance.activities[1].activityId).to.eql("theEnd2");
-              expect(processInstance.activities[2].activityId).to.eql("theEnd3");
+              expect(processInstance.activities.length).to.equal(3);
+              expect(processInstance.activities[0].activityId).to.equal("theStart");
+              expect(processInstance.activities[1].activityId).to.equal("theEnd2");
+              expect(processInstance.activities[2].activityId).to.equal("theEnd3");
               done();
             }
           });
@@ -539,13 +540,13 @@ lab.experiment('engine', () => {
         }, null, (err, execution) => {
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
               var processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(2);
-              expect(processInstance.activities[0].activityId).to.eql("theStart");
-              expect(processInstance.activities[1].activityId).to.eql("theEnd2");
+              expect(processInstance.activities.length).to.equal(2);
+              expect(processInstance.activities[0].activityId).to.equal("theStart");
+              expect(processInstance.activities[1].activityId).to.equal("theEnd2");
               done();
             }
           });
@@ -589,13 +590,13 @@ lab.experiment('engine', () => {
         }, null, (err, execution) => {
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
               var processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(2);
-              expect(processInstance.activities[0].activityId).to.eql("theStart");
-              expect(processInstance.activities[1].activityId).to.eql("theEnd1");
+              expect(processInstance.activities.length).to.equal(2);
+              expect(processInstance.activities[0].activityId).to.equal("theStart");
+              expect(processInstance.activities[1].activityId).to.equal("theEnd1");
               done();
             }
           });
@@ -641,15 +642,15 @@ lab.experiment('engine', () => {
         }, null, (err, execution) => {
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
               var processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(4);
-              expect(processInstance.activities[0].activityId).to.eql("theStart");
-              expect(processInstance.activities[1].activityId).to.eql("theEnd2");
-              expect(processInstance.activities[2].activityId).to.eql("theEnd3");
-              expect(processInstance.activities[3].activityId).to.eql("theEnd4");
+              expect(processInstance.activities.length).to.equal(4);
+              expect(processInstance.activities[0].activityId).to.equal("theStart");
+              expect(processInstance.activities[1].activityId).to.equal("theEnd2");
+              expect(processInstance.activities[2].activityId).to.equal("theEnd3");
+              expect(processInstance.activities[3].activityId).to.equal("theEnd4");
               done();
             }
           });
@@ -695,14 +696,14 @@ lab.experiment('engine', () => {
         }, null, (err, execution) => {
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
               var processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(3);
-              expect(processInstance.activities[0].activityId).to.eql("theStart");
-              expect(processInstance.activities[1].activityId).to.eql("theEnd2");
-              expect(processInstance.activities[2].activityId).to.eql("theEnd4");
+              expect(processInstance.activities.length).to.equal(3);
+              expect(processInstance.activities[0].activityId).to.equal("theStart");
+              expect(processInstance.activities[1].activityId).to.equal("theEnd2");
+              expect(processInstance.activities[2].activityId).to.equal("theEnd4");
               done();
             }
           });
@@ -748,14 +749,14 @@ lab.experiment('engine', () => {
         }, null, (err, execution) => {
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
               var processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(3);
-              expect(processInstance.activities[0].activityId).to.eql("theStart");
-              expect(processInstance.activities[1].activityId).to.eql("theEnd4");
-              expect(processInstance.activities[2].activityId).to.eql("theEnd1");
+              expect(processInstance.activities.length).to.equal(3);
+              expect(processInstance.activities[0].activityId).to.equal("theStart");
+              expect(processInstance.activities[1].activityId).to.equal("theEnd4");
+              expect(processInstance.activities[2].activityId).to.equal("theEnd1");
               done();
             }
           });
@@ -796,14 +797,14 @@ lab.experiment('engine', () => {
         }, null, (err, execution) => {
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
               var processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(3);
-              expect(processInstance.activities[0].activityId).to.eql("theStart");
-              expect(processInstance.activities[1].activityId).to.eql("theEnd1");
-              expect(processInstance.activities[2].activityId).to.eql("theEnd2");
+              expect(processInstance.activities.length).to.equal(3);
+              expect(processInstance.activities[0].activityId).to.equal("theStart");
+              expect(processInstance.activities[1].activityId).to.equal("theEnd1");
+              expect(processInstance.activities[2].activityId).to.equal("theEnd2");
               done();
             }
           });
@@ -844,13 +845,13 @@ lab.experiment('engine', () => {
         }, null, (err, execution) => {
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
               var processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(2);
-              expect(processInstance.activities[0].activityId).to.eql("theStart");
-              expect(processInstance.activities[1].activityId).to.eql("theEnd1");
+              expect(processInstance.activities.length).to.equal(2);
+              expect(processInstance.activities[0].activityId).to.equal("theStart");
+              expect(processInstance.activities[1].activityId).to.equal("theEnd1");
               done();
             }
           });
@@ -904,11 +905,11 @@ lab.experiment('engine', () => {
           input: 100
         }, null, (err, execution) => {
           execution.on('error', (e) => {
-            expect(execution.isEnded).to.eql(false);
+            expect(execution.isEnded).to.equal(false);
             var processInstance = execution.getActivityInstance();
 
-            expect(processInstance.activities.length).to.eql(1);
-            expect(processInstance.activities[0].activityId).to.eql("theStart");
+            expect(processInstance.activities.length).to.equal(1);
+            expect(processInstance.activities[0].activityId).to.equal("theStart");
             done();
           });
 
@@ -935,12 +936,12 @@ lab.experiment('engine', () => {
         engine.startInstance(processXml, null, null, (err, execution) => {
           execution.on('start', (e) => {
             if (e.id === 'userTask') {
-              expect(execution.isEnded).to.eql(false);
+              expect(execution.isEnded).to.equal(false);
 
               var processInstance = execution.getActivityInstance();
-              expect(processInstance.activities.length).to.eql(2);
-              expect(processInstance.activities[0].activityId).to.eql("theStart");
-              expect(processInstance.activities[1].activityId).to.eql("userTask");
+              expect(processInstance.activities.length).to.equal(2);
+              expect(processInstance.activities[0].activityId).to.equal("theStart");
+              expect(processInstance.activities[1].activityId).to.equal("userTask");
 
               execution.activityExecutions[1].signal();
             }
@@ -948,14 +949,14 @@ lab.experiment('engine', () => {
 
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
 
               var processInstance = execution.getActivityInstance();
 
-              expect(processInstance.activities.length).to.eql(3);
-              expect(processInstance.activities[0].activityId).to.eql("theStart");
-              expect(processInstance.activities[1].activityId).to.eql("userTask");
-              expect(processInstance.activities[2].activityId).to.eql("theEnd");
+              expect(processInstance.activities.length).to.equal(3);
+              expect(processInstance.activities[0].activityId).to.equal("theStart");
+              expect(processInstance.activities[1].activityId).to.equal("userTask");
+              expect(processInstance.activities[2].activityId).to.equal("theEnd");
               done();
             }
           });
@@ -976,7 +977,7 @@ lab.experiment('engine', () => {
 
           execution.on('end', (e) => {
             if (e.id === 'theProcess') {
-              expect(execution.isEnded).to.eql(true);
+              expect(execution.isEnded).to.equal(true);
               done();
             }
           });
