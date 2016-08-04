@@ -17,15 +17,15 @@
     "automation"
   ],
   "devDependencies": {
-    "code": "^3.0.1",
+    "code": "^3.0.2",
     "lab": "^10.9.0"
   },
   "dependencies": {
     "async": "^2.0.1",
-    "bpmn-moddle": "^0.12.1",
+    "bpmn-moddle": "^0.12.2",
     "debug": "^2.2.0",
-    "hoek": "^4.0.1",
-    "joi": "^9.0.1",
+    "hoek": "^4.0.2",
+    "joi": "^9.0.4",
     "node-uuid": "^1.4.7",
     "xmldom": "^0.1.22"
   },
