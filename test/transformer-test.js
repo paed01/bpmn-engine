@@ -5,12 +5,11 @@ const Lab = require('lab');
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 
-const fs = require('fs');
 const Bpmn = require('..');
 
 lab.describe('transformer', () => {
   lab.describe('#transform', () => {
-    const transformer = new Bpmn.Transformer();
+    const transformer = Bpmn.Transformer;
 
     const bpmnSchema = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -50,14 +49,6 @@ lab.describe('transformer', () => {
       transformer.transform(xml, true, (err, definition) => {
         if (err) return done(err);
         expect(definition.rootElements[0].name).to.not.exist();
-        done();
-      });
-    });
-
-    lab.it('exclusive gateway with outgoing sequence flows without conditions returns error in callback', (done) => {
-      const xml = fs.readFileSync('./test/resources/defaultFlow.bpmn').toString();
-      transformer.transform(xml, true, (err) => {
-        expect(err, 'No error').to.exist();
         done();
       });
     });

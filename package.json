@@ -18,7 +18,7 @@
   ],
   "devDependencies": {
     "code": "^3.0.2",
-    "lab": "^10.9.0"
+    "lab": "^11.0.0"
   },
   "dependencies": {
     "async": "^2.0.1",

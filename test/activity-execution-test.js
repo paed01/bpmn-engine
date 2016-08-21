@@ -4,30 +4,14 @@ const Code = require('code');
 const Lab = require('lab');
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
-
 const Hoek = require('hoek');
+const factory = require('./helpers/factory');
 
 const Bpmn = require('..');
 const ActivityHelper = Bpmn.ActivityHelper;
 
 lab.describe('activity-execution', () => {
   const transformer = new Bpmn.Transformer();
-  const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess2" isExecutable="true">
-    <startEvent id="theStart" />
-    <exclusiveGateway id="decision" default="flow2" />
-    <endEvent id="end1" />
-    <endEvent id="end2" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
-    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1" />
-    <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
-      <conditionExpression>true</conditionExpression>
-    </sequenceFlow>
-  </process>
-</definitions>
-    `;
 
   lab.test('Bpmn exposes executor module', (done) => {
     expect(Bpmn).to.include('ActivityExecution');
@@ -44,20 +28,38 @@ lab.describe('activity-execution', () => {
     done();
   });
 
-  let activityDefinition, oActivityDefinition;
+  let activityDefinition, invalidDefinition, validDefinition;
   lab.before((done) => {
-    transformer.transform(processXml, true, (err, bpmnObject) => {
+    transformer.transform(factory.valid(), true, (err, definition, context) => {
+      console.log(context)
+
       if (err) return done(err);
-      oActivityDefinition = bpmnObject.rootElements[0];
+      validDefinition = context;
       done();
     });
   });
+
+  lab.before((done) => {
+    transformer.transform(factory.invalid(), true, (err, definition, context) => {
+      if (err) return done(err);
+      invalidDefinition = context;
+      done();
+    });
+  });
+
   lab.beforeEach((done) => {
-    activityDefinition = Hoek.clone(oActivityDefinition);
+    activityDefinition = Hoek.clone(validDefinition);
     done();
   });
 
   lab.describe('#ctor', () => {
+    lab.test('returns new instance', (done) => {
+      new Bpmn.ActivityExecution(validDefinition, (err) => {
+        expect(err).to.not.exist();
+        done();
+      });
+    });
+
     /* eslint no-new:0 */
     lab.test('returns error in callback if no activity definition', (done) => {
       new Bpmn.ActivityExecution(null, (err) => {
@@ -75,11 +77,9 @@ lab.describe('activity-execution', () => {
       done();
     });
 
-    lab.test('returns error in callback if sequenceFlow without targetRef is passed', (done) => {
+    lab.test('returns error in callback if not validated', (done) => {
       const def = activityDefinition;
       const sequenceFlows = ActivityHelper.getActivitiesByType(def, 'SequenceFlow');
-
-      delete sequenceFlows[0].targetRef;
 
       new Bpmn.ActivityExecution(sequenceFlows[0], (err) => {
         expect(err).to.exist();
@@ -92,7 +92,7 @@ lab.describe('activity-execution', () => {
       const sequenceFlows = ActivityHelper.getActivitiesByType(def, 'SequenceFlow');
       delete sequenceFlows[0].sourceRef;
 
-      new Bpmn.ActivityExecution(sequenceFlows[0], (err) => {
+      new Bpmn.ActivityExecution(invalidDefinition, (err) => {
         expect(err).to.exist();
         done();
       });
