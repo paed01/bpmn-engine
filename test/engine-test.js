@@ -733,20 +733,41 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           done();
         });
       });
+    });
+  });
 
-      // var processDefinition = new Transformer().transform(processXml)[0];
+  lab.experiment('scriptTask', () => {
+    lab.test('executes script', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+  <startEvent id="theStart" />
+  <scriptTask id="scriptTask" scriptFormat="Javascript">
+    <script>
+      <![CDATA[
+        this.context.input = 2;
+        next();
+      ]]>
+    </script>
+  </scriptTask>
+  <endEvent id="theEnd" />
+  <sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
+  <sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
+  </process>
+</definitions>`;
 
-      // var execution = new CAM.ActivityExecution(processDefinition);
-      // execution.start();
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 1
+      }, null, (err, execution) => {
+        if (err) return done(err);
 
-      // // the activity is NOT ended
-      // expect(execution.isEnded).toBe(false);
-
-      // // send a signal to the usertask:
-      // execution.signal("userTask");
-
-      // // now the process is ended
-      // expect(execution.isEnded).toBe(true);
+        execution.once('end', () => {
+          expect(execution.variables.input).to.equal(2);
+          done();
+        });
+      });
     });
   });
 });
