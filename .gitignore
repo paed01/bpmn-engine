@@ -1,4 +1,36 @@
+# Dependency directory and npm log
 node_modules
-coverage.*
 npm-debug.log
+tmp
+
+# Code coverage results
+/coverage
+
+# Built package
+/*.tgz
+
+# Project files
+.tern-port
+.tern-project
+.idea
+*.iml
+.vscode
+
+# Compiled client resources
+/public/
+
+# Revision file
+config/_revision
+
+# OS X
+.DS_Store
+
+# The .env file is developer local and should never be checked in
+.env
+
+# vim
+*.swp
+*.swo
+
+# eslint
 .eslintcache

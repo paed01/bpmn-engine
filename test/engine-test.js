@@ -6,6 +6,7 @@ const Lab = require('lab');
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 
+const EventEmitter = require('events').EventEmitter;
 const factory = require('./helpers/factory');
 const Bpmn = require('..');
 
@@ -323,6 +324,39 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       });
     });
 
+    lab.test('emits error when no conditional flow is taken', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <exclusiveGateway id="decision" />
+    <endEvent id="end1" />
+    <endEvent id="end2" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      this.input <= 60
+      ]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      this.input <= 50
+      ]]></conditionExpression>
+    </sequenceFlow>
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 61
+      }, null, (err, execution) => {
+        if (err) return done(err);
+        execution.once('error', () => {
+          done();
+        });
+      });
+    });
   });
 
   lab.experiment('parallelgateway', () => {
@@ -400,7 +434,8 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   });
 
   lab.experiment('InclusiveGateway', () => {
-    const processXml = `
+    lab.test('should support multiple conditional flows, case 1', (done) => {
+      const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -424,7 +459,6 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   </process>
 </definitions>`;
 
-    lab.test('should support multiple conditional flows, case 1', (done) => {
       const engine = new Bpmn.Engine(processXml);
       engine.startInstance({
         input: 1
@@ -449,10 +483,34 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       });
     });
 
-    lab.test('should support the default flow in combination with multiple conditional flows, case 2', (done) => {
+    lab.test('should support the default flow in combination with multiple conditional flows, case condition met', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <inclusiveGateway id="decision" default="flow2" />
+    <endEvent id="theEnd1" />
+    <endEvent id="theEnd2" />
+    <endEvent id="theEnd3" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
+    <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      this.input <= 50
+      ]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      this.input <= 20
+      ]]></conditionExpression>
+    </sequenceFlow>
+  </process>
+</definitions>`;
+
       const engine = new Bpmn.Engine(processXml);
       engine.startInstance({
-        input: 40
+        input: 50
       }, null, (err, execution) => {
         if (err) return done(err);
 
@@ -460,10 +518,57 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           if (e.activity.id === 'theProcess') {
             expect(execution.isEnded).to.equal(true);
 
-            expect(Object.keys(execution.children).length).to.equal(4);
             expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.false();
             expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.true();
-            expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.true();
+            expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.false();
+            expect(execution.paths).to.include('flow1');
+            expect(execution.paths).to.not.include('flow2');
+            expect(execution.paths).to.include('flow3');
+            expect(execution.paths).to.not.include('flow4');
+            done();
+          }
+        });
+      });
+    });
+
+    lab.test('should support the default flow in combination with multiple conditional flows, case no conditions met', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <inclusiveGateway id="decision" default="flow2" />
+    <endEvent id="theEnd1" />
+    <endEvent id="theEnd2" />
+    <endEvent id="theEnd3" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
+    <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      this.input <= 50
+      ]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      this.input <= 20
+      ]]></conditionExpression>
+    </sequenceFlow>
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 60
+      }, null, (err, execution) => {
+        if (err) return done(err);
+
+        execution.on('end', (e) => {
+          if (e.activity.id === 'theProcess') {
+            expect(execution.isEnded).to.equal(true);
+
+            expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.true();
+            expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.false();
+            expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.false();
             expect(execution.paths).to.include('flow1');
             expect(execution.paths).to.include('flow2');
             expect(execution.paths).to.not.include('flow3');
@@ -474,31 +579,55 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       });
     });
 
+    lab.test('emits error when no conditional flow is taken', (done) => {
+      const definitionXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <inclusiveGateway id="decision" />
+    <endEvent id="theEnd1" />
+    <endEvent id="theEnd2" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      this.input <= 50
+      ]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      this.input <= 20
+      ]]></conditionExpression>
+    </sequenceFlow>
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine(definitionXml);
+      engine.startInstance({
+        input: 61
+      }, null, (err, execution) => {
+        if (err) return done(err);
+        execution.once('error', () => {
+          done();
+        });
+      });
+    });
   });
 
-
   lab.experiment('Uncontrolled flows', () => {
-    lab.test('should support the default flow in combination with multiple conditional flows, case 1', (done) => {
+    lab.test('should support diverging flows', (done) => {
 
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" default="flow1" />
+    <startEvent id="theStart" />
     <endEvent id="theEnd1" />
     <endEvent id="theEnd2" />
     <endEvent id="theEnd3" />
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd1" />
-    <sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd2">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
-      ]]></conditionExpression>
-    </sequenceFlow>
-    <sequenceFlow id="flow3" sourceRef="theStart" targetRef="theEnd3">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 20
-      ]]></conditionExpression>
-    </sequenceFlow>
+    <sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd2" />
+    <sequenceFlow id="flow3" sourceRef="theStart" targetRef="theEnd3" />
   </process>
 </definitions>`;
 
@@ -512,59 +641,10 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           if (e.activity.id === 'theProcess') {
             expect(execution.isEnded).to.equal(true);
 
-            expect(Object.keys(execution.children).length).to.equal(4);
             expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.true();
-            expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.false();
-            expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.false();
-            expect(execution.paths).to.include('flow1');
-            expect(execution.paths).to.not.include('flow2');
-            expect(execution.paths).to.not.include('flow3');
-            done();
-          }
-        });
-      });
-
-    });
-
-    lab.test('should support the default flow in combination with multiple conditional flows, case 2', (done) => {
-
-      const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" default="flow1" />
-    <endEvent id="theEnd1" />
-    <endEvent id="theEnd2" />
-    <endEvent id="theEnd3" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd1" />
-    <sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd2">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
-      ]]></conditionExpression>
-    </sequenceFlow>
-    <sequenceFlow id="flow3" sourceRef="theStart" targetRef="theEnd3">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 20
-      ]]></conditionExpression>
-    </sequenceFlow>
-  </process>
-</definitions>`;
-
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance({
-        input: 40
-      }, null, (err, execution) => {
-        if (err) return done(err);
-
-        execution.on('end', (e) => {
-          if (e.activity.id === 'theProcess') {
-            expect(execution.isEnded).to.equal(true);
-
-            expect(Object.keys(execution.children).length).to.equal(4);
-            expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.false();
             expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.true();
             expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.true();
-            expect(execution.paths).to.not.include('flow1');
+            expect(execution.paths).to.include('flow1');
             expect(execution.paths).to.include('flow2');
             expect(execution.paths).to.include('flow3');
             done();
@@ -573,434 +653,85 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       });
     });
 
-    lab.test('should support the default flow in combination with multiple conditional flows, case 3', (done) => {
+    lab.test('should support joining flows', (done) => {
 
-      var processXml = new Buffer('<?xml version="1.0" encoding="UTF-8"?>' +
-        '<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" ' +
-        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd" />
+    <sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd" />
+    <sequenceFlow id="flow3" sourceRef="theStart" targetRef="theEnd" />
+  </process>
+</definitions>`;
 
-        '<process id="theProcess" isExecutable="true">' +
-
-        '<startEvent id="theStart" default="flow1" />' +
-        '<endEvent id="theEnd1" />' +
-        '<endEvent id="theEnd2" />' +
-        '<endEvent id="theEnd3" />' +
-
-        '<sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd1" />' +
-        '<sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd2">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 50 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-        '<sequenceFlow id="flow3" sourceRef="theStart" targetRef="theEnd3">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 20 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-
-        '</process>' +
-
-        '</definitions>');
-
-      engine.startInstance(processXml, {
-        input: 100
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 1
       }, null, (err, execution) => {
+        if (err) return done(err);
+
         execution.on('end', (e) => {
-          if (e.id === 'theProcess') {
+          if (e.activity.id === 'theProcess') {
             expect(execution.isEnded).to.equal(true);
 
-            var processInstance = execution.getActivityInstance();
-
-            expect(processInstance.activities.length).to.equal(2);
-            expect(processInstance.activities[0].activityId).to.equal("theStart");
-            expect(processInstance.activities[1].activityId).to.equal("theEnd1");
+            expect(execution.getChildActivityById('theEnd').taken, 'theEnd').to.be.true();
+            expect(execution.paths).to.include('flow1');
+            expect(execution.paths).to.include('flow2');
+            expect(execution.paths).to.include('flow3');
             done();
           }
         });
-
-        expect(err).to.not.exist();
-        expect(execution).to.exist();
-      });
-    });
-
-    lab.test('should support the default flow in combination with multiple conditional and unconditional flows, case 1', (done) => {
-
-      var processXml = new Buffer('<?xml version="1.0" encoding="UTF-8"?>' +
-        '<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" ' +
-        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
-
-        '<process id="theProcess" isExecutable="true">' +
-
-        '<startEvent id="theStart" default="flow1" />' +
-        '<endEvent id="theEnd1" />' +
-        '<endEvent id="theEnd2" />' +
-        '<endEvent id="theEnd3" />' +
-        '<endEvent id="theEnd4" />' +
-
-        '<sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd1" />' +
-        '<sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd2">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 50 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-        '<sequenceFlow id="flow3" sourceRef="theStart" targetRef="theEnd3">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 20 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-        '<sequenceFlow id="flow4" sourceRef="theStart" targetRef="theEnd4" />' +
-
-        '</process>' +
-
-        '</definitions>');
-
-      engine.startInstance(processXml, {
-        input: 10
-      }, null, (err, execution) => {
-        execution.on('end', (e) => {
-          if (e.id === 'theProcess') {
-            expect(execution.isEnded).to.equal(true);
-
-            var processInstance = execution.getActivityInstance();
-
-            expect(processInstance.activities.length).to.equal(4);
-            expect(processInstance.activities[0].activityId).to.equal("theStart");
-            expect(processInstance.activities[1].activityId).to.equal("theEnd2");
-            expect(processInstance.activities[2].activityId).to.equal("theEnd3");
-            expect(processInstance.activities[3].activityId).to.equal("theEnd4");
-            done();
-          }
-        });
-
-        expect(err).to.not.exist();
-        expect(execution).to.exist();
-      });
-    });
-
-    lab.test('should support the default flow in combination with multiple conditional and unconditional flows, case 2', (done) => {
-
-      var processXml = new Buffer('<?xml version="1.0" encoding="UTF-8"?>' +
-        '<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" ' +
-        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
-
-        '<process id="theProcess" isExecutable="true">' +
-
-        '<startEvent id="theStart" default="flow1" />' +
-        '<endEvent id="theEnd1" />' +
-        '<endEvent id="theEnd2" />' +
-        '<endEvent id="theEnd3" />' +
-        '<endEvent id="theEnd4" />' +
-
-        '<sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd1" />' +
-        '<sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd2">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 50 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-        '<sequenceFlow id="flow3" sourceRef="theStart" targetRef="theEnd3">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 20 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-        '<sequenceFlow id="flow4" sourceRef="theStart" targetRef="theEnd4" />' +
-
-        '</process>' +
-
-        '</definitions>');
-
-      engine.startInstance(processXml, {
-        input: 40
-      }, null, (err, execution) => {
-        execution.on('end', (e) => {
-          if (e.id === 'theProcess') {
-            expect(execution.isEnded).to.equal(true);
-
-            var processInstance = execution.getActivityInstance();
-
-            expect(processInstance.activities.length).to.equal(3);
-            expect(processInstance.activities[0].activityId).to.equal("theStart");
-            expect(processInstance.activities[1].activityId).to.equal("theEnd2");
-            expect(processInstance.activities[2].activityId).to.equal("theEnd4");
-            done();
-          }
-        });
-
-        expect(err).to.not.exist();
-        expect(execution).to.exist();
-      });
-    });
-
-    lab.test('should support the default flow in combination with multiple conditional and unconditional flows, case 3', (done) => {
-
-      var processXml = new Buffer('<?xml version="1.0" encoding="UTF-8"?>' +
-        '<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" ' +
-        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
-
-        '<process id="theProcess" isExecutable="true">' +
-
-        '<startEvent id="theStart" default="flow1" />' +
-        '<endEvent id="theEnd1" />' +
-        '<endEvent id="theEnd2" />' +
-        '<endEvent id="theEnd3" />' +
-        '<endEvent id="theEnd4" />' +
-
-        '<sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd1" />' +
-        '<sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd2">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 50 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-        '<sequenceFlow id="flow3" sourceRef="theStart" targetRef="theEnd3">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 20 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-        '<sequenceFlow id="flow4" sourceRef="theStart" targetRef="theEnd4" />' +
-
-        '</process>' +
-
-        '</definitions>');
-
-      engine.startInstance(processXml, {
-        input: 100
-      }, null, (err, execution) => {
-        execution.on('end', (e) => {
-          if (e.id === 'theProcess') {
-            expect(execution.isEnded).to.equal(true);
-
-            var processInstance = execution.getActivityInstance();
-
-            expect(processInstance.activities.length).to.equal(3);
-            expect(processInstance.activities[0].activityId).to.equal("theStart");
-            expect(processInstance.activities[1].activityId).to.equal("theEnd4");
-            expect(processInstance.activities[2].activityId).to.equal("theEnd1");
-            done();
-          }
-        });
-
-        expect(err).to.not.exist();
-        expect(execution).to.exist();
-      });
-    });
-
-    lab.test('should support multiple conditional flows, case 1', (done) => {
-      var processXml = new Buffer('<?xml version="1.0" encoding="UTF-8"?>' +
-        '<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" ' +
-        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
-
-        '<process id="theProcess" isExecutable="true">' +
-
-        '<startEvent id="theStart" />' +
-        '<endEvent id="theEnd1" />' +
-        '<endEvent id="theEnd2" />' +
-
-        '<sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd1">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 50 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-        '<sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd2">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 20 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-
-        '</process>' +
-
-        '</definitions>');
-
-      engine.startInstance(processXml, {
-        input: 10
-      }, null, (err, execution) => {
-        execution.on('end', (e) => {
-          if (e.id === 'theProcess') {
-            expect(execution.isEnded).to.equal(true);
-
-            var processInstance = execution.getActivityInstance();
-
-            expect(processInstance.activities.length).to.equal(3);
-            expect(processInstance.activities[0].activityId).to.equal("theStart");
-            expect(processInstance.activities[1].activityId).to.equal("theEnd1");
-            expect(processInstance.activities[2].activityId).to.equal("theEnd2");
-            done();
-          }
-        });
-
-        expect(err).to.not.exist();
-        expect(execution).to.exist();
-      });
-    });
-
-    lab.test('should support multiple conditional flows, case 2', (done) => {
-      var processXml = new Buffer('<?xml version="1.0" encoding="UTF-8"?>' +
-        '<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" ' +
-        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
-
-        '<process id="theProcess" isExecutable="true">' +
-
-        '<startEvent id="theStart" />' +
-        '<endEvent id="theEnd1" />' +
-        '<endEvent id="theEnd2" />' +
-
-        '<sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd1">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 50 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-        '<sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd2">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 20 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-
-        '</process>' +
-
-        '</definitions>');
-
-      engine.startInstance(processXml, {
-        input: 40
-      }, null, (err, execution) => {
-        execution.on('end', (e) => {
-          if (e.id === 'theProcess') {
-            expect(execution.isEnded).to.equal(true);
-
-            var processInstance = execution.getActivityInstance();
-
-            expect(processInstance.activities.length).to.equal(2);
-            expect(processInstance.activities[0].activityId).to.equal("theStart");
-            expect(processInstance.activities[1].activityId).to.equal("theEnd1");
-            done();
-          }
-        });
-
-        expect(err).to.not.exist();
-        expect(execution).to.exist();
-      });
-
-      // // case 2: input  = 100 -> no sequenceflow is taken.
-      // // TODO: should this trigger an exception??
-
-      // execution = new CAM.ActivityExecution(processDefinition);
-      // execution.variables.input = 100;
-      // execution.start();
-
-      // expect(execution.isEnded).toBe(false);
-
-      // processInstance = execution.getActivityInstance();
-      // expect(processInstance.activities.length).toBe(1);
-      // expect(processInstance.activities[0].activityId).toBe("theStart");
-
-    });
-
-    lab.test('should support multiple conditional flows, case 3, emits error when no conditional flow is taken', (done) => {
-      var processXml = new Buffer('<?xml version="1.0" encoding="UTF-8"?>' +
-        '<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" ' +
-        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
-
-        '<process id="theProcess" isExecutable="true">' +
-
-        '<startEvent id="theStart" />' +
-        '<endEvent id="theEnd1" />' +
-        '<endEvent id="theEnd2" />' +
-
-        '<sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd1">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 50 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-        '<sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd2">' +
-        '<conditionExpression xsi:type="tFormalExpression"><![CDATA[' +
-        'this.input <= 20 ' +
-        ']]></conditionExpression>' +
-        '</sequenceFlow>' +
-
-        '</process>' +
-
-        '</definitions>');
-
-      engine.startInstance(processXml, {
-        input: 100
-      }, null, (err, execution) => {
-        execution.on('error', (e) => {
-          expect(execution.isEnded).to.equal(false);
-          var processInstance = execution.getActivityInstance();
-
-          expect(processInstance.activities.length).to.equal(1);
-          expect(processInstance.activities[0].activityId).to.equal("theStart");
-          done();
-        });
-
-        expect(err).to.not.exist();
-        expect(execution).to.exist();
       });
     });
   });
 
   lab.experiment('usertask', () => {
-    var processXml = new Buffer('<?xml version="1.0" encoding="UTF-8"?>' +
-      '<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" ' +
-      'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
-      '<process id="theProcess" isExecutable="true">' +
-      '<startEvent id="theStart" />' +
-      '<userTask id="userTask" />' +
-      '<endEvent id="theEnd" />' +
-      '<sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />' +
-      '<sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />' +
-      '</process>' +
-      '</definitions>');
+    const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+  <startEvent id="theStart" />
+  <userTask id="userTask" />
+  <endEvent id="theEnd" />
+  <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+  <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+  </process>
+</definitions>`;
 
     lab.test('should handle user tasks as wait states', (done) => {
-      engine.startInstance(processXml, null, null, (err, execution) => {
-        execution.on('start', (e) => {
-          if (e.id === 'userTask') {
-            expect(execution.isEnded).to.equal(false);
+      const engine = new Bpmn.Engine(processXml);
+      const listener = new EventEmitter();
 
-            var processInstance = execution.getActivityInstance();
-            expect(processInstance.activities.length).to.equal(2);
-            expect(processInstance.activities[0].activityId).to.equal("theStart");
-            expect(processInstance.activities[1].activityId).to.equal("userTask");
+      listener.once('start-userTask', (activity) => {
+        activity.signal();
+      });
 
-            execution.activityExecutions[1].signal();
-          }
+      engine.startInstance(null, listener, (err, execution) => {
+        if (err) return done(err);
+
+        execution.once('end', () => {
+          done();
         });
-
-        execution.on('end', (e) => {
-          if (e.id === 'theProcess') {
-            expect(execution.isEnded).to.equal(true);
-
-            var processInstance = execution.getActivityInstance();
-
-            expect(processInstance.activities.length).to.equal(3);
-            expect(processInstance.activities[0].activityId).to.equal("theStart");
-            expect(processInstance.activities[1].activityId).to.equal("userTask");
-            expect(processInstance.activities[2].activityId).to.equal("theEnd");
-            done();
-          }
-        });
-
-        expect(err).to.not.exist();
-        expect(execution).to.exist();
       });
     });
 
     lab.test('should signal user task by id', (done) => {
-      engine.startInstance(processXml, null, null, (err, execution) => {
-        execution.on('start', (e) => {
-          if (e.id === 'userTask') {
-            // send a signal to the usertask:
-            execution.signal("userTask");
-          }
+      const engine = new Bpmn.Engine(processXml);
+      const listener = new EventEmitter();
+
+      engine.startInstance(null, listener, (err, execution) => {
+        if (err) return done(err);
+
+        listener.once('start-userTask', () => {
+          execution.signal('userTask');
         });
 
-        execution.on('end', (e) => {
-          if (e.id === 'theProcess') {
-            expect(execution.isEnded).to.equal(true);
-            done();
-          }
+        execution.once('end', () => {
+          done();
         });
-
-        expect(err).to.not.exist();
-        expect(execution).to.exist();
       });
 
       // var processDefinition = new Transformer().transform(processXml)[0];
