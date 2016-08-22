@@ -18,6 +18,7 @@
   ],
   "devDependencies": {
     "code": "^3.0.2",
+    "coveralls": "^2.11.12",
     "lab": "^11.0.0"
   },
   "dependencies": {
@@ -26,8 +27,7 @@
     "debug": "^2.2.0",
     "hoek": "^4.0.2",
     "joi": "^9.0.4",
-    "node-uuid": "^1.4.7",
-    "xmldom": "^0.1.22"
+    "node-uuid": "^1.4.7"
   },
   "licenses": [
     {

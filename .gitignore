@@ -5,6 +5,7 @@ tmp
 
 # Code coverage results
 /coverage
+coverage*
 
 # Built package
 /*.tgz
