@@ -4,6 +4,13 @@
   "version": "1.0.0",
   "author": "Pål Edman <pal.edman@gmail.com> (https://github.com/paed01)",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/paed01/bpmn-engine"
+  },
+  "engines": {
+    "node": ">=4"
+  },
   "directories": {
     "test": "test"
   },
@@ -19,7 +26,8 @@
   "devDependencies": {
     "code": "^3.0.2",
     "coveralls": "^2.11.12",
-    "lab": "^11.0.0"
+    "lab": "^11.0.0",
+    "request": "^2.74.0"
   },
   "dependencies": {
     "async": "^2.0.1",
@@ -31,7 +39,7 @@
   },
   "licenses": [
     {
-      "type": "MIT",
+      "type": "BSD-3-Clause",
       "url": "https://github.com/paed01/bpmn-node/master/LICENSE"
     }
   ]
