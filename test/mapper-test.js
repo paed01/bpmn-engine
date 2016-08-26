@@ -29,7 +29,7 @@ lab.experiment('mapper', () => {
   lab.test('if $type is missing from input', (done) => {
     expect(() => {
       mapper({});
-    }).to.throw(Error, 'KAS');
+    }).to.throw(Error);
     done();
   });
 });
