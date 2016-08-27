@@ -109,7 +109,7 @@ lab.experiment('userTask', () => {
       });
     });
 
-    lab.test('if data association dont´t exist the input is stored as taskInput with id (due to overcomplex data flow in bpmn 2)', (done) => {
+    lab.test('if data association dont´t exist the input is stored as taskInput with id (due to overcomplex data flow in bpmn)', (done) => {
       const alternativeProcessXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -125,18 +125,20 @@ lab.experiment('userTask', () => {
       const engine = new Bpmn.Engine(alternativeProcessXml);
       const listener = new EventEmitter();
 
+      listener.once('wait', (execution, child) => {
+        if (child.activity.$type !== 'bpmn:UserTask') return;
+
+        execution.signal(child.activity.id, {
+          sirname: 'von Rosen'
+        });
+      });
+
       engine.startInstance(null, listener, (err, execution) => {
         if (err) return done(err);
 
-        listener.once('start-userTask', () => {
-          execution.signal('userTask', {
-            myName: 'Pål'
-          });
-        });
-
         execution.once('end', () => {
           expect(execution.variables.taskInput.userTask).to.equal({
-            myName: 'Pål'
+            sirname: 'von Rosen'
           });
           done();
         });
