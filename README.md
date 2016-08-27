@@ -174,3 +174,37 @@ engine.startInstance({
 });
 ```
 
+Since, Imho, the data flow in bpmn2 is overcomplex the input is stored as `taskInput` with id if data associations dont´t exist.
+
+```javascript
+const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <userTask id="userTask" />
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+  </process>
+</definitions>`;
+
+const engine = new Bpmn.Engine(processXml);
+const listener = new EventEmitter();
+
+listener.once('wait', (execution, child) => {
+  if (child.activity.$type !== 'bpmn:UserTask') return;
+  execution.signal(child.activity.id, {
+    sirname: 'von Rosen'
+  });
+});
+
+engine.startInstance(null, listener, (err, execution) => {
+  if (err) return done(err);
+
+  execution.once('end', () => {
+    console.log(`User sirname is ${execution.variables.taskInput.userTask.sirname}`);
+  });
+});
+```
+
