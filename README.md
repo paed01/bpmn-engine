@@ -13,6 +13,7 @@ bpmn-engine
     - [Start instance](#start-instance)
     - [Listen events](#listen-for-events)
     - [Script task](#script-task)
+    - [User task](#user-task)
 
 # Examples
 
@@ -51,11 +52,18 @@ const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
-  <startEvent id="theStart" />
-  <userTask id="userTask" />
-  <endEvent id="theEnd" />
-  <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
-  <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+    <dataObjectReference id="inputFromUserRef" dataObjectRef="inputFromUser" />
+    <dataObject id="inputFromUser" />
+    <startEvent id="theStart" />
+    <userTask id="userTask">
+      <ioSpecification id="inputSpec">
+        <dataOutput id="userInput" />
+      </ioSpecification>
+      <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUserRef" />
+    </userTask>
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
   </process>
 </definitions>`;
 
@@ -65,9 +73,7 @@ const listener = new EventEmitter();
 listener.once('start-userTask', (activity) => {
   console.log('Signal userTask when started')
   activity.signal({
-    input: {
-      sirname: 'von Rosen'
-    }
+    sirname: 'von Rosen'
   });
 });
 
@@ -75,7 +81,7 @@ engine.startInstance({
   input: null
 }, listener, (err, execution) => {
   if (err) return done(err);
-  console.log(`User sirname is ${execution.variables.input.sirname}`);
+  console.log(`User sirname is ${execution.variables.inputFromUser.sirname}`);
 });
 ```
 
@@ -124,3 +130,47 @@ engine.startInstance({
   });
 });
 ```
+
+## User task
+```javascript
+const Bpmn = require('bpmn-engine');
+
+const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <dataObjectReference id="inputFromUserRef" dataObjectRef="inputFromUser" />
+    <dataObject id="inputFromUser" />
+    <startEvent id="theStart" />
+    <userTask id="userTask">
+      <ioSpecification id="inputSpec">
+        <dataOutput id="userInput" />
+      </ioSpecification>
+      <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUserRef" />
+    </userTask>
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+  </process>
+</definitions>`;
+
+const engine = new Bpmn.Engine(processXml);
+const listener = new EventEmitter();
+
+listener.once('wait', (child, execution) => {
+  execution.signal(child.activity.id, {
+    sirname: 'von Rosen'
+  });
+});
+
+engine.startInstance({
+  input: null
+}, listener, (err, execution) => {
+  if (err) return done(err);
+
+  execution.once('end', () => {
+    console.log(`User sirname is ${execution.variables.inputFromUser.sirname}`);
+  });
+});
+```
+
