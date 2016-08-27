@@ -48,6 +48,33 @@ lab.experiment('validation', () => {
       });
     });
 
+    lab.test('or if definitions are missing', (done) => {
+      validation.validate(null, null, (err) => {
+        expect(err).to.be.an.error();
+        done();
+      });
+    });
+
+    lab.test('or if bpmn-moddle returns warnings in context', (done) => {
+      const bpmnXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="no-end" />
+  </process>
+</definitions>`;
+
+      transformer.transform(bpmnXml, (terr, bpmnObject, context) => {
+        if (terr) return done(terr);
+
+        validation.validate(bpmnObject, context, (err) => {
+          expect(err).to.be.an.error(/no-end/);
+          done();
+        });
+      });
+    });
+
   });
 
   lab.experiment('processes', () => {
@@ -109,7 +136,7 @@ lab.experiment('validation', () => {
     });
   });
 
-  lab.experiment('sequence flows', () => {
+  lab.experiment('sequenceFlow', () => {
     lab.test('targetRef is required', (done) => {
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -147,7 +174,9 @@ lab.experiment('validation', () => {
         });
       });
     });
+  });
 
+  lab.experiment('exclusiveGateway', () => {
     lab.test('should not support a single diverging flow with a condition', (done) => {
 
       const processXml = `
@@ -176,10 +205,6 @@ lab.experiment('validation', () => {
     });
 
     lab.test('should not support multiple diverging flows without conditions', (done) => {
-
-      // if there multiple outgoing sequence flows without conditions, an exception is thrown at deploy time,
-      // even if one of them is the default flow
-
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -204,10 +229,6 @@ lab.experiment('validation', () => {
     });
 
     lab.test('should support exclusiveGateway with default flow', (done) => {
-
-      // if there multiple outgoing sequence flows without conditions, an exception is thrown at deploy time,
-      // even if one of them is the default flow
-
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -236,9 +257,7 @@ lab.experiment('validation', () => {
       });
     });
 
-    lab.test('should support two diverging flows with conditions, case 10', (done) => {
-      // case 1: input  = 10 -> the upper sequenceflow is taken
-
+    lab.test('should support two diverging flows with conditions', (done) => {
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -265,6 +284,25 @@ lab.experiment('validation', () => {
         if (terr) return done(terr);
         validation.validate(bpmnObject, context, (err) => {
           expect(err).to.not.exist();
+          done();
+        });
+      });
+    });
+
+    lab.test('no flows are not supported', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <exclusiveGateway id="decision" />
+  </process>
+</definitions>`;
+
+      transformer.transform(processXml, (terr, bpmnObject, context) => {
+        if (terr) return done(terr);
+
+        validation.validate(bpmnObject, context, (err) => {
+          expect(err).to.exist();
           done();
         });
       });
