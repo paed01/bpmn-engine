@@ -15,7 +15,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "make test"
+    "test": "make test-cov-lcov"
   },
   "keywords": [
     "bpmn",
