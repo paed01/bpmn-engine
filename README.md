@@ -20,6 +20,7 @@ bpmn-engine
 ## Start instance
 ```javascript
 const Bpmn = require('bpmn-engine');
+const uuid = require('node-uuid');
 
 const bpmnSchema = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -39,8 +40,8 @@ const bpmnSchema = `
 
 const engine = new Bpmn.Engine(bpmnSchema);
 
-engine.startInstance(null, null, (err, execution) => {
-  console.log('Process instance started with id', execution.uuid);
+engine.startInstance({ uuid: uuid.v4() }, null, (err, execution) => {
+  console.log('Process instance started with id', execution.variables.uuid);
 });
 ```
 
