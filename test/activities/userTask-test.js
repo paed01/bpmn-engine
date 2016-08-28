@@ -145,4 +145,39 @@ lab.experiment('userTask', () => {
       });
     });
   });
+
+  lab.experiment('cancel', () => {
+    lab.test('does not take outgoing sequence flows when completed', (done) => {
+      const alternativeProcessXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <userTask id="userTask" />
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine(alternativeProcessXml);
+      engine.startInstance({
+        input: 1,
+        setTimeout: setTimeout
+      }, null, (err, execution) => {
+        if (err) return done(err);
+        const userTask = execution.getChildActivityById('userTask');
+        userTask.once('start', () => {
+          execution.terminate();
+        });
+
+        execution.once('end', () => {
+          expect(execution.getChildActivityById('userTask').taken, 'userTask').to.be.true();
+          expect(execution.paths).to.include('flow1');
+          expect(execution.paths).to.not.include('flow2');
+          done();
+        });
+      });
+    });
+  });
 });

@@ -25,7 +25,17 @@ lab.experiment('engine', () => {
     lab.test('accepts Buffer', (done) => {
       const buff = new Buffer(factory.valid());
       const engine = new Bpmn.Engine(buff);
-      expect(engine.source).to.exist();
+      engine.startInstance(null, null, (err) => {
+        expect(err).to.not.exist();
+        done();
+      });
+    });
+
+    lab.test('but not function', (done) => {
+      const source = () => {};
+      expect(() => {
+        new Bpmn.Engine(source); /* eslint no-new: 0 */
+      }).to.throw();
       done();
     });
   });

@@ -266,4 +266,49 @@ lab.experiment('ScriptTask', () => {
     });
 
   });
+
+  lab.experiment('cancel', () => {
+    lab.test('does not take outgoing sequence flows when completed', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+  <startEvent id="theStart" />
+  <scriptTask id="scriptTask" scriptFormat="Javascript">
+    <script>
+      <![CDATA[
+        this.context.setTimeout(() => {
+          this.context.input = 2;
+          next();
+        }, 100);
+      ]]>
+    </script>
+  </scriptTask>
+  <endEvent id="theEnd" />
+  <sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
+  <sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 1,
+        setTimeout: setTimeout
+      }, null, (err, execution) => {
+        if (err) return done(err);
+        const scriptTask = execution.getChildActivityById('scriptTask');
+        scriptTask.once('start', () => {
+          execution.terminate();
+        });
+
+        execution.once('end', () => {
+          expect(execution.getChildActivityById('scriptTask').taken, 'scriptTask').to.be.true();
+          expect(execution.paths).to.include('flow1');
+          expect(execution.paths).to.not.include('flow2');
+          done();
+        });
+      });
+    });
+  });
+
 });
