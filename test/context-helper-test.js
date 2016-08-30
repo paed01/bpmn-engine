@@ -178,4 +178,54 @@ lab.experiment('context-helper', () => {
       done();
     });
   });
+
+  lab.experiment('#hasInboundSequenceFlows', () => {
+    lab.test('returns false if no inbound sequenceFlows', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+  </process>
+</definitions>`;
+      transformer.transform(processXml, (err, bpmnObject, result) => {
+        if (err) return done(err);
+        expect(contextHelper.hasInboundSequenceFlows(result, 'theStart')).to.be.false();
+        done();
+      });
+    });
+
+    lab.test('returns true if inbound sequenceFlows', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd" />
+  </process>
+</definitions>`;
+      transformer.transform(processXml, (err, bpmnObject, result) => {
+        if (err) return done(err);
+        expect(contextHelper.hasInboundSequenceFlows(result, 'theEnd')).to.be.true();
+        done();
+      });
+    });
+
+    lab.test('returns false if no sequenceFlows', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <endEvent id="theEnd" />
+  </process>
+</definitions>`;
+      transformer.transform(processXml, (err, bpmnObject, result) => {
+        if (err) return done(err);
+        expect(contextHelper.hasInboundSequenceFlows(result, 'theEnd')).to.be.false();
+        done();
+      });
+    });
+  });
 });

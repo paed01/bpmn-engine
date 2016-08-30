@@ -26,6 +26,24 @@ lab.experiment('userTask', () => {
     });
   });
 
+  lab.test('is considered end if without outbound sequenceFlows', (done) => {
+    const alternativeProcessXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <userTask id="userTask" />
+  </process>
+</definitions>`;
+
+    const engine = new Bpmn.Engine(alternativeProcessXml);
+    engine.getInstance(null, null, (err, execution) => {
+      if (err) return done(err);
+      const task = execution.getChildActivityById('userTask');
+      expect(task.isEnd).to.be.true();
+      done();
+    });
+  });
+
   lab.test('should handle user tasks as wait states', (done) => {
     const engine = new Bpmn.Engine(processXml);
     const listener = new EventEmitter();
@@ -109,8 +127,27 @@ lab.experiment('userTask', () => {
       });
     });
 
-    lab.test('if data association dont´t exist the input is stored as taskInput with id (due to overcomplex data flow in bpmn)', (done) => {
-      const alternativeProcessXml = `
+    lab.test('but not if signal is called without input', (done) => {
+      const engine = new Bpmn.Engine(processXml);
+      const listener = new EventEmitter();
+
+      engine.startInstance(null, listener, (err, execution) => {
+        if (err) return done(err);
+
+        listener.once('start-userTask', () => {
+          execution.signal('userTask');
+        });
+
+        execution.once('end', () => {
+          expect(execution.variables).to.not.include('inputFromUser');
+          done();
+        });
+      });
+    });
+  });
+
+  lab.experiment('without data association (due to overcomplex data flow in bpmn)', () => {
+    const alternativeProcessXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -122,12 +159,12 @@ lab.experiment('userTask', () => {
   </process>
 </definitions>`;
 
+    lab.test('the input is stored as taskInput with id', (done) => {
       const engine = new Bpmn.Engine(alternativeProcessXml);
       const listener = new EventEmitter();
 
       listener.once('wait', (execution, child) => {
         if (child.activity.$type !== 'bpmn:UserTask') return;
-
         execution.signal(child.activity.id, {
           sirname: 'von Rosen'
         });
@@ -137,9 +174,31 @@ lab.experiment('userTask', () => {
         if (err) return done(err);
 
         execution.once('end', () => {
+          expect(execution.variables).to.include('taskInput');
+          expect(execution.variables.taskInput).to.include('userTask');
           expect(execution.variables.taskInput.userTask).to.equal({
             sirname: 'von Rosen'
           });
+          done();
+        });
+      });
+    });
+
+    lab.test('but not if signal is called without input', (done) => {
+      const engine = new Bpmn.Engine(alternativeProcessXml);
+      const listener = new EventEmitter();
+
+      engine.startInstance({
+        taskInput: {}
+      }, listener, (err, execution) => {
+        if (err) return done(err);
+
+        listener.once('start-userTask', () => {
+          execution.signal('userTask');
+        });
+
+        execution.once('end', () => {
+          expect(execution.variables.taskInput).to.be.empty();
           done();
         });
       });

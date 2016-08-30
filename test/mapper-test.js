@@ -32,4 +32,23 @@ lab.experiment('mapper', () => {
     }).to.throw(Error);
     done();
   });
+
+  lab.experiment('isTask', () => {
+    lab.test('bpmn:UserTask is true', (done) => {
+      expect(mapper.isTask('bpmn:UserTask')).to.be.true();
+      done();
+    });
+
+    lab.test('bpmn:StartEvent is false', (done) => {
+      expect(mapper.isTask('bpmn:StartEvent')).to.be.false();
+      done();
+    });
+
+    lab.test('empty is false', (done) => {
+      expect(mapper.isTask(null)).to.be.false();
+      expect(mapper.isTask()).to.be.false();
+      expect(mapper.isTask('')).to.be.false();
+      done();
+    });
+  });
 });

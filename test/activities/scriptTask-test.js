@@ -43,6 +43,31 @@ lab.experiment('ScriptTask', () => {
     });
   });
 
+  lab.test('is considered end if without outbound sequenceFlows', (done) => {
+    const alternativeProcessXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+  <scriptTask id="scriptTask" scriptFormat="Javascript">
+    <script>
+      <![CDATA[
+        this.context.input = 2;
+        next();
+      ]]>
+    </script>
+  </scriptTask>
+  </process>
+</definitions>`;
+
+    const engine = new Bpmn.Engine(alternativeProcessXml);
+    engine.getInstance(null, null, (err, execution) => {
+      if (err) return done(err);
+      const task = execution.getChildActivityById('scriptTask');
+      expect(task.isEnd).to.be.true();
+      done();
+    });
+  });
+
   lab.experiment('execution', () => {
     lab.test('executes script', (done) => {
       const processXml = `

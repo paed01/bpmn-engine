@@ -9,7 +9,7 @@ const Bpmn = require('../..');
 
 lab.experiment('EndEvent', () => {
 
-  lab.test('should have inbound sequence flows', (done) => {
+  lab.test('should have inbound sequence flows and flagged as end', (done) => {
     const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -23,13 +23,16 @@ lab.experiment('EndEvent', () => {
     const engine = new Bpmn.Engine(processXml);
     engine.startInstance(null, null, (err, execution) => {
       if (err) return done(err);
-      expect(execution.getChildActivityById('end')).to.include('inbound');
-      expect(execution.getChildActivityById('end').inbound).to.have.length(1);
+      const event = execution.getChildActivityById('end');
+      expect(event).to.include('inbound');
+      expect(event.inbound).to.have.length(1);
+      expect(event.inbound).to.have.length(1);
+      expect(event.isEnd).to.be.true();
       done();
     });
   });
 
-  lab.experiment('terminate', () => {
+  lab.experiment('terminateEventDefinition', () => {
     const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">

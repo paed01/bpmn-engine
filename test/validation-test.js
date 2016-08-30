@@ -101,7 +101,7 @@ lab.experiment('validation', () => {
       });
     });
 
-    lab.test('or without flowElements', (done) => {
+    lab.test('but without flowElements', (done) => {
       const bpmnXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -110,10 +110,7 @@ lab.experiment('validation', () => {
 
       transformer.transform(bpmnXml, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
-        validation.validate(bpmnObject, context, (err) => {
-          expect(err).to.be.an.error(/"flowElements" is required/);
-          done();
-        });
+        validation.validate(bpmnObject, context, done);
       });
     });
 
