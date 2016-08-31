@@ -95,6 +95,20 @@ lab.experiment('EndEvent', () => {
       });
     });
 
-  });
+    lab.test('and leave no lingering parent eventListeners', (done) => {
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance(null, null, (err, execution) => {
+        if (err) return done(err);
 
+        execution.on('end', () => {
+          Object.keys(execution.children).forEach((id) => {
+            const child = execution.children[id];
+            expect(child.listenerCount('end'), id).to.equal(0);
+            expect(child.listenerCount('start'), id).to.equal(0);
+          });
+          done();
+        });
+      });
+    });
+  });
 });
