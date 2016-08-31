@@ -12,6 +12,7 @@ bpmn-engine
 - [Examples](#examples)
     - [Start instance](#start-instance)
     - [Listen events](#listen-for-events)
+    - [Exclusive gateway](#exclusive-gateway)
     - [Script task](#script-task)
     - [User task](#user-task)
 - [Debug](#debug)
@@ -84,6 +85,48 @@ engine.startInstance({
 }, listener, (err, execution) => {
   if (err) return done(err);
   console.log(`User sirname is ${execution.variables.inputFromUser.sirname}`);
+});
+```
+
+## Exclusive gateway
+
+An exclusive gateway will receive the available process variables as `this.context`.
+
+```javascript
+const Bpmn = require('bpmn-engine');
+
+const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="start" />
+    <exclusiveGateway id="decision" />
+    <endEvent id="end1" />
+    <endEvent id="end2" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      this.context.input <= 50
+      ]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      this.context.input > 50
+      ]]></conditionExpression>
+    </sequenceFlow>
+  </process>
+</definitions>`;
+
+const engine = new Bpmn.Engine(processXml);
+engine.startInstance({
+  input: 51
+}, null, (err, execution) => {
+  if (err) return done(err);
+
+  execution.once('end', () => {
+    if (execution.getChildActivityById('end1').taken) throw new Error('<end1> was not supposed to be taken, check your input');
+    console.log(excecution.paths);
+  });
 });
 ```
 

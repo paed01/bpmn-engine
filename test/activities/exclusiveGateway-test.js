@@ -74,7 +74,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
+      this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
@@ -129,12 +129,12 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
+      this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input > 50
+      this.context.input > 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
@@ -174,12 +174,12 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
+      this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input > 50
+      this.context.input > 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
@@ -220,7 +220,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
+      this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
@@ -261,7 +261,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
+      this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
@@ -301,12 +301,12 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 60
+      this.context.input <= 60
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
+      this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>

@@ -22,12 +22,12 @@ lab.experiment('inclusiveGateway', () => {
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
+      this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 20
+      this.context.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
@@ -60,12 +60,12 @@ lab.experiment('inclusiveGateway', () => {
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
+      this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 20
+      this.context.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
@@ -109,12 +109,12 @@ lab.experiment('inclusiveGateway', () => {
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
+      this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 20
+      this.context.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
@@ -157,12 +157,12 @@ lab.experiment('inclusiveGateway', () => {
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
+      this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 20
+      this.context.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
@@ -203,12 +203,12 @@ lab.experiment('inclusiveGateway', () => {
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
+      this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 20
+      this.context.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
