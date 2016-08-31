@@ -14,6 +14,7 @@ bpmn-engine
     - [Listen events](#listen-for-events)
     - [Script task](#script-task)
     - [User task](#user-task)
+- [Debug](#debug)
 
 # Examples
 
@@ -208,4 +209,9 @@ engine.startInstance(null, listener, (err, execution) => {
   });
 });
 ```
+
+# Debug
+
+The module uses [debug](github.com/visionmedia/debug) so run with environment variable `DEBUG=bpmn-engine:*`.
+
 
