@@ -231,6 +231,7 @@ lab.experiment('ParallelGateway', () => {
         if (err) return done(err);
 
         execution.on('end', () => {
+          expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
           expect(execution.paths).to.include('flow1');
           expect(execution.paths).to.include('flow2');
           expect(execution.paths).to.include('flow3');
@@ -278,11 +279,60 @@ lab.experiment('ParallelGateway', () => {
         if (err) return done(err);
 
         execution.on('end', () => {
+          expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
           expect(execution.paths).to.include('flow1');
           expect(execution.paths).to.not.include('flow2');
           expect(execution.paths).to.not.include('flow3');
           expect(execution.paths).to.include('flow4');
           expect(execution.paths).to.include('flow5');
+          expect(execution.paths).to.include('flow6');
+
+          testHelpers.expectNoLingeringListeners(execution);
+
+          done();
+        });
+      });
+    });
+
+    lab.test('and with default', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <inclusiveGateway id="decision" default="flow4" />
+    <userTask id="task" />
+    <scriptTask id="script">
+      <script>next();</script>
+    </scriptTask>
+    <parallelGateway id="join" />
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow2" sourceRef="decision" targetRef="script">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+        this.context.input <= 50
+      ]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow3" sourceRef="script" targetRef="join" />
+    <sequenceFlow id="flow4" sourceRef="decision" targetRef="task" />
+    <sequenceFlow id="flow5" sourceRef="task" targetRef="join" />
+    <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 50
+      }, null, (err, execution) => {
+        if (err) return done(err);
+
+        execution.on('end', () => {
+          expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
+          expect(execution.paths).to.include('flow1');
+          expect(execution.paths).to.include('flow2');
+          expect(execution.paths).to.include('flow3');
+          expect(execution.paths).to.not.include('flow4');
+          expect(execution.paths).to.not.include('flow5');
           expect(execution.paths).to.include('flow6');
 
           testHelpers.expectNoLingeringListeners(execution);

@@ -103,7 +103,7 @@ const processXml = `
     <exclusiveGateway id="decision" />
     <endEvent id="end1" />
     <endEvent id="end2" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[
       this.context.input <= 50
