@@ -2,6 +2,7 @@
 
 const Code = require('code');
 const Lab = require('lab');
+const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
@@ -114,7 +115,6 @@ lab.experiment('ParallelGateway', () => {
     });
   });
 
-
   lab.experiment('join', () => {
     lab.test('should join diverging fork', (done) => {
       const processXml = `
@@ -147,15 +147,7 @@ lab.experiment('ParallelGateway', () => {
           expect(execution.paths).to.include('flow5');
           expect(execution.paths).to.include('flow6');
 
-          Object.keys(execution.children).forEach((id) => {
-            const child = execution.children[id];
-            expect(child.listenerCount('start'), `start listeners on <${id}>`).to.equal(0);
-            expect(child.listenerCount('end'), `end listeners on <${id}>`).to.equal(0);
-          });
-          execution.sequenceFlows.forEach((flow) => {
-            expect(flow.listenerCount('taken'), `taken listeners on <${flow.activity.element.id}>`).to.equal(0);
-            expect(flow.listenerCount('discarded'), `discarded listeners on <${flow.activity.element.id}>`).to.equal(0);
-          });
+          testHelpers.expectNoLingeringListeners(execution);
 
           done();
         });
@@ -199,20 +191,107 @@ lab.experiment('ParallelGateway', () => {
           expect(execution.paths).to.not.include('flow5');
           expect(execution.paths).to.include('flow6');
 
-          Object.keys(execution.children).forEach((id) => {
-            const child = execution.children[id];
-            expect(child.listenerCount('start'), `start listeners on <${id}>`).to.equal(0);
-            expect(child.listenerCount('end'), `end listeners on <${id}>`).to.equal(0);
-          });
-          execution.sequenceFlows.forEach((flow) => {
-            expect(flow.listenerCount('taken'), `taken listeners on <${flow.activity.element.id}>`).to.equal(0);
-            expect(flow.listenerCount('discarded'), `discarded listeners on <${flow.activity.element.id}>`).to.equal(0);
-          });
+          testHelpers.expectNoLingeringListeners(execution);
 
           done();
         });
       });
     });
+
+    lab.test('should join discarded flow with tasks', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <inclusiveGateway id="decision" />
+    <scriptTask id="script">
+      <script>next();</script>
+    </scriptTask>
+    <userTask id="task" />
+    <parallelGateway id="join" />
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow2" sourceRef="decision" targetRef="script" />
+    <sequenceFlow id="flow3" sourceRef="script" targetRef="join" />
+    <sequenceFlow id="flow4" sourceRef="decision" targetRef="task">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+        this.context.input <= 50
+      ]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow5" sourceRef="task" targetRef="join" />
+    <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 51
+      }, null, (err, execution) => {
+        if (err) return done(err);
+
+        execution.on('end', () => {
+          expect(execution.paths).to.include('flow1');
+          expect(execution.paths).to.include('flow2');
+          expect(execution.paths).to.include('flow3');
+          expect(execution.paths).to.not.include('flow4');
+          expect(execution.paths).to.not.include('flow5');
+          expect(execution.paths).to.include('flow6');
+
+          testHelpers.expectNoLingeringListeners(execution);
+
+          done();
+        });
+      });
+    });
+
+    lab.test('regardless of flow order', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <inclusiveGateway id="decision" />
+    <userTask id="task" />
+    <scriptTask id="script">
+      <script>next();</script>
+    </scriptTask>
+    <parallelGateway id="join" />
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow2" sourceRef="decision" targetRef="task">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+        this.context.input <= 50
+      ]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow3" sourceRef="task" targetRef="join" />
+    <sequenceFlow id="flow4" sourceRef="decision" targetRef="script" />
+    <sequenceFlow id="flow5" sourceRef="script" targetRef="join" />
+    <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 51
+      }, null, (err, execution) => {
+        if (err) return done(err);
+
+        execution.on('end', () => {
+          expect(execution.paths).to.include('flow1');
+          expect(execution.paths).to.not.include('flow2');
+          expect(execution.paths).to.not.include('flow3');
+          expect(execution.paths).to.include('flow4');
+          expect(execution.paths).to.include('flow5');
+          expect(execution.paths).to.include('flow6');
+
+          testHelpers.expectNoLingeringListeners(execution);
+
+          done();
+        });
+      });
+    });
+
   });
 
   lab.experiment('cancel', () => {
