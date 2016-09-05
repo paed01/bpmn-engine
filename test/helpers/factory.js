@@ -1,5 +1,8 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 const validProcess = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -62,6 +65,10 @@ pub.userTask = () => {
     <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
   </process>
 </definitions>`;
+};
+
+pub.resource = function(name) {
+  return fs.readFileSync(path.join(__dirname, '..', 'resources', name));
 };
 
 module.exports = pub;

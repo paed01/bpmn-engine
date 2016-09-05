@@ -1,6 +1,7 @@
 'use strict';
 
 const Code = require('code');
+const factory = require('../helpers/factory');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
@@ -334,6 +335,25 @@ lab.experiment('ParallelGateway', () => {
           expect(execution.paths).to.not.include('flow4');
           expect(execution.paths).to.not.include('flow5');
           expect(execution.paths).to.include('flow6');
+
+          testHelpers.expectNoLingeringListeners(execution);
+
+          done();
+        });
+      });
+    });
+
+    lab.test('completes process with multiple joins in discarded path', (done) => {
+      const processXml = factory.resource('multiple-joins.bpmn');
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 51
+      }, null, (err, execution) => {
+        if (err) return done(err);
+
+        execution.on('end', () => {
+          expect(execution.paths).to.include('flow9');
+          // expect(execution.paths.flow9.discarded).to.be.true();
 
           testHelpers.expectNoLingeringListeners(execution);
 
