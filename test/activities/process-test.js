@@ -1,6 +1,8 @@
 'use strict';
 
 const Code = require('code');
+const EventEmitter = require('events').EventEmitter;
+const factory = require('../helpers/factory');
 const Lab = require('lab');
 
 const lab = exports.lab = Lab.script();
@@ -99,6 +101,29 @@ lab.experiment('Process', () => {
           expect(execution.variables.userWrote).to.equal('von Rosen');
           expect(execution.paths).to.include('flow1');
 
+          done();
+        });
+      });
+    });
+  });
+
+  lab.experiment('loop', () => {
+    lab.test('completes process', (done) => {
+      const processXml = factory.resource('loop.bpmn');
+
+      const listener = new EventEmitter();
+      let startCount = 0;
+      listener.on('end-scriptTask1', () => {
+        startCount++;
+      });
+
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 1
+      }, listener, (err, execution) => {
+        if (err) return done(err);
+        execution.once('end', () => {
+          expect(startCount).to.equal(2);
           done();
         });
       });
