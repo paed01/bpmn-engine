@@ -352,11 +352,13 @@ lab.experiment('ParallelGateway', () => {
         if (err) return done(err);
 
         execution.on('end', () => {
+          expect(execution.getChildActivityById('Script').taken, 'Script').to.be.true();
           expect(execution.paths).to.include('flow9');
           // expect(execution.paths.flow9.discarded).to.be.true();
+          expect(execution.paths).to.include('flow10');
+          expect(execution.paths).to.include('flow11');
 
           testHelpers.expectNoLingeringListeners(execution);
-
           done();
         });
       });
