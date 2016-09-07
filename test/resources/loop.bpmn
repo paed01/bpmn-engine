@@ -22,7 +22,7 @@
     <bpmn:scriptTask id="scriptTask2" scriptFormat="JavaScript">
       <bpmn:incoming>flow3</bpmn:incoming>
       <bpmn:outgoing>flow4</bpmn:outgoing>
-      <bpmn:script><![CDATA[this.context.input += 1;
+      <bpmn:script><![CDATA[context.input += 1;
 next();]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:scriptTask id="scriptTask1" scriptFormat="JavaScript">

@@ -124,6 +124,60 @@ lab.experiment('Process', () => {
         if (err) return done(err);
         execution.once('end', () => {
           expect(startCount).to.equal(3);
+          expect(execution.variables.input).to.equal(2);
+          done();
+        });
+      });
+    });
+  });
+
+  lab.experiment('sub process', () => {
+    const processXml = factory.resource('sub-process.bpmn');
+    lab.test('parent process should only initialise its own', (done) => {
+      const engine = new Bpmn.Engine(processXml);
+      engine.getInstance(null, null, (err, instance) => {
+        if (err) return done(err);
+        expect(instance.sequenceFlows.length).to.equal(2);
+        done();
+      });
+    });
+
+    lab.test('completes process', (done) => {
+      const listener = new EventEmitter();
+      listener.on('start-subUserTask', (task) => {
+        task.signal();
+      });
+
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 0
+      }, listener, (err, execution) => {
+        if (err) return done(err);
+        execution.once('end', () => {
+          done();
+        });
+      });
+    });
+  });
+
+
+  lab.experiment('multiple end events', () => {
+    const processXml = factory.resource('multiple-endEvents.bpmn');
+    lab.test('completes all flows', (done) => {
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 0
+      }, null, (err, execution) => {
+        if (err) return done(err);
+        execution.once('end', () => {
+          expect(execution.variables.input).to.equal(2);
+          expect(execution.paths).to.include('flow1');
+          expect(execution.paths).to.include('flow2');
+          expect(execution.paths).to.include('flow3');
+          expect(execution.paths).to.include('flow4');
+          expect(execution.paths).to.include('flow5');
+          expect(execution.paths).to.include('flow6');
+          expect(execution.paths).to.include('flow7');
           done();
         });
       });
