@@ -119,11 +119,11 @@ lab.experiment('Process', () => {
 
       const engine = new Bpmn.Engine(processXml);
       engine.startInstance({
-        input: 1
+        input: 0
       }, listener, (err, execution) => {
         if (err) return done(err);
         execution.once('end', () => {
-          expect(startCount).to.equal(2);
+          expect(startCount).to.equal(3);
           done();
         });
       });
