@@ -24,6 +24,7 @@ lab.experiment('Process', () => {
       engine.startInstance(null, null, (err, execution) => {
         if (err) return done(err);
         execution.once('end', () => {
+          expect(execution.isEnded).to.be.true();
           done();
         });
       });
