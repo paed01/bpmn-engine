@@ -28,19 +28,21 @@ lab.experiment('ParallelGateway', () => {
 </definitions>`;
 
     const engine = new Bpmn.Engine(processXml);
-    engine.startInstance(null, null, (err, execution) => {
+    engine.getInstance(null, null, (err, instance) => {
       if (err) return done(err);
-      const forkActivity = execution.getChildActivityById('fork');
+
+      const forkActivity = instance.getChildActivityById('fork');
       expect(forkActivity).to.include('inbound');
       expect(forkActivity.inbound).to.have.length(1);
       expect(forkActivity).to.include('outbound');
       expect(forkActivity.outbound).to.have.length(2);
 
-      const joinActivity = execution.getChildActivityById('join');
+      const joinActivity = instance.getChildActivityById('join');
       expect(joinActivity).to.include('inbound');
       expect(joinActivity.inbound).to.have.length(2);
       expect(joinActivity).to.include('outbound');
       expect(joinActivity.outbound).to.have.length(1);
+
       done();
     });
   });
@@ -64,18 +66,10 @@ lab.experiment('ParallelGateway', () => {
     engine.startInstance(null, null, (err, execution) => {
       if (err) return done(err);
 
-      execution.on('end', (e) => {
-        if (e.activity.id === 'theProcess') {
-          expect(execution.isEnded).to.equal(true);
-
-          expect(Object.keys(execution.children).length).to.equal(4);
-          expect(execution.getChildActivityById('end1').taken, 'end1').to.be.true();
-          expect(execution.getChildActivityById('end2').taken, 'end2').to.be.true();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.include('flow2');
-          expect(execution.paths).to.include('flow3');
-          done();
-        }
+      execution.on('end', () => {
+        expect(execution.getChildActivityById('end1').taken, 'end1').to.be.true();
+        expect(execution.getChildActivityById('end2').taken, 'end2').to.be.true();
+        done();
       });
     });
   });
@@ -100,18 +94,9 @@ lab.experiment('ParallelGateway', () => {
     engine.startInstance(null, null, (err, execution) => {
       if (err) return done(err);
 
-      execution.on('end', (e) => {
-        if (e.activity.id === 'theProcess') {
-          expect(execution.isEnded).to.equal(true);
-
-          expect(Object.keys(execution.children).length).to.equal(4);
-          expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.include('flow2');
-          expect(execution.paths).to.include('flow3');
-          expect(execution.paths).to.include('flow4');
-          done();
-        }
+      execution.on('end', () => {
+        expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
+        done();
       });
     });
   });
@@ -141,15 +126,7 @@ lab.experiment('ParallelGateway', () => {
 
         execution.on('end', () => {
           expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.include('flow2');
-          expect(execution.paths).to.include('flow3');
-          expect(execution.paths).to.include('flow4');
-          expect(execution.paths).to.include('flow5');
-          expect(execution.paths).to.include('flow6');
-
           testHelpers.expectNoLingeringListeners(execution);
-
           done();
         });
       });
@@ -185,12 +162,9 @@ lab.experiment('ParallelGateway', () => {
 
         execution.on('end', () => {
           expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.include('flow2');
-          expect(execution.paths).to.include('flow3');
-          expect(execution.paths).to.not.include('flow4');
-          expect(execution.paths).to.not.include('flow5');
-          expect(execution.paths).to.include('flow6');
+
+          // expect(execution.paths).to.not.include('flow4');
+          // expect(execution.paths).to.not.include('flow5');
 
           testHelpers.expectNoLingeringListeners(execution);
 
@@ -233,15 +207,7 @@ lab.experiment('ParallelGateway', () => {
 
         execution.on('end', () => {
           expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.include('flow2');
-          expect(execution.paths).to.include('flow3');
-          expect(execution.paths).to.not.include('flow4');
-          expect(execution.paths).to.not.include('flow5');
-          expect(execution.paths).to.include('flow6');
-
           testHelpers.expectNoLingeringListeners(execution);
-
           done();
         });
       });
@@ -281,15 +247,7 @@ lab.experiment('ParallelGateway', () => {
 
         execution.on('end', () => {
           expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.not.include('flow2');
-          expect(execution.paths).to.not.include('flow3');
-          expect(execution.paths).to.include('flow4');
-          expect(execution.paths).to.include('flow5');
-          expect(execution.paths).to.include('flow6');
-
           testHelpers.expectNoLingeringListeners(execution);
-
           done();
         });
       });
@@ -329,15 +287,7 @@ lab.experiment('ParallelGateway', () => {
 
         execution.on('end', () => {
           expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.include('flow2');
-          expect(execution.paths).to.include('flow3');
-          expect(execution.paths).to.not.include('flow4');
-          expect(execution.paths).to.not.include('flow5');
-          expect(execution.paths).to.include('flow6');
-
           testHelpers.expectNoLingeringListeners(execution);
-
           done();
         });
       });
@@ -352,12 +302,8 @@ lab.experiment('ParallelGateway', () => {
         if (err) return done(err);
 
         execution.on('end', () => {
-          expect(execution.getChildActivityById('Script').taken, 'Script').to.be.true();
-          expect(execution.paths).to.include('flow9');
-          // expect(execution.paths.flow9.discarded).to.be.true();
-          expect(execution.paths).to.include('flow10');
-          expect(execution.paths).to.include('flow11');
-
+          expect(execution.getChildActivityById('scriptTask1').taken, 'scriptTask1').to.be.true();
+          expect(execution.getChildActivityById('scriptTask2').taken, 'scriptTask2').to.be.true();
           testHelpers.expectNoLingeringListeners(execution);
           done();
         });
@@ -393,10 +339,6 @@ lab.experiment('ParallelGateway', () => {
         });
 
         execution.on('end', () => {
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.include('flow2');
-          expect(execution.paths).to.not.include('flow3');
-          expect(execution.paths).to.not.include('flow4');
           done();
         });
       });

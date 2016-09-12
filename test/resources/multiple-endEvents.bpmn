@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
-  <bpmn:process id="theProcess" isExecutable="true">
+  <bpmn:process id="multipleEndProcess" isExecutable="true">
     <bpmn:startEvent id="start">
       <bpmn:outgoing>flow1</bpmn:outgoing>
     </bpmn:startEvent>
@@ -10,7 +10,7 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="flow2" sourceRef="include1" targetRef="end1" />
     <bpmn:sequenceFlow id="flow3" sourceRef="include1" targetRef="script1" />
-    <bpmn:scriptTask id="script1" scriptFormat="JavaScript">
+    <bpmn:scriptTask id="script1" name="First iteration" scriptFormat="JavaScript">
       <bpmn:incoming>flow3</bpmn:incoming>
       <bpmn:outgoing>flow4</bpmn:outgoing>
       <bpmn:script><![CDATA[context.input++;
@@ -22,7 +22,7 @@ next();]]></bpmn:script>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="flow5" sourceRef="include2" targetRef="end2" />
     <bpmn:sequenceFlow id="flow6" sourceRef="include2" targetRef="script2" />
-    <bpmn:scriptTask id="script2" scriptFormat="JavaScript">
+    <bpmn:scriptTask id="script2" name="Second iteration" scriptFormat="JavaScript">
       <bpmn:incoming>flow6</bpmn:incoming>
       <bpmn:outgoing>flow7</bpmn:outgoing>
       <bpmn:script><![CDATA[context.input++;
@@ -44,7 +44,7 @@ next();]]></bpmn:script>
     </bpmn:inclusiveGateway>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="theProcess">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="multipleEndProcess">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="start">
         <dc:Bounds x="173" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>

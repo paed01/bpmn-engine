@@ -3,6 +3,7 @@
 const Code = require('code');
 const Lab = require('lab');
 const nock = require('nock');
+const testHelper = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
@@ -78,7 +79,7 @@ lab.experiment('ScriptTask', () => {
   <scriptTask id="scriptTask" scriptFormat="Javascript">
     <script>
       <![CDATA[
-        this.context.input = 2;
+        this.context.input++;
         next();
       ]]>
     </script>
@@ -96,7 +97,8 @@ lab.experiment('ScriptTask', () => {
         if (err) return done(err);
 
         execution.once('end', () => {
-          expect(execution.variables.input).to.equal(2);
+          expect(execution.variables.input, 'input variable').to.equal(2);
+          testHelper.expectNoLingeringListeners(execution);
           done();
         });
       });
@@ -133,38 +135,6 @@ lab.experiment('ScriptTask', () => {
         });
 
         activity.run();
-      });
-    });
-
-    lab.test('throws if compilation fault', (done) => {
-      const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-  <startEvent id="theStart" />
-  <scriptTask id="scriptTask" scriptFormat="Javascript">
-    <script>
-      <![CDATA[
-        function a() {
-      ]]>
-    </script>
-  </scriptTask>
-  <endEvent id="theEnd" />
-  <sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
-  <sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
-  </process>
-</definitions>`;
-
-      const engine = new Bpmn.Engine(processXml);
-      engine.getInstance(null, null, (err, execution) => {
-        if (err) return done(err);
-        try {
-          execution.getChildActivityById('scriptTask');
-          Code.fail('Should have thrown');
-        } catch (e) {
-          expect(e).to.be.an.error(SyntaxError);
-        }
-        done();
       });
     });
 
@@ -226,7 +196,6 @@ lab.experiment('ScriptTask', () => {
             expect(variables.data).to.equal(2);
             done();
           });
-
 
           activity.run(variables);
         });
@@ -327,9 +296,12 @@ lab.experiment('ScriptTask', () => {
         });
 
         execution.once('end', () => {
-          expect(execution.getChildActivityById('scriptTask').taken, 'scriptTask').to.be.true();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.not.include('flow2');
+          const task = execution.getChildActivityById('scriptTask');
+          expect(task.taken, 'scriptTask').to.be.true();
+
+          expect(task.outbound.length).to.equal(1);
+          expect(task.outbound[0].taken).to.be.false();
+
           done();
         });
       });

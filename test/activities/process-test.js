@@ -4,6 +4,7 @@ const Code = require('code');
 const EventEmitter = require('events').EventEmitter;
 const factory = require('../helpers/factory');
 const Lab = require('lab');
+const testHelper = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
@@ -55,11 +56,13 @@ lab.experiment('Process', () => {
         if (err) return done(err);
 
         const userTask = execution.getChildActivityById('task1');
-        userTask.once('start', () => userTask.signal('von Rosen'));
+        userTask.once('start', () => {
+          setTimeout(userTask.signal.bind(userTask, ('von Rosen')), 50);
+        });
 
-        execution.once('end', () => {
-          expect(execution.getChildActivityById('task2').taken).to.be.true();
-          expect(execution.getChildActivityById('task1').taken).to.be.true();
+        execution.on('end', () => {
+          expect(execution.getChildActivityById('task2').taken, 'task2 taken').to.be.true();
+          expect(execution.getChildActivityById('task1').taken, 'task1 taken').to.be.true();
 
           expect(execution.variables.input).to.equal(2);
           expect(execution.variables.taskInput.task1).to.equal('von Rosen');
@@ -78,8 +81,16 @@ lab.experiment('Process', () => {
       <scriptTask id="task2" scriptFormat="Javascript">
         <script>
           <![CDATA[
-            this.context.userWrote = this.context.taskInput.task1;
-            next();
+            const self = this;
+            function setContextVariable(callback) {
+              if (!self.context.taskInput) {
+                return callback(new Error('Missing task input'));
+              }
+
+              self.context.userWrote = self.context.taskInput.task1;
+              callback();
+            }
+            setContextVariable(next);
           ]]>
         </script>
       </scriptTask>
@@ -91,19 +102,18 @@ lab.experiment('Process', () => {
       engine.startInstance(null, null, (err, execution) => {
         if (err) return done(err);
 
-        const userTask = execution.getChildActivityById('task1');
-        userTask.once('start', () => userTask.signal('von Rosen'));
-
         execution.once('end', () => {
           expect(execution.getChildActivityById('task1').taken).to.be.true();
           expect(execution.getChildActivityById('task2').taken).to.be.true();
 
           expect(execution.variables.taskInput.task1).to.equal('von Rosen');
           expect(execution.variables.userWrote).to.equal('von Rosen');
-          expect(execution.paths).to.include('flow1');
 
           done();
         });
+
+        const userTask = execution.getChildActivityById('task1');
+        userTask.once('start', () => userTask.signal('von Rosen'));
       });
     });
   });
@@ -114,8 +124,19 @@ lab.experiment('Process', () => {
 
       const listener = new EventEmitter();
       let startCount = 0;
-      listener.on('end-scriptTask1', () => {
+      let endCount = 0;
+      let cancelCount = 0;
+      listener.on('start-scriptTask1', () => {
         startCount++;
+      });
+      listener.on('end-theEnd', () => {
+        endCount++;
+      });
+      listener.on('cancel-scriptTask2', () => {
+        cancelCount++;
+        if (cancelCount > 1) {
+          done(new Error('Infinite loop'));
+        }
       });
 
       const engine = new Bpmn.Engine(processXml);
@@ -124,8 +145,11 @@ lab.experiment('Process', () => {
       }, listener, (err, execution) => {
         if (err) return done(err);
         execution.once('end', () => {
-          expect(startCount).to.equal(3);
+          expect(startCount, 'scriptTask1 starts').to.equal(3);
+          expect(endCount, 'theEnd count').to.equal(1);
           expect(execution.variables.input).to.equal(2);
+
+          testHelper.expectNoLingeringListeners(execution);
           done();
         });
       });
@@ -155,12 +179,13 @@ lab.experiment('Process', () => {
       }, listener, (err, execution) => {
         if (err) return done(err);
         execution.once('end', () => {
+          testHelper.expectNoLingeringListeners(execution);
+          testHelper.expectNoLingeringListeners(execution.getChildActivityById('subProcess'));
           done();
         });
       });
     });
   });
-
 
   lab.experiment('multiple end events', () => {
     const processXml = factory.resource('multiple-endEvents.bpmn');
@@ -171,14 +196,25 @@ lab.experiment('Process', () => {
       }, null, (err, execution) => {
         if (err) return done(err);
         execution.once('end', () => {
-          expect(execution.variables.input).to.equal(2);
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.include('flow2');
-          expect(execution.paths).to.include('flow3');
-          expect(execution.paths).to.include('flow4');
-          expect(execution.paths).to.include('flow5');
-          expect(execution.paths).to.include('flow6');
-          expect(execution.paths).to.include('flow7');
+          expect(execution.variables.input, 'iterated input').to.equal(2);
+          done();
+        });
+      });
+    });
+  });
+
+  lab.experiment('timer event', () => {
+    const processXml = factory.resource('timer.bpmn');
+
+    lab.test('timer boundary event cancel task', (done) => {
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 0
+      }, null, (err, execution) => {
+        if (err) return done(err);
+
+        execution.once('end', () => {
+          expect(execution.getChildActivityById('userTask').canceled).to.be.true();
           done();
         });
       });

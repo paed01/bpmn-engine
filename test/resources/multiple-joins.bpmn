@@ -4,63 +4,63 @@
     <bpmn:startEvent id="theStart">
       <bpmn:outgoing>flow1</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:exclusiveGateway id="ExclusiveGateway1" default="scriptFlow">
+    <bpmn:exclusiveGateway id="exclusiveGateway1" default="scriptFlow">
       <bpmn:incoming>flow1</bpmn:incoming>
       <bpmn:outgoing>scriptFlow</bpmn:outgoing>
       <bpmn:outgoing>flow3</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="flow1" sourceRef="theStart" targetRef="ExclusiveGateway1" />
-    <bpmn:sequenceFlow id="scriptFlow" sourceRef="ExclusiveGateway1" targetRef="Script" />
-    <bpmn:sequenceFlow id="flow3" name="No" sourceRef="ExclusiveGateway1" targetRef="Task_0j17cb3">
+    <bpmn:sequenceFlow id="flow1" sourceRef="theStart" targetRef="exclusiveGateway1" />
+    <bpmn:sequenceFlow id="scriptFlow" sourceRef="exclusiveGateway1" targetRef="scriptTask1" />
+    <bpmn:sequenceFlow id="flow3" name="No" sourceRef="exclusiveGateway1" targetRef="userTask1">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript"><![CDATA[this.context.input <= 50]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:exclusiveGateway id="ExclusiveGateway2" default="flow5">
+    <bpmn:exclusiveGateway id="exclusiveGateway2" default="flow5">
       <bpmn:incoming>flow4</bpmn:incoming>
       <bpmn:outgoing>flow7</bpmn:outgoing>
       <bpmn:outgoing>flow5</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="flow4" sourceRef="Task_0j17cb3" targetRef="ExclusiveGateway2" />
-    <bpmn:sequenceFlow id="flow7" sourceRef="ExclusiveGateway2" targetRef="Task_00iw8vo">
+    <bpmn:sequenceFlow id="flow4" sourceRef="userTask1" targetRef="exclusiveGateway2" />
+    <bpmn:sequenceFlow id="flow7" sourceRef="exclusiveGateway2" targetRef="userTask2">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript"><![CDATA[this.context.input >= 50]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flow5" sourceRef="ExclusiveGateway2" targetRef="Task_1fpl4y5" />
-    <bpmn:sequenceFlow id="flow8" sourceRef="Task_00iw8vo" targetRef="Join2" />
-    <bpmn:sequenceFlow id="flow6" sourceRef="Task_1fpl4y5" targetRef="Join2" />
-    <bpmn:sequenceFlow id="flow9" sourceRef="Join2" targetRef="Join1" />
-    <bpmn:sequenceFlow id="flow2" sourceRef="Script" targetRef="Join1" />
+    <bpmn:sequenceFlow id="flow5" sourceRef="exclusiveGateway2" targetRef="userTask3" />
+    <bpmn:sequenceFlow id="flow8" sourceRef="userTask2" targetRef="join2" />
+    <bpmn:sequenceFlow id="flow6" sourceRef="userTask3" targetRef="join2" />
+    <bpmn:sequenceFlow id="flow9" sourceRef="join2" targetRef="join1" />
+    <bpmn:sequenceFlow id="flow2" sourceRef="scriptTask1" targetRef="join1" />
     <bpmn:endEvent id="theEnd">
       <bpmn:incoming>flow11</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="flow10" sourceRef="Join1" targetRef="SciptTask2" />
-    <bpmn:parallelGateway id="Join2">
+    <bpmn:sequenceFlow id="flow10" sourceRef="join1" targetRef="scriptTask2" />
+    <bpmn:parallelGateway id="join2">
       <bpmn:incoming>flow8</bpmn:incoming>
       <bpmn:incoming>flow6</bpmn:incoming>
       <bpmn:outgoing>flow9</bpmn:outgoing>
     </bpmn:parallelGateway>
-    <bpmn:parallelGateway id="Join1">
+    <bpmn:parallelGateway id="join1">
       <bpmn:incoming>flow9</bpmn:incoming>
       <bpmn:incoming>flow2</bpmn:incoming>
       <bpmn:outgoing>flow10</bpmn:outgoing>
     </bpmn:parallelGateway>
-    <bpmn:scriptTask id="Script" scriptFormat="JavaScript" camunda:resultVariable="test">
+    <bpmn:scriptTask id="scriptTask1" scriptFormat="JavaScript" camunda:resultVariable="test">
       <bpmn:incoming>scriptFlow</bpmn:incoming>
       <bpmn:outgoing>flow2</bpmn:outgoing>
       <bpmn:script>next();</bpmn:script>
     </bpmn:scriptTask>
-    <bpmn:userTask id="Task_0j17cb3">
+    <bpmn:userTask id="userTask1">
       <bpmn:incoming>flow3</bpmn:incoming>
       <bpmn:outgoing>flow4</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="Task_1fpl4y5">
+    <bpmn:userTask id="userTask3">
       <bpmn:incoming>flow5</bpmn:incoming>
       <bpmn:outgoing>flow6</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="Task_00iw8vo">
+    <bpmn:userTask id="userTask2">
       <bpmn:incoming>flow7</bpmn:incoming>
       <bpmn:outgoing>flow8</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:sequenceFlow id="flow11" sourceRef="SciptTask2" targetRef="theEnd" />
-    <bpmn:scriptTask id="SciptTask2" scriptFormat="JavaScript">
+    <bpmn:sequenceFlow id="flow11" sourceRef="scriptTask2" targetRef="theEnd" />
+    <bpmn:scriptTask id="scriptTask2" scriptFormat="JavaScript">
       <bpmn:incoming>flow10</bpmn:incoming>
       <bpmn:outgoing>flow11</bpmn:outgoing>
       <bpmn:script>next();</bpmn:script>
@@ -71,7 +71,7 @@
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="theStart">
         <dc:Bounds x="173" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ExclusiveGateway_11jqf2i_di" bpmnElement="ExclusiveGateway1" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="ExclusiveGateway_11jqf2i_di" bpmnElement="exclusiveGateway1" isMarkerVisible="true">
         <dc:Bounds x="291" y="95" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="271" y="145" width="90" height="20" />
@@ -99,7 +99,7 @@
           <dc:Bounds x="286" y="177" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ExclusiveGateway_1j4rm14_di" bpmnElement="ExclusiveGateway2" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="ExclusiveGateway_1j4rm14_di" bpmnElement="exclusiveGateway2" isMarkerVisible="true">
         <dc:Bounds x="535" y="204" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="515" y="254" width="90" height="20" />
@@ -168,28 +168,28 @@
           <dc:Bounds x="806.5" y="95" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ParallelGateway_1kh5tnf_di" bpmnElement="Join2">
+      <bpmndi:BPMNShape id="ParallelGateway_1kh5tnf_di" bpmnElement="join2">
         <dc:Bounds x="776" y="204" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="756" y="254" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ParallelGateway_1fimhau_di" bpmnElement="Join1">
+      <bpmndi:BPMNShape id="ParallelGateway_1fimhau_di" bpmnElement="join1">
         <dc:Bounds x="776" y="95" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="756" y="145" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ScriptTask_179x2t8_di" bpmnElement="Script">
+      <bpmndi:BPMNShape id="ScriptTask_179x2t8_di" bpmnElement="scriptTask1">
         <dc:Bounds x="398" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="UserTask_1ajzahy_di" bpmnElement="Task_0j17cb3">
+      <bpmndi:BPMNShape id="UserTask_1ajzahy_di" bpmnElement="userTask1">
         <dc:Bounds x="398" y="189" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="UserTask_0oal83o_di" bpmnElement="Task_1fpl4y5">
+      <bpmndi:BPMNShape id="UserTask_0oal83o_di" bpmnElement="userTask3">
         <dc:Bounds x="618" y="189" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="UserTask_09l994z_di" bpmnElement="Task_00iw8vo">
+      <bpmndi:BPMNShape id="UserTask_09l994z_di" bpmnElement="userTask2">
         <dc:Bounds x="510" y="297" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0mbfdkm_di" bpmnElement="flow11">
@@ -199,7 +199,7 @@
           <dc:Bounds x="957.5" y="95" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ScriptTask_1prj6z9_di" bpmnElement="SciptTask2">
+      <bpmndi:BPMNShape id="ScriptTask_1prj6z9_di" bpmnElement="scriptTask2">
         <dc:Bounds x="877" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>

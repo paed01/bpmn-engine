@@ -146,18 +146,10 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     }, null, (err, execution) => {
       if (err) return done(err);
 
-      execution.once('end', (e) => {
-        if (e.activity.id === 'theProcess') {
-          expect(execution.isEnded).to.equal(true);
-
-          expect(Object.keys(execution.children).length).to.equal(3);
-          expect(execution.getChildActivityById('end1').taken).to.be.true();
-          expect(execution.getChildActivityById('end2').taken, 'end2').to.be.false();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.include('flow2');
-          expect(execution.paths).to.not.include('flow3');
-          done();
-        }
+      execution.once('end', () => {
+        expect(execution.getChildActivityById('end1').taken).to.be.true();
+        expect(execution.getChildActivityById('end2').taken, 'end2').to.be.false();
+        done();
       });
     });
   });
@@ -191,18 +183,10 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     }, null, (err, execution) => {
       if (err) return done(err);
 
-      execution.once('end', (e) => {
-        if (e.activity.id === 'theProcess') {
-          expect(execution.isEnded).to.equal(true);
-
-          expect(Object.keys(execution.children).length).to.equal(3);
-          expect(execution.getChildActivityById('end1').taken, 'end1').to.be.false();
-          expect(execution.getChildActivityById('end2').taken, 'end2').to.be.true();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.not.include('flow2');
-          expect(execution.paths).to.include('flow3');
-          done();
-        }
+      execution.once('end', () => {
+        expect(execution.getChildActivityById('end1').taken, 'end1').to.be.false();
+        expect(execution.getChildActivityById('end2').taken, 'end2').to.be.true();
+        done();
       });
     });
   });
@@ -232,18 +216,10 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     }, null, (err, execution) => {
       if (err) return done(err);
 
-      execution.once('end', (e) => {
-        if (e.activity.id === 'theProcess') {
-          expect(execution.isEnded).to.equal(true);
-
-          expect(Object.keys(execution.children).length).to.equal(3);
-          expect(execution.getChildActivityById('end1').taken, 'end1').to.be.true();
-          expect(execution.getChildActivityById('end2').taken, 'end2').to.be.false();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.include('flow2');
-          expect(execution.paths).to.not.include('flow3');
-          done();
-        }
+      execution.once('end', () => {
+        expect(execution.getChildActivityById('end1').taken, 'end1').to.be.true();
+        expect(execution.getChildActivityById('end2').taken, 'end2').to.be.false();
+        done();
       });
     });
   });
@@ -273,18 +249,10 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     }, null, (err, execution) => {
       if (err) return done(err);
 
-      execution.once('end', (e) => {
-        if (e.activity.id === 'theProcess') {
-          expect(execution.isEnded).to.equal(true);
-
-          expect(Object.keys(execution.children).length).to.equal(3);
-          expect(execution.getChildActivityById('end1').taken, 'end1').to.be.false();
-          expect(execution.getChildActivityById('end2').taken, 'end2').to.be.true();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.not.include('flow2');
-          expect(execution.paths).to.include('flow3');
-          done();
-        }
+      execution.once('end', () => {
+        expect(execution.getChildActivityById('end1').taken, 'end1').to.be.false();
+        expect(execution.getChildActivityById('end2').taken, 'end2').to.be.true();
+        done();
       });
     });
   });

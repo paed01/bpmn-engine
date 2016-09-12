@@ -9,8 +9,20 @@ pub.expectNoLingeringListeners = (execution) => {
   Object.keys(execution.children).forEach((id) => {
     debug(`check listeners of <${id}>`);
     const child = execution.children[id];
-    expect(child.listenerCount('start'), `start listeners on <${id}>`).to.equal(0);
-    expect(child.listenerCount('end'), `end listeners on <${id}>`).to.equal(0);
+
+    checkListeners(child, ['enter', 'start', 'end', 'wait', 'cancel'], '');
+
+    // Boundary events
+    if (child.boundEvents) {
+      child.boundEvents.forEach((boundEvent) => {
+        checkListeners(boundEvent, ['start', 'end'], ` on <${id}>`);
+        if (boundEvent.eventDefinitions) {
+          boundEvent.eventDefinitions.forEach((eventDefinition) => {
+            checkListeners(eventDefinition, ['start', 'end', 'discarded'], ` on <${id}>/<${boundEvent.id}>`);
+          });
+        }
+      });
+    }
   });
   execution.sequenceFlows.forEach((flow) => {
     debug(`check listeners of flow <${flow.id}>`);
@@ -19,5 +31,12 @@ pub.expectNoLingeringListeners = (execution) => {
     expect(flow.listenerCount('discarded'), `discarded listeners on <${flow.activity.element.id}>`).to.equal(0);
   });
 };
+
+function checkListeners(child, names, scope) {
+  names.forEach((name) => {
+    const childId = child.id ? ` <${child.id}>` : '';
+    expect(child.listenerCount(name), `${name} listeners on ${child.activity.$type}${childId}${scope}`).to.equal(0);
+  });
+}
 
 module.exports = pub;

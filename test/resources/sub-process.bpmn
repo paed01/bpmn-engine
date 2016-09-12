@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
-  <bpmn:process id="theProcess" isExecutable="true">
+  <bpmn:process id="mainProcess" isExecutable="true">
     <bpmn:startEvent id="theStart">
       <bpmn:outgoing>flow1</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="flow1" sourceRef="theStart" targetRef="subProcess" />
-    <bpmn:subProcess id="subProcess">
+    <bpmn:subProcess id="subProcess" name="Wrapped">
       <bpmn:incoming>flow1</bpmn:incoming>
       <bpmn:outgoing>flow2</bpmn:outgoing>
       <bpmn:sequenceFlow id="subFlow1" sourceRef="subUserTask" targetRef="subScriptTask" />
-      <bpmn:userTask id="subUserTask">
+      <bpmn:userTask id="subUserTask" name="User task">
         <bpmn:outgoing>subFlow1</bpmn:outgoing>
       </bpmn:userTask>
-      <bpmn:scriptTask id="subScriptTask" scriptFormat="JavaScript">
+      <bpmn:scriptTask id="subScriptTask" name="Script" scriptFormat="JavaScript">
         <bpmn:incoming>subFlow1</bpmn:incoming>
         <bpmn:script>next();</bpmn:script>
       </bpmn:scriptTask>
@@ -23,7 +23,7 @@
     <bpmn:sequenceFlow id="flow2" sourceRef="subProcess" targetRef="theEnd" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="theProcess">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="mainProcess">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="theStart">
         <dc:Bounds x="173" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>

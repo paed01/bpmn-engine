@@ -44,64 +44,76 @@ lab.experiment('userTask', () => {
     });
   });
 
-  lab.test('should handle user tasks as wait states', (done) => {
-    const engine = new Bpmn.Engine(processXml);
-    const listener = new EventEmitter();
+  lab.experiment('wait', () => {
+    const alternativeProcessXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="singleTaskProcess" isExecutable="true">
+    <userTask id="userTask" />
+  </process>
+</definitions>`;
 
-    listener.once('start-userTask', (activity) => {
-      activity.signal();
-    });
+    lab.test('ends when signal is called', (done) => {
 
-    engine.startInstance(null, listener, (err, execution) => {
-      if (err) return done(err);
+      const engine = new Bpmn.Engine(alternativeProcessXml);
+      const listener = new EventEmitter();
 
-      execution.once('end', () => {
-        done();
-      });
-    });
-  });
-
-  lab.test('should signal user task by id', (done) => {
-    const engine = new Bpmn.Engine(processXml);
-    const listener = new EventEmitter();
-
-    engine.startInstance(null, listener, (err, execution) => {
-      if (err) return done(err);
-
-      listener.once('start-userTask', () => {
-        execution.signal('userTask');
+      listener.once('start-userTask', (activity) => {
+        activity.signal();
       });
 
-      execution.once('end', () => {
-        done();
-      });
-    });
-  });
+      engine.startInstance(null, listener, (err, execution) => {
+        if (err) return done(err);
 
-  lab.test('process emits wait when entering user task', (done) => {
-    const engine = new Bpmn.Engine(processXml);
-    const listener = new EventEmitter();
-
-    listener.once('wait', (execution, child) => {
-      if (child.activity.$type !== 'bpmn:UserTask') return;
-
-      execution.signal(child.activity.id, {
-        sirname: 'von Rosen'
+        execution.once('end', () => {
+          done();
+        });
       });
     });
 
-    engine.startInstance({
-      input: null
-    }, listener, (err, execution) => {
-      if (err) return done(err);
+    lab.test('instance can signal user task by id', (done) => {
+      const engine = new Bpmn.Engine(alternativeProcessXml);
+      const listener = new EventEmitter();
 
-      execution.once('end', () => {
-        expect(execution.variables.inputFromUser).to.equal({
+      engine.startInstance(null, listener, (err, execution) => {
+        if (err) return done(err);
+
+        listener.once('start-userTask', () => {
+          execution.signal('userTask');
+        });
+
+        execution.once('end', () => {
+          done();
+        });
+      });
+    });
+
+    lab.test('process emits wait when entering user task', (done) => {
+      const engine = new Bpmn.Engine(processXml);
+      const listener = new EventEmitter();
+
+      listener.once('wait', (execution, child) => {
+        if (child.activity.$type !== 'bpmn:UserTask') return;
+
+        execution.signal(child.activity.id, {
           sirname: 'von Rosen'
         });
-        done();
+      });
+
+      engine.startInstance({
+        input: null
+      }, listener, (err, execution) => {
+        if (err) return done(err);
+
+        execution.once('end', () => {
+          expect(execution.variables.inputFromUser).to.equal({
+            sirname: 'von Rosen'
+          });
+          done();
+        });
       });
     });
+
   });
 
   lab.experiment('user input', () => {
@@ -205,37 +217,22 @@ lab.experiment('userTask', () => {
     });
   });
 
-  lab.experiment('cancel', () => {
-    lab.test('does not take outgoing sequence flows when completed', (done) => {
-      const alternativeProcessXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <userTask id="userTask" />
-    <endEvent id="theEnd" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
-    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
-  </process>
-</definitions>`;
+  lab.experiment('boundary event', () => {
+    lab.test('are attached to the task', (done) => {
+      const alternativeProcessXml = factory.resource('timer.bpmn');
 
       const engine = new Bpmn.Engine(alternativeProcessXml);
-      engine.startInstance({
-        input: 1,
-        setTimeout: setTimeout
-      }, null, (err, execution) => {
+      engine.getInstance(null, null, (err, instance) => {
         if (err) return done(err);
-        const userTask = execution.getChildActivityById('userTask');
-        userTask.once('start', () => {
-          execution.terminate();
-        });
 
-        execution.once('end', () => {
-          expect(execution.getChildActivityById('userTask').taken, 'userTask').to.be.true();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.not.include('flow2');
-          done();
-        });
+        const timeoutTask = instance.getChildActivityById('userTask');
+        expect(timeoutTask.inbound.length, 'Attached inbound flows').to.equal(1);
+        expect(timeoutTask.outbound.length, 'Attached outbound flows').to.equal(1);
+        expect(timeoutTask.boundEvents.length, 'Attached boundary events').to.equal(1);
+        expect(timeoutTask.boundEvents[0].isStart, 'Attached boundary start').to.be.false();
+        expect(timeoutTask.boundEvents[0].inbound.length, 'Attached boundary event inbound flows').to.equal(0);
+        expect(timeoutTask.boundEvents[0].outbound.length, 'Attached boundary event outbound flows').to.equal(1);
+        done();
       });
     });
   });

@@ -77,20 +77,11 @@ lab.experiment('inclusiveGateway', () => {
     }, null, (err, execution) => {
       if (err) return done(err);
 
-      execution.on('end', (e) => {
-        if (e.activity.id === 'theProcess') {
-          expect(execution.isEnded).to.equal(true);
-
-          expect(Object.keys(execution.children).length).to.equal(5);
-          expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.true();
-          expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.true();
-          expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.true();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.include('flow2');
-          expect(execution.paths).to.include('flow3');
-          expect(execution.paths).to.include('flow4');
-          done();
-        }
+      execution.on('end', () => {
+        expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.true();
+        expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.true();
+        expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.true();
+        done();
       });
     });
   });
@@ -126,19 +117,11 @@ lab.experiment('inclusiveGateway', () => {
     }, null, (err, execution) => {
       if (err) return done(err);
 
-      execution.on('end', (e) => {
-        if (e.activity.id === 'theProcess') {
-          expect(execution.isEnded).to.equal(true);
-
-          expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.false();
-          expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.true();
-          expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.false();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.not.include('flow2');
-          expect(execution.paths).to.include('flow3');
-          expect(execution.paths).to.not.include('flow4');
-          done();
-        }
+      execution.on('end', () => {
+        expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.false();
+        expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.true();
+        expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.false();
+        done();
       });
     });
   });
@@ -174,19 +157,11 @@ lab.experiment('inclusiveGateway', () => {
     }, null, (err, execution) => {
       if (err) return done(err);
 
-      execution.on('end', (e) => {
-        if (e.activity.id === 'theProcess') {
-          expect(execution.isEnded).to.equal(true);
-
-          expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.true();
-          expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.false();
-          expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.false();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.include('flow2');
-          expect(execution.paths).to.not.include('flow3');
-          expect(execution.paths).to.not.include('flow4');
-          done();
-        }
+      execution.on('end', () => {
+        expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.true();
+        expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.false();
+        expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.false();
+        done();
       });
     });
   });

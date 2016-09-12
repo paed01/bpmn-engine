@@ -2,6 +2,7 @@
 
 const Code = require('code');
 const Lab = require('lab');
+const EventEmitter = require('events').EventEmitter;
 
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
@@ -76,20 +77,18 @@ lab.experiment('EndEvent', () => {
 
     lab.test('should terminate process', (done) => {
       const engine = new Bpmn.Engine(processXml);
-      engine.startInstance(null, null, (err, execution) => {
+      const listener = new EventEmitter();
+      listener.once('end-theEnd1', (c) => {
+        done(new Error(`${c.id} should have been terminated`));
+      });
+
+      engine.startInstance(null, listener, (err, execution) => {
         if (err) return done(err);
 
         execution.on('end', () => {
           expect(execution.isEnded).to.equal(true);
 
           expect(execution.getChildActivityById('fatal').taken, 'fatal').to.be.true();
-          expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.false();
-          expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.false();
-          expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.false();
-          expect(execution.paths).to.include('flow1');
-          expect(execution.paths).to.not.include('flow2');
-          expect(execution.paths).to.not.include('flow3');
-          expect(execution.paths).to.not.include('flow4');
           done();
         });
       });
