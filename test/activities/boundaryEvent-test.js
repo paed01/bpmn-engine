@@ -27,7 +27,6 @@ lab.experiment('boundaryEvent', () => {
     done();
   });
 
-
   lab.experiment('with duration timerEventDefinition', () => {
     lab.test('emits end when timed out', (done) => {
       const task = instance.getChildActivityById('userTask');
@@ -46,6 +45,7 @@ lab.experiment('boundaryEvent', () => {
       const event = task.boundEvents[0];
 
       event.outbound[0].once('taken', () => {
+        testHelper.expectNoLingeringListeners(instance);
         done();
       });
 
@@ -65,4 +65,79 @@ lab.experiment('boundaryEvent', () => {
       event.cancel();
     });
   });
+
+  lab.experiment('listeners', () => {
+    let event;
+    lab.beforeEach((done) => {
+      const engine = new Bpmn.Engine(factory.resource('simple-task.bpmn'));
+      engine.getInstance(null, null, (err, execution) => {
+        if (err) return done(err);
+        event = execution.getChildActivityById('task').boundEvents[0];
+        done();
+      });
+    });
+
+    lab.test('attaches event listener when runned', (done) => {
+      event.run();
+
+      expect(event.eventDefinitions[0].listenerCount('end')).to.equal(1);
+      expect(event.eventDefinitions[0].listenerCount('cancel')).to.equal(1);
+
+      done();
+    });
+
+    lab.test('that are removed when completed', (done) => {
+      event.run();
+      event.once('end', () => {
+        expect(event.eventDefinitions[0].listenerCount('end')).to.equal(0);
+        expect(event.eventDefinitions[0].listenerCount('cancel')).to.equal(0);
+        done();
+      });
+    });
+
+    lab.describe('#setupDefinitionEventListeners', () => {
+      lab.test('sets up listeners', (done) => {
+        event.setupDefinitionEventListeners();
+
+        expect(event.eventDefinitions[0].listenerCount('end')).to.equal(1);
+        expect(event.eventDefinitions[0].listenerCount('cancel')).to.equal(1);
+
+        done();
+      });
+
+      lab.test('sets up listeners once', (done) => {
+        event.setupDefinitionEventListeners();
+        event.setupDefinitionEventListeners();
+
+        expect(event.eventDefinitions[0].listenerCount('end')).to.equal(1);
+        expect(event.eventDefinitions[0].listenerCount('cancel')).to.equal(1);
+
+        done();
+      });
+    });
+
+    lab.describe('#teardownDefinitionEventListeners', () => {
+      lab.test('tears down listeners', (done) => {
+        event.setupDefinitionEventListeners();
+        event.teardownDefinitionEventListeners();
+
+        expect(event.eventDefinitions[0].listenerCount('end')).to.equal(0);
+        expect(event.eventDefinitions[0].listenerCount('cancel')).to.equal(0);
+
+        done();
+      });
+
+      lab.test('tears down listeners once', (done) => {
+        event.setupDefinitionEventListeners();
+        event.teardownDefinitionEventListeners();
+        event.teardownDefinitionEventListeners();
+
+        expect(event.eventDefinitions[0].listenerCount('end')).to.equal(0);
+        expect(event.eventDefinitions[0].listenerCount('cancel')).to.equal(0);
+
+        done();
+      });
+    });
+  });
+
 });

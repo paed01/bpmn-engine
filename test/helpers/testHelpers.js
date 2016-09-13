@@ -10,15 +10,14 @@ pub.expectNoLingeringListeners = (execution) => {
     debug(`check listeners of <${id}>`);
     const child = execution.children[id];
 
-    checkListeners(child, ['enter', 'start', 'end', 'wait', 'cancel'], '');
+    checkListeners(child, ['enter', 'start', 'end', 'wait', 'cancel', 'leave'], '');
 
     // Boundary events
     if (child.boundEvents) {
       child.boundEvents.forEach((boundEvent) => {
-        checkListeners(boundEvent, ['start', 'end'], ` on <${id}>`);
         if (boundEvent.eventDefinitions) {
           boundEvent.eventDefinitions.forEach((eventDefinition) => {
-            checkListeners(eventDefinition, ['start', 'end', 'discarded'], ` on <${id}>/<${boundEvent.id}>`);
+            checkListeners(eventDefinition, ['end', 'cancel'], ` on <${id}>/<${boundEvent.id}>`);
           });
         }
       });

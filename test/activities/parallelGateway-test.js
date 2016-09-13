@@ -162,12 +162,7 @@ lab.experiment('ParallelGateway', () => {
 
         execution.on('end', () => {
           expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
-
-          // expect(execution.paths).to.not.include('flow4');
-          // expect(execution.paths).to.not.include('flow5');
-
           testHelpers.expectNoLingeringListeners(execution);
-
           done();
         });
       });

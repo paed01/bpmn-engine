@@ -215,6 +215,7 @@ lab.experiment('Process', () => {
 
         execution.once('end', () => {
           expect(execution.getChildActivityById('userTask').canceled).to.be.true();
+          testHelper.expectNoLingeringListeners(execution);
           done();
         });
       });

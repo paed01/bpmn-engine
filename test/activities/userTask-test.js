@@ -92,7 +92,7 @@ lab.experiment('userTask', () => {
       const engine = new Bpmn.Engine(processXml);
       const listener = new EventEmitter();
 
-      listener.once('wait', (execution, child) => {
+      listener.on('wait', (execution, child) => {
         if (child.activity.$type !== 'bpmn:UserTask') return;
 
         execution.signal(child.activity.id, {

@@ -42,7 +42,7 @@ lab.experiment('timerEventDefinition', () => {
     const eventDefinition = task.boundEvents[0].eventDefinitions[0];
 
     eventDefinition.once('end', Code.fail.bind(null, 'No end event should have been emitted'));
-    eventDefinition.once('discarded', done.bind(null, null));
+    eventDefinition.once('cancel', done.bind(null, null));
 
     eventDefinition.run();
     eventDefinition.cancel();
@@ -53,7 +53,7 @@ lab.experiment('timerEventDefinition', () => {
     const eventDefinition = task.boundEvents[0].eventDefinitions[0];
 
     eventDefinition.once('end', Code.fail.bind(null, 'No end event should have been emitted'));
-    eventDefinition.once('discarded', done.bind(null, null));
+    eventDefinition.once('cancel', done.bind(null, null));
 
     eventDefinition.run();
     eventDefinition.cancel();
