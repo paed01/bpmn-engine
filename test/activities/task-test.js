@@ -42,6 +42,8 @@ lab.experiment('Task', () => {
       expect(task.boundEvents[0].listenerCount('cancel')).to.equal(0);
       done();
     });
+
+    task.complete();
   });
 
   lab.describe('#setupBoundEventListeners', () => {

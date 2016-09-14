@@ -10,7 +10,7 @@ pub.expectNoLingeringListeners = (execution) => {
     debug(`check listeners of <${id}>`);
     const child = execution.children[id];
 
-    checkListeners(child, ['enter', 'start', 'end', 'wait', 'cancel', 'leave'], '');
+    checkListeners(child, ['enter', 'leave', 'start', 'wait', 'end', 'cancel'], '');
 
     // Boundary events
     if (child.boundEvents) {

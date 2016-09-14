@@ -156,37 +156,6 @@ lab.experiment('Process', () => {
     });
   });
 
-  lab.experiment('sub process', () => {
-    const processXml = factory.resource('sub-process.bpmn');
-    lab.test('parent process should only initialise its own', (done) => {
-      const engine = new Bpmn.Engine(processXml);
-      engine.getInstance(null, null, (err, instance) => {
-        if (err) return done(err);
-        expect(instance.sequenceFlows.length).to.equal(2);
-        done();
-      });
-    });
-
-    lab.test('completes process', (done) => {
-      const listener = new EventEmitter();
-      listener.on('start-subUserTask', (task) => {
-        task.signal();
-      });
-
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance({
-        input: 0
-      }, listener, (err, execution) => {
-        if (err) return done(err);
-        execution.once('end', () => {
-          testHelper.expectNoLingeringListeners(execution);
-          testHelper.expectNoLingeringListeners(execution.getChildActivityById('subProcess'));
-          done();
-        });
-      });
-    });
-  });
-
   lab.experiment('multiple end events', () => {
     const processXml = factory.resource('multiple-endEvents.bpmn');
     lab.test('completes all flows', (done) => {
