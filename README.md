@@ -9,6 +9,7 @@ bpmn-engine
 **bpmn-engine** is an serverside BPMN 2.0 processengine based on [bpmn-io/bpmn-moddle](https://github.com/bpmn-io/bpmn-moddle) developed by [bpmn.io](http://bpmn.io/).
 
 ## Table of Contents
+- [Supported elements](#supported-elements)
 - [Examples](#examples)
     - [Start instance](#start-instance)
     - [Listen events](#listen-for-events)
@@ -16,6 +17,27 @@ bpmn-engine
     - [Script task](#script-task)
     - [User task](#user-task)
 - [Debug](#debug)
+
+# Supported elements
+
+The following elements are tested and supported.
+
+- `Process`
+- `SubProcess`
+- `SequenceFlow` javascript conditions only
+- Events
+  - `StartEvent`
+  - `EndEvent`
+  - `BoundaryEvent` attached to task
+    - `TimerEventDefinition` with duration as ISO_8601
+- Tasks
+  - `Task` - completes immediately
+  - `ScriptTask` javascript only
+  - `UserTask` - needs signal
+- Gateways
+  - `ExclusiveGateway`
+  - `InclusiveGateway`
+  - `ParallelGateway` join and fork
 
 # Examples
 
