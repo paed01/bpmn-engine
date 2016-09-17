@@ -14,7 +14,7 @@ lab.experiment('context-helper', () => {
   const transformer = Bpmn.Transformer;
 
   let context;
-  lab.before((done) => {
+  lab.beforeEach((done) => {
     transformer.transform(factory.valid(), (err, bpmnObject, result) => {
       if (err) return done(err);
       context = result;
@@ -48,6 +48,31 @@ lab.experiment('context-helper', () => {
       expect(flows).to.have.length(0);
       done();
     });
+
+    lab.test('returns inbound for sub process', (done) => {
+      const processXml = factory.resource('sub-process.bpmn');
+      transformer.transform(processXml.toString(), (err, bpmnObject, moddleContext) => {
+        if (err) return done(err);
+
+        const flows = contextHelper.getInboundSequenceFlows(moddleContext, 'subProcess');
+        expect(flows).to.have.length(1);
+
+        done();
+      });
+    });
+
+    lab.test('returns no inbound for main process', (done) => {
+      const processXml = factory.resource('sub-process.bpmn');
+      transformer.transform(processXml.toString(), (err, bpmnObject, moddleContext) => {
+        if (err) return done(err);
+
+        const flows = contextHelper.getInboundSequenceFlows(moddleContext, 'mainProcess');
+        expect(flows).to.have.length(0);
+
+        done();
+      });
+    });
+
   });
 
   lab.experiment('#getDataObjectFromRef', () => {
@@ -228,4 +253,36 @@ lab.experiment('context-helper', () => {
       });
     });
   });
+
+  lab.experiment('#getActivities', () => {
+    lab.test('returns only activities bound to element', (done) => {
+      const processXml = factory.resource('sub-process.bpmn');
+      transformer.transform(processXml.toString(), (err, bpmnObject, moddleContext) => {
+        if (err) return done(err);
+
+        const forParent = contextHelper.getActivities(moddleContext, 'mainProcess');
+        expect(forParent).to.have.length(3);
+
+        const forSubprocess = contextHelper.getActivities(moddleContext, 'subProcess');
+
+        expect(forSubprocess).to.have.length(2);
+
+        done();
+      });
+    });
+  });
+
+  lab.experiment('#getSequenceFlowTargetId', () => {
+
+    lab.test('returns target id', (done) => {
+      expect(contextHelper.getSequenceFlowTargetId(context, 'flow1')).to.equal('decision');
+      done();
+    });
+
+    lab.test('if found', (done) => {
+      expect(contextHelper.getSequenceFlowTargetId(context, 'nonFoundFlow1')).to.not.exist();
+      done();
+    });
+  });
+
 });

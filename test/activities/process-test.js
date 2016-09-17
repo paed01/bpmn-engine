@@ -25,7 +25,6 @@ lab.experiment('Process', () => {
       engine.startInstance(null, null, (err, execution) => {
         if (err) return done(err);
         execution.once('end', () => {
-          expect(execution.isEnded).to.be.true();
           done();
         });
       });
@@ -56,7 +55,7 @@ lab.experiment('Process', () => {
         if (err) return done(err);
 
         const userTask = execution.getChildActivityById('task1');
-        userTask.once('start', () => {
+        userTask.once('wait', () => {
           setTimeout(userTask.signal.bind(userTask, ('von Rosen')), 50);
         });
 
@@ -125,16 +124,16 @@ lab.experiment('Process', () => {
       const listener = new EventEmitter();
       let startCount = 0;
       let endCount = 0;
-      let cancelCount = 0;
+      let leaveCount = 0;
       listener.on('start-scriptTask1', () => {
         startCount++;
       });
       listener.on('end-theEnd', () => {
         endCount++;
       });
-      listener.on('cancel-scriptTask2', () => {
-        cancelCount++;
-        if (cancelCount > 1) {
+      listener.on('leave-scriptTask2', () => {
+        leaveCount++;
+        if (leaveCount > 3) {
           done(new Error('Infinite loop'));
         }
       });
@@ -184,6 +183,55 @@ lab.experiment('Process', () => {
 
         execution.once('end', () => {
           expect(execution.getChildActivityById('userTask').canceled).to.be.true();
+          testHelper.expectNoLingeringListeners(execution);
+          done();
+        });
+      });
+    });
+
+    lab.test('timer boundary event is canceled if task completes', (done) => {
+      const engine = new Bpmn.Engine(processXml);
+
+      const listener = new EventEmitter();
+      listener.on('wait-userTask', (activity) => {
+        activity.signal({
+          input: 1
+        });
+      });
+
+      engine.startInstance({
+        input: 0
+      }, listener, (err, execution) => {
+        if (err) return done(err);
+
+        execution.once('end', () => {
+          expect(execution.getChildActivityById('userTask').canceled, 'userTask canceled').to.be.false();
+          expect(execution.getChildActivityById('boundTimeoutEvent').canceled, 'boundTimeoutEvent canceled').to.be.true();
+          testHelper.expectNoLingeringListeners(execution);
+          done();
+        });
+      });
+    });
+  });
+
+  lab.experiment('mother of all', () => {
+    const processXml = factory.resource('mother-of-all.bpmn');
+
+    lab.test('completes', (done) => {
+      const engine = new Bpmn.Engine(processXml);
+      const listener = new EventEmitter();
+      listener.on('wait', (activity) => {
+        activity.signal({
+          input: 1
+        });
+      });
+
+      engine.startInstance({
+        input: 0
+      }, listener, (err, execution) => {
+        if (err) return done(err);
+
+        execution.once('end', () => {
           testHelper.expectNoLingeringListeners(execution);
           done();
         });

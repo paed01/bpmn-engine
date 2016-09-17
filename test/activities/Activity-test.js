@@ -14,7 +14,7 @@ lab.experiment('Activity', () => {
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
-    <startEvent id="start" />
+    <startEvent id="start" name="Start" />
     <endEvent id="end" />
     <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
   </process>
@@ -28,6 +28,15 @@ lab.experiment('Activity', () => {
       instance = inst;
       activity = inst.getChildActivityById('start');
       expect(activity).to.be.instanceof(Activity);
+      done();
+    });
+  });
+
+  lab.experiment('ctor', () => {
+    lab.test('set activity id, type and name', (done) => {
+      expect(activity.id).to.equal('start');
+      expect(activity.type).to.equal('bpmn:StartEvent');
+      expect(activity.name).to.equal('Start');
       done();
     });
   });
@@ -54,40 +63,40 @@ lab.experiment('Activity', () => {
 
   lab.experiment('#activate', () => {
     lab.test('sets up inbound sequenceFlow listeners', (done) => {
-      const endEvent = new EndEvent(instance.context.elementsById.end, instance);
+      const endEvent = new EndEvent(instance.context.moddleContext.elementsById.end, instance.context);
       endEvent.activate();
-      expect(instance.sequenceFlows[0].listenerCount('taken')).to.equal(1);
-      expect(instance.sequenceFlows[0].listenerCount('discarded')).to.equal(1);
+      expect(endEvent.inbound[0].listenerCount('taken')).to.equal(1);
+      expect(endEvent.inbound[0].listenerCount('discarded')).to.equal(1);
       done();
     });
 
     lab.test('sets up inbound sequenceFlow listeners once', (done) => {
-      const endEvent = new EndEvent(instance.context.elementsById.end, instance);
+      const endEvent = new EndEvent(instance.context.moddleContext.elementsById.end, instance.context);
       endEvent.activate();
       endEvent.activate();
-      expect(instance.sequenceFlows[0].listenerCount('taken')).to.equal(1);
-      expect(instance.sequenceFlows[0].listenerCount('discarded')).to.equal(1);
+      expect(instance.context.sequenceFlows[0].listenerCount('taken')).to.equal(1);
+      expect(instance.context.sequenceFlows[0].listenerCount('discarded')).to.equal(1);
       done();
     });
   });
 
   lab.experiment('#deactivate', () => {
     lab.test('tears down inbound sequenceFlow listeners', (done) => {
-      const endEvent = new EndEvent(instance.context.elementsById.end, instance);
+      const endEvent = new EndEvent(instance.context.moddleContext.elementsById.end, instance.context);
       endEvent.activate();
       endEvent.deactivate();
-      expect(instance.sequenceFlows[0].listenerCount('taken')).to.equal(0);
-      expect(instance.sequenceFlows[0].listenerCount('discarded')).to.equal(0);
+      expect(instance.context.sequenceFlows[0].listenerCount('taken')).to.equal(0);
+      expect(instance.context.sequenceFlows[0].listenerCount('discarded')).to.equal(0);
       done();
     });
 
     lab.test('tears down inbound sequenceFlow listeners once', (done) => {
-      const endEvent = new EndEvent(instance.context.elementsById.end, instance);
+      const endEvent = new EndEvent(instance.context.moddleContext.elementsById.end, instance.context);
       endEvent.activate();
       endEvent.deactivate();
       endEvent.deactivate();
-      expect(instance.sequenceFlows[0].listenerCount('taken')).to.equal(0);
-      expect(instance.sequenceFlows[0].listenerCount('discarded')).to.equal(0);
+      expect(instance.context.sequenceFlows[0].listenerCount('taken')).to.equal(0);
+      expect(instance.context.sequenceFlows[0].listenerCount('discarded')).to.equal(0);
       done();
     });
   });

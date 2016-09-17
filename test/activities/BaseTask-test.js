@@ -1,6 +1,7 @@
 'use strict';
 
 const Code = require('code');
+const EventEmitter = require('events').EventEmitter;
 const factory = require('../helpers/factory');
 const Lab = require('lab');
 
@@ -25,25 +26,24 @@ lab.experiment('Task', () => {
     done();
   });
 
-  lab.test('attaches event listener when runned', (done) => {
-    task.run();
-
-    expect(task.boundEvents[0].listenerCount('end')).to.equal(1);
-    expect(task.boundEvents[0].listenerCount('cancel')).to.equal(1);
-
-    done();
-  });
-
-  lab.test('that are removed when completed', (done) => {
-    task.run();
-
-    task.once('leave', () => {
-      expect(task.boundEvents[0].listenerCount('end')).to.equal(0);
-      expect(task.boundEvents[0].listenerCount('cancel')).to.equal(0);
+  lab.test('attaches event listener when run', (done) => {
+    task.boundEvents[0].once('enter', (be) => {
+      expect(be.listenerCount('end')).to.equal(1);
+      expect(be.listenerCount('cancel')).to.equal(1);
       done();
     });
 
-    task.complete();
+    task.run();
+  });
+
+  lab.test('that are removed when completed', (done) => {
+    task.boundEvents[0].once('leave', (be) => {
+      expect(be.listenerCount('end')).to.equal(0);
+      expect(be.listenerCount('cancel')).to.equal(0);
+      done();
+    });
+
+    task.run();
   });
 
   lab.describe('#setupBoundEventListeners', () => {
@@ -87,6 +87,39 @@ lab.experiment('Task', () => {
       expect(task.boundEvents[0].listenerCount('cancel')).to.equal(0);
 
       done();
+    });
+  });
+
+  lab.describe('multiple inbounds', () => {
+    const processXml = factory.resource('task-multiple-inbound.bpmn');
+
+    lab.test('completes process', (done) => {
+      const engine = new Bpmn.Engine(processXml);
+      const listener = new EventEmitter();
+      listener.on('wait', (activity) => {
+        activity.signal({
+          input: 1
+        });
+      });
+
+      let taskCount = 0;
+      listener.on('end-script', (a) => {
+        taskCount++;
+        if (taskCount > 3) {
+          Code.fail(`Too many runs for <${a.id}>`);
+        }
+      });
+
+      engine.startInstance({
+        input: 0
+      }, listener, (err, execution) => {
+        if (err) return done(err);
+
+        execution.once('end', () => {
+          done();
+        });
+      });
+
     });
   });
 });

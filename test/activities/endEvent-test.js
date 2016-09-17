@@ -3,6 +3,7 @@
 const Code = require('code');
 const Lab = require('lab');
 const EventEmitter = require('events').EventEmitter;
+const testHelper = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
@@ -79,7 +80,7 @@ lab.experiment('EndEvent', () => {
       const engine = new Bpmn.Engine(processXml);
       const listener = new EventEmitter();
       listener.once('end-theEnd1', (c) => {
-        done(new Error(`${c.id} should have been terminated`));
+        Code.fail(new Error(`${c.id} should have been terminated`));
       });
 
       engine.startInstance(null, listener, (err, execution) => {
@@ -87,24 +88,8 @@ lab.experiment('EndEvent', () => {
 
         execution.on('end', () => {
           expect(execution.isEnded).to.equal(true);
-
           expect(execution.getChildActivityById('fatal').taken, 'fatal').to.be.true();
-          done();
-        });
-      });
-    });
-
-    lab.test('and leave no lingering parent eventListeners', (done) => {
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance(null, null, (err, execution) => {
-        if (err) return done(err);
-
-        execution.on('end', () => {
-          Object.keys(execution.children).forEach((id) => {
-            const child = execution.children[id];
-            expect(child.listenerCount('end'), id).to.equal(0);
-            expect(child.listenerCount('start'), id).to.equal(0);
-          });
+          testHelper.expectNoLingeringListeners(execution);
           done();
         });
       });

@@ -1,6 +1,7 @@
 'use strict';
 
 const Code = require('code');
+const EventEmitter = require('events').EventEmitter;
 const factory = require('../helpers/factory');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
@@ -291,6 +292,14 @@ lab.experiment('ParallelGateway', () => {
     lab.test('completes process with multiple joins in discarded path', (done) => {
       const processXml = factory.resource('multiple-joins.bpmn');
       const engine = new Bpmn.Engine(processXml);
+
+      const listener = new EventEmitter();
+      let count = 0;
+      listener.on('start-scriptTask2', (e) => {
+        if (count > 1) Code.fail(`${e.id} should only run once`);
+        count++;
+      });
+
       engine.startInstance({
         input: 51
       }, null, (err, execution) => {
@@ -305,38 +314,5 @@ lab.experiment('ParallelGateway', () => {
       });
     });
 
-  });
-
-  lab.experiment('cancel', () => {
-    lab.test('should abort fork', (done) => {
-      const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <parallelGateway id="fork" />
-    <parallelGateway id="join" />
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
-    <sequenceFlow id="flow2" sourceRef="fork" targetRef="join" />
-    <sequenceFlow id="flow3" sourceRef="fork" targetRef="join" />
-    <sequenceFlow id="flow4" sourceRef="join" targetRef="end" />
-  </process>
-</definitions>`;
-
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance(null, null, (err, execution) => {
-        if (err) return done(err);
-
-        const gateway = execution.getChildActivityById('join');
-        gateway.once('start', () => {
-          execution.terminate();
-        });
-
-        execution.on('end', () => {
-          done();
-        });
-      });
-    });
   });
 });

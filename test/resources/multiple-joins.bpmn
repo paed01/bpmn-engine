@@ -60,7 +60,7 @@
       <bpmn:outgoing>flow8</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:sequenceFlow id="flow11" sourceRef="scriptTask2" targetRef="theEnd" />
-    <bpmn:scriptTask id="scriptTask2" scriptFormat="JavaScript">
+    <bpmn:scriptTask id="scriptTask2" name="Final script" scriptFormat="JavaScript">
       <bpmn:incoming>flow10</bpmn:incoming>
       <bpmn:outgoing>flow11</bpmn:outgoing>
       <bpmn:script>next();</bpmn:script>

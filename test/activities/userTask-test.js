@@ -75,12 +75,12 @@ lab.experiment('userTask', () => {
       const engine = new Bpmn.Engine(alternativeProcessXml);
       const listener = new EventEmitter();
 
+      listener.once('wait-userTask', (task, execution) => {
+        execution.signal('userTask');
+      });
+
       engine.startInstance(null, listener, (err, execution) => {
         if (err) return done(err);
-
-        listener.once('start-userTask', () => {
-          execution.signal('userTask');
-        });
 
         execution.once('end', () => {
           done();
@@ -92,10 +92,10 @@ lab.experiment('userTask', () => {
       const engine = new Bpmn.Engine(processXml);
       const listener = new EventEmitter();
 
-      listener.on('wait', (execution, child) => {
-        if (child.activity.$type !== 'bpmn:UserTask') return;
+      listener.on('wait', (activity, execution) => {
+        if (activity.type !== 'bpmn:UserTask') return;
 
-        execution.signal(child.activity.id, {
+        execution.signal(activity.id, {
           sirname: 'von Rosen'
         });
       });
@@ -121,14 +121,14 @@ lab.experiment('userTask', () => {
       const engine = new Bpmn.Engine(processXml);
       const listener = new EventEmitter();
 
+      listener.once('wait-userTask', (activity, execution) => {
+        execution.signal('userTask', {
+          myName: 'Pål'
+        });
+      });
+
       engine.startInstance(null, listener, (err, execution) => {
         if (err) return done(err);
-
-        listener.once('start-userTask', () => {
-          execution.signal('userTask', {
-            myName: 'Pål'
-          });
-        });
 
         execution.once('end', () => {
           expect(execution.variables.inputFromUser).to.equal({
@@ -143,12 +143,12 @@ lab.experiment('userTask', () => {
       const engine = new Bpmn.Engine(processXml);
       const listener = new EventEmitter();
 
+      listener.once('wait-userTask', (activity, execution) => {
+        execution.signal('userTask');
+      });
+
       engine.startInstance(null, listener, (err, execution) => {
         if (err) return done(err);
-
-        listener.once('start-userTask', () => {
-          execution.signal('userTask');
-        });
 
         execution.once('end', () => {
           expect(execution.variables).to.not.include('inputFromUser');
@@ -175,9 +175,10 @@ lab.experiment('userTask', () => {
       const engine = new Bpmn.Engine(alternativeProcessXml);
       const listener = new EventEmitter();
 
-      listener.once('wait', (execution, child) => {
-        if (child.activity.$type !== 'bpmn:UserTask') return;
-        execution.signal(child.activity.id, {
+      listener.once('wait', (activity, execution) => {
+        if (activity.type !== 'bpmn:UserTask') return;
+
+        execution.signal(activity.id, {
           sirname: 'von Rosen'
         });
       });
@@ -200,39 +201,19 @@ lab.experiment('userTask', () => {
       const engine = new Bpmn.Engine(alternativeProcessXml);
       const listener = new EventEmitter();
 
+      listener.once('start-userTask', (activity, execution) => {
+        execution.signal('userTask');
+      });
+
       engine.startInstance({
         taskInput: {}
       }, listener, (err, execution) => {
         if (err) return done(err);
 
-        listener.once('start-userTask', () => {
-          execution.signal('userTask');
-        });
-
         execution.once('end', () => {
           expect(execution.variables.taskInput).to.be.empty();
           done();
         });
-      });
-    });
-  });
-
-  lab.experiment('boundary event', () => {
-    lab.test('are attached to the task', (done) => {
-      const alternativeProcessXml = factory.resource('timer.bpmn');
-
-      const engine = new Bpmn.Engine(alternativeProcessXml);
-      engine.getInstance(null, null, (err, instance) => {
-        if (err) return done(err);
-
-        const timeoutTask = instance.getChildActivityById('userTask');
-        expect(timeoutTask.inbound.length, 'Attached inbound flows').to.equal(1);
-        expect(timeoutTask.outbound.length, 'Attached outbound flows').to.equal(1);
-        expect(timeoutTask.boundEvents.length, 'Attached boundary events').to.equal(1);
-        expect(timeoutTask.boundEvents[0].isStart, 'Attached boundary start').to.be.false();
-        expect(timeoutTask.boundEvents[0].inbound.length, 'Attached boundary event inbound flows').to.equal(0);
-        expect(timeoutTask.boundEvents[0].outbound.length, 'Attached boundary event outbound flows').to.equal(1);
-        done();
       });
     });
   });

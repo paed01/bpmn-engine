@@ -6,9 +6,9 @@ const expect = require('code').expect;
 const pub = {};
 
 pub.expectNoLingeringListeners = (execution) => {
-  Object.keys(execution.children).forEach((id) => {
+  Object.keys(execution.context.children).forEach((id) => {
     debug(`check listeners of <${id}>`);
-    const child = execution.children[id];
+    const child = execution.context.children[id];
 
     checkListeners(child, ['enter', 'leave', 'start', 'wait', 'end', 'cancel'], '');
 
@@ -23,11 +23,12 @@ pub.expectNoLingeringListeners = (execution) => {
       });
     }
   });
-  execution.sequenceFlows.forEach((flow) => {
+  execution.context.sequenceFlows.forEach((flow) => {
     debug(`check listeners of flow <${flow.id}>`);
 
     expect(flow.listenerCount('taken'), `taken listeners on <${flow.activity.element.id}>`).to.equal(0);
     expect(flow.listenerCount('discarded'), `discarded listeners on <${flow.activity.element.id}>`).to.equal(0);
+    expect(flow.listenerCount('stop'), `stop listeners on <${flow.activity.element.id}>`).to.equal(0);
   });
 };
 

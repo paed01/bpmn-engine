@@ -9,7 +9,7 @@ const testHelper = require('../helpers/testHelpers');
 const lab = exports.lab = Lab.script();
 const Bpmn = require('../..');
 
-lab.experiment('boundaryEvent', () => {
+lab.experiment('BoundaryEvent', () => {
   let instance;
   lab.before((done) => {
     const engine = new Bpmn.Engine(factory.resource('timer.bpmn'));
