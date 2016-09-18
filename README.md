@@ -10,6 +10,7 @@ bpmn-engine
 
 ## Table of Contents
 - [Supported elements](#supported-elements)
+- [Execution events](#execution-events)
 - [Examples](#examples)
     - [Start instance](#start-instance)
     - [Listen events](#listen-for-events)
@@ -38,6 +39,21 @@ The following elements are tested and supported.
   - `ExclusiveGateway`
   - `InclusiveGateway`
   - `ParallelGateway` join and fork
+
+# Element events
+
+- `enter`: An element is entered
+- `start`: An element is started
+- `wait`: An user task waits for signal
+- `end`: A task has ended successfully
+- `leave`: The execution left the element
+- `cancel`: An element execution was canceled
+- `error`: An error was emitted
+
+# Sequence flow events
+
+- `taken`: The sequence flow was taken
+- `discarded`: The sequence flow was discarded
 
 # Examples
 
