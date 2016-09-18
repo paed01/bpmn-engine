@@ -20,11 +20,13 @@ lab.experiment('BoundaryEvent', () => {
     });
   });
 
-  lab.test('stores eventDefinitions', (done) => {
-    const task = instance.getChildActivityById('userTask');
-    const event = task.boundEvents[0];
-    expect(event.eventDefinitions.length).to.be.above(0);
-    done();
+  lab.describe('ctor', () => {
+    lab.test('stores eventDefinitions', (done) => {
+      const task = instance.getChildActivityById('userTask');
+      const event = task.boundEvents[0];
+      expect(event.eventDefinitions.length).to.be.above(0);
+      done();
+    });
   });
 
   lab.experiment('with duration timerEventDefinition', () => {

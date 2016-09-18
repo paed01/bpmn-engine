@@ -15,8 +15,10 @@ lab.experiment('Activity', () => {
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
     <startEvent id="start" name="Start" />
+    <userTask id="task" />
     <endEvent id="end" />
     <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
+    <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
   </process>
 </definitions>`;
 
@@ -32,7 +34,7 @@ lab.experiment('Activity', () => {
     });
   });
 
-  lab.experiment('ctor', () => {
+  lab.describe('ctor', () => {
     lab.test('set activity id, type and name', (done) => {
       expect(activity.id).to.equal('start');
       expect(activity.type).to.equal('bpmn:StartEvent');
@@ -98,6 +100,22 @@ lab.experiment('Activity', () => {
       expect(instance.context.sequenceFlows[0].listenerCount('taken')).to.equal(0);
       expect(instance.context.sequenceFlows[0].listenerCount('discarded')).to.equal(0);
       done();
+    });
+  });
+
+  lab.describe('#cancel', () => {
+    lab.test('cancels activity and takes all outbound', (done) => {
+      const task = instance.getChildActivityById('task');
+      task.once('start', (a) => {
+        a.cancel();
+      });
+
+      instance.once('end', () => {
+        expect(task.canceled).to.be.true();
+        expect(instance.getChildActivityById('end').canceled).to.be.false();
+        done();
+      });
+      instance.run();
     });
   });
 });
