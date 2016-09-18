@@ -15,7 +15,7 @@ lab.experiment('BaseTask', () => {
 
   lab.describe('#cancel', () => {
     lab.test('cancels bound events and takes all outbound', (done) => {
-      const engine = new Bpmn.Engine(factory.resource('timer.bpmn'));
+      const engine = new Bpmn.Engine(factory.resource('boundary-timeout.bpmn'));
       const listener = new EventEmitter();
       listener.on('wait-userTask', (activity) => {
         activity.cancel();
@@ -110,6 +110,26 @@ lab.experiment('BaseTask', () => {
         expect(task.boundEvents[0].listenerCount('cancel')).to.equal(0);
 
         done();
+      });
+    });
+
+    lab.describe('non-interupting', () => {
+      lab.test('doesn´t cancel task', (done) => {
+        const engine = new Bpmn.Engine(factory.resource('boundary-non-interupting-timer.bpmn'));
+        const listener = new EventEmitter();
+        listener.on('cancel-userTask', (activity) => {
+          Code.fail(`<${activity.id}> should not be canceled`);
+        });
+        listener.on('wait-userTask', (activity) => {
+          setTimeout(() => {
+            activity.signal();
+          }, 75);
+        });
+
+        engine.startInstance(null, listener, (err, instance) => {
+          if (err) return done(err);
+          instance.once('end', done.bind(null, null));
+        });
       });
     });
   });

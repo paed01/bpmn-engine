@@ -11,7 +11,7 @@ const Bpmn = require('../..');
 lab.experiment('timerEventDefinition', () => {
   let instance;
   lab.before((done) => {
-    const engine = new Bpmn.Engine(factory.resource('timer.bpmn'));
+    const engine = new Bpmn.Engine(factory.resource('boundary-timeout.bpmn'));
     engine.getInstance(null, null, (err, processInstance) => {
       if (err) return done(err);
       instance = processInstance;

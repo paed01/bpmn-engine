@@ -171,8 +171,8 @@ lab.experiment('Process', () => {
     });
   });
 
-  lab.experiment('timer event', () => {
-    const processXml = factory.resource('timer.bpmn');
+  lab.experiment('boundary timeout event', () => {
+    const processXml = factory.resource('boundary-timeout.bpmn');
 
     lab.test('timer boundary event cancel task', (done) => {
       const engine = new Bpmn.Engine(processXml);

@@ -10,30 +10,38 @@ const lab = exports.lab = Lab.script();
 const Bpmn = require('../..');
 
 lab.experiment('BoundaryEvent', () => {
-  let instance;
-  lab.before((done) => {
-    const engine = new Bpmn.Engine(factory.resource('timer.bpmn'));
-    engine.getInstance(null, null, (err, processInstance) => {
-      if (err) return done(err);
-      instance = processInstance;
-      done();
-    });
-  });
-
   lab.describe('ctor', () => {
     lab.test('stores eventDefinitions', (done) => {
-      const task = instance.getChildActivityById('userTask');
-      const event = task.boundEvents[0];
-      expect(event.eventDefinitions.length).to.be.above(0);
-      done();
+      const engine = new Bpmn.Engine(factory.resource('boundary-timeout.bpmn'));
+      engine.getInstance(null, null, (err, instance) => {
+        if (err) return done(err);
+        const task = instance.getChildActivityById('userTask');
+        const event = task.boundEvents[0];
+        expect(event.eventDefinitions.length).to.be.above(0);
+        done();
+      });
     });
   });
 
-  lab.experiment('with duration timerEventDefinition', () => {
-    lab.test('emits end when timed out', (done) => {
-      const task = instance.getChildActivityById('userTask');
-      const event = task.boundEvents[0];
+  lab.describe('with duration timerEventDefinition that cancel task', () => {
+    let event, instance;
+    lab.before((done) => {
+      const engine = new Bpmn.Engine(factory.resource('boundary-timeout.bpmn'));
+      engine.getInstance(null, null, (err, processInstance) => {
+        if (err) return done(err);
+        instance = processInstance;
+        const task = instance.getChildActivityById('userTask');
+        event = task.boundEvents[0];
+        done();
+      });
+    });
 
+    lab.test('has property cancelActivity true', (done) => {
+      expect(event).to.include({cancelActivity: true});
+      done();
+    });
+
+    lab.test('emits end when timed out', (done) => {
       event.once('end', () => {
         testHelper.expectNoLingeringListeners(instance);
         done();
@@ -43,8 +51,6 @@ lab.experiment('BoundaryEvent', () => {
     });
 
     lab.test('and takes outbound sequenceFlows', (done) => {
-      const task = instance.getChildActivityById('userTask');
-      const event = task.boundEvents[0];
 
       event.outbound[0].once('taken', () => {
         testHelper.expectNoLingeringListeners(instance);
@@ -55,9 +61,6 @@ lab.experiment('BoundaryEvent', () => {
     });
 
     lab.test('discards outbound sequenceFlows if canceled', (done) => {
-      const task = instance.getChildActivityById('userTask');
-      const event = task.boundEvents[0];
-
       event.outbound[0].once('discarded', () => {
         testHelper.expectNoLingeringListeners(instance);
         done();
@@ -68,7 +71,54 @@ lab.experiment('BoundaryEvent', () => {
     });
   });
 
-  lab.experiment('listeners', () => {
+  lab.describe('with duration timerEventDefinition', () => {
+    let event, instance;
+    lab.before((done) => {
+      const engine = new Bpmn.Engine(factory.resource('boundary-non-interupting-timer.bpmn'));
+      engine.getInstance(null, null, (err, processInstance) => {
+        if (err) return done(err);
+        instance = processInstance;
+        const task = instance.getChildActivityById('userTask');
+        event = task.boundEvents[0];
+        done();
+      });
+    });
+
+    lab.test('has property cancelActivity false', (done) => {
+      expect(event).to.include({cancelActivity: false});
+      done();
+    });
+
+    lab.test('emits end when timed out', (done) => {
+      event.once('end', () => {
+        testHelper.expectNoLingeringListeners(instance);
+        done();
+      });
+
+      event.run();
+    });
+
+    lab.test('and takes outbound sequenceFlows', (done) => {
+      event.outbound[0].once('taken', () => {
+        testHelper.expectNoLingeringListeners(instance);
+        done();
+      });
+
+      event.run();
+    });
+
+    lab.test('discards outbound sequenceFlows if canceled', (done) => {
+      event.outbound[0].once('discarded', () => {
+        testHelper.expectNoLingeringListeners(instance);
+        done();
+      });
+
+      event.run();
+      event.cancel();
+    });
+  });
+
+  lab.describe('listeners', () => {
     let event;
     lab.beforeEach((done) => {
       const engine = new Bpmn.Engine(factory.resource('simple-task.bpmn'));
