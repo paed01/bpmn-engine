@@ -2,6 +2,8 @@
 
 const Activity = require('../../lib/activities/Activity');
 const Code = require('code');
+const EventEmitter = require('events').EventEmitter;
+const factory = require('../helpers/factory');
 const Lab = require('lab');
 const EndEvent = require('../../lib/events/EndEvent');
 
@@ -43,7 +45,7 @@ lab.experiment('Activity', () => {
     });
   });
 
-  lab.experiment('#enter', () => {
+  lab.describe('#enter', () => {
     lab.test('throws an error if entered more than once', (done) => {
       activity.enter();
       expect(() => {
@@ -53,7 +55,7 @@ lab.experiment('Activity', () => {
     });
   });
 
-  lab.experiment('#leave', () => {
+  lab.describe('#leave', () => {
     lab.test('throws an error if left before entered', (done) => {
       expect(activity).to.be.instanceof(Activity);
       expect(() => {
@@ -63,7 +65,27 @@ lab.experiment('Activity', () => {
     });
   });
 
-  lab.experiment('#activate', () => {
+  lab.describe('#discard', () => {
+
+    lab.test('activity with multiple inbound waits for all to be discarded', (done) => {
+      const engine = new Bpmn.Engine(factory.multipleInbound());
+      const listener = new EventEmitter();
+      listener.on('wait-userTask', (task) => {
+        task.discard();
+      });
+
+      engine.startInstance(null, listener, (err, inst) => {
+        if (err) return done(err);
+        inst.once('end', () => {
+          expect(inst.getChildActivityById('end').taken).to.be.false();
+          done();
+        });
+      });
+    });
+
+  });
+
+  lab.describe('#activate', () => {
     lab.test('sets up inbound sequenceFlow listeners', (done) => {
       const endEvent = new EndEvent(instance.context.moddleContext.elementsById.end, instance.context);
       endEvent.activate();
@@ -82,7 +104,7 @@ lab.experiment('Activity', () => {
     });
   });
 
-  lab.experiment('#deactivate', () => {
+  lab.describe('#deactivate', () => {
     lab.test('tears down inbound sequenceFlow listeners', (done) => {
       const endEvent = new EndEvent(instance.context.moddleContext.elementsById.end, instance.context);
       endEvent.activate();
