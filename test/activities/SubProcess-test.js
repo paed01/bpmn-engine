@@ -13,7 +13,7 @@ const Bpmn = require('../..');
 lab.experiment('SubProcess', () => {
   const processXml = factory.resource('sub-process.bpmn');
 
-  lab.experiment('ctor', () => {
+  lab.describe('ctor', () => {
     let parentProcess, subProcess;
 
     const engine = new Bpmn.Engine(processXml);
@@ -25,7 +25,6 @@ lab.experiment('SubProcess', () => {
         done();
       });
     });
-
 
     lab.test('parent process should only initialise its own', (done) => {
       const parentProcessContext = parentProcess.context;
@@ -51,7 +50,7 @@ lab.experiment('SubProcess', () => {
 
   });
 
-  lab.experiment('#run', () => {
+  lab.describe('#run', () => {
 
     lab.test('completes parent process', (done) => {
       const listener = new EventEmitter();
@@ -61,12 +60,73 @@ lab.experiment('SubProcess', () => {
 
       const engine = new Bpmn.Engine(processXml);
       engine.startInstance({
-        input: 0
-      }, listener, (err, execution) => {
+        input: 1
+      }, listener, (err, mainInstance) => {
         if (err) return done(err);
-        execution.once('end', () => {
-          testHelper.expectNoLingeringListeners(execution);
-          testHelper.expectNoLingeringListeners(execution.getChildActivityById('subProcess'));
+        mainInstance.once('end', () => {
+          testHelper.expectNoLingeringListeners(mainInstance);
+          testHelper.expectNoLingeringListeners(mainInstance.getChildActivityById('subProcess'));
+
+          const subProcess = mainInstance.getChildActivityById('subProcess');
+          expect(subProcess.variables).to.only.include({
+            input: 1,
+            subScript: true
+          });
+
+          done();
+        });
+      });
+    });
+  });
+
+  lab.describe('#cancel', () => {
+    lab.test('takes all outbound and completes parent process', (done) => {
+      const listener = new EventEmitter();
+      listener.on('wait-subUserTask', (task, subProcessInstance) => {
+        subProcessInstance.cancel();
+      });
+
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 0
+      }, listener, (err, mainInstance) => {
+        if (err) return done(err);
+
+        mainInstance.once('end', () => {
+          expect(mainInstance.getChildActivityById('theEnd').taken, 'theEnd taken').to.be.true();
+          expect(mainInstance.getChildActivityById('subProcess').canceled, 'subProcess canceled').to.be.true();
+
+          testHelper.expectNoLingeringListeners(mainInstance);
+          testHelper.expectNoLingeringListeners(mainInstance.getChildActivityById('subProcess'));
+          done();
+        });
+      });
+    });
+  });
+
+  lab.describe('cancel sub activity', () => {
+
+    lab.test('takes all outbound and completes parent process', (done) => {
+      const listener = new EventEmitter();
+      listener.once('wait-subUserTask', (task) => {
+        task.signal();
+      });
+      listener.once('start-subScriptTask', (task) => {
+        task.cancel();
+      });
+
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance({
+        input: 127
+      }, listener, (err, mainInstance) => {
+        if (err) return done(err);
+
+        mainInstance.once('end', () => {
+          expect(mainInstance.getChildActivityById('theEnd').taken, 'theEnd taken').to.be.true();
+          expect(mainInstance.getChildActivityById('subProcess').canceled, 'subProcess canceled').to.be.false();
+
+          testHelper.expectNoLingeringListeners(mainInstance);
+          testHelper.expectNoLingeringListeners(mainInstance.getChildActivityById('subProcess'));
           done();
         });
       });
