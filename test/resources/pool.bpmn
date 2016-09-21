@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
   <bpmn:collaboration id="Collaboration_051sqjx">
     <bpmn:participant id="Participant_1vfdw5m" name="Main" processRef="Process_1" />
     <bpmn:participant id="Participant_0pykme0" name="Listener" processRef="Process_15lyh35" />
@@ -20,6 +20,13 @@
       <bpmn:outgoing>SequenceFlow_16mpqd0</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:task id="task1" name="Task 1">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="taskinput">Empty</camunda:inputParameter>
+          <camunda:outputParameter name="message"><![CDATA[I'm done]]></camunda:outputParameter>
+          <camunda:outputParameter name="arbval">1</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_16mpqd0</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0s8frqx</bpmn:outgoing>
     </bpmn:task>

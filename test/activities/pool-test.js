@@ -39,4 +39,23 @@ lab.experiment('Pool', () => {
       if (err) return done(err);
     });
   });
+
+  lab.test('participant receives and stores message', (done) => {
+    const listener = new EventEmitter();
+    const engine = new Bpmn.Engine(processXml);
+
+    listener.once('end-messageStartEvent', (startEvent, instance) => {
+      expect(instance.context.variables).to.include({message: 'I\'m done', arbval: '1'});
+    });
+
+    engine.once('end', () => {
+      done();
+    });
+
+    engine.startInstance({
+      input: 0
+    }, listener, (err) => {
+      if (err) return done(err);
+    });
+  });
 });
