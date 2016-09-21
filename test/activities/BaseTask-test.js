@@ -166,4 +166,23 @@ lab.experiment('BaseTask', () => {
 
     });
   });
+
+  lab.describe('in lane with outbound message', () => {
+    const processXml = factory.resource('pool.bpmn');
+    let instance;
+    lab.before((done) => {
+      const engine = new Bpmn.Engine(processXml);
+      engine.getInstance(null, null, (err, inst) => {
+        if (err) return done(err);
+        instance = inst;
+        done();
+      });
+    });
+
+    lab.test('will have outbound that point to other lane', (done) => {
+      const task = instance.getChildActivityById('task1');
+      expect(task.outbound).to.have.length(2);
+      done();
+    });
+  });
 });

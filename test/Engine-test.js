@@ -1,12 +1,13 @@
 'use strict';
 
 const Code = require('code');
+const factory = require('./helpers/factory');
 const Lab = require('lab');
+const testHelper = require('./helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 
-const factory = require('./helpers/factory');
 const Bpmn = require('..');
 
 lab.experiment('engine', () => {
@@ -77,6 +78,18 @@ lab.experiment('engine', () => {
       engine.startInstance(null, null, (err) => {
         expect(err).to.exist();
         done();
+      });
+    });
+
+    lab.test('emits end when all processes are completed', (done) => {
+      const engine = new Bpmn.Engine(factory.resource('pool.bpmn'));
+      engine.once('end', () => {
+        testHelper.expectNoLingeringListenersOnEngine(engine);
+        done();
+      });
+
+      engine.startInstance(null, null, (err) => {
+        if (err) return done(err);
       });
     });
   });

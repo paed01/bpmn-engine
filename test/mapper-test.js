@@ -10,18 +10,14 @@ const mapper = require('../lib/mapper');
 
 lab.experiment('mapper', () => {
   lab.test('returns Bpmn instance type from context', (done) => {
-    const event = mapper({
-      $type: 'bpmn:StartEvent'
-    });
+    const event = mapper('bpmn:StartEvent');
     expect(event).to.be.a.function();
     done();
   });
 
   lab.test('throws if Bpmn instance type is not mapped', (done) => {
     expect(() => {
-      mapper({
-        $type: 'bpmn:NonExisting'
-      });
+      mapper('bpmn:NonExisting');
     }).to.throw();
     done();
   });

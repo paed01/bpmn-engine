@@ -2,6 +2,7 @@
 
 const Code = require('code');
 const Bpmn = require('..');
+const factory = require('./helpers/factory');
 const Lab = require('lab');
 const validation = require('../lib/validation');
 
@@ -29,22 +30,6 @@ lab.experiment('validation', () => {
       transformer.transform(validBpmnDefinition, (err, bpmnObject, context) => {
         if (err) return done(err);
         validation.validate(bpmnObject, context, done);
-      });
-    });
-
-    lab.test('but not without process id', (done) => {
-      const bpmnXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process isExecutable="true" />
-</definitions>`;
-
-      transformer.transform(bpmnXml, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
-        validation.validate(bpmnObject, context, (err) => {
-          expect(err).to.be.an.error(/"id" is required/);
-          done();
-        });
       });
     });
 
@@ -95,7 +80,7 @@ lab.experiment('validation', () => {
       transformer.transform(bpmnXml, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
         validation.validate(bpmnObject, context, (err) => {
-          expect(err).to.be.an.error(/"id" is required/);
+          expect(err).to.be.an.error();
           done();
         });
       });
@@ -126,9 +111,18 @@ lab.experiment('validation', () => {
       transformer.transform(bpmnXml, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
         validation.validate(bpmnObject, context, (err) => {
-          expect(err).to.be.an.error(/"id" is required/);
+          expect(err).to.be.an.error();
           done();
         });
+      });
+    });
+  });
+
+  lab.experiment('pool', () => {
+    lab.test('validates', (done) => {
+      transformer.transform(factory.resource('pool.bpmn').toString(), (err, bpmnObject, context) => {
+        if (err) return done(err);
+        validation.validate(bpmnObject, context, done);
       });
     });
   });

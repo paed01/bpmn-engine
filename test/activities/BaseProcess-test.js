@@ -10,9 +10,9 @@ const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 const Bpmn = require('../..');
 
-lab.experiment('Process', () => {
+lab.experiment('BaseProcess', () => {
 
-  lab.experiment('empty', () => {
+  lab.describe('empty process', () => {
 
     lab.test('emits end', (done) => {
       const processXml = `
@@ -31,7 +31,7 @@ lab.experiment('Process', () => {
     });
   });
 
-  lab.experiment('without sequenceFlows', () => {
+  lab.describe('ad hoc process', () => {
 
     lab.test('starts all without inbound', (done) => {
       const processXml = `
@@ -39,7 +39,7 @@ lab.experiment('Process', () => {
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <process id="theUncontrolledProcess" isExecutable="true">
       <userTask id="task1" />
-      <scriptTask id="task2" scriptFormat="Javascript">
+      <scriptTask id="task2" scriptFormat="JavaScript">
         <script>
           <![CDATA[
             this.context.input = 2;
@@ -71,13 +71,13 @@ lab.experiment('Process', () => {
       });
     });
 
-    lab.test('starts task without inbound and then ends with without outbound', (done) => {
+    lab.test('starts task without inbound and then ends without outbound', (done) => {
       const processXml = `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <process id="theUncontrolledProcess" isExecutable="true">
       <userTask id="task1" />
-      <scriptTask id="task2" scriptFormat="Javascript">
+      <scriptTask id="task2" scriptFormat="JavaScript">
         <script>
           <![CDATA[
             const self = this;
@@ -117,7 +117,7 @@ lab.experiment('Process', () => {
     });
   });
 
-  lab.experiment('loop', () => {
+  lab.describe('loop', () => {
     lab.test('completes process', (done) => {
       const processXml = factory.resource('loop.bpmn');
 
@@ -155,7 +155,7 @@ lab.experiment('Process', () => {
     });
   });
 
-  lab.experiment('multiple end events', () => {
+  lab.describe('multiple end events', () => {
     const processXml = factory.resource('multiple-endEvents.bpmn');
     lab.test('completes all flows', (done) => {
       const engine = new Bpmn.Engine(processXml);
@@ -171,7 +171,7 @@ lab.experiment('Process', () => {
     });
   });
 
-  lab.experiment('boundary timeout event', () => {
+  lab.describe('boundary timeout event', () => {
     const processXml = factory.resource('boundary-timeout.bpmn');
 
     lab.test('timer boundary event cancel task', (done) => {
@@ -214,7 +214,7 @@ lab.experiment('Process', () => {
     });
   });
 
-  lab.experiment('mother of all', () => {
+  lab.describe('mother of all', () => {
     const processXml = factory.resource('mother-of-all.bpmn');
 
     lab.test('completes', (done) => {
@@ -233,6 +233,35 @@ lab.experiment('Process', () => {
 
         execution.once('end', () => {
           testHelper.expectNoLingeringListeners(execution);
+          done();
+        });
+      });
+    });
+  });
+
+  lab.describe('child error', () => {
+    const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <process id="theUncontrolledProcess" isExecutable="true">
+      <startEvent id="start" />
+      <scriptTask id="task" scriptFormat="JavaScript">
+        <script>
+          <![CDATA[
+            next(new Error('Child error'));
+          ]]>
+        </script>
+      </scriptTask>
+      <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+    </process>
+  </definitions>`;
+
+    lab.test('bubbles to process', (done) => {
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance(null, null, (err, execution) => {
+        if (err) return done(err);
+        execution.once('error', (e) => {
+          expect(e).to.be.instanceof(Error, 'Child error');
           done();
         });
       });

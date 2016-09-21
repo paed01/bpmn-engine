@@ -5,10 +5,10 @@ const expect = require('code').expect;
 
 const pub = {};
 
-pub.expectNoLingeringListeners = (execution) => {
-  Object.keys(execution.context.children).forEach((id) => {
+pub.expectNoLingeringListeners = (instance) => {
+  Object.keys(instance.context.children).forEach((id) => {
     debug(`check listeners of <${id}>`);
-    const child = execution.context.children[id];
+    const child = instance.context.children[id];
 
     checkListeners(child, ['enter', 'start', 'wait', 'end', 'cancel', 'leave'], '');
 
@@ -23,19 +23,23 @@ pub.expectNoLingeringListeners = (execution) => {
       });
     }
   });
-  execution.context.sequenceFlows.forEach((flow) => {
+  instance.context.sequenceFlows.forEach((flow) => {
     debug(`check listeners of flow <${flow.id}>`);
+    checkListeners(flow, ['taken', 'message', 'discarded'], '');
+  });
+};
 
-    expect(flow.listenerCount('taken'), `taken listeners on <${flow.activity.element.id}>`).to.equal(0);
-    expect(flow.listenerCount('discarded'), `discarded listeners on <${flow.activity.element.id}>`).to.equal(0);
-    expect(flow.listenerCount('stop'), `stop listeners on <${flow.activity.element.id}>`).to.equal(0);
+pub.expectNoLingeringListenersOnEngine = (instance) => {
+  instance.processes.forEach((p) => {
+    checkListeners(p, ['end', 'message'], '');
+    pub.expectNoLingeringListeners(p);
   });
 };
 
 function checkListeners(child, names, scope) {
   names.forEach((name) => {
     const childId = child.id ? ` <${child.id}>` : '';
-    expect(child.listenerCount(name), `${name} listeners on ${child.activity.$type}${childId}${scope}`).to.equal(0);
+    expect(child.listenerCount(name), `${name} listeners on ${child.type}${childId}${scope}`).to.equal(0);
   });
 }
 

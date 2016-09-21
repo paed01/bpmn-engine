@@ -46,8 +46,8 @@ The following elements are tested and supported.
 - `start`: An element is started
 - `wait`: An user task waits for signal
 - `end`: A task has ended successfully
-- `leave`: The execution left the element
 - `cancel`: An element execution was canceled
+- `leave`: The execution left the element
 - `error`: An error was emitted
 
 # Sequence flow events
