@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
   <bpmn:collaboration id="Collaboration_051sqjx">
-    <bpmn:participant id="Participant_1vfdw5m" name="Main" processRef="Process_1" />
-    <bpmn:participant id="Participant_0pykme0" name="Listener" processRef="Process_15lyh35" />
+    <bpmn:participant id="Participant_1vfdw5m" name="Main" processRef="mainProcess" />
+    <bpmn:participant id="lane2" name="Listener" processRef="participantProcess" />
     <bpmn:messageFlow id="fromMainTaskMessageFlow" sourceRef="task1" targetRef="messageStartEvent" />
-    <bpmn:messageFlow id="MessageFlow_0rma79h" sourceRef="Task_1tyjnld" targetRef="intermediate" />
+    <bpmn:messageFlow id="MessageFlow_0rma79h" sourceRef="meTooTask" targetRef="intermediate" />
   </bpmn:collaboration>
-  <bpmn:process id="Process_1" isExecutable="true">
+  <bpmn:process id="mainProcess" isExecutable="true">
     <bpmn:laneSet>
-      <bpmn:lane id="Lane_0dhgh3q">
+      <bpmn:lane id="lane1">
         <bpmn:flowNodeRef>mainStartEvent</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>task1</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>mainEndEvent</bpmn:flowNodeRef>
@@ -24,7 +24,7 @@
         <camunda:inputOutput>
           <camunda:inputParameter name="taskinput">Empty</camunda:inputParameter>
           <camunda:outputParameter name="message"><![CDATA[I'm done]]></camunda:outputParameter>
-          <camunda:outputParameter name="arbval">1</camunda:outputParameter>
+          <camunda:outputParameter name="arbval">10</camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_16mpqd0</bpmn:incoming>
@@ -41,7 +41,7 @@
       <bpmn:messageEventDefinition />
     </bpmn:intermediateCatchEvent>
   </bpmn:process>
-  <bpmn:process id="Process_15lyh35" isExecutable="false">
+  <bpmn:process id="participantProcess" isExecutable="false">
     <bpmn:startEvent id="messageStartEvent">
       <bpmn:outgoing>SequenceFlow_12npryr</bpmn:outgoing>
       <bpmn:messageEventDefinition messageRef="Message_0n5n7nu" />
@@ -51,9 +51,17 @@
       <bpmn:incoming>SequenceFlow_12npryr</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1wte4yj</bpmn:outgoing>
     </bpmn:task>
-    <bpmn:sequenceFlow id="SequenceFlow_1wte4yj" sourceRef="Task_1of688q" targetRef="Task_1tyjnld" />
-    <bpmn:sequenceFlow id="SequenceFlow_0rsh2z2" sourceRef="Task_1tyjnld" targetRef="EndEvent_09x95tc" />
-    <bpmn:task id="Task_1tyjnld" name="Complete task">
+    <bpmn:sequenceFlow id="SequenceFlow_1wte4yj" sourceRef="Task_1of688q" targetRef="meTooTask" />
+    <bpmn:sequenceFlow id="SequenceFlow_0rsh2z2" sourceRef="meTooTask" targetRef="EndEvent_09x95tc" />
+    <bpmn:task id="meTooTask" name="Complete task">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="messageToMain">Done!</camunda:inputParameter>
+          <camunda:outputParameter name="message">
+            <camunda:script scriptFormat="JavaScript">`${context.messageToMain} Aswell!`;</camunda:script>
+          </camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1wte4yj</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0rsh2z2</bpmn:outgoing>
     </bpmn:task>
@@ -83,10 +91,10 @@
           <dc:Bounds x="318.5" y="20" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Lane_0dhgh3q_di" bpmnElement="Lane_0dhgh3q">
+      <bpmndi:BPMNShape id="Lane_0dhgh3q_di" bpmnElement="lane1">
         <dc:Bounds x="262" y="-33" width="567" height="165" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Participant_0pykme0_di" bpmnElement="Participant_0pykme0">
+      <bpmndi:BPMNShape id="Participant_0pykme0_di" bpmnElement="lane2">
         <dc:Bounds x="232" y="166" width="600" height="158" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_1of688q_di" bpmnElement="Task_1of688q">
@@ -127,7 +135,7 @@
           <dc:Bounds x="480" y="215" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Task_1tyjnld_di" bpmnElement="Task_1tyjnld">
+      <bpmndi:BPMNShape id="Task_1tyjnld_di" bpmnElement="meTooTask">
         <dc:Bounds x="551.6703910614525" y="200" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0rsh2z2_di" bpmnElement="SequenceFlow_0rsh2z2">

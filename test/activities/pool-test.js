@@ -40,15 +40,21 @@ lab.experiment('Pool', () => {
     });
   });
 
-  lab.test('participant receives and stores message', (done) => {
+  lab.test('participant startEvent receives and stores message on process context', (done) => {
     const listener = new EventEmitter();
     const engine = new Bpmn.Engine(processXml);
 
-    listener.once('end-messageStartEvent', (startEvent, instance) => {
-      expect(instance.context.variables).to.include({message: 'I\'m done', arbval: '1'});
-    });
-
     engine.once('end', () => {
+      const participant = engine.processes.find((p) => p.id === 'participantProcess');
+      expect(participant.variables).to.include({input: 0, message: 'I\'m done', arbval: '10'});
+
+      const mainProcess = engine.processes.find((p) => p.id === 'mainProcess');
+      expect(mainProcess.variables.taskInput).to.include({
+        intermediate: {
+          message: 'Done! Aswell!'
+        }
+      });
+
       done();
     });
 

@@ -140,16 +140,4 @@ lab.experiment('Activity', () => {
       instance.run();
     });
   });
-
-  lab.describe('message output', () => {
-    lab.test('supports camunda output as string', (done) => {
-      const engine = new Bpmn.Engine(factory.resource('pool.bpmn'));
-      engine.getInstance(null, null, (err, inst) => {
-        if (err) return done(err);
-        const task = inst.getChildActivityById('task1');
-        expect(task.getOutput()).to.include({ message: 'I\'m done', arbval: '1'});
-        done();
-      });
-    });
-  });
 });
