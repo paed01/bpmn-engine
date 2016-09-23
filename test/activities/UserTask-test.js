@@ -10,7 +10,7 @@ const expect = Code.expect;
 
 const Bpmn = require('../..');
 
-lab.experiment('userTask', () => {
+lab.experiment('UserTask', () => {
   const processXml = factory.userTask();
 
   lab.test('should have inbound and outbound sequence flows', (done) => {

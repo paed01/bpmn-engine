@@ -7,7 +7,7 @@ const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 const Bpmn = require('../..');
 
-lab.experiment('inclusiveGateway', () => {
+lab.experiment('InclusiveGateway', () => {
   lab.test('should have inbound and outbound sequence flows', (done) => {
     const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -21,12 +21,12 @@ lab.experiment('inclusiveGateway', () => {
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
       this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
       this.context.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
@@ -59,12 +59,12 @@ lab.experiment('inclusiveGateway', () => {
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
       this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
       this.context.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
@@ -99,12 +99,12 @@ lab.experiment('inclusiveGateway', () => {
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
       this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
       this.context.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
@@ -139,12 +139,12 @@ lab.experiment('inclusiveGateway', () => {
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
       this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
       this.context.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
@@ -177,12 +177,12 @@ lab.experiment('inclusiveGateway', () => {
     <endEvent id="theEnd2" />
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
       this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
       this.context.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>

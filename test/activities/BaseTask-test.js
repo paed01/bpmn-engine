@@ -168,7 +168,7 @@ lab.experiment('BaseTask', () => {
   });
 
   lab.describe('in lane with outbound message', () => {
-    const processXml = factory.resource('pool.bpmn');
+    const processXml = factory.resource('lanes.bpmn');
     let instance;
     lab.before((done) => {
       const engine = new Bpmn.Engine(processXml);

@@ -14,7 +14,7 @@ const validProcess = `
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
-      <conditionExpression>true</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript">true</conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>
@@ -30,7 +30,7 @@ const invalidProcess = `
     <endEvent id="end2" />
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end2">
-      <conditionExpression>true</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript">true</conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>

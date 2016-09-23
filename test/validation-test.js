@@ -118,9 +118,9 @@ lab.experiment('validation', () => {
     });
   });
 
-  lab.experiment('pool', () => {
+  lab.experiment('lanes', () => {
     lab.test('validates', (done) => {
-      transformer.transform(factory.resource('pool.bpmn').toString(), (err, bpmnObject, context) => {
+      transformer.transform(factory.resource('lanes.bpmn').toString(), (err, bpmnObject, context) => {
         if (err) return done(err);
         validation.validate(bpmnObject, context, done);
       });
@@ -167,7 +167,7 @@ lab.experiment('validation', () => {
     });
   });
 
-  lab.experiment('exclusiveGateway', () => {
+  lab.experiment('Exclusive gateway', () => {
     lab.test('should not support a single diverging flow with a condition', (done) => {
 
       const processXml = `

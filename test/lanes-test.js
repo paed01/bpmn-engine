@@ -2,16 +2,16 @@
 
 const Code = require('code');
 const EventEmitter = require('events').EventEmitter;
-const factory = require('../helpers/factory');
+const factory = require('./helpers/factory');
 const Lab = require('lab');
-const testHelper = require('../helpers/testHelpers');
+const testHelper = require('./helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const Bpmn = require('../..');
+const Bpmn = require('../');
 const expect = Code.expect;
 
-lab.experiment('Pool', () => {
-  const processXml = factory.resource('pool.bpmn');
+lab.experiment('Lanes', () => {
+  const processXml = factory.resource('lanes.bpmn');
 
   lab.test('main process stores outbound messageFlows', (done) => {
     const engine = new Bpmn.Engine(processXml);

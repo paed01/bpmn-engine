@@ -8,7 +8,7 @@ const Lab = require('lab');
 const lab = exports.lab = Lab.script();
 const Bpmn = require('../..');
 
-lab.experiment('timerEventDefinition', () => {
+lab.experiment('TimerEventDefinition', () => {
   let instance;
   lab.before((done) => {
     const engine = new Bpmn.Engine(factory.resource('boundary-timeout.bpmn'));

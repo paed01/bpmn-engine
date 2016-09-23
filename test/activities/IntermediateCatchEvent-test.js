@@ -8,10 +8,10 @@ const lab = exports.lab = Lab.script();
 const Bpmn = require('../..');
 const expect = Code.expect;
 
-lab.experiment('Pool', () => {
+lab.experiment('IntermediateCatchEvent', () => {
   let instance;
   lab.before((done) => {
-    const engine = new Bpmn.Engine(factory.resource('pool.bpmn'));
+    const engine = new Bpmn.Engine(factory.resource('lanes.bpmn'));
     engine.getInstance(null, null, (err, mainInstance) => {
       if (err) return done(err);
       instance = mainInstance;

@@ -82,7 +82,7 @@ lab.experiment('engine', () => {
     });
 
     lab.test('emits end when all processes are completed', (done) => {
-      const engine = new Bpmn.Engine(factory.resource('pool.bpmn'));
+      const engine = new Bpmn.Engine(factory.resource('lanes.bpmn'));
       engine.once('end', () => {
         testHelper.expectNoLingeringListenersOnEngine(engine);
         done();

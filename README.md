@@ -23,22 +23,25 @@ bpmn-engine
 
 The following elements are tested and supported.
 
-- `Process`
-- `SubProcess`
-- `SequenceFlow` javascript conditions only
+- Process
+- SubProcess
+- Lane
+- Flows:
+  - Sequence: javascript conditions only
+  - Message
 - Events
-  - `StartEvent`
-  - `EndEvent`
-  - `BoundaryEvent` attached to task
-    - `TimerEventDefinition` with duration as ISO_8601
+  - StartEvent
+  - EndEvent
+  - Timer (intermediate boundary): with duration as ISO_8601
+  - Message (intermediate)
 - Tasks
-  - `Task` - completes immediately
-  - `ScriptTask` javascript only
-  - `UserTask` - needs signal
+  - Task: completes immediately
+  - Script: javascript only
+  - User: needs signal
 - Gateways
-  - `ExclusiveGateway`
-  - `InclusiveGateway`
-  - `ParallelGateway` join and fork
+  - Exclusive
+  - Inclusive
+  - Parallel: join and fork
 
 # Element events
 

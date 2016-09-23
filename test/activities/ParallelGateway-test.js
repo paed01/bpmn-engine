@@ -147,7 +147,7 @@ lab.experiment('ParallelGateway', () => {
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="join" />
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="join" />
     <sequenceFlow id="flow5" sourceRef="decision" targetRef="join">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
       this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
@@ -176,7 +176,7 @@ lab.experiment('ParallelGateway', () => {
   <process id="theProcess" isExecutable="true">
     <startEvent id="theStart" />
     <inclusiveGateway id="decision" />
-    <scriptTask id="script">
+    <scriptTask id="script" scriptFormat="Javascript">
       <script>next();</script>
     </scriptTask>
     <userTask id="task" />
@@ -186,7 +186,7 @@ lab.experiment('ParallelGateway', () => {
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="script" />
     <sequenceFlow id="flow3" sourceRef="script" targetRef="join" />
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="task">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
         this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
@@ -217,14 +217,14 @@ lab.experiment('ParallelGateway', () => {
     <startEvent id="theStart" />
     <inclusiveGateway id="decision" />
     <userTask id="task" />
-    <scriptTask id="script">
+    <scriptTask id="script" scriptFormat="Javascript">
       <script>next();</script>
     </scriptTask>
     <parallelGateway id="join" />
     <endEvent id="end" />
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="task">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
         this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
@@ -257,14 +257,14 @@ lab.experiment('ParallelGateway', () => {
     <startEvent id="theStart" />
     <inclusiveGateway id="decision" default="flow4" />
     <userTask id="task" />
-    <scriptTask id="script">
+    <scriptTask id="script" scriptFormat="Javascript">
       <script>next();</script>
     </scriptTask>
     <parallelGateway id="join" />
     <endEvent id="end" />
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="script">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
         this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>

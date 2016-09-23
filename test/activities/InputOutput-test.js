@@ -10,6 +10,40 @@ const mapper = require('../../lib/mapper');
 
 lab.experiment('Activity InputOutput', () => {
 
+  lab.describe('ctor', () => {
+    lab.test('script parameter throws if type is not JavaScript', (done) => {
+      function test() {
+        new mapper.ActivityIO({ // eslint-disable-line no-new
+          $type: 'camunda:inputOutput',
+          $children: [{
+            $type: 'camunda:inputParameter',
+            name: 'message',
+            $children: [{
+              $type: 'camunda:script',
+              scriptFormat: 'CoffeeScript',
+              $body: 'i in loop'
+            }]
+          }]
+        });
+      }
+
+      expect(test).to.throw(Error, /CoffeeScript is unsupported/i);
+      done();
+    });
+
+    lab.test('no children is ignored', (done) => {
+      const io = new mapper.ActivityIO({ // eslint-disable-line no-new
+        $type: 'camunda:inputOutput',
+        $children: []
+      });
+
+      expect(io.input).to.be.empty();
+      expect(io.output).to.be.empty();
+
+      done();
+    });
+  });
+
   lab.describe('#getOutput', () => {
 
     lab.test('returns static values', (done) => {
@@ -82,6 +116,61 @@ lab.experiment('Activity InputOutput', () => {
         message: 'Me too 10',
         arbval: '1'
       });
+      done();
+    });
+
+
+    lab.test('empty parameter children return undefined', (done) => {
+      const io = new mapper.ActivityIO({ // eslint-disable-line no-new
+        $type: 'camunda:inputOutput',
+        $children: [{
+          $type: 'camunda:outputParameter',
+          name: 'message',
+          $children: []
+        }]
+      });
+
+      expect(io.getOutput({arbval: 10})).to.only.include({
+        message: undefined
+      });
+
+      done();
+    });
+
+    lab.test('no parameter children return undefined', (done) => {
+      const io = new mapper.ActivityIO({ // eslint-disable-line no-new
+        $type: 'camunda:inputOutput',
+        $children: [{
+          $type: 'camunda:outputParameter',
+          name: 'message'
+        }]
+      });
+
+      expect(io.getOutput({arbval: 10})).to.only.include({
+        message: undefined
+      });
+
+      done();
+    });
+
+    lab.test('unknown parameter child return undefined', (done) => {
+      const io = new mapper.ActivityIO({ // eslint-disable-line no-new
+        $type: 'camunda:inputOutput',
+        $children: [{
+          $type: 'camunda:outputParameter',
+          name: 'message',
+          $children: [{
+            $type: 'madeup:script',
+            scriptFormat: 'JavaScript',
+            $body: '`Me too ${context.arbval}`;'
+          }]
+        }]
+      });
+
+      expect(io.getOutput({arbval: 10})).to.only.include({
+        message: undefined
+      });
+
       done();
     });
   });

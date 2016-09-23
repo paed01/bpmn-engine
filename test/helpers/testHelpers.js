@@ -1,7 +1,10 @@
 'use strict';
 
 const debug = require('debug')('bpmn-engine:test');
+const Context = require('../../lib/Context');
+const contextHelper = require('../../lib/context-helper');
 const expect = require('code').expect;
+const transformer = require('../../lib/transformer');
 
 const pub = {};
 
@@ -42,5 +45,13 @@ function checkListeners(child, names, scope) {
     expect(child.listenerCount(name), `${name} listeners on ${child.type}${childId}${scope}`).to.equal(0);
   });
 }
+
+pub.getContext = function(processXml, callback) {
+  transformer.transform(processXml, (err, definitions, moddleContext) => {
+    if (err) return callback(err);
+    const context = new Context(contextHelper.getExecutableProcessId(moddleContext), moddleContext, null, {});
+    return callback(null, context);
+  });
+};
 
 module.exports = pub;

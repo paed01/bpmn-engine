@@ -87,7 +87,7 @@ lab.experiment('context-helper', () => {
 
     lab.test('returns referenced data object', (done) => {
       const dataObject = contextHelper.getDataObjectFromRef(userContext, 'inputFromUserRef');
-      expect(dataObject).to.have.include('id', '$type');
+      expect(dataObject).to.include(['id', '$type']);
       done();
     });
 
@@ -110,7 +110,7 @@ lab.experiment('context-helper', () => {
 
     lab.test('returns data by association', (done) => {
       const dataObject = contextHelper.getDataObjectFromAssociation(userContext, 'associatedWith');
-      expect(dataObject).to.have.include('id', '$type');
+      expect(dataObject).to.include(['id', '$type']);
       expect(dataObject.id).to.equal('inputFromUser');
       done();
     });
@@ -143,7 +143,7 @@ lab.experiment('context-helper', () => {
       transformer.transform(processXml, (err, bpmnObject, result) => {
         if (err) return done(err);
         const dataObject = contextHelper.getDataObjectFromAssociation(result, 'associatedWith');
-        expect(dataObject).to.have.include('id', '$type');
+        expect(dataObject).to.include(['id', '$type']);
         expect(dataObject.id).to.equal('inputFromUser');
         done();
       });

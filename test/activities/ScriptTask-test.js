@@ -9,63 +9,92 @@ const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 
 const Bpmn = require('../..');
+const mapper = require('../../lib/mapper');
 
 lab.experiment('ScriptTask', () => {
+  lab.describe('ctor', () => {
+    lab.test('throws if type is not JavaScript', (done) => {
+      const activity = {
+        $type: 'bpmn:ScriptTask',
+        scriptFormat: 'Java'
+      };
 
-  lab.test('should have inbound and outbound sequence flows', (done) => {
-    const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-  <startEvent id="theStart" />
-  <scriptTask id="scriptTask" scriptFormat="Javascript">
-    <script>
-      <![CDATA[
-        this.context.input = 2;
-        next();
-      ]]>
-    </script>
-  </scriptTask>
-  <endEvent id="theEnd" />
-  <sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
-  <sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
-  </process>
-</definitions>`;
+      function test() {
+        new (mapper(activity.$type))(activity); // eslint-disable-line no-new
+      }
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.getInstance(null, null, (err, execution) => {
-      if (err) return done(err);
-      const activity = execution.getChildActivityById('scriptTask');
-      expect(activity).to.include('inbound');
-      expect(activity.inbound).to.have.length(1);
-      expect(activity).to.include('outbound');
-      expect(activity.outbound).to.have.length(1);
+      expect(test).to.throw(Error, /Java is unsupported/i);
       done();
     });
-  });
 
-  lab.test('is considered end if without outbound sequenceFlows', (done) => {
-    const alternativeProcessXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-  <scriptTask id="scriptTask" scriptFormat="Javascript">
-    <script>
-      <![CDATA[
-        this.context.input = 2;
-        next();
-      ]]>
-    </script>
-  </scriptTask>
-  </process>
-</definitions>`;
+    lab.test('throws if type is undefined', (done) => {
+      const activity = {
+        $type: 'bpmn:ScriptTask'
+      };
 
-    const engine = new Bpmn.Engine(alternativeProcessXml);
-    engine.getInstance(null, null, (err, execution) => {
-      if (err) return done(err);
-      const task = execution.getChildActivityById('scriptTask');
-      expect(task.isEnd).to.be.true();
+      function test() {
+        new (mapper(activity.$type))(activity); // eslint-disable-line no-new
+      }
+
+      expect(test).to.throw(Error, /undefined is unsupported/i);
       done();
+    });
+
+    lab.test('should have inbound and outbound sequence flows', (done) => {
+      const processXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <scriptTask id="scriptTask" scriptFormat="Javascript">
+      <script>
+        <![CDATA[
+          this.context.input = 2;
+          next();
+        ]]>
+      </script>
+    </scriptTask>
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
+    <sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
+    </process>
+  </definitions>`;
+
+      const engine = new Bpmn.Engine(processXml);
+      engine.getInstance(null, null, (err, execution) => {
+        if (err) return done(err);
+        const activity = execution.getChildActivityById('scriptTask');
+        expect(activity).to.include('inbound');
+        expect(activity.inbound).to.have.length(1);
+        expect(activity).to.include('outbound');
+        expect(activity.outbound).to.have.length(1);
+        done();
+      });
+    });
+
+    lab.test('is considered end if without outbound sequenceFlows', (done) => {
+      const alternativeProcessXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <process id="theProcess" isExecutable="true">
+    <scriptTask id="scriptTask" scriptFormat="Javascript">
+      <script>
+        <![CDATA[
+          this.context.input = 2;
+          next();
+        ]]>
+      </script>
+    </scriptTask>
+    </process>
+  </definitions>`;
+
+      const engine = new Bpmn.Engine(alternativeProcessXml);
+      engine.getInstance(null, null, (err, execution) => {
+        if (err) return done(err);
+        const task = execution.getChildActivityById('scriptTask');
+        expect(task.isEnd).to.be.true();
+        done();
+      });
     });
   });
 
@@ -192,7 +221,7 @@ lab.experiment('ScriptTask', () => {
         if (err) return done(err);
         execution.once('end', () => {
           expect(nock.isDone()).to.be.true();
-          expect(execution.variables).to.include('data', 2);
+          expect(execution.variables).to.include({data: 2});
           done();
         });
       });
@@ -242,7 +271,7 @@ lab.experiment('ScriptTask', () => {
         if (err) return done(err);
         execution.once('end', () => {
           expect(nock.isDone()).to.be.true();
-          expect(execution.variables).to.include('data', 2);
+          expect(execution.variables).to.include({data: 3});
           done();
         });
       });
@@ -266,7 +295,7 @@ lab.experiment('ScriptTask', () => {
 <endEvent id="end" />
 <sequenceFlow id="flow1" sourceRef="start" targetRef="decision" />
 <sequenceFlow id="flow2" sourceRef="decision" targetRef="scriptTask">
-  <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+  <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
   !this.context.stopLoop
   ]]></conditionExpression>
 </sequenceFlow>

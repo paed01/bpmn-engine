@@ -14,7 +14,7 @@ const Activity = require('../lib/activities/Activity');
 lab.experiment('Context', () => {
   let instance, siblings;
   lab.before((done) => {
-    const engine = new Bpmn.Engine(factory.resource('pool.bpmn'));
+    const engine = new Bpmn.Engine(factory.resource('lanes.bpmn'));
     engine.getInstance({
       init: 1,
       request: require('request')
