@@ -224,6 +224,16 @@ lab.experiment('TimerEvent', () => {
       done();
     });
 
+    lab.test('stores inbound', (done) => {
+      expect(event.inbound.length).to.equal(1);
+      done();
+    });
+
+    lab.test('is not starting event', (done) => {
+      expect(event.isStart).to.be.false(1);
+      done();
+    });
+
     lab.test('waits duration', (done) => {
       const engine = new Bpmn.Engine(processXml);
       const listener = new EventEmitter();
