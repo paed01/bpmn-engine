@@ -171,7 +171,7 @@ lab.experiment('TimerEvent', () => {
         });
       });
 
-      lab.test('cancels task', (done) => {
+      lab.test('discards task', (done) => {
         const engine = new Bpmn.Engine(processXml);
         const listener = new EventEmitter();
         listener.once('end-userTask', (e) => {

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
+  <bpmn:process id="boundErrorProcess" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>flow1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="scriptTask" />
+    <bpmn:boundaryEvent id="errorEvent" attachedToRef="scriptTask">
+      <bpmn:outgoing>flow3</bpmn:outgoing>
+      <bpmn:errorEventDefinition errorRef="Error_073mxh6" camunda:errorCodeVariable="statusCode" camunda:errorMessageVariable="message" />
+    </bpmn:boundaryEvent>
+    <bpmn:scriptTask id="scriptTask" name="Check input" scriptFormat="JavaScript">
+      <bpmn:incoming>flow1</bpmn:incoming>
+      <bpmn:outgoing>flow2</bpmn:outgoing>
+      <bpmn:script><![CDATA[if (!context.input) {
+  next(new Error("Input is missing"));
+} else if (context.input === 2) {
+} else {
+  next();
+}]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:sequenceFlow id="flow3" sourceRef="errorEvent" targetRef="endInError" />
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>flow2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="end" />
+    <bpmn:endEvent id="endInError">
+      <bpmn:incoming>flow3</bpmn:incoming>
+      <bpmn:errorEventDefinition errorRef="Error_073mxh6" />
+    </bpmn:endEvent>
+    <bpmn:boundaryEvent id="timerEvent" attachedToRef="scriptTask">
+      <bpmn:outgoing>SequenceFlow_0blswmr</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT0.1S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0blswmr" sourceRef="timerEvent" targetRef="EndEvent_0o1cqcu" />
+    <bpmn:endEvent id="EndEvent_0o1cqcu">
+      <bpmn:incoming>SequenceFlow_0blswmr</bpmn:incoming>
+      <bpmn:terminateEventDefinition />
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:error id="Error_073mxh6" name="InputError" errorCode="404" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="boundErrorProcess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="start">
+        <dc:Bounds x="173" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1lpwwwa_di" bpmnElement="flow1">
+        <di:waypoint xsi:type="dc:Point" x="209" y="120" />
+        <di:waypoint xsi:type="dc:Point" x="291" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="205" y="95" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BoundaryEvent_0mcknbn_di" bpmnElement="errorEvent">
+        <dc:Bounds x="302" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="275" y="178" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ScriptTask_1mqoj4f_di" bpmnElement="scriptTask">
+        <dc:Bounds x="291" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0pq7hag_di" bpmnElement="flow3">
+        <di:waypoint xsi:type="dc:Point" x="320" y="178" />
+        <di:waypoint xsi:type="dc:Point" x="320" y="222" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="290" y="190" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_1co8uyr_di" bpmnElement="end">
+        <dc:Bounds x="462" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="435" y="138" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0zjq65i_di" bpmnElement="flow2">
+        <di:waypoint xsi:type="dc:Point" x="391" y="120" />
+        <di:waypoint xsi:type="dc:Point" x="462" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="381.5" y="95" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_05nz541_di" bpmnElement="endInError">
+        <dc:Bounds x="302" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="275" y="258" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_03fbjpt_di" bpmnElement="timerEvent">
+        <dc:Bounds x="350" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="323" y="178" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0blswmr_di" bpmnElement="SequenceFlow_0blswmr">
+        <di:waypoint xsi:type="dc:Point" x="368" y="178" />
+        <di:waypoint xsi:type="dc:Point" x="368" y="222" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="338" y="190" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_0isfsu0_di" bpmnElement="EndEvent_0o1cqcu">
+        <dc:Bounds x="350" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="323" y="258" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

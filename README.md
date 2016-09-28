@@ -32,8 +32,9 @@ The following elements are tested and supported.
 - Events
   - StartEvent
   - EndEvent
-  - Timer (intermediate boundary): with duration as ISO_8601
   - Message (intermediate)
+  - Timer Boundary Event: with duration as ISO_8601
+  - Error Boundary Event
 - Tasks
   - Task: completes immediately
   - Script: javascript only
@@ -51,7 +52,7 @@ The following elements are tested and supported.
 - `end`: A task has ended successfully
 - `cancel`: An element execution was canceled
 - `leave`: The execution left the element
-- `error`: An error was emitted
+- `error`: An error was emitted (unless a bound error event is in place)
 
 # Sequence flow events
 

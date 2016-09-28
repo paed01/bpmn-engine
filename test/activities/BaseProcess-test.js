@@ -221,10 +221,11 @@ lab.experiment('BaseProcess', () => {
     });
   });
 
-  lab.describe('mother of all', () => {
-    const processXml = factory.resource('mother-of-all.bpmn');
+  lab.describe('#run', () => {
 
-    lab.test('completes', (done) => {
+    let instance;
+    lab.before((done) => {
+      const processXml = factory.resource('mother-of-all.bpmn');
       const engine = new Bpmn.Engine(processXml);
       const listener = new EventEmitter();
       listener.on('wait', (activity) => {
@@ -233,16 +234,29 @@ lab.experiment('BaseProcess', () => {
         });
       });
 
-      engine.startInstance({
+      engine.getInstance({
         input: 0
-      }, listener, (err, execution) => {
+      }, listener, (err, inst) => {
         if (err) return done(err);
-
-        execution.once('end', () => {
-          testHelper.expectNoLingeringListeners(execution);
-          done();
-        });
+        instance = inst;
+        done();
       });
+    });
+
+    lab.test('completes', (done) => {
+      instance.once('end', () => {
+        testHelper.expectNoLingeringListeners(instance);
+        done();
+      });
+      instance.run();
+    });
+
+    lab.test('completes twice', (done) => {
+      instance.once('end', () => {
+        testHelper.expectNoLingeringListeners(instance);
+        done();
+      });
+      instance.run();
     });
   });
 });

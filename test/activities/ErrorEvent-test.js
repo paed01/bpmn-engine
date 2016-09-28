@@ -10,7 +10,7 @@ const Bpmn = require('../..');
 const EventEmitter = require('events').EventEmitter;
 const testHelper = require('../helpers/testHelpers');
 
-lab.experiment('ErrorEventDefinition', () => {
+lab.experiment('ErrorEvent', () => {
   lab.describe('as BoundaryEvent', () => {
     const processXml = factory.resource('bound-error.bpmn');
 
