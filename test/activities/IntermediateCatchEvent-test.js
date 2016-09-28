@@ -8,22 +8,27 @@ const lab = exports.lab = Lab.script();
 const Bpmn = require('../..');
 const expect = Code.expect;
 
+const mapper = require('../../lib/mapper');
+const TimerEvent = mapper('bpmn:TimerEventDefinition');
+const MessageEvent = mapper('bpmn:MessageEventDefinition');
+
 lab.experiment('IntermediateCatchEvent', () => {
-  let instance;
-  lab.before((done) => {
-    const engine = new Bpmn.Engine(factory.resource('lanes.bpmn'));
-    engine.getInstance(null, null, (err, mainInstance) => {
+  lab.test('TimerEvent', (done) => {
+    const processXml = factory.resource('timer-event.bpmn');
+    const engine = new Bpmn.Engine(processXml);
+    engine.getInstance(null, null, (err, inst) => {
       if (err) return done(err);
-      instance = mainInstance;
+      expect(inst.getChildActivityById('duration')).to.be.instanceOf(TimerEvent);
       done();
     });
   });
 
-  lab.describe('inbound', () => {
-    lab.test('does not contain message flow', (done) => {
-      const event = instance.getChildActivityById('intermediate');
-      expect(event.inbound.length).to.equal(1);
-      expect(event.inbound[0].type).to.equal('bpmn:SequenceFlow');
+  lab.test('MessageEvent', (done) => {
+    const processXml = factory.resource('lanes.bpmn');
+    const engine = new Bpmn.Engine(processXml);
+    engine.getInstance(null, null, (err, inst) => {
+      if (err) return done(err);
+      expect(inst.getChildActivityById('intermediate')).to.be.instanceOf(MessageEvent);
       done();
     });
   });

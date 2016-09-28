@@ -205,4 +205,43 @@ lab.experiment('TimerEvent', () => {
       });
     });
   });
+
+  lab.describe('as Intermediate Catch Event', () => {
+    const processXml = factory.resource('timer-event.bpmn');
+    let event, instance;
+    lab.before((done) => {
+      const engine = new Bpmn.Engine(processXml);
+      engine.getInstance(null, null, (err, processInstance) => {
+        if (err) return done(err);
+        instance = processInstance;
+        event = instance.getChildActivityById('duration');
+        done();
+      });
+    });
+
+    lab.test('stores duration', (done) => {
+      expect(event.timeout).to.be.above(0);
+      done();
+    });
+
+    lab.test('waits duration', (done) => {
+      const engine = new Bpmn.Engine(processXml);
+      const listener = new EventEmitter();
+
+      const calledEnds = [];
+      listener.on('end', (e) => {
+        calledEnds.push(e.id);
+      });
+
+      engine.startInstance(null, listener, (err, inst) => {
+        if (err) return done(err);
+
+        inst.once('end', () => {
+          expect(calledEnds).to.include(['task1', 'duration', 'task2']);
+          testHelper.expectNoLingeringListeners(inst);
+          done();
+        });
+      });
+    });
+  });
 });

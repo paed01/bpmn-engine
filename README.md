@@ -30,10 +30,12 @@ The following elements are tested and supported.
   - Sequence: javascript conditions only
   - Message
 - Events
-  - StartEvent
-  - EndEvent
+  - Start
+  - End
   - Message (intermediate)
-  - Timer Boundary Event: with duration as ISO_8601
+  - Intermediate Timer: with duration as ISO_8601
+  - Timer Boundary Event (interupting): with duration as ISO_8601
+  - Timer Boundary Event (non-interupting): with duration as ISO_8601
   - Error Boundary Event
 - Tasks
   - Task: completes immediately
