@@ -134,17 +134,24 @@ lab.experiment('TimerEvent', () => {
       lab.test('is not discarded if task completes', (done) => {
         const engine = new Bpmn.Engine(processXml);
         const listener = new EventEmitter();
+
         listener.once('wait-userTask', (task) => {
           task.signal();
         });
-        listener.once('end-boundTimeoutEvent', (e) => {
-          Code.fail(`<${e.id}> should have been discarded`);
+
+        const calledEnds = [];
+        listener.once('end-userTask', (e) => {
+          calledEnds.push(e.id);
+        });
+
+        listener.once('end-boundaryEvent', (e) => {
+          calledEnds.push(e.id);
         });
 
         engine.startInstance(null, listener, (err, inst) => {
           if (err) return done(err);
-
           inst.once('end', () => {
+            expect(calledEnds).to.include(['userTask', 'boundaryEvent']);
             testHelper.expectNoLingeringListeners(inst);
             done();
           });
@@ -157,7 +164,7 @@ lab.experiment('TimerEvent', () => {
         listener.once('wait-userTask', (task) => {
           task.cancel();
         });
-        listener.once('end-boundTimeoutEvent', (e) => {
+        listener.once('end-boundaryEvent', (e) => {
           Code.fail(`<${e.id}> should have been discarded`);
         });
 
@@ -171,17 +178,26 @@ lab.experiment('TimerEvent', () => {
         });
       });
 
-      lab.test('discards task', (done) => {
+      lab.test('does not discard task', (done) => {
         const engine = new Bpmn.Engine(processXml);
         const listener = new EventEmitter();
+
+        const calledEnds = [];
         listener.once('end-userTask', (e) => {
-          Code.fail(`<${e.id}> should have been discarded`);
+          calledEnds.push(e.id);
         });
 
-        engine.startInstance(null, null, (err, inst) => {
+        listener.once('end-boundaryEvent', (e) => {
+          calledEnds.push(e.id);
+
+          e.parentContext.getChildActivityById('userTask').signal();
+        });
+
+        engine.startInstance(null, listener, (err, inst) => {
           if (err) return done(err);
 
           inst.once('end', () => {
+            expect(calledEnds).to.include(['userTask', 'boundaryEvent']);
             testHelper.expectNoLingeringListeners(inst);
             done();
           });
