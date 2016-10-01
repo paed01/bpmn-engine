@@ -11,6 +11,7 @@ const expect = Code.expect;
 
 lab.experiment('task loop', () => {
   lab.describe('sequential', () => {
+
     lab.test('with condition and cardinality loops script task until condition is met', (done) => {
       const def = `
   <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -87,6 +88,74 @@ lab.experiment('task loop', () => {
         instance.once('end', () => {
           expect(startCount, 'number of start').to.equal(7);
           expect(instance.variables.input).to.equal(42);
+          testHelper.expectNoLingeringListeners(instance);
+          done();
+        });
+      });
+    });
+
+    lab.test('with cardinality loops task until cardinality is reached', (done) => {
+      const def = `
+  <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+    <bpmn:process id="taskLoopProcess" isExecutable="true">
+      <bpmn:task id="recurring" name="Recurring">
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+          <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">5</bpmn:loopCardinality>
+        </bpmn:multiInstanceLoopCharacteristics>
+      </bpmn:task>
+    </bpmn:process>
+  </bpmn:definitions>
+    `;
+
+      const engine = new Bpmn.Engine(def);
+      const listener = new EventEmitter();
+
+      let startCount = 0;
+      listener.on('start-recurring', () => {
+        startCount++;
+      });
+
+      engine.startInstance(null, listener, (err, instance) => {
+        if (err) return done(err);
+
+        instance.once('end', () => {
+          expect(startCount).to.equal(5);
+          testHelper.expectNoLingeringListeners(instance);
+          done();
+        });
+      });
+    });
+
+    lab.test('with cardinality loops user task until cardinality is reached', (done) => {
+      const def = `
+  <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+    <bpmn:process id="taskLoopProcess" isExecutable="true">
+      <bpmn:userTask id="recurring" name="Recurring">
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+          <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">context.taskInput.recurring.input > 3</bpmn:completionCondition>
+          <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">5</bpmn:loopCardinality>
+        </bpmn:multiInstanceLoopCharacteristics>
+      </bpmn:userTask>
+    </bpmn:process>
+  </bpmn:definitions>
+    `;
+
+      const engine = new Bpmn.Engine(def);
+      const listener = new EventEmitter();
+
+      let startCount = 0;
+      listener.on('wait-recurring', (task, instance) => {
+        instance.signal('recurring', {input: startCount});
+        startCount++;
+      });
+
+      engine.startInstance(null, listener, (err, instance) => {
+        if (err) return done(err);
+
+        instance.once('end', () => {
+          expect(startCount).to.equal(5);
           testHelper.expectNoLingeringListeners(instance);
           done();
         });
