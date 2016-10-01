@@ -49,8 +49,7 @@ lab.experiment('ScriptTask', () => {
     <scriptTask id="scriptTask" scriptFormat="Javascript">
       <script>
         <![CDATA[
-          this.context.input = 2;
-          next();
+          next(null, {input: 2});
         ]]>
       </script>
     </scriptTask>
@@ -108,8 +107,7 @@ lab.experiment('ScriptTask', () => {
   <scriptTask id="scriptTask" scriptFormat="Javascript">
     <script>
       <![CDATA[
-        this.context.input++;
-        next();
+        next(null, {input: this.context.input++});
       ]]>
     </script>
   </scriptTask>
