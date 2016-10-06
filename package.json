@@ -36,7 +36,7 @@
     "async": "^2.0.1",
     "bpmn-moddle": "^0.12.2",
     "debug": "^2.2.0",
-    "joi": "^9.0.4",
+    "joi": "^9.1.0",
     "moment": "^2.15.1"
   },
   "license": "BSD-3-Clause",
