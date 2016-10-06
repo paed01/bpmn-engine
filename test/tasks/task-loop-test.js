@@ -127,7 +127,7 @@ lab.experiment('task loop', () => {
       });
     });
 
-    lab.test('with cardinality loops user task until cardinality is reached', (done) => {
+    lab.test('loops user task until condition is reached', (done) => {
       const def = `
   <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -148,6 +148,41 @@ lab.experiment('task loop', () => {
       let startCount = 0;
       listener.on('wait-recurring', (task, instance) => {
         instance.signal('recurring', {input: startCount});
+        startCount++;
+      });
+
+      engine.startInstance(null, listener, (err, instance) => {
+        if (err) return done(err);
+
+        instance.once('end', () => {
+          expect(startCount).to.equal(5);
+          testHelper.expectNoLingeringListeners(instance);
+          done();
+        });
+      });
+    });
+
+    lab.test('loops sub process until condition is met', (done) => {
+      const def = `
+  <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+    <bpmn:process id="taskLoopProcess" isExecutable="true">
+      <bpmn:subProcess id="recurring">
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+          <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">context.index > 3</bpmn:completionCondition>
+          <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">5</bpmn:loopCardinality>
+        </bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:task id="subTask" name="Sub task" />
+      </bpmn:subProcess>
+    </bpmn:process>
+  </bpmn:definitions>
+    `;
+
+      const engine = new Bpmn.Engine(def);
+      const listener = new EventEmitter();
+
+      let startCount = 0;
+      listener.on('start-recurring', () => {
         startCount++;
       });
 
