@@ -312,4 +312,33 @@ lab.experiment('ScriptTask', () => {
       });
     });
   });
+
+  lab.describe('output', () => {
+    lab.test('is passed by callback', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <scriptTask id="scriptTask" scriptFormat="Javascript">
+      <script>
+        <![CDATA[
+          this.context.stopLoop = true;
+          next(null, {output: 1});
+        ]]>
+      </script>
+    </scriptTask>
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine(processXml);
+      engine.startInstance(null, null, (err, execution) => {
+        if (err) return done(err);
+        execution.once('end', () => {
+          expect(execution.variables.taskInput.scriptTask.output).to.equal(1);
+          done();
+        });
+      });
+    });
+  });
+
 });
