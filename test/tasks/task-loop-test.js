@@ -135,7 +135,6 @@ lab.experiment('task loop', () => {
       <bpmn:userTask id="recurring" name="Recurring">
         <bpmn:multiInstanceLoopCharacteristics isSequential="true">
           <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">context.taskInput.recurring.input > 3</bpmn:completionCondition>
-          <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">5</bpmn:loopCardinality>
         </bpmn:multiInstanceLoopCharacteristics>
       </bpmn:userTask>
     </bpmn:process>
@@ -145,17 +144,16 @@ lab.experiment('task loop', () => {
       const engine = new Bpmn.Engine(def);
       const listener = new EventEmitter();
 
-      let startCount = 0;
+      let waitCount = 0;
       listener.on('wait-recurring', (task, instance) => {
-        instance.signal('recurring', {input: startCount});
-        startCount++;
+        instance.signal('recurring', {input: ++waitCount});
       });
 
       engine.startInstance(null, listener, (err, instance) => {
         if (err) return done(err);
 
         instance.once('end', () => {
-          expect(startCount).to.equal(5);
+          expect(waitCount).to.equal(4);
           testHelper.expectNoLingeringListeners(instance);
           done();
         });

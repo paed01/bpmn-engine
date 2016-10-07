@@ -53,12 +53,38 @@ lab.experiment('UserTask', () => {
   </process>
 </definitions>`;
 
+    lab.test('process emits wait when entering user task', (done) => {
+      const engine = new Bpmn.Engine(processXml);
+      const listener = new EventEmitter();
+
+      listener.on('wait', (activity, execution) => {
+        if (activity.type !== 'bpmn:UserTask') return;
+
+        execution.signal(activity.id, {
+          sirname: 'von Rosen'
+        });
+      });
+
+      engine.startInstance({
+        input: null
+      }, listener, (err, execution) => {
+        if (err) return done(err);
+
+        execution.once('end', () => {
+          expect(execution.variables.inputFromUser).to.equal({
+            sirname: 'von Rosen'
+          });
+          done();
+        });
+      });
+    });
+
     lab.test('ends when signal is called', (done) => {
 
       const engine = new Bpmn.Engine(alternativeProcessXml);
       const listener = new EventEmitter();
 
-      listener.once('start-userTask', (activity) => {
+      listener.once('wait-userTask', (activity) => {
         activity.signal();
       });
 
@@ -88,35 +114,26 @@ lab.experiment('UserTask', () => {
       });
     });
 
-    lab.test('process emits wait when entering user task', (done) => {
-      const engine = new Bpmn.Engine(processXml);
+    lab.test('completes if canceled', (done) => {
+      const engine = new Bpmn.Engine(alternativeProcessXml);
       const listener = new EventEmitter();
 
-      listener.on('wait', (activity, execution) => {
-        if (activity.type !== 'bpmn:UserTask') return;
-
-        execution.signal(activity.id, {
-          sirname: 'von Rosen'
-        });
+      listener.once('wait-userTask', (task) => {
+        task.cancel();
       });
 
-      engine.startInstance({
-        input: null
-      }, listener, (err, execution) => {
+      engine.startInstance(null, listener, (err, execution) => {
         if (err) return done(err);
 
         execution.once('end', () => {
-          expect(execution.variables.inputFromUser).to.equal({
-            sirname: 'von Rosen'
-          });
+          expect(execution.getChildActivityById('userTask').canceled).to.be.true();
           done();
         });
       });
     });
-
   });
 
-  lab.experiment('user input', () => {
+  lab.experiment('#signal', () => {
     lab.test('user input is stored with process', (done) => {
       const engine = new Bpmn.Engine(processXml);
       const listener = new EventEmitter();
@@ -156,6 +173,20 @@ lab.experiment('UserTask', () => {
         });
       });
     });
+
+    lab.test('throws if not waiting for input', (done) => {
+      const engine = new Bpmn.Engine(processXml);
+
+      engine.getInstance(null, null, (err, instance) => {
+        if (err) return done(err);
+
+        const task = instance.getChildActivityById('userTask');
+
+        expect(task.signal.bind(task)).to.throw(Error);
+        done();
+      });
+    });
+
   });
 
   lab.experiment('without data association (due to overcomplex data flow in bpmn)', () => {
@@ -201,7 +232,7 @@ lab.experiment('UserTask', () => {
       const engine = new Bpmn.Engine(alternativeProcessXml);
       const listener = new EventEmitter();
 
-      listener.once('start-userTask', (activity, execution) => {
+      listener.once('wait-userTask', (activity, execution) => {
         execution.signal('userTask');
       });
 

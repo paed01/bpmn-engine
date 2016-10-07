@@ -112,7 +112,7 @@ lab.experiment('BaseProcess', () => {
         });
 
         const userTask = execution.getChildActivityById('task1');
-        userTask.once('start', () => userTask.signal('von Rosen'));
+        userTask.once('wait', () => userTask.signal('von Rosen'));
       });
     });
   });
