@@ -24,7 +24,6 @@ bpmn-engine
 The following elements are tested and supported.
 
 - Process
-- SubProcess
 - Lane
 - Flows:
   - Sequence: javascript conditions only
@@ -34,13 +33,18 @@ The following elements are tested and supported.
   - End
   - Message (intermediate)
   - Intermediate Timer: with duration as ISO_8601
-  - Timer Boundary Event (interupting): with duration as ISO_8601
-  - Timer Boundary Event (non-interupting): with duration as ISO_8601
+  - Interupting Timer Boundary Event: with duration as ISO_8601
+  - Non-interupting Timer Boundary Event: with duration as ISO_8601
   - Error Boundary Event
 - Tasks
-  - Task: completes immediately
+  - SubProcess
+    - Sequential loop
   - Script: javascript only
+    - Sequential loop
+  - Task: completes immediately
+    - Sequential loop
   - User: needs signal
+    - Sequential loop
 - Gateways
   - Exclusive
   - Inclusive
@@ -93,7 +97,10 @@ engine.startInstance({ uuid: uuid.v4() }, null, (err, execution) => {
 
 ## Listen for events
 ```javascript
+'use strict';
+
 const Bpmn = require('bpmn-engine');
+const EventEmitter = require('events').EventEmitter;
 
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -117,8 +124,8 @@ const processXml = `
 const engine = new Bpmn.Engine(processXml);
 const listener = new EventEmitter();
 
-listener.once('start-userTask', (activity) => {
-  console.log('Signal userTask when started')
+listener.once('wait-userTask', (activity) => {
+  console.log('Signal userTask when waiting');
   activity.signal({
     sirname: 'von Rosen'
   });
@@ -127,8 +134,11 @@ listener.once('start-userTask', (activity) => {
 engine.startInstance({
   input: null
 }, listener, (err, execution) => {
-  if (err) return done(err);
-  console.log(`User sirname is ${execution.variables.inputFromUser.sirname}`);
+  if (err) throw err;
+
+  execution.once('end', () => {
+    console.log(`User sirname is ${execution.variables.inputFromUser.sirname}`);
+  });
 });
 ```
 
@@ -137,6 +147,8 @@ engine.startInstance({
 An exclusive gateway will receive the available process variables as `this.context`.
 
 ```javascript
+'use strict';
+
 const Bpmn = require('bpmn-engine');
 
 const processXml = `
@@ -149,12 +161,12 @@ const processXml = `
     <endEvent id="end2" />
     <sequenceFlow id="flow1" sourceRef="start" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
       this.context.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
       this.context.input > 50
       ]]></conditionExpression>
     </sequenceFlow>
@@ -165,11 +177,11 @@ const engine = new Bpmn.Engine(processXml);
 engine.startInstance({
   input: 51
 }, null, (err, execution) => {
-  if (err) return done(err);
+  if (err) throw err;
 
   execution.once('end', () => {
     if (execution.getChildActivityById('end1').taken) throw new Error('<end1> was not supposed to be taken, check your input');
-    console.log(excecution.paths);
+    console.log('TAKEN end2', execution.getChildActivityById('end2').taken);
   });
 });
 ```
@@ -179,6 +191,8 @@ engine.startInstance({
 A script task will receive the data available on the process instance. So if `request` or another module is needed it has to be passed when starting the process. The script task also has a callback called `next` that takes an occasional error. The `next` callback has to be called for the process to proceed.
 
 ```javascript
+'use strict';
+
 const Bpmn = require('bpmn-engine');
 
 const processXml = `
@@ -195,9 +209,8 @@ const processXml = `
 
         request.get('http://example.com/test', (err, resp, body) => {
           if (err) return next(err);
-          const result = JSON.parse(body);
-          self.context.scriptTaskData = result;
-          next();
+          self.context.scriptTaskCompleted = true;
+          next(null, {result: body});
         })
       ]]>
     </script>
@@ -212,16 +225,19 @@ const engine = new Bpmn.Engine(processXml);
 engine.startInstance({
   request: require('request')
 }, null, (err, execution) => {
-  if (err) return done(err);
+  if (err) throw err;
 
   execution.once('end', () => {
-    console.log('Script task result:', excecution.variables.scriptTaskData);
+    console.log('Script task modification:', execution.variables.scriptTaskCompleted);
+    console.log('Script task output:', execution.variables.taskInput.scriptTask.result);
   });
 });
 ```
 
 ## User task
 ```javascript
+'use strict';
+
 const Bpmn = require('bpmn-engine');
 
 const processXml = `
@@ -255,7 +271,7 @@ listener.once('wait', (child, execution) => {
 engine.startInstance({
   input: null
 }, listener, (err, execution) => {
-  if (err) return done(err);
+  if (err) throw err;
 
   execution.once('end', () => {
     console.log(`User sirname is ${execution.variables.inputFromUser.sirname}`);
@@ -266,6 +282,11 @@ engine.startInstance({
 Since, Imho, the data flow in bpmn2 is overcomplex the input is stored as `taskInput` with id if data associations dont´t exist.
 
 ```javascript
+'use strict';
+
+const Bpmn = require('bpmn-engine');
+const EventEmitter = require('events').EventEmitter;
+
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -281,15 +302,14 @@ const processXml = `
 const engine = new Bpmn.Engine(processXml);
 const listener = new EventEmitter();
 
-listener.once('wait', (execution, child) => {
-  if (child.activity.$type !== 'bpmn:UserTask') return;
+listener.once('wait-userTask', (child, execution) => {
   execution.signal(child.activity.id, {
     sirname: 'von Rosen'
   });
 });
 
 engine.startInstance(null, listener, (err, execution) => {
-  if (err) return done(err);
+  if (err) throw err;
 
   execution.once('end', () => {
     console.log(`User sirname is ${execution.variables.taskInput.userTask.sirname}`);
