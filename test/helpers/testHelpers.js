@@ -33,7 +33,7 @@ pub.expectNoLingeringListeners = (instance) => {
 
 pub.expectNoLingeringListenersOnEngine = (instance) => {
   instance.processes.forEach((p) => {
-    checkListeners(p, ['end', 'message'], '');
+    checkListeners(p, ['enter', 'start', 'wait', 'end', 'cancel', 'error', 'leave'], '');
     pub.expectNoLingeringListeners(p);
   });
 };

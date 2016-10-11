@@ -41,6 +41,17 @@ lab.experiment('engine', () => {
     });
   });
 
+
+  lab.experiment('#getInstance', () => {
+    lab.test('after transform engine id is definition id', (done) => {
+      const engine = new Bpmn.Engine(factory.valid('myValidDefinition'));
+      engine.getInstance(null, null, () => {
+        expect(engine.id).to.equal('myValidDefinition');
+        done();
+      });
+    });
+  });
+
   lab.experiment('#startInstance', () => {
     lab.test('sets entry point id to executable process', (done) => {
       const engine = new Bpmn.Engine(factory.valid());
