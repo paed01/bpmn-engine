@@ -19,7 +19,7 @@ lab.experiment('Activity', () => {
     <startEvent id="start" name="Start" />
     <userTask id="task" />
     <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
     <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
   </process>
 </definitions>`;
@@ -98,8 +98,8 @@ lab.experiment('Activity', () => {
       const endEvent = new EndEvent(instance.context.moddleContext.elementsById.end, instance.context);
       endEvent.activate();
       endEvent.activate();
-      expect(instance.context.sequenceFlows[0].listenerCount('taken')).to.equal(1);
-      expect(instance.context.sequenceFlows[0].listenerCount('discarded')).to.equal(1);
+      expect(instance.context.sequenceFlows[1].listenerCount('taken')).to.equal(1);
+      expect(instance.context.sequenceFlows[1].listenerCount('discarded')).to.equal(1);
       done();
     });
   });
@@ -128,7 +128,7 @@ lab.experiment('Activity', () => {
   lab.describe('#cancel', () => {
     lab.test('cancels activity and takes all outbound', (done) => {
       const task = instance.getChildActivityById('task');
-      task.once('start', (a) => {
+      task.once('wait', (a) => {
         a.cancel();
       });
 

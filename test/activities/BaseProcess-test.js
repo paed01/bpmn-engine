@@ -141,14 +141,17 @@ lab.experiment('BaseProcess', () => {
       const engine = new Bpmn.Engine(processXml);
       engine.startInstance({
         input: 0
-      }, listener, (err, execution) => {
+      }, listener, (err, instance) => {
         if (err) return done(err);
-        execution.once('end', () => {
+        instance.once('end', () => {
           expect(startCount, 'scriptTask1 starts').to.equal(3);
-          expect(endCount, 'theEnd count').to.equal(1);
-          expect(execution.variables.input).to.equal(2);
+          expect(instance.variables.input).to.equal(2);
 
-          testHelper.expectNoLingeringListeners(execution);
+          expect(instance.getChildActivityById('theEnd').taken).to.be.true();
+
+          expect(endCount, 'theEnd count').to.equal(1);
+
+          testHelper.expectNoLingeringListeners(instance);
           done();
         });
       });

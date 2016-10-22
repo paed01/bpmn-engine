@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.3.2">
   <bpmn:process id="boundErrorProcess" isExecutable="true">
     <bpmn:startEvent id="start">
       <bpmn:outgoing>flow1</bpmn:outgoing>
@@ -34,8 +34,8 @@
         <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT0.1S</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:boundaryEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_0blswmr" sourceRef="timerEvent" targetRef="EndEvent_0o1cqcu" />
-    <bpmn:endEvent id="EndEvent_0o1cqcu">
+    <bpmn:sequenceFlow id="SequenceFlow_0blswmr" sourceRef="timerEvent" targetRef="timedEndEvent" />
+    <bpmn:endEvent id="timedEndEvent">
       <bpmn:incoming>SequenceFlow_0blswmr</bpmn:incoming>
       <bpmn:terminateEventDefinition />
     </bpmn:endEvent>
@@ -101,7 +101,7 @@
           <dc:Bounds x="338" y="190" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="EndEvent_0isfsu0_di" bpmnElement="EndEvent_0o1cqcu">
+      <bpmndi:BPMNShape id="EndEvent_0isfsu0_di" bpmnElement="timedEndEvent">
         <dc:Bounds x="350" y="222" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="323" y="258" width="90" height="20" />

@@ -131,53 +131,6 @@ lab.experiment('TimerEvent', () => {
     lab.describe('non-interupting', () => {
       const processXml = factory.resource('boundary-non-interupting-timer.bpmn');
 
-      lab.test('is not discarded if task completes', (done) => {
-        const engine = new Bpmn.Engine(processXml);
-        const listener = new EventEmitter();
-
-        listener.once('wait-userTask', (task) => {
-          task.signal();
-        });
-
-        const calledEnds = [];
-        listener.once('end-userTask', (e) => {
-          calledEnds.push(e.id);
-        });
-
-        listener.once('end-boundaryEvent', (e) => {
-          calledEnds.push(e.id);
-        });
-
-        engine.startInstance(null, listener, (err, inst) => {
-          if (err) return done(err);
-          inst.once('end', () => {
-            expect(calledEnds).to.include(['userTask', 'boundaryEvent']);
-            testHelper.expectNoLingeringListeners(inst);
-            done();
-          });
-        });
-      });
-
-      lab.test('is discarded if task is canceled', (done) => {
-        const engine = new Bpmn.Engine(processXml);
-        const listener = new EventEmitter();
-        listener.once('wait-userTask', (task) => {
-          task.cancel();
-        });
-        listener.once('end-boundaryEvent', (e) => {
-          Code.fail(`<${e.id}> should have been discarded`);
-        });
-
-        engine.startInstance(null, listener, (err, inst) => {
-          if (err) return done(err);
-
-          inst.once('end', () => {
-            testHelper.expectNoLingeringListeners(inst);
-            done();
-          });
-        });
-      });
-
       lab.test('does not discard task', (done) => {
         const engine = new Bpmn.Engine(processXml);
         const listener = new EventEmitter();
@@ -198,6 +151,53 @@ lab.experiment('TimerEvent', () => {
 
           inst.once('end', () => {
             expect(calledEnds).to.include(['userTask', 'boundaryEvent']);
+            testHelper.expectNoLingeringListeners(inst);
+            done();
+          });
+        });
+      });
+
+      lab.test('is discarded if task completes', (done) => {
+        const engine = new Bpmn.Engine(processXml);
+        const listener = new EventEmitter();
+
+        listener.once('wait-userTask', (task) => {
+          task.signal();
+        });
+
+        const calledEnds = [];
+        listener.once('end-userTask', (e) => {
+          calledEnds.push(e.id);
+        });
+
+        listener.once('end-boundaryEvent', (e) => {
+          calledEnds.push(e.id);
+        });
+
+        engine.startInstance(null, listener, (err, inst) => {
+          if (err) return done(err);
+          inst.once('end', () => {
+            expect(calledEnds).to.include(['userTask']);
+            testHelper.expectNoLingeringListeners(inst);
+            done();
+          });
+        });
+      });
+
+      lab.test('is discarded if task is canceled', (done) => {
+        const engine = new Bpmn.Engine(processXml);
+        const listener = new EventEmitter();
+        listener.once('wait-userTask', (task) => {
+          task.cancel();
+        });
+        listener.once('end-boundaryEvent', (e) => {
+          Code.fail(`<${e.id}> should have been discarded`);
+        });
+
+        engine.startInstance(null, listener, (err, inst) => {
+          if (err) return done(err);
+
+          inst.once('end', () => {
             testHelper.expectNoLingeringListeners(inst);
             done();
           });
