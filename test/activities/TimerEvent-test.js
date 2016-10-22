@@ -254,4 +254,41 @@ lab.experiment('TimerEvent', () => {
       });
     });
   });
+
+  lab.describe('#getState', () => {
+    lab.test('returns remaining timeout and attachedTo', (done) => {
+      const processXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <process id="interruptedProcess" isExecutable="true">
+      <userTask id="dontWaitForMe" />
+      <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
+        <timerEventDefinition>
+          <timeDuration xsi:type="tFormalExpression">PT0.1S</timeDuration>
+        </timerEventDefinition>
+      </boundaryEvent>
+    </process>
+  </definitions>
+      `;
+      const engine = new Bpmn.Engine(processXml, 'stopMe');
+      const listener1 = new EventEmitter();
+
+      listener1.once('wait-dontWaitForMe', () => {
+        setTimeout(() => {
+          engine.stop();
+        }, 10);
+      });
+
+      engine.startInstance(null, listener1, (err) => {
+        if (err) return done(err);
+      });
+
+      engine.once('end', () => {
+        const state = engine.processes[0].getChildActivityById('timeoutEvent').getState();
+        expect(state.timeout).to.be.below(100);
+        expect(state.attachedToId).to.equal('dontWaitForMe');
+        done();
+      });
+    });
+  });
 });

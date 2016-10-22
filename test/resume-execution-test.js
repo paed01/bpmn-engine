@@ -10,9 +10,9 @@ const lab = exports.lab = Lab.script();
 const Bpmn = require('../');
 
 lab.experiment('Resume execution', () => {
-  const processXml = factory.userTask();
 
   lab.test('starts with stopped task', (done) => {
+    const processXml = factory.userTask();
     const engine = new Bpmn.Engine(processXml, 'new');
     const listener1 = new EventEmitter();
 
@@ -53,6 +53,7 @@ lab.experiment('Resume execution', () => {
   });
 
   lab.test('resumes stopped process even if engine is loaded with different process/version', (done) => {
+    const processXml = factory.userTask();
     const engine1 = new Bpmn.Engine(processXml, 'stopMe');
     const engine2 = new Bpmn.Engine(factory.valid(), 'resumeMe');
     const listener1 = new EventEmitter();
@@ -136,6 +137,52 @@ lab.experiment('Resume execution', () => {
     engine1.startInstance({
       input: null
     }, listener1, (err) => {
+      if (err) return done(err);
+    });
+  });
+
+  lab.test('resumed interrupting timeout event resumes with remaining ms', (done) => {
+    const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="interruptedProcess" isExecutable="true">
+    <userTask id="dontWaitForMe" />
+    <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
+      <timerEventDefinition>
+        <timeDuration xsi:type="tFormalExpression">PT0.1S</timeDuration>
+      </timerEventDefinition>
+    </boundaryEvent>
+  </process>
+</definitions>
+    `;
+    const engine1 = new Bpmn.Engine(processXml, 'stopMe');
+    const listener1 = new EventEmitter();
+
+    let state;
+    listener1.once('wait-dontWaitForMe', () => {
+      setTimeout(() => {
+        state = engine1.save();
+        engine1.stop();
+      }, 10);
+    });
+
+    engine1.once('end', () => {
+      const timeout = state.processes.interruptedProcess.children.find(c => c.id === 'timeoutEvent').timeout;
+      expect(timeout).to.be.between(0, 99);
+
+      const engine2 = new Bpmn.Engine(factory.valid(), 'resumeMe');
+      engine2.resume(state, null, (err, resumedInstance) => {
+        const startedAt = new Date();
+        if (err) return done(err);
+
+        resumedInstance.once('end', () => {
+          expect((new Date()) - startedAt, `resumed timout is ${timeout}ms`).to.be.below(100);
+          done();
+        });
+      });
+    });
+
+    engine1.startInstance(null, listener1, (err) => {
       if (err) return done(err);
     });
   });

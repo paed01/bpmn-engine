@@ -82,9 +82,9 @@ lab.experiment('Save state', () => {
         listener.on('wait-userTask', () => {
           const state = engine.save();
           expect(state.processes[engine.entryPointId], `<${engine.entryPointId}> tasks`).to.include('children');
-          expect(state.processes[engine.entryPointId].children.theStart).to.include({entered: false});
-          expect(state.processes[engine.entryPointId].children.userTask).to.include({entered: true});
-          expect(state.processes[engine.entryPointId].children.theEnd).to.include({entered: false});
+          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'theStart')).to.include({entered: false});
+          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'userTask')).to.include({entered: true});
+          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'theEnd')).to.include({entered: false});
           done();
         });
 
@@ -202,9 +202,9 @@ lab.experiment('Save state', () => {
         engine.once('end', () => {
           const state = engine.save();
           expect(state.processes[engine.entryPointId], `<${engine.entryPointId}> tasks`).to.include('children');
-          expect(state.processes[engine.entryPointId].children.theStart).to.include({entered: false});
-          expect(state.processes[engine.entryPointId].children.userTask).to.include({entered: false});
-          expect(state.processes[engine.entryPointId].children.theEnd).to.include({entered: false});
+          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'theStart')).to.include({entered: false});
+          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'userTask')).to.include({entered: false});
+          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'theEnd')).to.include({entered: false});
           done();
         });
 
