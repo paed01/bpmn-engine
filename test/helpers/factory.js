@@ -21,7 +21,8 @@ const invalidProcess = `
 
 const pub = {};
 
-pub.valid = (definitionId = 'valid') => {
+pub.valid = (definitionId) => {
+  if (!definitionId) definitionId = 'valid';
   return `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions id="${definitionId}" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -44,7 +45,8 @@ pub.invalid = () => {
   return invalidProcess;
 };
 
-pub.userTask = (name = 'userTask') => {
+pub.userTask = (name) => {
+  if (!name) name = 'userTask';
   return `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
