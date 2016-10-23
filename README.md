@@ -10,7 +10,10 @@ bpmn-engine
 
 ## Table of Contents
 - [Supported elements](#supported-elements)
-- [Execution events](#execution-events)
+- [Events](#events)
+- [Save state](#save-state)
+- [Stop](#stop-execution)
+- [Resume](#resume-execution)
 - [Examples](#examples)
     - [Start instance](#start-instance)
     - [Listen events](#listen-for-events)
@@ -50,7 +53,11 @@ The following elements are tested and supported.
   - Inclusive
   - Parallel: join and fork
 
-# Element events
+# Events
+
+Each activity and flow emits events when changing state.
+
+## Element events
 
 - `enter`: An element is entered
 - `start`: An element is started
@@ -60,10 +67,133 @@ The following elements are tested and supported.
 - `leave`: The execution left the element
 - `error`: An error was emitted (unless a bound error event is in place)
 
-# Sequence flow events
+## Sequence flow events
 
 - `taken`: The sequence flow was taken
 - `discarded`: The sequence flow was discarded
+
+# Save state
+
+To save state of a process, execute engine `#save` function.
+
+The saved state will include the following content:
+- `source`: Buffer representation of the definition
+- `sourceHash`: Calculated md5 hash of the executing definition
+- `processes`: Object with processes with id as key
+  - `variables`: Shallowed copied execution variables
+  - `children`: List of child states
+    - `entered`: Boolean indicating if the child is currently executing
+
+```javascript
+'use strict';
+
+const Bpmn = require('bpmn-engine');
+const EventEmitter = require('events').EventEmitter;
+
+const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <dataObjectReference id="inputFromUserRef" dataObjectRef="inputFromUser" />
+    <dataObject id="inputFromUser" />
+    <startEvent id="theStart" />
+    <userTask id="userTask">
+      <ioSpecification id="inputSpec">
+        <dataOutput id="userInput" />
+      </ioSpecification>
+      <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUserRef" />
+    </userTask>
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+  </process>
+</definitions>`;
+
+const engine = new Bpmn.Engine(processXml);
+const listener = new EventEmitter();
+
+let state;
+listener.once('wait-userTask', (activity) => {
+  state = engine.save();
+  console.log(JSON.stringify(state, null, 2));
+});
+
+engine.startInstance({
+  input: null
+}, listener, (err, execution) => {
+  if (err) throw err;
+});
+```
+
+# Stop execution
+
+Execute engine `#stop` function.
+
+```javascript
+'use strict';
+
+const Bpmn = require('bpmn-engine');
+const EventEmitter = require('events').EventEmitter;
+
+const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <dataObjectReference id="inputFromUserRef" dataObjectRef="inputFromUser" />
+    <dataObject id="inputFromUser" />
+    <startEvent id="theStart" />
+    <userTask id="userTask">
+      <ioSpecification id="inputSpec">
+        <dataOutput id="userInput" />
+      </ioSpecification>
+      <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUserRef" />
+    </userTask>
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+  </process>
+</definitions>`;
+
+const engine = new Bpmn.Engine(processXml);
+const listener = new EventEmitter();
+
+let state;
+listener.once('wait-userTask', (activity) => {
+  state = engine.save();
+  engine.stop();
+});
+
+engine.startInstance({
+  input: null
+}, listener, (err, execution) => {
+  if (err) throw err;
+});
+```
+
+# Resume execution
+
+Execute engine `#resume` function with previously saved state.
+
+```javascript
+'use strict';
+
+const Bpmn = require('bpmn-engine');
+const EventEmitter = require('events').EventEmitter;
+
+const state = db.getState('state-by-id');
+
+const engine = new Bpmn.Engine(state.source);
+
+engine.on('end', () => {
+  console.log('resumed instance completed');
+});
+
+engine.resumeInstance(state, null, {
+  input: null
+}, listener, (err, execution) => {
+  if (err) throw err;
+});
+```
 
 # Examples
 
