@@ -96,4 +96,30 @@ lab.experiment('BoundaryEvent', () => {
       });
     });
   });
+
+  lab.test('completes process even if bound event markup appears before task', (done) => {
+    const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="interruptedProcess" isExecutable="true">
+    <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
+      <timerEventDefinition>
+        <timeDuration xsi:type="tFormalExpression">PT0.1S</timeDuration>
+      </timerEventDefinition>
+    </boundaryEvent>
+    <userTask id="dontWaitForMe" />
+  </process>
+</definitions>
+    `;
+    const engine = new Bpmn.Engine(processXml);
+    const listener = new EventEmitter();
+
+    engine.startInstance(null, listener, (err, instance) => {
+      if (err) return done(err);
+      instance.on('end', () => {
+        done();
+      });
+    });
+  });
+
 });
