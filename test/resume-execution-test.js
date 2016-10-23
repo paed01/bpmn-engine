@@ -186,4 +186,72 @@ lab.experiment('Resume execution', () => {
       if (err) return done(err);
     });
   });
+
+  lab.test('resumes bound error event', (done) => {
+    const processXml = `
+<definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="interruptedProcess" isExecutable="true">
+    <startEvent id="start" />
+    <scriptTask id="scriptTask" name="Check input" scriptFormat="JavaScript">
+      <script><![CDATA[
+if (!context.input) {
+  next(new Error("Input is missing"));
+} else if (context.input === 2) {
+} else {
+  next();
+}]]></script>
+    </scriptTask>
+    <boundaryEvent id="errorEvent" attachedToRef="scriptTask">
+      <errorEventDefinition />
+    </boundaryEvent>
+    <boundaryEvent id="timerEvent" attachedToRef="scriptTask">
+      <timerEventDefinition>
+        <timeDuration xsi:type="tFormalExpression">PT1S</timeDuration>
+      </timerEventDefinition>
+    </boundaryEvent>
+    <endEvent id="endInError">
+      <errorEventDefinition />
+    </endEvent>
+    <endEvent id="timedEndEvent">
+      <terminateEventDefinition />
+    </endEvent>
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="scriptTask" />
+    <sequenceFlow id="flow2" sourceRef="timerEvent" targetRef="timedEndEvent" />
+    <sequenceFlow id="flow3" sourceRef="errorEvent" targetRef="endInError" />
+    <sequenceFlow id="flow4" sourceRef="scriptTask" targetRef="end" />
+  </process>
+</definitions>
+    `;
+    const engine1 = new Bpmn.Engine(processXml, 'stopMe');
+    const listener1 = new EventEmitter();
+
+    let state;
+    listener1.once('start-timerEvent', () => {
+      state = engine1.save();
+      engine1.stop();
+    });
+
+    engine1.once('end', () => {
+      delete state.processes.interruptedProcess.variables.input;
+
+      listener1.on('end-scriptTask', (activity) => {
+        Code.fail(`<${activity.id}> should not have ended`);
+      });
+
+      const engine2 = new Bpmn.Engine(processXml, 'resumeMe');
+      engine2.resume(state, null, (err, resumedInstance) => {
+        if (err) return done(err);
+        resumedInstance.once('end', () => {
+          done();
+        });
+      });
+    });
+
+    engine1.startInstance({
+      input: 2
+    }, listener1, (err) => {
+      if (err) return done(err);
+    });
+  });
 });

@@ -53,7 +53,27 @@ lab.experiment('BoundaryEvent', () => {
 
     engine.startInstance(null, listener, (err, instance) => {
       if (err) return done(err);
+      const timer = instance.getChildActivityById('timerEvent');
+
+      let leaveTimerCount = 0;
+      function timerListener(event) {
+        leaveTimerCount++;
+        if (leaveTimerCount > 1) Code.fail(`<${event.id}> should only leave once`);
+      }
+      timer.on('enter', timerListener);
+
+      const error = instance.getChildActivityById('errorEvent');
+
+      let leaveErrorCount = 0;
+      function errorListener(event) {
+        leaveErrorCount++;
+        if (leaveErrorCount > 1) Code.fail(`<${event.id}> should only leave once`);
+      }
+      error.on('enter', errorListener);
+
       instance.once('end', () => {
+        timer.removeListener('enter', timerListener);
+        error.removeListener('enter', errorListener);
         testHelper.expectNoLingeringListeners(instance);
         done();
       });
@@ -69,6 +89,7 @@ lab.experiment('BoundaryEvent', () => {
 
     engine.startInstance({input: 2}, listener, (err, instance) => {
       if (err) return done(err);
+
       instance.once('end', () => {
         testHelper.expectNoLingeringListeners(instance);
         done();
