@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.3.2">
   <bpmn:process id="Process_1" isExecutable="false">
     <bpmn:startEvent id="start">
       <bpmn:outgoing>SequenceFlow_009rhrh</bpmn:outgoing>
@@ -15,14 +15,16 @@
       <bpmn:incoming>SequenceFlow_0ttpgeb</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0efld9d</bpmn:outgoing>
     </bpmn:parallelGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_0ttpgeb" sourceRef="IntermediateThrowEvent_0dzzn6l" targetRef="join" />
+    <bpmn:sequenceFlow id="SequenceFlow_0ttpgeb" sourceRef="timerStartEvent" targetRef="join" />
     <bpmn:endEvent id="end">
       <bpmn:incoming>SequenceFlow_0efld9d</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_0efld9d" sourceRef="join" targetRef="end" />
-    <bpmn:intermediateCatchEvent id="IntermediateThrowEvent_0dzzn6l">
+    <bpmn:intermediateCatchEvent id="timerStartEvent">
       <bpmn:outgoing>SequenceFlow_0ttpgeb</bpmn:outgoing>
-      <bpmn:timerEventDefinition />
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT0.05S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
     </bpmn:intermediateCatchEvent>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
@@ -74,7 +76,7 @@
           <dc:Bounds x="478.5" y="95" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="IntermediateCatchEvent_0jlbrkd_di" bpmnElement="IntermediateThrowEvent_0dzzn6l">
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_0jlbrkd_di" bpmnElement="timerStartEvent">
         <dc:Bounds x="307" y="206" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="280" y="242" width="90" height="20" />

@@ -123,7 +123,7 @@ lab.experiment('Resume execution', () => {
         task.signal('Continue');
       });
 
-      const engine2 = new Bpmn.Engine(factory.valid(), 'resumeMe');
+      const engine2 = new Bpmn.Engine(state.source, 'resumeMe');
       engine2.resume(state, listener2, (err, resumedInstance) => {
         if (err) return done(err);
 

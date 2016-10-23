@@ -291,4 +291,51 @@ lab.experiment('TimerEvent', () => {
       });
     });
   });
+
+  lab.describe('#resume', () => {
+    lab.test('resumes if not entered yet', (done) => {
+      const processXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <process id="interruptedProcess" isExecutable="true">
+      <userTask id="takeMeFirst" />
+      <userTask id="dontWaitForMe" />
+      <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
+        <timerEventDefinition>
+          <timeDuration xsi:type="tFormalExpression">PT0.05S</timeDuration>
+        </timerEventDefinition>
+      </boundaryEvent>
+      <sequenceFlow id="flow1" sourceRef="takeMeFirst" targetRef="dontWaitForMe" />
+    </process>
+  </definitions>
+      `;
+      const engine1 = new Bpmn.Engine(processXml, 'stopMe');
+      const listener1 = new EventEmitter();
+
+      let state;
+      listener1.once('wait-takeMeFirst', () => {
+        state = engine1.save();
+        engine1.stop();
+      });
+
+      engine1.once('end', () => {
+        const listener2 = new EventEmitter();
+        listener2.once('wait-takeMeFirst', (task) => {
+          task.signal('Continue');
+        });
+
+        const engine2 = new Bpmn.Engine(processXml, 'resumeMe');
+        engine2.resume(state, listener2, (err, resumedInstance) => {
+          if (err) return done(err);
+          resumedInstance.once('end', () => {
+            done();
+          });
+        });
+      });
+
+      engine1.startInstance(null, listener1, (err) => {
+        if (err) return done(err);
+      });
+    });
+  });
 });
