@@ -14,10 +14,13 @@ const Activity = require('../lib/activities/Activity');
 lab.experiment('Context', () => {
   let instance, siblings;
   lab.before((done) => {
-    const engine = new Bpmn.Engine(factory.resource('lanes.bpmn'));
+    const engine = new Bpmn.Engine({
+      source: factory.resource('lanes.bpmn')
+    });
     engine.getInstance({
-      init: 1,
-      request: require('request')
+      variables: {
+        init: 1
+      }
     }, null, (err, inst, sibl) => {
       if (err) return done(err);
       instance = inst;
@@ -55,7 +58,9 @@ lab.experiment('Context', () => {
 
   lab.describe('variables', () => {
     lab.test('initiating variables are stored for each context', (done) => {
-      siblings.forEach((p) => expect(p.context.variables).to.include({init: 1}));
+      siblings.forEach((p) => expect(p.context.variables).to.include({
+        init: 1
+      }));
       done();
     });
 
@@ -64,8 +69,10 @@ lab.experiment('Context', () => {
       instance.context.variables.mainProcess = true;
 
       siblings.filter((p) => p.id !== instance.id).forEach((p) => {
-        expect(p.context.variables).to.include({init: 1});
-        expect(p.context.variables).to.only.include(['init', 'request']);
+        expect(p.context.variables).to.include({
+          init: 1
+        });
+        expect(p.context.variables).to.only.include(['init']);
       });
 
       done();
@@ -75,15 +82,67 @@ lab.experiment('Context', () => {
   lab.describe('#applyMessage', () => {
     lab.test('shallow copies message to variables', (done) => {
       const participant = siblings.find((p) => p.id !== instance.id);
-      const message = {arbval: '2'};
+      const message = {
+        arbval: '2'
+      };
       participant.context.applyMessage(message);
 
-      expect(participant.context.variables).to.include({arbval: '2'});
+      expect(participant.context.variables).to.include({
+        arbval: '2'
+      });
 
       message.arbval = '3';
-      expect(participant.context.variables).to.include({arbval: '2'});
+      expect(participant.context.variables).to.include({
+        arbval: '2'
+      });
 
       done();
+    });
+  });
+
+  lab.describe('#getState', () => {
+    lab.test('returns variables and services', (done) => {
+      const engine = new Bpmn.Engine({
+        source: factory.resource('lanes.bpmn')
+      });
+      engine.getInstance({
+        variables: {
+          init: 1,
+          loadedAt: new Date(),
+          myArray: [1, 2, 3, 5],
+        },
+        services: {
+          request: {
+            type: 'require',
+            module: 'request'
+          },
+          myFuncs: {
+            type: 'require',
+            module: './helpers/testHelpers'
+          }
+        }
+      }, null, (err, inst) => {
+        if (err) return done(err);
+        instance = inst;
+
+        const state = instance.context.getState();
+
+        expect(state).to.only.include(['variables', 'services']);
+
+        expect(state.variables).to.only.include(['init', 'loadedAt', 'myArray']);
+        expect(state.services).to.include(['request', 'myFuncs']);
+        expect(state.services.myFuncs).to.include({
+          type: 'require',
+          module: './helpers/testHelpers'
+        });
+        expect(state.services.request).to.include({
+          type: 'require',
+          module: 'request'
+        });
+
+        done();
+      });
+
     });
   });
 });
