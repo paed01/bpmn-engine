@@ -14,8 +14,10 @@ const ErrorEvent = require('../../lib/mapper')('bpmn:ErrorEventDefinition');
 
 lab.experiment('BoundaryEvent', () => {
   lab.test('returns TimerEvent type', (done) => {
-    const engine = new Bpmn.Engine(factory.resource('boundary-timeout.bpmn'));
-    engine.getInstance(null, null, (err, instance) => {
+    const engine = new Bpmn.Engine({
+      source: factory.resource('boundary-timeout.bpmn')
+    });
+    engine.getInstance((err, instance) => {
       if (err) return done(err);
       const event = instance.getChildActivityById('boundTimeoutEvent');
       expect(event).to.be.instanceof(TimerEvent);
@@ -24,8 +26,10 @@ lab.experiment('BoundaryEvent', () => {
   });
 
   lab.test('returns ErrorEvent type', (done) => {
-    const engine = new Bpmn.Engine(factory.resource('bound-error.bpmn'));
-    engine.getInstance(null, null, (err, instance) => {
+    const engine = new Bpmn.Engine({
+      source: factory.resource('bound-error.bpmn')
+    });
+    engine.getInstance((err, instance) => {
       if (err) return done(err);
       const event = instance.getChildActivityById('errorEvent');
       expect(event).to.be.instanceof(ErrorEvent);
@@ -34,8 +38,10 @@ lab.experiment('BoundaryEvent', () => {
   });
 
   lab.test('set isStart to false and attachedTo', (done) => {
-    const engine = new Bpmn.Engine(factory.resource('boundary-timeout.bpmn'));
-    engine.getInstance(null, null, (err, instance) => {
+    const engine = new Bpmn.Engine({
+      source: factory.resource('boundary-timeout.bpmn')
+    });
+    engine.getInstance((err, instance) => {
       if (err) return done(err);
       const event = instance.getChildActivityById('boundTimeoutEvent');
       expect(event.isStart).to.be.false();
@@ -45,17 +51,22 @@ lab.experiment('BoundaryEvent', () => {
   });
 
   lab.test('is canceled if task emits caught error', (done) => {
-    const engine = new Bpmn.Engine(factory.resource('bound-error-and-timer.bpmn'));
+    const engine = new Bpmn.Engine({
+      source: factory.resource('bound-error-and-timer.bpmn')
+    });
     const listener = new EventEmitter();
     listener.once('end-timerEvent', (e) => {
       Code.fail(`<${e}> should have been discarded`);
     });
 
-    engine.startInstance(null, listener, (err, instance) => {
+    engine.execute({
+      listener: listener
+    }, (err, instance) => {
       if (err) return done(err);
       const timer = instance.getChildActivityById('timerEvent');
 
       let leaveTimerCount = 0;
+
       function timerListener(event) {
         leaveTimerCount++;
         if (leaveTimerCount > 1) Code.fail(`<${event.id}> should only leave once`);
@@ -65,6 +76,7 @@ lab.experiment('BoundaryEvent', () => {
       const error = instance.getChildActivityById('errorEvent');
 
       let leaveErrorCount = 0;
+
       function errorListener(event) {
         leaveErrorCount++;
         if (leaveErrorCount > 1) Code.fail(`<${event.id}> should only leave once`);
@@ -81,13 +93,20 @@ lab.experiment('BoundaryEvent', () => {
   });
 
   lab.test('takes timeout if no other bound event is caught', (done) => {
-    const engine = new Bpmn.Engine(factory.resource('bound-error-and-timer.bpmn'));
+    const engine = new Bpmn.Engine({
+      source: factory.resource('bound-error-and-timer.bpmn')
+    });
     const listener = new EventEmitter();
     listener.once('end-errorEvent', (e) => {
       Code.fail(`<${e}> should have been discarded`);
     });
 
-    engine.startInstance({input: 2}, listener, (err, instance) => {
+    engine.execute({
+      listener: listener,
+      variables: {
+        input: 2
+      }
+    }, (err, instance) => {
       if (err) return done(err);
 
       instance.once('end', () => {
@@ -111,10 +130,14 @@ lab.experiment('BoundaryEvent', () => {
   </process>
 </definitions>
     `;
-    const engine = new Bpmn.Engine(processXml);
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
     const listener = new EventEmitter();
 
-    engine.startInstance(null, listener, (err, instance) => {
+    engine.execute({
+      listener: listener
+    }, (err, instance) => {
       if (err) return done(err);
       instance.on('end', () => {
         done();

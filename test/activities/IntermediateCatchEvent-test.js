@@ -15,8 +15,10 @@ const MessageEvent = mapper('bpmn:MessageEventDefinition');
 lab.experiment('IntermediateCatchEvent', () => {
   lab.test('TimerEvent', (done) => {
     const processXml = factory.resource('timer-event.bpmn');
-    const engine = new Bpmn.Engine(processXml);
-    engine.getInstance(null, null, (err, inst) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.getInstance((err, inst) => {
       if (err) return done(err);
       expect(inst.getChildActivityById('duration')).to.be.instanceOf(TimerEvent);
       done();
@@ -25,8 +27,10 @@ lab.experiment('IntermediateCatchEvent', () => {
 
   lab.test('MessageEvent', (done) => {
     const processXml = factory.resource('lanes.bpmn');
-    const engine = new Bpmn.Engine(processXml);
-    engine.getInstance(null, null, (err, inst) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.getInstance((err, inst) => {
       if (err) return done(err);
       expect(inst.getChildActivityById('intermediate')).to.be.instanceOf(MessageEvent);
       done();

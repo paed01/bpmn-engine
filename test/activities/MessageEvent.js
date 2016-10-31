@@ -11,8 +11,10 @@ const expect = Code.expect;
 lab.experiment('MessageEvent', () => {
   let instance;
   lab.before((done) => {
-    const engine = new Bpmn.Engine(factory.resource('lanes.bpmn'));
-    engine.getInstance(null, null, (err, mainInstance) => {
+    const engine = new Bpmn.Engine({
+      source: factory.resource('lanes.bpmn')
+    });
+    engine.getInstance((err, mainInstance) => {
       if (err) return done(err);
       instance = mainInstance;
       done();

@@ -15,12 +15,15 @@ lab.experiment('Resume execution', () => {
 
   lab.test('starts with stopped task', (done) => {
     const processXml = factory.userTask();
-    const engine = new Bpmn.Engine(processXml, 'new');
+    const engine = new Bpmn.Engine({
+      source: processXml,
+      name: 'new'
+    });
     const listener1 = new EventEmitter();
 
     let state;
     listener1.on('wait-userTask', () => {
-      state = engine.save();
+      state = engine.getState();
       engine.stop();
     });
 
@@ -43,26 +46,34 @@ lab.experiment('Resume execution', () => {
         done();
       });
 
-      engine.resume(readFromDb(state), listener2, (err) => {
+      engine.resume(readFromDb(state), {
+        listener: listener2
+      }, (err) => {
         if (err) return done(err);
       });
     });
 
-    engine.startInstance({
-      input: 'start'
-    }, listener1, (err) => {
+    engine.execute({
+      listener: listener1,
+      variables: {
+        input: 'start'
+      }
+    }, (err) => {
       if (err) return done(err);
     });
   });
 
   lab.test('resumes stopped process even if engine is loaded with different process/version', (done) => {
     const processXml = factory.userTask();
-    const engine1 = new Bpmn.Engine(processXml, 'stopMe');
+    const engine1 = new Bpmn.Engine({
+      source: processXml,
+      name: 'stopMe'
+    });
     const listener1 = new EventEmitter();
 
     let state;
     listener1.once('wait-userTask', () => {
-      state = engine1.save();
+      state = engine1.getState();
       engine1.stop();
     });
 
@@ -70,7 +81,10 @@ lab.experiment('Resume execution', () => {
       testHelpers.expectNoLingeringListenersOnEngine(engine1);
 
       const listener2 = new EventEmitter();
-      const engine2 = new Bpmn.Engine(factory.valid(), 'resumeMe');
+      const engine2 = new Bpmn.Engine({
+        source: factory.valid(),
+        name: 'resumeMe'
+      });
       listener2.once('start-theStart', (activity) => {
         Code.fail(`<${activity.id}> should not have been started`);
       });
@@ -83,20 +97,28 @@ lab.experiment('Resume execution', () => {
         done();
       });
 
-      engine2.resume(readFromDb(state), listener2, (err) => {
+      engine2.resume(readFromDb(state), {
+        listener: listener2
+      }, (err) => {
         if (err) return done(err);
       });
     });
 
-    engine1.startInstance({
-      input: null
-    }, listener1, (err) => {
+    engine1.execute({
+      listener: listener1,
+      variables: {
+        input: null
+      }
+    }, (err) => {
       if (err) return done(err);
     });
   });
 
   lab.test('resumes stopped subprocess', (done) => {
-    const engine1 = new Bpmn.Engine(factory.resource('mother-of-all.bpmn'), 'stopMe');
+    const engine1 = new Bpmn.Engine({
+      source: factory.resource('mother-of-all.bpmn'),
+      name: 'stopMe'
+    });
     const listener1 = new EventEmitter();
 
     listener1.on('wait-userTask1', (task) => {
@@ -105,7 +127,7 @@ lab.experiment('Resume execution', () => {
 
     let state;
     listener1.once('wait-subUserTask1', () => {
-      state = engine1.save();
+      state = engine1.getState();
       engine1.stop();
     });
 
@@ -130,8 +152,13 @@ lab.experiment('Resume execution', () => {
         task.signal('Continue');
       });
 
-      const engine2 = new Bpmn.Engine(state.source, 'resumeMe');
-      engine2.resume(readFromDb(state), listener2, (err, resumedInstance) => {
+      const engine2 = new Bpmn.Engine({
+        source: state.source,
+        name: 'resumeMe'
+      });
+      engine2.resume(readFromDb(state), {
+        listener: listener2
+      }, (err, resumedInstance) => {
         if (err) return done(err);
 
         resumedInstance.once('end', () => {
@@ -141,9 +168,12 @@ lab.experiment('Resume execution', () => {
       });
     });
 
-    engine1.startInstance({
-      input: null
-    }, listener1, (err) => {
+    engine1.execute({
+      listener: listener1,
+      variables: {
+        input: null
+      }
+    }, (err) => {
       if (err) return done(err);
     });
   });
@@ -162,13 +192,16 @@ lab.experiment('Resume execution', () => {
   </process>
 </definitions>
     `;
-    const engine1 = new Bpmn.Engine(processXml, 'stopMe');
+    const engine1 = new Bpmn.Engine({
+      source: processXml,
+      name: 'stopMe'
+    });
     const listener1 = new EventEmitter();
 
     let state;
     listener1.once('wait-dontWaitForMe', () => {
       setTimeout(() => {
-        state = engine1.save();
+        state = engine1.getState();
         engine1.stop();
       }, 10);
     });
@@ -177,8 +210,11 @@ lab.experiment('Resume execution', () => {
       const timeout = state.processes.interruptedProcess.children.find(c => c.id === 'timeoutEvent').timeout;
       expect(timeout).to.be.between(0, 99);
 
-      const engine2 = new Bpmn.Engine(state.source, 'resumeMe');
-      engine2.resume(readFromDb(state), null, (err, resumedInstance) => {
+      const engine2 = new Bpmn.Engine({
+        source: state.source,
+        name: 'resumeMe'
+      });
+      engine2.resume(readFromDb(state), (err, resumedInstance) => {
         const startedAt = new Date();
         if (err) return done(err);
 
@@ -189,7 +225,9 @@ lab.experiment('Resume execution', () => {
       });
     });
 
-    engine1.startInstance(null, listener1, (err) => {
+    engine1.execute({
+      listener: listener1
+    }, (err) => {
       if (err) return done(err);
     });
   });
@@ -201,9 +239,9 @@ lab.experiment('Resume execution', () => {
     <startEvent id="start" />
     <scriptTask id="scriptTask" name="Check input" scriptFormat="JavaScript">
       <script><![CDATA[
-if (!context.input) {
+if (!variables.input) {
   next(new Error("Input is missing"));
-} else if (context.input === 2) {
+} else if (variables.input === 2) {
 } else {
   next();
 }]]></script>
@@ -230,12 +268,15 @@ if (!context.input) {
   </process>
 </definitions>
     `;
-    const engine1 = new Bpmn.Engine(processXml, 'stopMe');
+    const engine1 = new Bpmn.Engine({
+      source: processXml,
+      name: 'stopMe'
+    });
     const listener1 = new EventEmitter();
 
     let state;
     listener1.once('start-timerEvent', () => {
-      state = engine1.save();
+      state = engine1.getState();
       engine1.stop();
     });
 
@@ -244,7 +285,11 @@ if (!context.input) {
 
       delete state.processes.interruptedProcess.variables.input;
 
-      const engine2 = new Bpmn.Engine(state.source, 'resumeMe');
+      const engine2 = new Bpmn.Engine({
+        source: state.source,
+        name: 'resumeMe'
+      });
+
       const listener2 = new EventEmitter();
 
       listener2.on('end-scriptTask', (activity) => {
@@ -254,7 +299,9 @@ if (!context.input) {
         Code.fail(`<${activity.id}> should not have been taken`);
       });
 
-      engine2.resume(readFromDb(state), listener2, (err, resumedInstance) => {
+      engine2.resume(readFromDb(state), {
+        listener: listener2
+      }, (err, resumedInstance) => {
         if (err) return done(err);
         resumedInstance.once('end', () => {
           expect(resumedInstance.getChildActivityById('errorEvent').taken).to.be.true();
@@ -263,9 +310,12 @@ if (!context.input) {
       });
     });
 
-    engine1.startInstance({
-      input: 2
-    }, listener1, (err) => {
+    engine1.execute({
+      listener: listener1,
+      variables: {
+        input: 2
+      }
+    }, (err) => {
       if (err) return done(err);
     });
   });
@@ -280,8 +330,7 @@ if (!context.input) {
   <scriptTask id="scriptTask" scriptFormat="Javascript">
     <script>
       <![CDATA[
-        const self = this;
-        context.request.get('http://example.com/test', (err, resp, body) => {
+        services.request.get('http://example.com/test', (err, resp, body) => {
           if (err) return next(err);
           next(err, body);
         })
@@ -304,27 +353,38 @@ if (!context.input) {
         data: 2
       });
 
-    const engine1 = new Bpmn.Engine(processXml);
+    const engine1 = new Bpmn.Engine({
+      source: processXml
+    });
     const listener1 = new EventEmitter();
-    const variables = {
-      request: require('request')
+    const options = {
+      listener: listener1,
+      services: {
+        request: {
+          module: 'request'
+        }
+      }
     };
 
     let state;
     listener1.once('wait-userTask', () => {
-      state = engine1.save();
+      state = engine1.getState();
       engine1.stop();
     });
 
     engine1.once('end', () => {
       testHelpers.expectNoLingeringListenersOnEngine(engine1);
 
-      const engine2 = new Bpmn.Engine(state.source);
+      const engine2 = new Bpmn.Engine({
+        source: state.source
+      });
       const listener2 = new EventEmitter();
       listener2.once('wait-userTask', (task) => {
         task.signal();
       });
-      engine2.resume(readFromDb(state), listener2, (err, instance) => {
+      engine2.resume(readFromDb(state), {
+        listener: listener2
+      }, (err, instance) => {
         if (err) return done(err);
 
         instance.once('end', () => {
@@ -333,7 +393,7 @@ if (!context.input) {
       });
     });
 
-    engine1.startInstance(variables, listener1, (err) => {
+    engine1.execute(options, (err) => {
       if (err) return done(err);
     });
   });
@@ -348,15 +408,14 @@ if (!context.input) {
     <scriptTask id="scriptTask" scriptFormat="Javascript">
       <script>
         <![CDATA[
-          const require = context.require;
+          const require = services.require;
           const request = require('request');
 
           const self = this;
 
           request.get('http://example.com/test', (err, resp, body) => {
             if (err) return next(err);
-            const result = JSON.parse(body);
-            self.context.data = result.data;
+            self.variables.data = body.data;
             next();
           })
         ]]>
@@ -370,32 +429,47 @@ if (!context.input) {
 </definitions>`;
 
     nock('http://example.com')
+      .defaultReplyHeaders({
+        'Content-Type': 'application/json'
+      })
       .get('/test')
       .reply(200, {
         data: 3
       });
 
-    const engine1 = new Bpmn.Engine(processXml);
+    const engine1 = new Bpmn.Engine({
+      source: processXml
+    });
     const listener1 = new EventEmitter();
-    const variables = {
-      request: require('request')
+    const options = {
+      listener: listener1,
+      services: {
+        require: {
+          module: 'require',
+          type: 'global'
+        }
+      }
     };
 
     let state;
     listener1.once('wait-userTask', () => {
-      state = engine1.save();
+      state = engine1.getState();
       engine1.stop();
     });
 
     engine1.once('end', () => {
       testHelpers.expectNoLingeringListenersOnEngine(engine1);
 
-      const engine2 = new Bpmn.Engine(state.source);
+      const engine2 = new Bpmn.Engine({
+        source: state.source
+      });
       const listener2 = new EventEmitter();
       listener2.once('wait-userTask', (task) => {
         task.signal();
       });
-      engine2.resume(state, listener2, (err, instance) => {
+      engine2.resume(state, {
+        listener: listener2
+      }, (err, instance) => {
         if (err) return done(err);
 
         instance.once('end', () => {
@@ -404,7 +478,7 @@ if (!context.input) {
       });
     });
 
-    engine1.startInstance(variables, listener1, (err) => {
+    engine1.execute(options, (err) => {
       if (err) return done(err);
     });
   });
@@ -415,7 +489,6 @@ function readFromDb(state) {
   const source = state.source;
   delete state.source;
   const savedState = JSON.stringify(state, null, 2);
-  console.log(savedState)
   const loadedState = JSON.parse(savedState);
   loadedState.source = source;
   return loadedState;

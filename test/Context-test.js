@@ -21,7 +21,7 @@ lab.experiment('Context', () => {
       variables: {
         init: 1
       }
-    }, null, (err, inst, sibl) => {
+    }, (err, inst, sibl) => {
       if (err) return done(err);
       instance = inst;
       siblings = sibl;
@@ -101,7 +101,7 @@ lab.experiment('Context', () => {
   });
 
   lab.describe('#getState', () => {
-    lab.test('returns variables and services', (done) => {
+    lab.test('returns variables, services and children', (done) => {
       const engine = new Bpmn.Engine({
         source: factory.resource('lanes.bpmn')
       });
@@ -121,13 +121,13 @@ lab.experiment('Context', () => {
             module: './helpers/testHelpers'
           }
         }
-      }, null, (err, inst) => {
+      }, (err, inst) => {
         if (err) return done(err);
         instance = inst;
 
         const state = instance.context.getState();
 
-        expect(state).to.only.include(['variables', 'services']);
+        expect(state).to.only.include(['variables', 'services', 'children']);
 
         expect(state.variables).to.only.include(['init', 'loadedAt', 'myArray']);
         expect(state.services).to.include(['request', 'myFuncs']);

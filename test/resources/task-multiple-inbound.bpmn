@@ -13,11 +13,11 @@
       <bpmn:incoming>flow2</bpmn:incoming>
       <bpmn:incoming>flow3</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0ruy5f5</bpmn:outgoing>
-      <bpmn:script><![CDATA[if (!this.context.input) {
-  this.context.input = 0;
+      <bpmn:script><![CDATA[if (!this.variables.input) {
+  this.variables.input = 0;
 }
 
-this.context.input++;
+this.variables.input++;
 
 next();]]></bpmn:script>
     </bpmn:scriptTask>
@@ -40,7 +40,7 @@ next();]]></bpmn:script>
     <bpmn:sequenceFlow id="SequenceFlow_0ruy5f5" sourceRef="script" targetRef="decision" />
     <bpmn:sequenceFlow id="SequenceFlow_0jtx7d0" sourceRef="start" targetRef="task" />
     <bpmn:sequenceFlow id="loopFlow" sourceRef="decision" targetRef="task">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript"><![CDATA[this.context.input < 2]]></bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript"><![CDATA[this.variables.input < 2]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:task id="task" name="task">
       <bpmn:incoming>SequenceFlow_0jtx7d0</bpmn:incoming>

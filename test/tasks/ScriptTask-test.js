@@ -59,8 +59,10 @@ lab.experiment('ScriptTask', () => {
     </process>
   </definitions>`;
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.getInstance(null, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.getInstance((err, execution) => {
         if (err) return done(err);
         const activity = execution.getChildActivityById('scriptTask');
         expect(activity).to.include('inbound');
@@ -87,8 +89,10 @@ lab.experiment('ScriptTask', () => {
     </process>
   </definitions>`;
 
-      const engine = new Bpmn.Engine(alternativeProcessXml);
-      engine.getInstance(null, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: alternativeProcessXml
+      });
+      engine.getInstance((err, execution) => {
         if (err) return done(err);
         const task = execution.getChildActivityById('scriptTask');
         expect(task.isEnd).to.be.true();
@@ -107,7 +111,8 @@ lab.experiment('ScriptTask', () => {
   <scriptTask id="scriptTask" scriptFormat="Javascript">
     <script>
       <![CDATA[
-        next(null, {input: this.context.input++});
+        this.variables.input++;
+        next(null, {input: this.variables.input});
       ]]>
     </script>
   </scriptTask>
@@ -117,15 +122,19 @@ lab.experiment('ScriptTask', () => {
   </process>
 </definitions>`;
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance({
-        input: 1
-      }, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
+        variables: {
+          input: 1
+        }
+      }, (err, instance) => {
         if (err) return done(err);
 
-        execution.once('end', () => {
-          expect(execution.variables.input, 'input variable').to.equal(2);
-          testHelper.expectNoLingeringListeners(execution);
+        instance.once('end', () => {
+          expect(instance.variables.input, 'input variable').to.equal(2);
+          testHelper.expectNoLingeringListeners(instance);
           done();
         });
       });
@@ -150,8 +159,10 @@ lab.experiment('ScriptTask', () => {
   </process>
 </definitions>`;
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.getInstance(null, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.getInstance((err, execution) => {
         if (err) return done(err);
         const activity = execution.getChildActivityById('scriptTask');
 
@@ -185,14 +196,14 @@ lab.experiment('ScriptTask', () => {
 <scriptTask id="scriptTask" scriptFormat="Javascript">
   <script>
     <![CDATA[
-      const request = context.request;
+      const request = services.request;
 
       const self = this;
 
       request.get('http://example.com/test', (err, resp, body) => {
         if (err) return next(err);
         const result = JSON.parse(body);
-        self.context.data = result.data;
+        self.variables.data = result.data;
         next();
       })
     ]]>
@@ -210,16 +221,24 @@ lab.experiment('ScriptTask', () => {
           data: 2
         });
 
-      const engine = new Bpmn.Engine(processXml);
-      const variables = {
-        request: require('request')
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      const options = {
+        services: {
+          request: {
+            module: 'request'
+          }
+        }
       };
 
-      engine.startInstance(variables, null, (err, execution) => {
+      engine.execute(options, (err, execution) => {
         if (err) return done(err);
         execution.once('end', () => {
           expect(nock.isDone()).to.be.true();
-          expect(execution.variables).to.include({data: 2});
+          expect(execution.variables).to.include({
+            data: 2
+          });
           done();
         });
       });
@@ -234,7 +253,7 @@ lab.experiment('ScriptTask', () => {
 <scriptTask id="scriptTask" scriptFormat="Javascript">
   <script>
     <![CDATA[
-      const require = context.require;
+      const require = services.require;
       const request = require('request');
 
       const self = this;
@@ -242,7 +261,7 @@ lab.experiment('ScriptTask', () => {
       request.get('http://example.com/test', (err, resp, body) => {
         if (err) return next(err);
         const result = JSON.parse(body);
-        self.context.data = result.data;
+        self.variables.data = result.data;
         next();
       })
     ]]>
@@ -260,16 +279,27 @@ lab.experiment('ScriptTask', () => {
           data: 3
         });
 
-      const engine = new Bpmn.Engine(processXml);
-      const variables = {
-        require: require,
-        data: 1
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      const options = {
+        services: {
+          require: {
+            module: 'require',
+            type: 'global'
+          }
+        },
+        variables: {
+          data: 1
+        }
       };
-      engine.startInstance(variables, null, (err, execution) => {
+      engine.execute(options, (err, execution) => {
         if (err) return done(err);
         execution.once('end', () => {
           expect(nock.isDone()).to.be.true();
-          expect(execution.variables).to.include({data: 3});
+          expect(execution.variables).to.include({
+            data: 3
+          });
           done();
         });
       });
@@ -285,7 +315,7 @@ lab.experiment('ScriptTask', () => {
 <scriptTask id="scriptTask" scriptFormat="Javascript">
   <script>
     <![CDATA[
-      this.context.stopLoop = true;
+      this.variables.stopLoop = true;
       next();
     ]]>
   </script>
@@ -294,7 +324,7 @@ lab.experiment('ScriptTask', () => {
 <sequenceFlow id="flow1" sourceRef="start" targetRef="decision" />
 <sequenceFlow id="flow2" sourceRef="decision" targetRef="scriptTask">
   <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-  !this.context.stopLoop
+  !this.variables.stopLoop
   ]]></conditionExpression>
 </sequenceFlow>
 <sequenceFlow id="flow3" sourceRef="scriptTask" targetRef="decision" />
@@ -302,8 +332,10 @@ lab.experiment('ScriptTask', () => {
 </process>
 </definitions>`;
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance(null, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute((err, execution) => {
         if (err) return done(err);
         execution.once('end', () => {
           expect(nock.isDone()).to.be.true();
@@ -322,7 +354,7 @@ lab.experiment('ScriptTask', () => {
     <scriptTask id="scriptTask" scriptFormat="Javascript">
       <script>
         <![CDATA[
-          this.context.stopLoop = true;
+          this.variables.stopLoop = true;
           next(null, {output: 1});
         ]]>
       </script>
@@ -330,8 +362,10 @@ lab.experiment('ScriptTask', () => {
   </process>
 </definitions>`;
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance(null, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute((err, execution) => {
         if (err) return done(err);
         execution.once('end', () => {
           expect(execution.variables.taskInput.scriptTask.output).to.equal(1);

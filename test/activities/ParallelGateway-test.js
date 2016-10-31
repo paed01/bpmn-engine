@@ -28,8 +28,10 @@ lab.experiment('ParallelGateway', () => {
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.getInstance(null, null, (err, instance) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.getInstance((err, instance) => {
       if (err) return done(err);
 
       const forkActivity = instance.getChildActivityById('fork');
@@ -63,8 +65,10 @@ lab.experiment('ParallelGateway', () => {
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance(null, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute((err, execution) => {
       if (err) return done(err);
 
       execution.on('end', () => {
@@ -91,8 +95,10 @@ lab.experiment('ParallelGateway', () => {
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance(null, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute((err, execution) => {
       if (err) return done(err);
 
       execution.on('end', () => {
@@ -121,8 +127,10 @@ lab.experiment('ParallelGateway', () => {
   </process>
 </definitions>`;
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance(null, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute((err, execution) => {
         if (err) return done(err);
 
         execution.on('end', () => {
@@ -148,17 +156,21 @@ lab.experiment('ParallelGateway', () => {
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="join" />
     <sequenceFlow id="flow5" sourceRef="decision" targetRef="join">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 50
+      this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
   </process>
 </definitions>`;
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance({
-        input: 51
-      }, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
+        variables: {
+          input: 51
+        }
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.on('end', () => {
@@ -187,7 +199,7 @@ lab.experiment('ParallelGateway', () => {
     <sequenceFlow id="flow3" sourceRef="script" targetRef="join" />
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="task">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-        this.context.input <= 50
+        this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow5" sourceRef="task" targetRef="join" />
@@ -195,10 +207,12 @@ lab.experiment('ParallelGateway', () => {
   </process>
 </definitions>`;
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance({
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
         input: 51
-      }, null, (err, execution) => {
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.on('end', () => {
@@ -225,7 +239,7 @@ lab.experiment('ParallelGateway', () => {
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="task">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-        this.context.input <= 50
+        this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="task" targetRef="join" />
@@ -235,10 +249,14 @@ lab.experiment('ParallelGateway', () => {
   </process>
 </definitions>`;
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance({
-        input: 51
-      }, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
+        variables: {
+          input: 51
+        }
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.on('end', () => {
@@ -265,7 +283,7 @@ lab.experiment('ParallelGateway', () => {
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="script">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-        this.context.input <= 50
+        this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="script" targetRef="join" />
@@ -275,10 +293,14 @@ lab.experiment('ParallelGateway', () => {
   </process>
 </definitions>`;
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance({
-        input: 50
-      }, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
+        variables: {
+          input: 50
+        }
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.on('end', () => {
@@ -291,7 +313,9 @@ lab.experiment('ParallelGateway', () => {
 
     lab.test('completes process with multiple joins in discarded path', (done) => {
       const processXml = factory.resource('multiple-joins.bpmn');
-      const engine = new Bpmn.Engine(processXml);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
 
       const listener = new EventEmitter();
       let count = 0;
@@ -300,9 +324,11 @@ lab.experiment('ParallelGateway', () => {
         count++;
       });
 
-      engine.startInstance({
-        input: 51
-      }, null, (err, execution) => {
+      engine.execute({
+        variables: {
+          input: 51
+        }
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.on('end', () => {

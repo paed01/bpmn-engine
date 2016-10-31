@@ -16,13 +16,13 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="flow5" sourceRef="decision" targetRef="theEnd" />
     <bpmn:sequenceFlow id="flow3" sourceRef="decision" targetRef="scriptTask2">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript"><![CDATA[this.context.input < 2]]></bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript"><![CDATA[this.variables.input < 2]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="flow4" sourceRef="scriptTask2" targetRef="scriptTask1" />
     <bpmn:scriptTask id="scriptTask2" name="Iterate input" scriptFormat="JavaScript">
       <bpmn:incoming>flow3</bpmn:incoming>
       <bpmn:outgoing>flow4</bpmn:outgoing>
-      <bpmn:script><![CDATA[context.input += 1;
+      <bpmn:script><![CDATA[variables.input += 1;
 next();]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:scriptTask id="scriptTask1" name="Next" scriptFormat="JavaScript">

@@ -58,7 +58,7 @@
         <camunda:inputOutput>
           <camunda:inputParameter name="messageToMain">Done!</camunda:inputParameter>
           <camunda:outputParameter name="message">
-            <camunda:script scriptFormat="JavaScript">`${context.messageToMain} Aswell!`;</camunda:script>
+            <camunda:script scriptFormat="JavaScript">`${messageToMain} Aswell!`;</camunda:script>
           </camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>

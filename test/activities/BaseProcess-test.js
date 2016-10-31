@@ -21,8 +21,10 @@ lab.experiment('BaseProcess', () => {
     <process id="theEmptyProcess" isExecutable="true" />
   </definitions>`;
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance(null, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute((err, execution) => {
         if (err) return done(err);
         execution.once('end', () => {
           done();
@@ -42,7 +44,7 @@ lab.experiment('BaseProcess', () => {
       <scriptTask id="task2" scriptFormat="JavaScript">
         <script>
           <![CDATA[
-            this.context.input = 2;
+            this.variables.input = 2;
             next();
           ]]>
         </script>
@@ -50,8 +52,10 @@ lab.experiment('BaseProcess', () => {
     </process>
   </definitions>`;
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance(null, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute((err, execution) => {
         if (err) return done(err);
 
         const userTask = execution.getChildActivityById('task1');
@@ -82,11 +86,11 @@ lab.experiment('BaseProcess', () => {
           <![CDATA[
             const self = this;
             function setContextVariable(callback) {
-              if (!self.context.taskInput) {
+              if (!self.variables.taskInput) {
                 return callback(new Error('Missing task input'));
               }
 
-              self.context.userWrote = self.context.taskInput.task1;
+              self.variables.userWrote = self.variables.taskInput.task1;
               callback();
             }
             setContextVariable(next);
@@ -97,8 +101,10 @@ lab.experiment('BaseProcess', () => {
     </process>
   </definitions>`;
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance(null, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute((err, execution) => {
         if (err) return done(err);
 
         execution.once('end', () => {
@@ -138,10 +144,15 @@ lab.experiment('BaseProcess', () => {
         }
       });
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance({
-        input: 0
-      }, listener, (err, instance) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
+        variables: {
+          input: 0
+        },
+        listener: listener
+      }, (err, instance) => {
         if (err) return done(err);
         instance.once('end', () => {
           expect(startCount, 'scriptTask1 starts').to.equal(3);
@@ -161,10 +172,14 @@ lab.experiment('BaseProcess', () => {
   lab.describe('multiple end events', () => {
     const processXml = factory.resource('multiple-endEvents.bpmn');
     lab.test('completes all flows', (done) => {
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance({
-        input: 0
-      }, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
+        variables: {
+          input: 0
+        }
+      }, (err, execution) => {
         if (err) return done(err);
         execution.once('end', () => {
           expect(execution.variables.input, 'iterated input').to.equal(2);
@@ -178,16 +193,20 @@ lab.experiment('BaseProcess', () => {
     const processXml = factory.resource('boundary-timeout.bpmn');
 
     lab.test('timer boundary event with cancel task completes', (done) => {
-      const engine = new Bpmn.Engine(processXml);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
 
       const listener = new EventEmitter();
       listener.once('end-userTask', (e) => {
         Code.fail(`<${e.id}> should not have reached end`);
       });
 
-      engine.startInstance({
-        input: 0
-      }, null, (err, execution) => {
+      engine.execute({
+        variables: {
+          input: 0
+        }
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.once('end', () => {
@@ -198,7 +217,9 @@ lab.experiment('BaseProcess', () => {
     });
 
     lab.test('timer boundary event is discarded if task completes', (done) => {
-      const engine = new Bpmn.Engine(processXml);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
 
       const listener = new EventEmitter();
       listener.on('wait-userTask', (activity) => {
@@ -211,9 +232,12 @@ lab.experiment('BaseProcess', () => {
         Code.fail(`<${e.id}> should not have reached end`);
       });
 
-      engine.startInstance({
-        input: 0
-      }, listener, (err, execution) => {
+      engine.execute({
+        listener: listener,
+        variables: {
+          input: 0
+        }
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.once('end', () => {
@@ -229,7 +253,9 @@ lab.experiment('BaseProcess', () => {
     let instance;
     lab.before((done) => {
       const processXml = factory.resource('mother-of-all.bpmn');
-      const engine = new Bpmn.Engine(processXml);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
       const listener = new EventEmitter();
       listener.on('wait', (activity) => {
         activity.signal({
@@ -238,8 +264,11 @@ lab.experiment('BaseProcess', () => {
       });
 
       engine.getInstance({
-        input: 0
-      }, listener, (err, inst) => {
+        variables: {
+          input: 0
+        },
+        listener: listener
+      }, (err, inst) => {
         if (err) return done(err);
         instance = inst;
         done();

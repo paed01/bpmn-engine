@@ -16,8 +16,10 @@ lab.experiment('TimerEvent', () => {
     const processXml = factory.resource('boundary-timeout.bpmn');
     let instance;
     lab.before((done) => {
-      const engine = new Bpmn.Engine(processXml);
-      engine.getInstance(null, null, (err, processInstance) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.getInstance((err, processInstance) => {
         if (err) return done(err);
         instance = processInstance;
         done();
@@ -35,8 +37,10 @@ lab.experiment('TimerEvent', () => {
     let event, instance;
     lab.before((done) => {
       const processXml = factory.resource('boundary-timeout.bpmn');
-      const engine = new Bpmn.Engine(processXml);
-      engine.getInstance(null, null, (err, processInstance) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.getInstance((err, processInstance) => {
         if (err) return done(err);
         instance = processInstance;
         event = instance.getChildActivityById('boundTimeoutEvent');
@@ -71,7 +75,9 @@ lab.experiment('TimerEvent', () => {
       const processXml = factory.resource('boundary-timeout.bpmn');
 
       lab.test('is discarded if task completes', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
         listener.once('wait-userTask', (task) => {
           task.signal();
@@ -80,7 +86,9 @@ lab.experiment('TimerEvent', () => {
           Code.fail(`<${e.id}> should have been discarded`);
         });
 
-        engine.startInstance(null, listener, (err, inst) => {
+        engine.execute({
+          listener: listener
+        }, (err, inst) => {
           if (err) return done(err);
 
           inst.once('end', () => {
@@ -91,7 +99,9 @@ lab.experiment('TimerEvent', () => {
       });
 
       lab.test('is discarded if task is canceled', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
         listener.once('wait-userTask', (task) => {
           task.cancel();
@@ -100,7 +110,9 @@ lab.experiment('TimerEvent', () => {
           Code.fail(`<${e.id}> should have been discarded`);
         });
 
-        engine.startInstance(null, listener, (err, inst) => {
+        engine.execute({
+          listener: listener
+        }, (err, inst) => {
           if (err) return done(err);
 
           inst.once('end', () => {
@@ -111,13 +123,17 @@ lab.experiment('TimerEvent', () => {
       });
 
       lab.test('cancels task', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
         listener.once('end-userTask', (e) => {
           Code.fail(`<${e.id}> should have been discarded`);
         });
 
-        engine.startInstance(null, null, (err, inst) => {
+        engine.execute({
+          listener: listener
+        }, (err, inst) => {
           if (err) return done(err);
 
           inst.once('end', () => {
@@ -132,7 +148,9 @@ lab.experiment('TimerEvent', () => {
       const processXml = factory.resource('boundary-non-interupting-timer.bpmn');
 
       lab.test('does not discard task', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
 
         const calledEnds = [];
@@ -146,7 +164,9 @@ lab.experiment('TimerEvent', () => {
           e.parentContext.getChildActivityById('userTask').signal();
         });
 
-        engine.startInstance(null, listener, (err, inst) => {
+        engine.execute({
+          listener: listener
+        }, (err, inst) => {
           if (err) return done(err);
 
           inst.once('end', () => {
@@ -158,7 +178,9 @@ lab.experiment('TimerEvent', () => {
       });
 
       lab.test('is discarded if task completes', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
 
         listener.once('wait-userTask', (task) => {
@@ -174,7 +196,9 @@ lab.experiment('TimerEvent', () => {
           calledEnds.push(e.id);
         });
 
-        engine.startInstance(null, listener, (err, inst) => {
+        engine.execute({
+          listener: listener
+        }, (err, inst) => {
           if (err) return done(err);
           inst.once('end', () => {
             expect(calledEnds).to.include(['userTask']);
@@ -185,7 +209,9 @@ lab.experiment('TimerEvent', () => {
       });
 
       lab.test('is discarded if task is canceled', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
         listener.once('wait-userTask', (task) => {
           task.cancel();
@@ -194,7 +220,9 @@ lab.experiment('TimerEvent', () => {
           Code.fail(`<${e.id}> should have been discarded`);
         });
 
-        engine.startInstance(null, listener, (err, inst) => {
+        engine.execute({
+          listener: listener
+        }, (err, inst) => {
           if (err) return done(err);
 
           inst.once('end', () => {
@@ -210,8 +238,10 @@ lab.experiment('TimerEvent', () => {
     const processXml = factory.resource('timer-event.bpmn');
     let event, instance;
     lab.before((done) => {
-      const engine = new Bpmn.Engine(processXml);
-      engine.getInstance(null, null, (err, processInstance) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.getInstance((err, processInstance) => {
         if (err) return done(err);
         instance = processInstance;
         event = instance.getChildActivityById('duration');
@@ -235,7 +265,9 @@ lab.experiment('TimerEvent', () => {
     });
 
     lab.test('waits duration', (done) => {
-      const engine = new Bpmn.Engine(processXml);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
       const listener = new EventEmitter();
 
       const calledEnds = [];
@@ -243,7 +275,9 @@ lab.experiment('TimerEvent', () => {
         calledEnds.push(e.id);
       });
 
-      engine.startInstance(null, listener, (err, inst) => {
+      engine.execute({
+        listener: listener
+      }, (err, inst) => {
         if (err) return done(err);
 
         inst.once('end', () => {
@@ -270,7 +304,10 @@ lab.experiment('TimerEvent', () => {
     </process>
   </definitions>
       `;
-      const engine = new Bpmn.Engine(processXml, 'stopMe');
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        name: 'stopMe'
+      });
       const listener1 = new EventEmitter();
 
       listener1.once('wait-dontWaitForMe', () => {
@@ -279,7 +316,9 @@ lab.experiment('TimerEvent', () => {
         }, 10);
       });
 
-      engine.startInstance(null, listener1, (err) => {
+      engine.execute({
+        listener: listener1
+      }, (err) => {
         if (err) return done(err);
       });
 
@@ -309,12 +348,15 @@ lab.experiment('TimerEvent', () => {
     </process>
   </definitions>
       `;
-      const engine1 = new Bpmn.Engine(processXml, 'stopMe');
+      const engine1 = new Bpmn.Engine({
+        source: processXml,
+        name: 'stopMe'
+      });
       const listener1 = new EventEmitter();
 
       let state;
       listener1.once('wait-takeMeFirst', () => {
-        state = engine1.save();
+        state = engine1.getState();
         engine1.stop();
       });
 
@@ -324,8 +366,13 @@ lab.experiment('TimerEvent', () => {
           task.signal('Continue');
         });
 
-        const engine2 = new Bpmn.Engine(processXml, 'resumeMe');
-        engine2.resume(state, listener2, (err, resumedInstance) => {
+        const engine2 = new Bpmn.Engine({
+          source: state.source,
+          name: 'resumeMe'
+        });
+        engine2.resume(state, {
+          listener: listener2
+        }, (err, resumedInstance) => {
           if (err) return done(err);
           resumedInstance.once('end', () => {
             done();
@@ -333,7 +380,9 @@ lab.experiment('TimerEvent', () => {
         });
       });
 
-      engine1.startInstance(null, listener1, (err) => {
+      engine1.execute({
+        listener: listener1
+      }, (err) => {
         if (err) return done(err);
       });
     });

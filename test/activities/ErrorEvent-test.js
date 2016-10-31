@@ -17,8 +17,10 @@ lab.experiment('ErrorEvent', () => {
     lab.describe('ctor', () => {
       let event, instance;
       lab.before((done) => {
-        const engine = new Bpmn.Engine(processXml);
-        engine.getInstance(null, null, (err, processInstance) => {
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
+        engine.getInstance((err, processInstance) => {
           if (err) return done(err);
           instance = processInstance;
           event = instance.getChildActivityById('errorEvent');
@@ -34,10 +36,12 @@ lab.experiment('ErrorEvent', () => {
       });
     });
 
-    lab.describe('interupting', () => {
+    lab.describe('interrupting', () => {
 
       lab.test('is discarded if task completes', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
         listener.once('start-scriptTask', (task) => {
           task.signal();
@@ -46,9 +50,12 @@ lab.experiment('ErrorEvent', () => {
           Code.fail(`<${e.id}> should have been discarded`);
         });
 
-        engine.startInstance({
-          input: 1
-        }, listener, (err, inst) => {
+        engine.execute({
+          listener: listener,
+          variables: {
+            input: 1
+          }
+        }, (err, inst) => {
           if (err) return done(err);
 
           inst.once('end', () => {
@@ -59,7 +66,9 @@ lab.experiment('ErrorEvent', () => {
       });
 
       lab.test('is discarded if task is canceled', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
         listener.once('enter-scriptTask', (task) => {
           task.cancel();
@@ -68,9 +77,12 @@ lab.experiment('ErrorEvent', () => {
           Code.fail(`<${e.id}> should have been discarded`);
         });
 
-        engine.startInstance({
-          input: 2
-        }, listener, (err, inst) => {
+        engine.execute({
+          listener: listener,
+          variables: {
+            input: 2
+          }
+        }, (err, inst) => {
           if (err) return done(err);
 
           inst.once('end', () => {
@@ -81,13 +93,17 @@ lab.experiment('ErrorEvent', () => {
       });
 
       lab.test('cancels task', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
         listener.once('end-scriptTask', (e) => {
           Code.fail(`<${e.id}> should have been discarded`);
         });
 
-        engine.startInstance(null, listener, (err, inst) => {
+        engine.execute({
+          listener: listener
+        }, (err, inst) => {
           if (err) return done(err);
 
           inst.once('end', () => {

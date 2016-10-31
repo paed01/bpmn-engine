@@ -22,8 +22,10 @@ lab.experiment('EndEvent', () => {
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance(null, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute((err, execution) => {
       if (err) return done(err);
       const event = execution.getChildActivityById('end');
       expect(event).to.include('inbound');
@@ -55,8 +57,10 @@ lab.experiment('EndEvent', () => {
 
     let instance;
     lab.before((done) => {
-      const engine = new Bpmn.Engine(processXml);
-      engine.getInstance(null, null, (err, execution) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.getInstance((err, execution) => {
         if (err) return done(err);
         instance = execution;
         done();
@@ -77,13 +81,17 @@ lab.experiment('EndEvent', () => {
     });
 
     lab.test('should terminate process', (done) => {
-      const engine = new Bpmn.Engine(processXml);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
       const listener = new EventEmitter();
       listener.once('end-theEnd1', (c) => {
         Code.fail(new Error(`${c.id} should have been terminated`));
       });
 
-      engine.startInstance(null, listener, (err, execution) => {
+      engine.execute({
+        listener: listener
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.on('end', () => {

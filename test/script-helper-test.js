@@ -46,18 +46,22 @@ lab.experiment('script-helper', () => {
     });
 
     lab.test('takes parsed script and variables and returns result', (done) => {
-      const script = scriptHelper.parse('unit-test.js', 'context.i;');
+      const script = scriptHelper.parse('unit-test.js', 'variables.i;');
       expect(scriptHelper.execute(script, {
-        i: true
+        variables: {
+          i: true
+        }
       })).to.equal(true);
       done();
     });
 
     lab.test('throws if execution fails', (done) => {
-      const script = scriptHelper.parse('unit-test.js', 'context.i.j;');
+      const script = scriptHelper.parse('unit-test.js', 'variables.i.j;');
 
       try {
-        scriptHelper.execute(script);
+        scriptHelper.execute(script, {
+          variables: undefined
+        });
       } catch (e) {
         var err = e; // eslint-disable-line no-var
       }
@@ -67,13 +71,15 @@ lab.experiment('script-helper', () => {
     });
 
     lab.test('passes variables as context object', (done) => {
-      const script = scriptHelper.parse('unit-test.js', 'context.i = 1; context.i;');
-      const variables = {
-        i: true
+      const script = scriptHelper.parse('unit-test.js', 'variables.i = 1; variables.i;');
+      const context = {
+        variables: {
+          i: true
+        }
       };
-      expect(scriptHelper.execute(script, variables)).to.equal(1);
+      expect(scriptHelper.execute(script, context)).to.equal(1);
 
-      expect(variables.i).to.equal(1);
+      expect(context.variables.i).to.equal(1);
 
       done();
     });

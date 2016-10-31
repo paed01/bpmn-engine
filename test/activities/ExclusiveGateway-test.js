@@ -22,8 +22,10 @@ lab.experiment('ExclusiveGateway', () => {
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance(null, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute((err, execution) => {
       if (err) return done(err);
       const activity = execution.getChildActivityById('decision');
       expect(activity).to.include('inbound');
@@ -48,8 +50,10 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance(null, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute((err, execution) => {
       if (err) return done(err);
       execution.once('end', () => {
         done();
@@ -69,14 +73,16 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 50
+      this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance(null, null, (err) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute((err) => {
       expect(err).to.exist();
       done();
     });
@@ -101,8 +107,10 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance(null, null, (err) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute((err) => {
       expect(err).to.exist();
       done();
     });
@@ -124,21 +132,25 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 50
+      this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input > 50
+      this.variables.input > 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance({
-      input: 10
-    }, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute({
+      variables: {
+        input: 10
+      }
+    }, (err, execution) => {
       if (err) return done(err);
 
       execution.once('end', () => {
@@ -161,21 +173,25 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 50
+      this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input > 50
+      this.variables.input > 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance({
-      input: 100
-    }, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute({
+      variables: {
+        input: 100
+      }
+    }, (err, execution) => {
       if (err) return done(err);
 
       execution.once('end', () => {
@@ -199,16 +215,20 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 50
+      this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance({
-      input: 100
-    }, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute({
+      variables: {
+        input: 100
+      }
+    }, (err, execution) => {
       if (err) return done(err);
 
       execution.once('end', () => {
@@ -232,16 +252,20 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 50
+      this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance({
-      input: 50
-    }, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute({
+      variables: {
+        input: 50
+      }
+    }, (err, execution) => {
       if (err) return done(err);
 
       execution.once('end', () => {
@@ -264,21 +288,25 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 60
+      this.variables.input <= 60
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 50
+      this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance({
-      input: 61
-    }, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute({
+      variables: {
+        input: 61
+      }
+    }, (err, execution) => {
       if (err) return done(err);
       execution.once('error', () => {
         done();

@@ -12,7 +12,7 @@
     <bpmn:sequenceFlow id="flow1" sourceRef="theStart" targetRef="exclusiveGateway1" />
     <bpmn:sequenceFlow id="scriptFlow" sourceRef="exclusiveGateway1" targetRef="scriptTask1" />
     <bpmn:sequenceFlow id="flow3" name="No" sourceRef="exclusiveGateway1" targetRef="userTask1">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript"><![CDATA[this.context.input <= 50]]></bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript"><![CDATA[this.variables.input <= 50]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:exclusiveGateway id="exclusiveGateway2" default="flow5">
       <bpmn:incoming>flow4</bpmn:incoming>
@@ -21,7 +21,7 @@
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="flow4" sourceRef="userTask1" targetRef="exclusiveGateway2" />
     <bpmn:sequenceFlow id="flow7" sourceRef="exclusiveGateway2" targetRef="userTask2">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript"><![CDATA[this.context.input >= 50]]></bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript"><![CDATA[this.variables.input >= 50]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="flow5" sourceRef="exclusiveGateway2" targetRef="userTask3" />
     <bpmn:sequenceFlow id="flow8" sourceRef="userTask2" targetRef="join2" />

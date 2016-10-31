@@ -15,13 +15,17 @@ lab.experiment('BaseTask', () => {
 
   lab.describe('#cancel', () => {
     lab.test('cancels bound events and takes all outbound', (done) => {
-      const engine = new Bpmn.Engine(factory.resource('boundary-timeout.bpmn'));
+      const engine = new Bpmn.Engine({
+        source: factory.resource('boundary-timeout.bpmn')
+      });
       const listener = new EventEmitter();
       listener.on('wait-userTask', (activity) => {
         activity.cancel();
       });
 
-      engine.startInstance(null, listener, (err, instance) => {
+      engine.execute({
+        listener: listener
+      }, (err, instance) => {
         if (err) return done(err);
         instance.once('end', () => {
           expect(instance.getChildActivityById('join').taken, 'join').to.be.true();
@@ -37,7 +41,9 @@ lab.experiment('BaseTask', () => {
     const processXml = factory.resource('task-multiple-inbound.bpmn');
 
     lab.test('completes process', (done) => {
-      const engine = new Bpmn.Engine(processXml);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
       const listener = new EventEmitter();
       listener.on('wait', (activity) => {
         activity.signal({
@@ -53,9 +59,12 @@ lab.experiment('BaseTask', () => {
         }
       });
 
-      engine.startInstance({
-        input: 0
-      }, listener, (err, execution) => {
+      engine.execute({
+        variables: {
+          input: 0
+        },
+        listener: listener
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.once('end', () => {
@@ -70,8 +79,10 @@ lab.experiment('BaseTask', () => {
     const processXml = factory.resource('lanes.bpmn');
     let instance;
     lab.before((done) => {
-      const engine = new Bpmn.Engine(processXml);
-      engine.getInstance(null, null, (err, inst) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.getInstance((err, inst) => {
         if (err) return done(err);
         instance = inst;
         done();

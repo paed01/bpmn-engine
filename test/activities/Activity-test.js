@@ -26,8 +26,10 @@ lab.experiment('Activity', () => {
 
   let activity, instance;
   lab.beforeEach((done) => {
-    const engine = new Bpmn.Engine(processXml);
-    engine.getInstance(null, null, (err, inst) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.getInstance((err, inst) => {
       if (err) return done(err);
       instance = inst;
       activity = inst.getChildActivityById('start');
@@ -68,13 +70,17 @@ lab.experiment('Activity', () => {
   lab.describe('#discard', () => {
 
     lab.test('activity with multiple inbound waits for all to be discarded', (done) => {
-      const engine = new Bpmn.Engine(factory.multipleInbound());
+      const engine = new Bpmn.Engine({
+        source: factory.multipleInbound()
+      });
       const listener = new EventEmitter();
       listener.on('wait-userTask', (task) => {
         task.discard();
       });
 
-      engine.startInstance(null, listener, (err, inst) => {
+      engine.execute({
+        listener: listener
+      }, (err, inst) => {
         if (err) return done(err);
         inst.once('end', () => {
           expect(inst.getChildActivityById('end').taken).to.be.false();

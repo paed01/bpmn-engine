@@ -16,9 +16,11 @@ lab.experiment('SubProcess', () => {
   lab.describe('ctor', () => {
     let parentProcess, subProcess;
 
-    const engine = new Bpmn.Engine(processXml);
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
     lab.before((done) => {
-      engine.getInstance(null, null, (err, instance) => {
+      engine.getInstance((err, instance) => {
         if (err) return done(err);
         parentProcess = instance;
         subProcess = instance.getChildActivityById('subProcess');
@@ -58,10 +60,15 @@ lab.experiment('SubProcess', () => {
         task.signal();
       });
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance({
-        input: 1
-      }, listener, (err, mainInstance) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
+        listener: listener,
+        variables: {
+          input: 1
+        }
+      }, (err, mainInstance) => {
         if (err) return done(err);
         mainInstance.once('end', () => {
           testHelper.expectNoLingeringListeners(mainInstance);
@@ -86,10 +93,15 @@ lab.experiment('SubProcess', () => {
         subProcessInstance.cancel();
       });
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance({
-        input: 0
-      }, listener, (err, mainInstance) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
+        listener: listener,
+        variables: {
+          input: 0
+        }
+      }, (err, mainInstance) => {
         if (err) return done(err);
 
         mainInstance.once('end', () => {
@@ -115,10 +127,15 @@ lab.experiment('SubProcess', () => {
         task.cancel();
       });
 
-      const engine = new Bpmn.Engine(processXml);
-      engine.startInstance({
-        input: 127
-      }, listener, (err, mainInstance) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
+        listener: listener,
+        variables: {
+          input: 127
+        }
+      }, (err, mainInstance) => {
         if (err) return done(err);
 
         mainInstance.once('end', () => {

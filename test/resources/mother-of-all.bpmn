@@ -68,14 +68,14 @@
       <bpmn:outgoing>SequenceFlow_0lz4avh</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_1yini0t" name="Enter loop" sourceRef="ExclusiveGateway_0s9m5h8" targetRef="scriptTask2">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">!this.context.stopLoop</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">!this.variables.stopLoop</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_1z11jq4" sourceRef="ParallelGateway_1xquqtx" targetRef="ExclusiveGateway_0s9m5h8" />
     <bpmn:sequenceFlow id="SequenceFlow_14x0br6" sourceRef="scriptTask2" targetRef="scriptTask1" />
     <bpmn:scriptTask id="scriptTask2" name="Only run me once" scriptFormat="JavaScript">
       <bpmn:incoming>SequenceFlow_1yini0t</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_14x0br6</bpmn:outgoing>
-      <bpmn:script><![CDATA[this.context.stopLoop = true;
+      <bpmn:script><![CDATA[this.variables.stopLoop = true;
 next();]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:inclusiveGateway id="InclusiveGateway_0mwa6t0" default="SequenceFlow_02w8hmj">

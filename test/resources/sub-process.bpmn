@@ -14,8 +14,8 @@
       </bpmn:userTask>
       <bpmn:scriptTask id="subScriptTask" name="Script" scriptFormat="JavaScript">
         <bpmn:incoming>subFlow1</bpmn:incoming>
-        <bpmn:script><![CDATA[this.context.subScript = true;
-if (this.context.input !== 127) next();]]></bpmn:script>
+        <bpmn:script><![CDATA[this.variables.subScript = true;
+if (this.variables.input !== 127) next();]]></bpmn:script>
       </bpmn:scriptTask>
     </bpmn:subProcess>
     <bpmn:endEvent id="theEnd">

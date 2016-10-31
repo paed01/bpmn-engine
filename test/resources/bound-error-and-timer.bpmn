@@ -12,9 +12,9 @@
     <bpmn:scriptTask id="scriptTask" name="Check input" scriptFormat="JavaScript">
       <bpmn:incoming>flow1</bpmn:incoming>
       <bpmn:outgoing>flow2</bpmn:outgoing>
-      <bpmn:script><![CDATA[if (!context.input) {
+      <bpmn:script><![CDATA[if (!variables.input) {
   next(new Error("Input is missing"));
-} else if (context.input === 2) {
+} else if (variables.input === 2) {
 } else {
   next();
 }]]></bpmn:script>

@@ -20,8 +20,10 @@ lab.experiment('StartEvent', () => {
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance(null, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute((err, execution) => {
       if (err) return done(err);
       expect(execution.getChildActivityById('start')).to.include('outbound');
       done();

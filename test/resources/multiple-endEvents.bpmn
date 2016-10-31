@@ -13,7 +13,7 @@
     <bpmn:scriptTask id="script1" name="First iteration" scriptFormat="JavaScript">
       <bpmn:incoming>flow3</bpmn:incoming>
       <bpmn:outgoing>flow4</bpmn:outgoing>
-      <bpmn:script><![CDATA[context.input++;
+      <bpmn:script><![CDATA[variables.input++;
 next();]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:sequenceFlow id="flow4" sourceRef="script1" targetRef="include2" />
@@ -25,7 +25,7 @@ next();]]></bpmn:script>
     <bpmn:scriptTask id="script2" name="Second iteration" scriptFormat="JavaScript">
       <bpmn:incoming>flow6</bpmn:incoming>
       <bpmn:outgoing>flow7</bpmn:outgoing>
-      <bpmn:script><![CDATA[context.input++;
+      <bpmn:script><![CDATA[variables.input++;
 next();]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:endEvent id="end">

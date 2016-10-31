@@ -12,14 +12,16 @@ const expect = Code.expect;
 lab.experiment('Save state', () => {
   const processXml = factory.userTask();
 
-  lab.describe('engine #save', () => {
+  lab.describe('engine #getState', () => {
     lab.describe('when running', () => {
       lab.test('returns state started for running execution', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
 
         listener.on('wait-userTask', () => {
-          const state = engine.save();
+          const state = engine.getState();
           expect(state).to.be.an.object();
           expect(state).to.include({
             state: 'started'
@@ -27,19 +29,24 @@ lab.experiment('Save state', () => {
           done();
         });
 
-        engine.startInstance({
-          input: null
-        }, listener, (err) => {
+        engine.execute({
+          listener: listener,
+          variables: {
+            input: null
+          }
+        }, (err) => {
           if (err) return done(err);
         });
       });
 
       lab.test('returns state of processes', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
 
         listener.on('wait-userTask', () => {
-          const state = engine.save();
+          const state = engine.getState();
           expect(state.processes[engine.entryPointId], `<${engine.entryPointId}> state`).to.be.an.object();
           expect(state.processes[engine.entryPointId], `<${engine.entryPointId}> state`).to.include({
             entered: true
@@ -47,64 +54,96 @@ lab.experiment('Save state', () => {
           done();
         });
 
-        engine.startInstance({
-          input: null
-        }, listener, (err) => {
+        engine.execute({
+          listener: listener,
+          variables: {
+            input: null
+          }
+        }, (err) => {
           if (err) return done(err);
         });
       });
 
-      lab.test('returns processes variables', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+      lab.test('returns processes variables and services', (done) => {
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
 
         listener.on('wait-userTask', () => {
-          const state = engine.save();
+          const state = engine.getState();
           expect(state.processes[engine.entryPointId], `<${engine.entryPointId}> variables`).to.include({
             variables: {
               input: 1
+            },
+            services: {
+              request: {
+                module: 'request'
+              }
             }
           });
           done();
         });
 
-        engine.startInstance({
-          input: 1
-        }, listener, (err) => {
+        engine.execute({
+          listener: listener,
+          variables: {
+            input: 1
+          },
+          services: {
+            request: {
+              module: 'request'
+            }
+          }
+        }, (err) => {
           if (err) return done(err);
         });
       });
 
       lab.test('returns state of processes activities', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
 
         listener.on('wait-userTask', () => {
-          const state = engine.save();
+          const state = engine.getState();
           expect(state.processes[engine.entryPointId], `<${engine.entryPointId}> tasks`).to.include('children');
-          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'theStart')).to.include({entered: false});
-          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'userTask')).to.include({entered: true});
-          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'theEnd')).to.include({entered: false});
+          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'theStart')).to.include({
+            entered: false
+          });
+          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'userTask')).to.include({
+            entered: true
+          });
+          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'theEnd')).to.include({
+            entered: false
+          });
           done();
         });
 
-        engine.startInstance(null, listener, (err) => {
+        engine.execute({
+          listener: listener
+        }, (err) => {
           if (err) return done(err);
         });
       });
 
       lab.test('returns source and source hash', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
 
         listener.on('wait-userTask', () => {
-          const state = engine.save();
+          const state = engine.getState();
           expect(state.source).to.be.instanceOf(Buffer);
           expect(state.sourceHash).to.be.exist();
           done();
         });
 
-        engine.startInstance(null, listener, (err) => {
+        engine.execute({
+          listener: listener
+        }, (err) => {
           if (err) return done(err);
         });
       });
@@ -112,7 +151,9 @@ lab.experiment('Save state', () => {
 
     lab.describe('when completed', () => {
       lab.test('returns state completed for completed execution', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
 
         listener.on('wait-userTask', (task) => {
@@ -120,7 +161,7 @@ lab.experiment('Save state', () => {
         });
 
         engine.once('end', () => {
-          const state = engine.save();
+          const state = engine.getState();
           expect(state).to.be.an.object();
           expect(state).to.include({
             state: 'completed'
@@ -128,15 +169,20 @@ lab.experiment('Save state', () => {
           done();
         });
 
-        engine.startInstance({
-          input: null
-        }, listener, (err) => {
+        engine.execute({
+          listener: listener,
+          variables: {
+            input: null
+          }
+        }, (err) => {
           if (err) return done(err);
         });
       });
 
       lab.test('returns state of processes', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
 
         listener.on('wait-userTask', (task) => {
@@ -144,7 +190,7 @@ lab.experiment('Save state', () => {
         });
 
         engine.once('end', () => {
-          const state = engine.save();
+          const state = engine.getState();
           expect(state.processes[engine.entryPointId], `<${engine.entryPointId}> state`).to.be.an.object();
           expect(state.processes[engine.entryPointId], `<${engine.entryPointId}> state`).to.include({
             entered: false
@@ -152,15 +198,20 @@ lab.experiment('Save state', () => {
           done();
         });
 
-        engine.startInstance({
-          input: null
-        }, listener, (err) => {
+        engine.execute({
+          listener: listener,
+          variables: {
+            input: null
+          }
+        }, (err) => {
           if (err) return done(err);
         });
       });
 
       lab.test('returns processes variables', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
 
         listener.on('wait-userTask', (task) => {
@@ -170,7 +221,7 @@ lab.experiment('Save state', () => {
         });
 
         engine.once('end', () => {
-          const state = engine.save();
+          const state = engine.getState();
           expect(state.processes[engine.entryPointId], `<${engine.entryPointId}> variables`).to.include({
             variables: {
               input: 1,
@@ -182,15 +233,20 @@ lab.experiment('Save state', () => {
           done();
         });
 
-        engine.startInstance({
-          input: 1
-        }, listener, (err) => {
+        engine.execute({
+          listener: listener,
+          variables: {
+            input: 1
+          }
+        }, (err) => {
           if (err) return done(err);
         });
       });
 
       lab.test('returns state of processes activities', (done) => {
-        const engine = new Bpmn.Engine(processXml);
+        const engine = new Bpmn.Engine({
+          source: processXml
+        });
         const listener = new EventEmitter();
 
         listener.on('wait-userTask', (task) => {
@@ -200,15 +256,23 @@ lab.experiment('Save state', () => {
         });
 
         engine.once('end', () => {
-          const state = engine.save();
+          const state = engine.getState();
           expect(state.processes[engine.entryPointId], `<${engine.entryPointId}> tasks`).to.include('children');
-          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'theStart')).to.include({entered: false});
-          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'userTask')).to.include({entered: false});
-          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'theEnd')).to.include({entered: false});
+          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'theStart')).to.include({
+            entered: false
+          });
+          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'userTask')).to.include({
+            entered: false
+          });
+          expect(state.processes[engine.entryPointId].children.find(c => c.id === 'theEnd')).to.include({
+            entered: false
+          });
           done();
         });
 
-        engine.startInstance(null, listener, (err) => {
+        engine.execute({
+          listener: listener
+        }, (err) => {
           if (err) return done(err);
         });
       });

@@ -22,19 +22,21 @@ lab.experiment('InclusiveGateway', () => {
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 50
+      this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 20
+      this.variables.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.getInstance(null, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.getInstance((err, execution) => {
       if (err) return done(err);
 
       const gateway = execution.getChildActivityById('decision');
@@ -60,21 +62,25 @@ lab.experiment('InclusiveGateway', () => {
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 50
+      this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 20
+      this.variables.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance({
-      input: 1
-    }, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute({
+      variables: {
+        input: 1
+      }
+    }, (err, execution) => {
       if (err) return done(err);
 
       execution.on('end', () => {
@@ -100,21 +106,25 @@ lab.experiment('InclusiveGateway', () => {
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 50
+      this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 20
+      this.variables.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance({
-      input: 50
-    }, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute({
+      variables: {
+        input: 50
+      }
+    }, (err, execution) => {
       if (err) return done(err);
 
       execution.on('end', () => {
@@ -140,21 +150,23 @@ lab.experiment('InclusiveGateway', () => {
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1" />
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 50
+      this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow4" sourceRef="decision" targetRef="theEnd3">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 20
+      this.variables.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(processXml);
-    engine.startInstance({
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.execute({
       input: 60
-    }, null, (err, execution) => {
+    }, (err, execution) => {
       if (err) return done(err);
 
       execution.on('end', () => {
@@ -178,21 +190,23 @@ lab.experiment('InclusiveGateway', () => {
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="theEnd1">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 50
+      this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="theEnd2">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.input <= 20
+      this.variables.input <= 20
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(definitionXml);
-    engine.startInstance({
+    const engine = new Bpmn.Engine({
+      source: definitionXml
+    });
+    engine.execute({
       input: 61
-    }, null, (err, execution) => {
+    }, (err, execution) => {
       if (err) return done(err);
       execution.once('error', () => {
         done();

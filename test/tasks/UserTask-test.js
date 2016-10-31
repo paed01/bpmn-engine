@@ -14,8 +14,10 @@ lab.experiment('UserTask', () => {
   const processXml = factory.userTask();
 
   lab.test('should have inbound and outbound sequence flows', (done) => {
-    const engine = new Bpmn.Engine(processXml);
-    engine.getInstance(null, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.getInstance((err, execution) => {
       if (err) return done(err);
       const task = execution.getChildActivityById('userTask');
       expect(task).to.include('inbound');
@@ -35,8 +37,10 @@ lab.experiment('UserTask', () => {
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine(alternativeProcessXml);
-    engine.getInstance(null, null, (err, execution) => {
+    const engine = new Bpmn.Engine({
+      source: alternativeProcessXml
+    });
+    engine.getInstance((err, execution) => {
       if (err) return done(err);
       const task = execution.getChildActivityById('userTask');
       expect(task.isEnd).to.be.true();
@@ -54,7 +58,9 @@ lab.experiment('UserTask', () => {
 </definitions>`;
 
     lab.test('process emits wait when entering user task', (done) => {
-      const engine = new Bpmn.Engine(processXml);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
       const listener = new EventEmitter();
 
       listener.on('wait', (activity, execution) => {
@@ -65,9 +71,12 @@ lab.experiment('UserTask', () => {
         });
       });
 
-      engine.startInstance({
-        input: null
-      }, listener, (err, execution) => {
+      engine.execute({
+        listener: listener,
+        variables: {
+          input: null
+        }
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.once('end', () => {
@@ -81,14 +90,18 @@ lab.experiment('UserTask', () => {
 
     lab.test('ends when signal is called', (done) => {
 
-      const engine = new Bpmn.Engine(alternativeProcessXml);
+      const engine = new Bpmn.Engine({
+        source: alternativeProcessXml
+      });
       const listener = new EventEmitter();
 
       listener.once('wait-userTask', (activity) => {
         activity.signal();
       });
 
-      engine.startInstance(null, listener, (err, execution) => {
+      engine.execute({
+        listener: listener
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.once('end', () => {
@@ -98,14 +111,18 @@ lab.experiment('UserTask', () => {
     });
 
     lab.test('instance can signal user task by id', (done) => {
-      const engine = new Bpmn.Engine(alternativeProcessXml);
+      const engine = new Bpmn.Engine({
+        source: alternativeProcessXml
+      });
       const listener = new EventEmitter();
 
       listener.once('wait-userTask', (task, execution) => {
         execution.signal('userTask');
       });
 
-      engine.startInstance(null, listener, (err, execution) => {
+      engine.execute({
+        listener: listener
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.once('end', () => {
@@ -115,14 +132,18 @@ lab.experiment('UserTask', () => {
     });
 
     lab.test('completes if canceled', (done) => {
-      const engine = new Bpmn.Engine(alternativeProcessXml);
+      const engine = new Bpmn.Engine({
+        source: alternativeProcessXml
+      });
       const listener = new EventEmitter();
 
       listener.once('wait-userTask', (task) => {
         task.cancel();
       });
 
-      engine.startInstance(null, listener, (err, execution) => {
+      engine.execute({
+        listener: listener
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.once('end', () => {
@@ -135,7 +156,9 @@ lab.experiment('UserTask', () => {
 
   lab.experiment('#signal', () => {
     lab.test('user input is stored with process', (done) => {
-      const engine = new Bpmn.Engine(processXml);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
       const listener = new EventEmitter();
 
       listener.once('wait-userTask', (activity, execution) => {
@@ -144,7 +167,9 @@ lab.experiment('UserTask', () => {
         });
       });
 
-      engine.startInstance(null, listener, (err, execution) => {
+      engine.execute({
+        listener: listener
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.once('end', () => {
@@ -157,14 +182,18 @@ lab.experiment('UserTask', () => {
     });
 
     lab.test('but not if signal is called without input', (done) => {
-      const engine = new Bpmn.Engine(processXml);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
       const listener = new EventEmitter();
 
       listener.once('wait-userTask', (activity, execution) => {
         execution.signal('userTask');
       });
 
-      engine.startInstance(null, listener, (err, execution) => {
+      engine.execute({
+        listener: listener
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.once('end', () => {
@@ -175,9 +204,11 @@ lab.experiment('UserTask', () => {
     });
 
     lab.test('throws if not waiting for input', (done) => {
-      const engine = new Bpmn.Engine(processXml);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
 
-      engine.getInstance(null, null, (err, instance) => {
+      engine.getInstance((err, instance) => {
         if (err) return done(err);
 
         const task = instance.getChildActivityById('userTask');
@@ -203,7 +234,9 @@ lab.experiment('UserTask', () => {
 </definitions>`;
 
     lab.test('the input is stored as taskInput with id', (done) => {
-      const engine = new Bpmn.Engine(alternativeProcessXml);
+      const engine = new Bpmn.Engine({
+        source: alternativeProcessXml
+      });
       const listener = new EventEmitter();
 
       listener.once('wait', (activity, execution) => {
@@ -214,7 +247,9 @@ lab.experiment('UserTask', () => {
         });
       });
 
-      engine.startInstance(null, listener, (err, execution) => {
+      engine.execute({
+        listener: listener
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.once('end', () => {
@@ -229,16 +264,21 @@ lab.experiment('UserTask', () => {
     });
 
     lab.test('but not if signal is called without input', (done) => {
-      const engine = new Bpmn.Engine(alternativeProcessXml);
+      const engine = new Bpmn.Engine({
+        source: alternativeProcessXml
+      });
       const listener = new EventEmitter();
 
       listener.once('wait-userTask', (activity, execution) => {
         execution.signal('userTask');
       });
 
-      engine.startInstance({
-        taskInput: {}
-      }, listener, (err, execution) => {
+      engine.execute({
+        listener: listener,
+        variables: {
+          taskInput: {}
+        }
+      }, (err, execution) => {
         if (err) return done(err);
 
         execution.once('end', () => {

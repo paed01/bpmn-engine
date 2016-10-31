@@ -14,8 +14,10 @@ lab.experiment('Lanes', () => {
   const processXml = factory.resource('lanes.bpmn');
 
   lab.test('main process stores outbound messageFlows', (done) => {
-    const engine = new Bpmn.Engine(processXml);
-    engine.getInstance(null, null, (err, mainInstance) => {
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
+    engine.getInstance((err, mainInstance) => {
       if (err) return done(err);
 
       expect(mainInstance.context.messageFlows.length).to.equal(1);
@@ -26,27 +28,38 @@ lab.experiment('Lanes', () => {
 
   lab.test('completes process', (done) => {
     const listener = new EventEmitter();
-    const engine = new Bpmn.Engine(processXml);
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
 
     engine.once('end', () => {
       testHelper.expectNoLingeringListenersOnEngine(engine);
       done();
     });
 
-    engine.startInstance({
-      input: 0
-    }, listener, (err) => {
+    engine.execute({
+      listener: listener,
+      variables: {
+        input: 0
+      }
+    }, (err) => {
       if (err) return done(err);
     });
   });
 
   lab.test('participant startEvent receives and stores message on process context', (done) => {
     const listener = new EventEmitter();
-    const engine = new Bpmn.Engine(processXml);
+    const engine = new Bpmn.Engine({
+      source: processXml
+    });
 
     engine.once('end', () => {
       const participant = engine.processes.find((p) => p.id === 'participantProcess');
-      expect(participant.variables).to.include({input: 0, message: 'I\'m done', arbval: '10'});
+      expect(participant.variables).to.include({
+        input: 0,
+        message: 'I\'m done',
+        arbval: '10'
+      });
 
       const mainProcess = engine.processes.find((p) => p.id === 'mainProcess');
       expect(mainProcess.variables.taskInput).to.include({
@@ -58,9 +71,12 @@ lab.experiment('Lanes', () => {
       done();
     });
 
-    engine.startInstance({
-      input: 0
-    }, listener, (err) => {
+    engine.execute({
+      listener: listener,
+      variables: {
+        input: 0
+      }
+    }, (err) => {
       if (err) return done(err);
     });
   });

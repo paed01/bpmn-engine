@@ -19,7 +19,7 @@ lab.experiment('task loop', () => {
     <bpmn:process id="taskLoopProcess" isExecutable="true">
       <bpmn:scriptTask id="recurring" name="Recurring" scriptFormat="JavaScript">
         <bpmn:multiInstanceLoopCharacteristics isSequential="true">
-          <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">context.taskInput.recurring.input > 8</bpmn:completionCondition>
+          <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">variables.taskInput.recurring.input > 8</bpmn:completionCondition>
           <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">13</bpmn:loopCardinality>
         </bpmn:multiInstanceLoopCharacteristics>
         <bpmn:script><![CDATA[
@@ -33,7 +33,9 @@ lab.experiment('task loop', () => {
   </bpmn:definitions>
     `;
 
-      const engine = new Bpmn.Engine(def);
+      const engine = new Bpmn.Engine({
+        source: def
+      });
       const listener = new EventEmitter();
 
       let startCount = 0;
@@ -41,7 +43,9 @@ lab.experiment('task loop', () => {
         startCount++;
       });
 
-      engine.startInstance(null, listener, (err, instance) => {
+      engine.execute({
+        listener: listener
+      }, (err, instance) => {
         if (err) return done(err);
 
         instance.once('end', () => {
@@ -62,7 +66,7 @@ lab.experiment('task loop', () => {
           <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">7</bpmn:loopCardinality>
         </bpmn:multiInstanceLoopCharacteristics>
         <bpmn:script><![CDATA[
-          context.input += context.items[index];
+          variables.input += variables.items[index];
           next()
           ]]>
         </bpmn:script>
@@ -71,7 +75,9 @@ lab.experiment('task loop', () => {
   </bpmn:definitions>
     `;
 
-      const engine = new Bpmn.Engine(def);
+      const engine = new Bpmn.Engine({
+        source: def
+      });
       const listener = new EventEmitter();
 
       let startCount = 0;
@@ -79,10 +85,13 @@ lab.experiment('task loop', () => {
         startCount++;
       });
 
-      engine.startInstance({
-        input: 0,
-        items: [0].concat(Array(10).fill(7))
-      }, listener, (err, instance) => {
+      engine.execute({
+        listener: listener,
+        variables: {
+          input: 0,
+          items: [0].concat(Array(10).fill(7))
+        }
+      }, (err, instance) => {
         if (err) return done(err);
 
         instance.once('end', () => {
@@ -108,7 +117,9 @@ lab.experiment('task loop', () => {
   </bpmn:definitions>
     `;
 
-      const engine = new Bpmn.Engine(def);
+      const engine = new Bpmn.Engine({
+        source: def
+      });
       const listener = new EventEmitter();
 
       let startCount = 0;
@@ -116,7 +127,9 @@ lab.experiment('task loop', () => {
         startCount++;
       });
 
-      engine.startInstance(null, listener, (err, instance) => {
+      engine.execute({
+        listener: listener
+      }, (err, instance) => {
         if (err) return done(err);
 
         instance.once('end', () => {
@@ -134,22 +147,28 @@ lab.experiment('task loop', () => {
     <bpmn:process id="taskLoopProcess" isExecutable="true">
       <bpmn:userTask id="recurring" name="Recurring">
         <bpmn:multiInstanceLoopCharacteristics isSequential="true">
-          <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">context.taskInput.recurring.input > 3</bpmn:completionCondition>
+          <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">variables.taskInput.recurring.input > 3</bpmn:completionCondition>
         </bpmn:multiInstanceLoopCharacteristics>
       </bpmn:userTask>
     </bpmn:process>
   </bpmn:definitions>
     `;
 
-      const engine = new Bpmn.Engine(def);
+      const engine = new Bpmn.Engine({
+        source: def
+      });
       const listener = new EventEmitter();
 
       let waitCount = 0;
       listener.on('wait-recurring', (task, instance) => {
-        instance.signal('recurring', {input: ++waitCount});
+        instance.signal('recurring', {
+          input: ++waitCount
+        });
       });
 
-      engine.startInstance(null, listener, (err, instance) => {
+      engine.execute({
+        listener: listener
+      }, (err, instance) => {
         if (err) return done(err);
 
         instance.once('end', () => {
@@ -167,7 +186,7 @@ lab.experiment('task loop', () => {
     <bpmn:process id="taskLoopProcess" isExecutable="true">
       <bpmn:subProcess id="recurring">
         <bpmn:multiInstanceLoopCharacteristics isSequential="true">
-          <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">context.index > 3</bpmn:completionCondition>
+          <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">variables.index > 3</bpmn:completionCondition>
           <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">5</bpmn:loopCardinality>
         </bpmn:multiInstanceLoopCharacteristics>
         <bpmn:task id="subTask" name="Sub task" />
@@ -176,7 +195,9 @@ lab.experiment('task loop', () => {
   </bpmn:definitions>
     `;
 
-      const engine = new Bpmn.Engine(def);
+      const engine = new Bpmn.Engine({
+        source: def
+      });
       const listener = new EventEmitter();
 
       let startCount = 0;
@@ -184,7 +205,9 @@ lab.experiment('task loop', () => {
         startCount++;
       });
 
-      engine.startInstance(null, listener, (err, instance) => {
+      engine.execute({
+        listener: listener
+      }, (err, instance) => {
         if (err) return done(err);
 
         instance.once('end', () => {
@@ -205,7 +228,7 @@ lab.experiment('task loop', () => {
           <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">7</bpmn:loopCardinality>
         </bpmn:multiInstanceLoopCharacteristics>
         <bpmn:script><![CDATA[
-          context.input += context.items[index];
+          variables.input += variables.items[index];
           if (index >= 2) next(new Error('Three is enough'));
           else next();
           ]]>
@@ -218,7 +241,9 @@ lab.experiment('task loop', () => {
   </bpmn:definitions>
     `;
 
-      const engine = new Bpmn.Engine(def);
+      const engine = new Bpmn.Engine({
+        source: def
+      });
       const listener = new EventEmitter();
 
       let startCount = 0;
@@ -226,10 +251,13 @@ lab.experiment('task loop', () => {
         startCount++;
       });
 
-      engine.startInstance({
-        input: 0,
-        items: [0].concat(Array(10).fill(7))
-      }, listener, (err, instance) => {
+      engine.execute({
+        listener: listener,
+        variables: {
+          input: 0,
+          items: [0].concat(Array(10).fill(7))
+        }
+      }, (err, instance) => {
         if (err) return done(err);
 
         instance.once('end', () => {
