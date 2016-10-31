@@ -83,7 +83,7 @@ lab.experiment('engine', () => {
     });
   });
 
-  lab.experiment('#execute', () => {
+  lab.describe('#execute', () => {
     lab.test('sets entry point id to executable process', (done) => {
       const engine = new Bpmn.Engine({
         source: factory.valid()
@@ -173,6 +173,16 @@ lab.experiment('engine', () => {
           expect(err).to.be.an.error(/must be one of/);
           done();
         });
+      });
+    });
+  });
+
+  lab.describe('#resume', () => {
+    lab.test('with invalid source returns error in callback', (done) => {
+      const engine = new Bpmn.Engine();
+      engine.resume({source: 'invalid xml'}, (err) => {
+        expect(err).to.be.an.error(/data outside of root node/);
+        done();
       });
     });
   });

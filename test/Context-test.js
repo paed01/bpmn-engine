@@ -3,6 +3,7 @@
 const Code = require('code');
 const factory = require('./helpers/factory');
 const Lab = require('lab');
+const testHelpers = require('./helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
@@ -144,5 +145,54 @@ lab.experiment('Context', () => {
       });
 
     });
+  });
+
+  lab.describe('#getVariablesAndServices', () => {
+    lab.test('returns resolved services', (done) => {
+      testHelpers.getContext(factory.valid(), (err, context) => {
+        if (err) return done(err);
+
+        context.services = {
+          none: {},
+          whut: {
+            type: 'misc'
+          },
+          get: {
+            module: 'request',
+            fnName: 'get'
+          },
+          request: {
+            module: 'request'
+          },
+          console: {
+            module: 'console',
+            type: 'global'
+          },
+          log: {
+            module: 'console',
+            type: 'global',
+            fnName: 'log'
+          },
+          require: {
+            module: 'require',
+            type: 'global'
+          }
+        };
+
+        const services = context.getVariablesAndServices().services;
+
+        expect(services.none).to.be.undefined();
+        expect(services.whut).to.be.undefined();
+        expect(services.get).to.be.a.function();
+        expect(services.request).to.be.a.function();
+        expect(services.console).to.be.an.object();
+        expect(services.log).to.be.a.function();
+        expect(services.require).to.be.a.function();
+
+        done();
+      });
+
+    });
+
   });
 });

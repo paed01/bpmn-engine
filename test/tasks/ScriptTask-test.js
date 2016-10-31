@@ -305,6 +305,66 @@ lab.experiment('ScriptTask', () => {
       });
     });
 
+    lab.test('service function name', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<process id="theProcess" isExecutable="true">
+<startEvent id="theStart" />
+<scriptTask id="scriptTask" scriptFormat="Javascript">
+  <script>
+    <![CDATA[
+      const self = this;
+      services.get('http://example.com/test', {json: true}, (err, resp, body) => {
+        if (err) return next(err);
+        self.variables.data = body.data;
+        next();
+      })
+    ]]>
+  </script>
+</scriptTask>
+<endEvent id="theEnd" />
+<sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
+<sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
+</process>
+</definitions>`;
+
+      nock('http://example.com')
+        .defaultReplyHeaders({
+          'Content-Type': 'application/json'
+        })
+        .get('/test')
+        .reply(200, {
+          data: 4
+        });
+
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      const options = {
+        services: {
+          get: {
+            module: 'request',
+            type: 'require',
+            fnName: 'get'
+          }
+        },
+        variables: {
+          data: 1
+        }
+      };
+      engine.execute(options, (err, execution) => {
+        if (err) return done(err);
+        execution.once('end', () => {
+          expect(nock.isDone()).to.be.true();
+          expect(execution.variables).to.include({
+            data: 4
+          });
+          done();
+        });
+      });
+    });
+
     lab.test('can be used for subsequent decisions', (done) => {
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>

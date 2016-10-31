@@ -237,6 +237,9 @@ lab.experiment('Resume execution', () => {
 <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="interruptedProcess" isExecutable="true">
     <startEvent id="start" />
+    <boundaryEvent id="errorEvent" attachedToRef="scriptTask">
+      <errorEventDefinition />
+    </boundaryEvent>
     <scriptTask id="scriptTask" name="Check input" scriptFormat="JavaScript">
       <script><![CDATA[
 if (!variables.input) {
@@ -246,9 +249,6 @@ if (!variables.input) {
   next();
 }]]></script>
     </scriptTask>
-    <boundaryEvent id="errorEvent" attachedToRef="scriptTask">
-      <errorEventDefinition />
-    </boundaryEvent>
     <boundaryEvent id="timerEvent" attachedToRef="scriptTask">
       <timerEventDefinition>
         <timeDuration xsi:type="tFormalExpression">PT1S</timeDuration>
