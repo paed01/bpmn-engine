@@ -30,15 +30,15 @@
     "coveralls": "^2.11.14",
     "lab": "^11.1.0",
     "markdown-toc": "^0.13.0",
-    "nock": "^8.1.0",
-    "request": "^2.75.0"
+    "nock": "^9.0.2",
+    "request": "~2.75.0"
   },
   "dependencies": {
     "async": "^2.1.2",
     "bpmn-moddle": "^0.12.3",
     "debug": "^2.2.0",
-    "joi": "^9.1.1",
-    "moment": "^2.15.1"
+    "joi": "^9.2.0",
+    "moment": "^2.15.2"
   },
   "license": "BSD-3-Clause",
   "licenses": [
