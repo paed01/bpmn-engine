@@ -115,7 +115,7 @@ A service is a module used by e.g. a script tasks or a condition where:
 
 - `object key`: Exposed name in script task
   - `module`: Module name
-  - `type`: Optional type, supported types are `require` and `global`
+  - `type`: Optional type, supported types are `require` and `global`, defaults to `require`
   - `fnName`: Optional function name
 
 ```javascript
@@ -132,13 +132,13 @@ const processXml = `
   <scriptTask id="scriptTask" scriptFormat="Javascript">
     <script>
       <![CDATA[
-        const request = context.request;
+        const request = services.request;
 
         const self = this;
 
         request.get('http://example.com/test', (err, resp, body) => {
           if (err) return next(err);
-          self.context.scriptTaskCompleted = true;
+          self.variables.scriptTaskCompleted = true;
           next(null, {result: body});
         })
       ]]>
@@ -234,7 +234,7 @@ listener.once('wait-userTask', (activity) => {
 
 engine.execute({
   listener: listener
-}, listener, (err, execution) => {
+}, (err, execution) => {
   if (err) throw err;
 });
 ```
@@ -414,7 +414,7 @@ engine.execute({
 
 ### Exclusive gateway
 
-An exclusive gateway will receive the available process variables as `this.context.variables`.
+An exclusive gateway will receive the available process variables as `this.variables`.
 
 ```javascript
 'use strict';
@@ -432,12 +432,12 @@ const processXml = `
     <sequenceFlow id="flow1" sourceRef="start" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.variables.input <= 50
+      this.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.context.variables.input > 50
+      this.variables.input > 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
@@ -478,13 +478,13 @@ const processXml = `
   <scriptTask id="scriptTask" scriptFormat="Javascript">
     <script>
       <![CDATA[
-        const request = context.request;
+        const request = services.request;
 
         const self = this;
 
         request.get('http://example.com/test', (err, resp, body) => {
           if (err) return next(err);
-          self.context.variables.scriptTaskCompleted = true;
+          self.variables.scriptTaskCompleted = true;
           next(null, {result: body});
         })
       ]]>
@@ -498,12 +498,15 @@ const processXml = `
 
 const engine = new Bpmn.Engine(processXml);
 engine.execute({
+  variables: {
+    scriptTaskCompleted: false
+  },
   services: {
     request: {
       module: 'request'
     }
   }
-}, null, (err, execution) => {
+}, (err, execution) => {
   if (err) throw err;
 
   execution.once('end', () => {
