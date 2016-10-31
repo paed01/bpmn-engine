@@ -211,7 +211,9 @@ lab.experiment('ParallelGateway', () => {
         source: processXml
       });
       engine.execute({
-        input: 51
+        variables: {
+          input: 51
+        }
       }, (err, execution) => {
         if (err) return done(err);
 

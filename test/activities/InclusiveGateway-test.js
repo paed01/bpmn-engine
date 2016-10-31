@@ -165,7 +165,9 @@ lab.experiment('InclusiveGateway', () => {
       source: processXml
     });
     engine.execute({
-      input: 60
+      variables: {
+        input: 60
+      }
     }, (err, execution) => {
       if (err) return done(err);
 
@@ -205,7 +207,9 @@ lab.experiment('InclusiveGateway', () => {
       source: definitionXml
     });
     engine.execute({
-      input: 61
+      variables: {
+        input: 61
+      }
     }, (err, execution) => {
       if (err) return done(err);
       execution.once('error', () => {

@@ -25,7 +25,7 @@ lab.experiment('engine', () => {
       done();
     });
 
-    lab.test('accepts Buffer', (done) => {
+    lab.test('accepts source as Buffer', (done) => {
       const buff = new Buffer(factory.valid());
       const engine = new Bpmn.Engine({
         source: buff
@@ -39,12 +39,29 @@ lab.experiment('engine', () => {
     lab.test('but not function', (done) => {
       const source = () => {};
       expect(() => {
-        new Bpmn.Engine(source); /* eslint no-new: 0 */
+        new Bpmn.Engine({
+          source: source
+        }); /* eslint no-new: 0 */
       }).to.throw();
       done();
     });
-  });
 
+    lab.test('accepts no source', (done) => {
+      expect(() => {
+        new Bpmn.Engine({
+          name: 'no source'
+        }); /* eslint no-new: 0 */
+      }).to.not.throw();
+      done();
+    });
+
+    lab.test('accepts no arguments', (done) => {
+      expect(() => {
+        new Bpmn.Engine(); /* eslint no-new: 0 */
+      }).to.not.throw();
+      done();
+    });
+  });
 
   lab.experiment('#getInstance', () => {
     lab.test('after transform engine id is definition id', (done) => {
@@ -53,6 +70,14 @@ lab.experiment('engine', () => {
       });
       engine.getInstance(() => {
         expect(engine.id).to.equal('myValidDefinition');
+        done();
+      });
+    });
+
+    lab.test('throws if no source', (done) => {
+      const engine = new Bpmn.Engine();
+      engine.getInstance((err) => {
+        expect(err).to.be.an.error(/Nothing to transform/);
         done();
       });
     });
@@ -117,6 +142,37 @@ lab.experiment('engine', () => {
 
       engine.execute((err) => {
         if (err) return done(err);
+      });
+    });
+
+    lab.describe('options', () => {
+      lab.test('returns error in callback if listener doesn´t have an emit function', (done) => {
+        const engine = new Bpmn.Engine({
+          source: factory.resource('lanes.bpmn')
+        });
+        engine.execute({
+          listener: {}
+        }, (err) => {
+          expect(err).to.be.an.error(/\"emit\" is required/);
+          done();
+        });
+      });
+
+      lab.test('returns error in callback if service type is not "global" or "require"', (done) => {
+        const engine = new Bpmn.Engine({
+          source: factory.resource('lanes.bpmn')
+        });
+        engine.execute({
+          services: {
+            test: {
+              module: 'require',
+              type: 'misc'
+            }
+          }
+        }, (err) => {
+          expect(err).to.be.an.error(/must be one of/);
+          done();
+        });
       });
     });
   });

@@ -32,23 +32,21 @@
 Creates a new Engine object where:
 
 - `options`
-  - `listener`: an `EventEmitter` object
   - `source`: Bpmn definition source as String or Buffer
+  - `name`: Optional name of engine
 
 ### `execute([options], [callback])`
 
-Creates a new Engine object where:
+Execute process with:
 
 - `options`
+  - [`listener`](#execution-listener): an `EventEmitter` object
   - [`variables`](#execution-variables): Optional object with instance variables
   - [`services`](#execution-services): Optional object with service definitions
-  - [`listener`](#execution-listener): an `EventEmitter` object
-  - [`state`](#getstate): Saved state
 - `callback`: optional callback
   - `err`: Error if any
   - `instance`: Main process instance
-
-Execute a BPMN 2.0 definition. The `execute()`
+  - `siblings`: List of all processes
 
 ```javascript
 'use strict';
