@@ -13,6 +13,7 @@
   - [`getState()`](#getstate)
   - [`stop()`](#stop)
   - [`resume(state, [options], [callback])`](#resumestate-options-callback)
+  - [Engine events](#engine-events)
   - [Activity events](#activity-events)
     - [Element events](#element-events)
     - [Sequence flow events](#sequence-flow-events)
@@ -31,7 +32,7 @@
 
 Creates a new Engine object where:
 
-- `options`
+- `options`: Optional object
   - `source`: Bpmn definition source as String or Buffer
   - `name`: Optional name of engine
 
@@ -39,7 +40,7 @@ Creates a new Engine object where:
 
 Execute process with:
 
-- `options`
+- `options`: Optional object
   - [`listener`](#execution-listener): an `EventEmitter` object
   - [`variables`](#execution-variables): Optional object with instance variables
   - [`services`](#execution-services): Optional object with service definitions
@@ -182,12 +183,18 @@ engine.execute({
 
 An `EventEmitter` object with listeners. [Event names](#activity-events) are composed by activity event name and activity id, e.g. `wait-userTask`.
 
+Event arguments are:
+
+- `activity`: The activity instance
+- `instance`: The running process instance
+
 ### `getState()`
 
-To save state of a process, execute engine `#save` function.
+Get state of a running execution.
 
 The saved state will include the following content:
-- `source`: Buffer representation of the definition
+
+- `source`: Buffered representation of the definition
 - `sourceHash`: Calculated md5 hash of the executing definition
 - `processes`: Object with processes with id as key
   - `variables`: Execution variables
@@ -205,15 +212,8 @@ const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
-    <dataObjectReference id="inputFromUserRef" dataObjectRef="inputFromUser" />
-    <dataObject id="inputFromUser" />
     <startEvent id="theStart" />
-    <userTask id="userTask">
-      <ioSpecification id="inputSpec">
-        <dataOutput id="userInput" />
-      </ioSpecification>
-      <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUserRef" />
-    </userTask>
+    <userTask id="userTask" />
     <endEvent id="theEnd" />
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
     <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
@@ -241,7 +241,7 @@ engine.execute({
 
 ### `stop()`
 
-Execute engine `#stop` function.
+Stop execution. The instance is terminated.
 
 ```javascript
 'use strict';
@@ -253,15 +253,8 @@ const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
-    <dataObjectReference id="inputFromUserRef" dataObjectRef="inputFromUser" />
-    <dataObject id="inputFromUser" />
     <startEvent id="theStart" />
-    <userTask id="userTask">
-      <ioSpecification id="inputSpec">
-        <dataOutput id="userInput" />
-      </ioSpecification>
-      <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUserRef" />
-    </userTask>
+    <userTask id="userTask" />
     <endEvent id="theEnd" />
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
     <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
@@ -278,6 +271,9 @@ listener.once('wait-userTask', (activity) => {
 });
 
 engine.execute({
+  variables: {
+    executionId: 'some-random-id'
+  },
   listener: listener
 }, (err, execution) => {
   if (err) throw err;
@@ -295,7 +291,7 @@ const Bpmn = require('bpmn-engine');
 const EventEmitter = require('events').EventEmitter;
 
 // Retrieve saved state
-const state = db.getState('state-id');
+const state = db.getState('some-random-id');
 
 const engine = new Bpmn.Engine();
 
@@ -307,6 +303,12 @@ engine.resume(state, (err, instance) => {
   if (err) throw err;
 });
 ```
+
+### Engine events
+
+Engine emits the following events:
+
+- `end`: Execution has completed or was stopped.
 
 ### Activity events
 
@@ -364,6 +366,7 @@ engine.execute({
 ```
 
 ### Listen for events
+
 ```javascript
 'use strict';
 
@@ -394,9 +397,8 @@ const engine = new Bpmn.Engine({
 });
 const listener = new EventEmitter();
 
-listener.once('wait-userTask', (activity) => {
-  console.log('Signal userTask when waiting');
-  activity.signal({
+listener.once('wait-userTask', (task) => {
+  task.signal({
     sirname: 'von Rosen'
   });
 });
@@ -463,7 +465,11 @@ engine.execute({
 
 ### Script task
 
-A script task will receive the data available on the process instance. So if `request` or another module is needed it has to be passed when starting the process. The script task also has a callback called `next` that takes an occasional error. The `next` callback has to be called for the process to proceed.
+A script task will receive the data available on the process instance. So if `request` or another module is needed it has to be passed when starting the process. The script task also has a callback called `next` that has to be called for the task to complete.
+
+The `next` callback takes the following arguments:
+- `err`: Occasional error
+- `result`: The result of the script
 
 ```javascript
 'use strict';
@@ -496,7 +502,10 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine(processXml);
+const engine = new Bpmn.Engine({
+  source: processXml
+});
+
 engine.execute({
   variables: {
     scriptTaskCompleted: false
@@ -517,6 +526,9 @@ engine.execute({
 ```
 
 ### User task
+
+User tasks waits for signal to complete. The signal function can be called on the emitted event or the executing instance.
+
 ```javascript
 'use strict';
 
@@ -541,7 +553,9 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine(processXml);
+const engine = new Bpmn.Engine({
+  source: processXml
+});
 const listener = new EventEmitter();
 
 listener.once('wait-userTask', (child, instance) => {
