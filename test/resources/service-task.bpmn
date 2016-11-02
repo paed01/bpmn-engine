@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.3.2">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>flow1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="serviceTask" />
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>flow2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow2" sourceRef="serviceTask" targetRef="end" />
+    <bpmn:serviceTask id="serviceTask" name="Post message" camunda:type="external" camunda:topic="postMessage">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="service" value="postMessage" />
+          <camunda:property name="message" value="me" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow1</bpmn:incoming>
+      <bpmn:outgoing>flow2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="errorEvent" attachedToRef="serviceTask">
+      <bpmn:outgoing>flow3</bpmn:outgoing>
+      <bpmn:errorEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="flow3" sourceRef="errorEvent" targetRef="endInVain" />
+    <bpmn:endEvent id="endInVain">
+      <bpmn:incoming>flow3</bpmn:incoming>
+      <bpmn:errorEventDefinition />
+    </bpmn:endEvent>
+    <bpmn:boundaryEvent id="timerEvent" attachedToRef="serviceTask">
+      <bpmn:outgoing>flow4</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT0.05S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="timeoutEnd">
+      <bpmn:incoming>flow4</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow4" sourceRef="timerEvent" targetRef="timeoutEnd" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="start">
+        <dc:Bounds x="173" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1leakwz_di" bpmnElement="flow1">
+        <di:waypoint xsi:type="dc:Point" x="209" y="120" />
+        <di:waypoint xsi:type="dc:Point" x="271" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="240" y="105" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_0z6s6tv_di" bpmnElement="end">
+        <dc:Bounds x="433" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="451" y="138" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0qci4po_di" bpmnElement="flow2">
+        <di:waypoint xsi:type="dc:Point" x="371" y="120" />
+        <di:waypoint xsi:type="dc:Point" x="433" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="402" y="105" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_0wu41vz_di" bpmnElement="serviceTask">
+        <dc:Bounds x="271" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_1stbfsc_di" bpmnElement="errorEvent">
+        <dc:Bounds x="280" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="298" y="178" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1q9drr5_di" bpmnElement="flow3">
+        <di:waypoint xsi:type="dc:Point" x="298" y="178" />
+        <di:waypoint xsi:type="dc:Point" x="298" y="212" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="313" y="195" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_18zxth2_di" bpmnElement="endInVain">
+        <dc:Bounds x="280" y="212" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="298" y="248" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_17ohhqn_di" bpmnElement="timerEvent">
+        <dc:Bounds x="326" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="344" y="178" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_0bmhnr0_di" bpmnElement="timeoutEnd">
+        <dc:Bounds x="326" y="212" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="344" y="248" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_05tti7c_di" bpmnElement="flow4">
+        <di:waypoint xsi:type="dc:Point" x="344" y="178" />
+        <di:waypoint xsi:type="dc:Point" x="344" y="212" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="359" y="185" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

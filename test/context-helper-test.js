@@ -285,4 +285,85 @@ lab.experiment('context-helper', () => {
     });
   });
 
+  lab.experiment('#getElementServiceName', () => {
+
+    lab.test('returns service name from properties named service', (done) => {
+      const element = {
+        $type: 'bpmn:ServiceTask',
+        id: 'serviceTask',
+        name: 'Post message',
+        extensionElements: {
+          $type: 'bpmn:ExtensionElements',
+          values: [{
+            $type: 'camunda:properties',
+            $children: [{
+              $type: 'camunda:property',
+              name: 'service',
+              value: 'postMessage'
+            }, {
+              $type: 'camunda:property',
+              name: 'message',
+              value: 'me'
+            }]
+          }]
+        }
+      };
+
+      expect(contextHelper.getElementServiceName(element)).to.equal('postMessage');
+      done();
+    });
+
+    lab.test('returns nothing if property named service is not found', (done) => {
+      const element = {
+        $type: 'bpmn:ServiceTask',
+        id: 'serviceTask',
+        name: 'Post message',
+        extensionElements: {
+          $type: 'bpmn:ExtensionElements',
+          values: [{
+            $type: 'camunda:properties',
+            $children: [{
+              $type: 'camunda:property',
+              name: 'message',
+              value: 'hello world'
+            }]
+          }]
+        }
+      };
+
+      expect(contextHelper.getElementServiceName(element)).to.not.exist();
+      done();
+    });
+
+    lab.test('returns nothing if without extensionElements', (done) => {
+      const element = {
+        $type: 'bpmn:ServiceTask',
+        id: 'serviceTask',
+        name: 'Post message'
+      };
+
+      expect(contextHelper.getElementServiceName(element)).to.not.exist();
+      done();
+    });
+
+    lab.test('returns nothing if without extensionElements values', (done) => {
+      const element = {
+        $type: 'bpmn:ServiceTask',
+        id: 'serviceTask',
+        name: 'Post message',
+        extensionElements: {
+          $type: 'bpmn:ExtensionElements',
+          values: []
+        }
+      };
+
+      expect(contextHelper.getElementServiceName(element)).to.not.exist();
+      done();
+    });
+
+    lab.test('no element no service', (done) => {
+      expect(contextHelper.getElementServiceName(null)).to.not.exist();
+      done();
+    });
+  });
 });

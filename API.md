@@ -119,6 +119,8 @@ A service is a module used by e.g. a script tasks or a condition where:
   - `type`: Optional type, supported types are `require` and `global`, defaults to `require`
   - `fnName`: Optional function name
 
+The module name can be a npm module or a local module. If a local module is used the path must be relative from execution path, i.e. `process.cwd()`.
+
 ```javascript
 'use strict';
 
@@ -166,6 +168,10 @@ const services = {
   require: {
     module: 'require',
     type: 'global'
+  },
+  serviceFn: {
+    module: './test/testHelpers',
+    fnName: 'serviceFn'
   }
 };
 

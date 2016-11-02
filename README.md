@@ -40,6 +40,7 @@ The following elements are tested and supported.
     - Sequential loop
   - User: needs signal
     - Sequential loop
+  - ServiceTask
 - Gateways
   - Exclusive
   - Inclusive

@@ -54,4 +54,7 @@ pub.getContext = function(processXml, callback) {
   });
 };
 
+// Place holder to service test
+pub.serviceFn = () => {};
+
 module.exports = pub;
