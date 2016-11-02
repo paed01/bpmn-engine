@@ -170,7 +170,7 @@ const services = {
     type: 'global'
   },
   serviceFn: {
-    module: './test/testHelpers',
+    module: './test/helpers/testHelpers',
     fnName: 'serviceFn'
   }
 };
