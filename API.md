@@ -1,5 +1,5 @@
 <!-- version -->
-# 0.15.0 API Reference
+# 0.16.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -23,6 +23,7 @@
   - [Exclusive gateway](#exclusive-gateway)
   - [Script task](#script-task)
   - [User task](#user-task)
+  - [Service task](#service-task)
 
 <!-- tocstop -->
 
@@ -622,3 +623,140 @@ engine.execute(null, listener, (err, instance) => {
 });
 ```
 
+### Service task
+
+A service task will receive the data available on the process instance. The signature of the service function is:
+
+- `message`:
+  - `variables`: Instance variables
+  - `services`: All instance services
+- `callback`:
+  - `err`: Occasional error
+  - `result`: The results of the service call arguments without the first argument (error)
+
+```javascript
+'use strict';
+
+const Bpmn = require('bpmn-engine');
+const request = require('request');
+
+const services = require('./lib/services');
+services.getRequest = (message, callback) => {
+  request.get(message.variables.apiPath, {json: true}, (err, resp, body) => {
+    if (err) return callback(err);
+    return callback(null, {
+      statusCode: resp.statusCode,
+      data: body
+    });
+  });
+};
+
+const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+  <startEvent id="theStart" />
+  <serviceTask id="serviceTask">
+    <extensionElements>
+      <camunda:properties>
+        <camunda:property name="service" value="getRequest" />
+      </camunda:properties>
+    </extensionElements>
+  </serviceTask>
+  <endEvent id="theEnd" />
+  <sequenceFlow id="flow1" sourceRef="theStart" targetRef="serviceTask" />
+  <sequenceFlow id="flow2" sourceRef="serviceTask" targetRef="theEnd" />
+  </process>
+</definitions>`;
+
+const engine = new Bpmn.Engine({
+  source: processXml
+});
+
+engine.execute({
+  variables: {
+    apiPath: 'http://example.com/test'
+  },
+  services: {
+    getRequest: {
+      module: './lib/services',
+      fnName: 'getRequest'
+    }
+  }
+}, (err, execution) => {
+  if (err) throw err;
+
+  execution.once('end', () => {
+    console.log('Service task output:', execution.variables.taskInput.serviceTask.result);
+  });
+});
+```
+
+or if arguments must be passed, then `inputParameter` `arguments` must be defined. The result is an array with arguments from the service callback where first error argument is omitted.
+
+```javascript
+'use strict';
+
+const Bpmn = require('bpmn-engine');
+
+const processXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <process id="Process_1" isExecutable="true">
+      <startEvent id="start">
+        <outgoing>flow1</outgoing>
+      </startEvent>
+      <sequenceFlow id="flow1" sourceRef="start" targetRef="serviceTask" />
+      <endEvent id="end">
+        <incoming>flow2</incoming>
+      </endEvent>
+      <sequenceFlow id="flow2" sourceRef="serviceTask" targetRef="end" />
+      <serviceTask id="serviceTask" name="Get">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="arguments">
+              <camunda:script scriptFormat="JavaScript">[variables.apiPath]</camunda:script>
+            </camunda:inputParameter>
+            <camunda:outputParameter name="result">
+              <camunda:script scriptFormat="JavaScript"><![CDATA[
+  'use strict';
+  var result = {
+    statusCode: result[0].statusCode,
+    body: result[0].statusCode === 200 ? JSON.parse(result[1]) : undefined
+  };
+  result]]>
+              </camunda:script>
+            </camunda:outputParameter>
+          </camunda:inputOutput>
+          <camunda:properties>
+            <camunda:property name="service" value="getRequest" />
+          </camunda:properties>
+        </extensionElements>
+        <incoming>flow1</incoming>
+        <outgoing>flow2</outgoing>
+      </serviceTask>
+    </process>
+  `;
+
+const engine = new Bpmn.Engine({
+  source: processXml
+});
+engine.execute({
+  variables: {
+    apiPath: 'http://example.com/test'
+  },
+  services: {
+    getRequest: {
+      module: 'request',
+      fnName: 'get'
+    }
+  }
+}, (err, execution) => {
+  if (err) throw err;
+  execution.once('end', () => {
+    console.log('Script task output:', execution.variables.taskInput.serviceTask.result);
+  });
+});
+```
+
+In the above example `request.get` will be called with `variables.apiPath`. The result is passed through `outputParameter` `result`.

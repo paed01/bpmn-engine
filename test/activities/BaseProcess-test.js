@@ -40,7 +40,7 @@ lab.experiment('BaseProcess', () => {
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <process id="theUncontrolledProcess" isExecutable="true">
-      <userTask id="task1" />
+      <userTask id="userTask" />
       <scriptTask id="task2" scriptFormat="JavaScript">
         <script>
           <![CDATA[
@@ -58,17 +58,17 @@ lab.experiment('BaseProcess', () => {
       engine.execute((err, execution) => {
         if (err) return done(err);
 
-        const userTask = execution.getChildActivityById('task1');
+        const userTask = execution.getChildActivityById('userTask');
         userTask.once('wait', () => {
-          setTimeout(userTask.signal.bind(userTask, ('von Rosen')), 50);
+          setTimeout(userTask.signal.bind(userTask, 'von Rosen'), 50);
         });
 
         execution.on('end', () => {
           expect(execution.getChildActivityById('task2').taken, 'task2 taken').to.be.true();
-          expect(execution.getChildActivityById('task1').taken, 'task1 taken').to.be.true();
+          expect(execution.getChildActivityById('userTask').taken, 'userTask taken').to.be.true();
 
           expect(execution.variables.input).to.equal(2);
-          expect(execution.variables.taskInput.task1).to.equal('von Rosen');
+          expect(execution.variables.taskInput.userTask).to.equal('von Rosen');
 
           done();
         });

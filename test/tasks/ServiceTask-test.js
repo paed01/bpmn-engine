@@ -3,6 +3,7 @@
 const Code = require('code');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
+const nock = require('nock');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
@@ -57,34 +58,6 @@ lab.experiment('ServiceTask', () => {
       }, (err, instance) => {
         if (err) return done(err);
         instance.once('end', () => {
-          done();
-        });
-      });
-    });
-
-    lab.test('can access variables', (done) => {
-      testHelpers.serviceFn = (message, callback) => {
-        message.variables.input = 'wuiiii';
-        callback();
-      };
-
-      const processXml = factory.resource('service-task.bpmn');
-
-      const engine = new Bpmn.Engine({
-        source: processXml
-      });
-
-      engine.execute({
-        services: {
-          postMessage: {
-            module: './test/helpers/testHelpers',
-            fnName: 'serviceFn'
-          }
-        }
-      }, (err, instance) => {
-        if (err) return done(err);
-        instance.once('end', () => {
-          expect(instance.variables.input).to.equal('wuiiii');
           done();
         });
       });
@@ -168,6 +141,41 @@ lab.experiment('ServiceTask', () => {
         instance.once('end', () => {
           expect(instance.getChildActivityById('end').taken).to.be.false();
           expect(instance.getChildActivityById('timerEvent').taken).to.be.true();
+          done();
+        });
+      });
+    });
+
+    lab.test('uses message arguments', (done) => {
+      nock('http://example.com')
+        .defaultReplyHeaders({
+          'Content-Type': 'application/json'
+        })
+        .get('/test')
+        .reply(200, {
+          data: 4
+        });
+
+      const processXml = factory.resource('service-task-io.bpmn');
+
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+
+      engine.execute({
+        services: {
+          getRequest: {
+            module: 'request',
+            fnName: 'get'
+          }
+        },
+        variables: {
+          apiPath: 'http://example.com/test'
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          expect(instance.variables.taskInput.serviceTask.result).to.include(['statusCode', 'body']);
           done();
         });
       });
