@@ -29,7 +29,7 @@ lab.experiment('mapper', () => {
     done();
   });
 
-  lab.experiment('isTask', () => {
+  lab.describe('isTask', () => {
     lab.test('bpmn:UserTask is true', (done) => {
       expect(mapper.isTask('bpmn:UserTask')).to.be.true();
       done();

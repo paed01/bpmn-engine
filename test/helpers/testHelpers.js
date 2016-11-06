@@ -55,6 +55,10 @@ pub.getContext = function(processXml, callback) {
 };
 
 // Place holder to service test
-pub.serviceFn = () => {};
+pub.serviceFn = (message, callback) => {
+  callback(null, {
+    service: true
+  });
+};
 
 module.exports = pub;

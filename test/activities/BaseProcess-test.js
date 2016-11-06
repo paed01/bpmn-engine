@@ -264,6 +264,13 @@ lab.experiment('BaseProcess', () => {
       });
 
       engine.getInstance({
+        services: {
+          runService: {
+            module: './test/helpers/testHelpers',
+            fnName: 'serviceFn',
+            type: 'require'
+          }
+        },
         variables: {
           input: 0
         },

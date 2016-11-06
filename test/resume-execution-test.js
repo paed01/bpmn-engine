@@ -170,6 +170,13 @@ lab.experiment('Resume execution', () => {
 
     engine1.execute({
       listener: listener1,
+      services: {
+        runService: {
+          module: './test/helpers/testHelpers',
+          fnName: 'serviceFn',
+          type: 'require'
+        }
+      },
       variables: {
         input: null
       }

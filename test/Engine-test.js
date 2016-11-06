@@ -1,6 +1,7 @@
 'use strict';
 
 const Code = require('code');
+const EventEmitter = require('events').EventEmitter;
 const factory = require('./helpers/factory');
 const Lab = require('lab');
 const testHelper = require('./helpers/testHelpers');
@@ -63,7 +64,7 @@ lab.experiment('engine', () => {
     });
   });
 
-  lab.experiment('#getInstance', () => {
+  lab.experiment('getInstance()', () => {
     lab.test('after transform engine id is definition id', (done) => {
       const engine = new Bpmn.Engine({
         source: factory.valid('myValidDefinition')
@@ -83,7 +84,7 @@ lab.experiment('engine', () => {
     });
   });
 
-  lab.describe('#execute', () => {
+  lab.describe('execute()', () => {
     lab.test('sets entry point id to executable process', (done) => {
       const engine = new Bpmn.Engine({
         source: factory.valid()
@@ -175,12 +176,46 @@ lab.experiment('engine', () => {
         });
       });
     });
+
+    lab.test('exposes services to participant processes', (done) => {
+      const engine = new Bpmn.Engine({
+        source: factory.resource('mother-of-all.bpmn')
+      });
+      const listener = new EventEmitter();
+      listener.on('wait', (activity) => {
+        activity.signal({
+          input: 1
+        });
+      });
+
+      engine.once('end', () => {
+        done();
+      });
+
+      engine.execute({
+        services: {
+          runService: {
+            module: './test/helpers/testHelpers',
+            fnName: 'serviceFn',
+            type: 'require'
+          }
+        },
+        variables: {
+          input: 0
+        },
+        listener: listener
+      }, (err) => {
+        if (err) return done(err);
+      });
+    });
   });
 
-  lab.describe('#resume', () => {
+  lab.describe('resume()', () => {
     lab.test('with invalid source returns error in callback', (done) => {
       const engine = new Bpmn.Engine();
-      engine.resume({source: 'invalid xml'}, (err) => {
+      engine.resume({
+        source: 'invalid xml'
+      }, (err) => {
         expect(err).to.be.an.error(/data outside of root node/);
         done();
       });
