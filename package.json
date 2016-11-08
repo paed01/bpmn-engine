@@ -29,7 +29,7 @@
   "devDependencies": {
     "code": "^4.0.0",
     "coveralls": "^2.11.14",
-    "lab": "^11.1.0",
+    "lab": "^11.2.0",
     "markdown-toc": "^0.13.0",
     "nock": "^9.0.2",
     "request": "~2.75.0"
@@ -37,7 +37,7 @@
   "dependencies": {
     "async": "^2.1.2",
     "bpmn-moddle": "^0.12.3",
-    "debug": "^2.2.0",
+    "debug": "^2.3.0",
     "joi": "^9.2.0",
     "moment": "^2.15.2"
   },
