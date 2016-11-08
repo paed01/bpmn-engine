@@ -3,7 +3,7 @@
 const Code = require('code');
 const EventEmitter = require('events').EventEmitter;
 const Lab = require('lab');
-const testHelper = require('../helpers/testHelpers');
+const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const Bpmn = require('../../');
@@ -50,7 +50,7 @@ lab.experiment('task loop', () => {
 
         instance.once('end', () => {
           expect(startCount).to.equal(10);
-          testHelper.expectNoLingeringListeners(instance);
+          testHelpers.expectNoLingeringListeners(instance);
           done();
         });
       });
@@ -97,7 +97,7 @@ lab.experiment('task loop', () => {
         instance.once('end', () => {
           expect(startCount, 'number of start').to.equal(7);
           expect(instance.variables.input).to.equal(42);
-          testHelper.expectNoLingeringListeners(instance);
+          testHelpers.expectNoLingeringListeners(instance);
           done();
         });
       });
@@ -134,7 +134,7 @@ lab.experiment('task loop', () => {
 
         instance.once('end', () => {
           expect(startCount).to.equal(5);
-          testHelper.expectNoLingeringListeners(instance);
+          testHelpers.expectNoLingeringListeners(instance);
           done();
         });
       });
@@ -173,7 +173,7 @@ lab.experiment('task loop', () => {
 
         instance.once('end', () => {
           expect(waitCount).to.equal(4);
-          testHelper.expectNoLingeringListeners(instance);
+          testHelpers.expectNoLingeringListeners(instance);
           done();
         });
       });
@@ -212,7 +212,63 @@ lab.experiment('task loop', () => {
 
         instance.once('end', () => {
           expect(startCount).to.equal(5);
-          testHelper.expectNoLingeringListeners(instance);
+          testHelpers.expectNoLingeringListeners(instance);
+          done();
+        });
+      });
+    });
+
+    lab.test('loops service task until condition is met', (done) => {
+      const def = `
+<definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
+  <process id="taskLoopProcess" isExecutable="true">
+    <serviceTask id="recurring" name="Recurring">
+      <multiInstanceLoopCharacteristics isSequential="true">
+        <completionCondition xsi:type="tFormalExpression">variables.input > 3</completionCondition>
+      </multiInstanceLoopCharacteristics>
+      <extensionElements>
+        <camunda:properties>
+          <camunda:property name="service" value="iterate" />
+        </camunda:properties>
+      </extensionElements>
+    </serviceTask>
+  </process>
+</definitions>
+    `;
+
+      const engine = new Bpmn.Engine({
+        source: def
+      });
+      const listener = new EventEmitter();
+
+      let startCount = 0;
+      listener.on('start-recurring', () => {
+        startCount++;
+      });
+
+      testHelpers.iterate = function(message, callback) {
+        message.variables.input++;
+        callback();
+      };
+
+      engine.execute({
+        listener: listener,
+        variables: {
+          input: 0
+        },
+        services: {
+          iterate: {
+            module: './test/helpers/testHelpers',
+            fnName: 'iterate'
+          }
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+
+        instance.once('end', () => {
+          expect(startCount).to.equal(4);
+          testHelpers.expectNoLingeringListeners(instance);
           done();
         });
       });
@@ -263,7 +319,7 @@ lab.experiment('task loop', () => {
         instance.once('end', () => {
           expect(startCount, 'number of start').to.equal(3);
           expect(instance.variables.input).to.equal(14);
-          testHelper.expectNoLingeringListeners(instance);
+          testHelpers.expectNoLingeringListeners(instance);
           done();
         });
       });

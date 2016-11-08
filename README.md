@@ -26,11 +26,15 @@ The following elements are tested and supported.
 - Events
   - Start
   - End
-  - Message (intermediate)
-  - Intermediate Timer: with duration as ISO_8601
-  - Interupting Timer Boundary Event: with duration as ISO_8601
-  - Non-interupting Timer Boundary Event: with duration as ISO_8601
-  - Error Boundary Event
+  - Error
+    - Boundary
+  - Message
+    - Start
+    - Intermediate
+  - Timer: with duration as ISO_8601
+    - Intermediate
+    - Boundary Interupting
+    - Boundary Non-interupting
 - Tasks
   - SubProcess
     - Sequential loop
@@ -41,6 +45,7 @@ The following elements are tested and supported.
   - User: needs signal
     - Sequential loop
   - ServiceTask
+    - Sequential loop
 - Gateways
   - Exclusive
   - Inclusive
