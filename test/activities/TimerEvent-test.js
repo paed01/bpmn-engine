@@ -13,23 +13,106 @@ const testHelper = require('../helpers/testHelpers');
 lab.experiment('TimerEvent', () => {
 
   lab.describe('ctor', () => {
-    const processXml = factory.resource('boundary-timeout.bpmn');
-    let instance;
-    lab.before((done) => {
+    lab.test('stores duration timeout', (done) => {
+      const processXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <process id="interruptedProcess" isExecutable="true">
+      <userTask id="dontWaitForMe" />
+      <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
+        <timerEventDefinition>
+          <timeDuration xsi:type="tFormalExpression">PT0.1S</timeDuration>
+        </timerEventDefinition>
+      </boundaryEvent>
+    </process>
+  </definitions>
+      `;
+
       const engine = new Bpmn.Engine({
         source: processXml
       });
-      engine.getInstance((err, processInstance) => {
+      engine.getInstance((err, instance) => {
         if (err) return done(err);
-        instance = processInstance;
+        expect(instance.getChildActivityById('timeoutEvent').duration).to.equal('PT0.1S');
         done();
       });
+
+    });
+  });
+
+  lab.describe('run', () => {
+    lab.test('resolves duration when executed', (done) => {
+      const processXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <process id="interruptedProcess" isExecutable="true">
+      <userTask id="dontWaitForMe" />
+      <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
+        <timerEventDefinition>
+          <timeDuration xsi:type="tFormalExpression">PT0.1S</timeDuration>
+        </timerEventDefinition>
+      </boundaryEvent>
+    </process>
+  </definitions>
+      `;
+
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      const listener = new EventEmitter();
+
+      listener.once('wait-dontWaitForMe', (task, instance) => {
+        engine.stop();
+        expect(instance.getChildActivityById('timeoutEvent').timeout).to.equal(100);
+        done();
+      });
+
+      engine.execute({
+        listener: listener,
+        variables: {
+          timeout: 0.2
+        }
+      }, (err) => {
+        if (err) return done(err);
+      });
+
     });
 
-    lab.test('stores timeout', (done) => {
-      const event = instance.getChildActivityById('boundTimeoutEvent');
-      expect(event.timeout).to.be.above(0);
-      done();
+    lab.test('resolves duration expression when executed', (done) => {
+      const processXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <process id="interruptedProcess" isExecutable="true">
+      <userTask id="dontWaitForMe" />
+      <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
+        <timerEventDefinition>
+          <timeDuration xsi:type="tFormalExpression">PT\${variables.timeout}S</timeDuration>
+        </timerEventDefinition>
+      </boundaryEvent>
+    </process>
+  </definitions>
+      `;
+
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      const listener = new EventEmitter();
+
+      listener.once('wait-dontWaitForMe', (task, instance) => {
+        expect(instance.getChildActivityById('timeoutEvent').timeout).to.equal(200);
+        engine.stop();
+        done();
+      });
+
+      engine.execute({
+        listener: listener,
+        variables: {
+          timeout: 0.2
+        }
+      }, (err) => {
+        if (err) return done(err);
+      });
+
     });
   });
 
@@ -250,7 +333,7 @@ lab.experiment('TimerEvent', () => {
     });
 
     lab.test('stores duration', (done) => {
-      expect(event.timeout).to.be.above(0);
+      expect(event.duration).to.exist();
       done();
     });
 

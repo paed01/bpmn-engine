@@ -1,5 +1,5 @@
 <!-- version -->
-# 0.16.1 API Reference
+# 0.16.2 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -17,6 +17,7 @@
   - [Activity events](#activity-events)
     - [Element events](#element-events)
     - [Sequence flow events](#sequence-flow-events)
+  - [Expressions](#expressions)
 - [Examples](#examples)
   - [Execute](#execute)
   - [Listen for events](#listen-for-events)
@@ -115,12 +116,29 @@ engine.execute({
 
 A service is a module used by e.g. a script tasks or a condition where:
 
-- `object key`: Exposed name in script task
-  - `module`: Module name
-  - `type`: Optional type, supported types are `require` and `global`, defaults to `require`
-  - `fnName`: Optional function name
+```javascript
+{
+  services: {
+    get: {
+      module: 'request',
+      type: 'require',
+      fnName: 'get'
+    }
+    checkState: (message) => {
+      return message.variables.statusCode === 200;
+    }
+  }
+}
+```
 
-The module name can be a npm module or a local module. If a local module is used the path must be relative from execution path, i.e. `process.cwd()`.
+- `name`: Exposed name in the engine
+  - `module`: Module or global name
+  - `type`: Optional type, supported types are `require` and `global`, defaults to `require`
+  - `fnName`: Optional module function name
+
+If the process will be stopped and resumed the module structure is to prefer. But it is also possible to send in functions, aware that they will not be serialized when getting state.
+
+The module name can be a npm module, local module or a global reference. If a local module is used the path must be relative from execution path, i.e. `process.cwd()`.
 
 ```javascript
 'use strict';
@@ -335,6 +353,26 @@ Each activity and flow emits events when changing state.
 
 - `taken`: The sequence flow was taken
 - `discarded`: The sequence flow was discarded
+
+### Expressions
+
+Expressions come in the form of `${<variables or services>.<property name>}`.
+
+The following expressions are supported:
+
+- `${variables.input}` - resolves to the variable input
+- `${variables.input[0]}` - resolves to first item of the variable input array
+- `${variables.input[spaced name]}` - resolves to the variable input object property `spaced name`
+
+- `${services.getInput}` - return the service function `getInput`
+- `${services.getInput()}` - executes the service function `getInput` with the argument `{services, variables}`
+- `${services.isBelow(variables.input,2)}` - executes the service function `isBelow` with result of `variable.input` value and 2
+
+Expressions are supported in the following elements:
+- TimerEvent
+  - `timeDuration` element value
+- SequenceFlow
+  - `conditionExpression` element value
 
 ## Examples
 
@@ -719,12 +757,13 @@ const processXml = `
             </camunda:inputParameter>
             <camunda:outputParameter name="result">
               <camunda:script scriptFormat="JavaScript"><![CDATA[
-  'use strict';
-  var result = {
-    statusCode: result[0].statusCode,
-    body: result[0].statusCode === 200 ? JSON.parse(result[1]) : undefined
-  };
-  result]]>
+'use strict';
+var result = {
+  statusCode: result[0].statusCode,
+  body: result[0].statusCode === 200 ? JSON.parse(result[1]) : undefined
+};
+result;
+              ]]>
               </camunda:script>
             </camunda:outputParameter>
           </camunda:inputOutput>
@@ -760,3 +799,54 @@ engine.execute({
 ```
 
 In the above example `request.get` will be called with `variables.apiPath`. The result is passed through `outputParameter` `result`.
+
+### Sequence flow with expression
+
+```javascript
+'use strict';
+
+const Bpmn = require('bpmn-engine');
+
+const sourceXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="testProcess" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess1" isExecutable="true">
+    <startEvent id="theStart" />
+    <exclusiveGateway id="decision" default="flow2" />
+    <endEvent id="end1" />
+    <endEvent id="end2" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1" />
+    <sequenceFlow id="flow3withExpression" sourceRef="decision" targetRef="end2">
+      <conditionExpression xsi:type="tFormalExpression">\${services.isBelow(variables.input,2)}</conditionExpression>
+    </sequenceFlow>
+  </process>
+</definitions>
+`;
+
+const engine = new Bpmn.Engine({
+  source: sourceXml
+});
+const listener = new EventEmitter();
+listener.on('taken-flow3withExpression', (flow) => {
+  throw new Error(`<${flow.id}> should not have been taken`);
+});
+engine.execute({
+  listener: listener,
+  services: {
+    isBelow: (input, test) => {
+      return input < Number(test);
+    }
+  },
+  variables: {
+    input: 2
+  }
+}, (err, instance) => {
+  if (err) return done(err);
+  instance.once('end', () => {
+    console.log('WOHO!')
+  });
+});
+
+```
+

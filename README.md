@@ -21,7 +21,7 @@ The following elements are tested and supported.
 - Process
 - Lane
 - Flows:
-  - Sequence: javascript conditions only
+  - Sequence: javascript- and expression conditions
   - Message
 - Events
   - Start

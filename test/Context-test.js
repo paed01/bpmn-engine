@@ -157,6 +157,7 @@ lab.experiment('Context', () => {
           whut: {
             type: 'misc'
           },
+          fn: () => {},
           get: {
             module: 'request',
             fnName: 'get'
@@ -183,6 +184,7 @@ lab.experiment('Context', () => {
 
         expect(services.none).to.be.undefined();
         expect(services.whut).to.be.undefined();
+        expect(services.fn).to.be.a.function();
         expect(services.get).to.be.a.function();
         expect(services.request).to.be.a.function();
         expect(services.console).to.be.an.object();
