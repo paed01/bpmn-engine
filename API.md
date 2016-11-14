@@ -1,5 +1,5 @@
 <!-- version -->
-# 0.16.2 API Reference
+# 0.17.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -25,6 +25,7 @@
   - [Script task](#script-task)
   - [User task](#user-task)
   - [Service task](#service-task)
+  - [Sequence flow with expression](#sequence-flow-with-expression)
 
 <!-- tocstop -->
 
