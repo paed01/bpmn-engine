@@ -27,7 +27,7 @@ lab.experiment('validation', () => {
   lab.experiment('definitions', () => {
 
     lab.test('validates', (done) => {
-      transformer.transform(validBpmnDefinition, (err, bpmnObject, context) => {
+      transformer.transform(validBpmnDefinition, {}, (err, bpmnObject, context) => {
         if (err) return done(err);
         validation.validate(bpmnObject, context, done);
       });
@@ -50,7 +50,7 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(bpmnXml, (terr, bpmnObject, context) => {
+      transformer.transform(bpmnXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
 
         validation.validate(bpmnObject, context, (err) => {
@@ -64,7 +64,7 @@ lab.experiment('validation', () => {
 
   lab.experiment('processes', () => {
     lab.test('validates', (done) => {
-      transformer.transform(validBpmnDefinition, (err, bpmnObject, context) => {
+      transformer.transform(validBpmnDefinition, {}, (err, bpmnObject, context) => {
         if (err) return done(err);
         validation.validate(bpmnObject, context, done);
       });
@@ -77,7 +77,7 @@ lab.experiment('validation', () => {
   <process isExecutable="true" />
 </definitions>`;
 
-      transformer.transform(bpmnXml, (terr, bpmnObject, context) => {
+      transformer.transform(bpmnXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
         validation.validate(bpmnObject, context, (err) => {
           expect(err).to.be.an.error();
@@ -93,7 +93,7 @@ lab.experiment('validation', () => {
   <process id="theProcess" isExecutable="true" />
 </definitions>`;
 
-      transformer.transform(bpmnXml, (terr, bpmnObject, context) => {
+      transformer.transform(bpmnXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
         validation.validate(bpmnObject, context, done);
       });
@@ -108,7 +108,7 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(bpmnXml, (terr, bpmnObject, context) => {
+      transformer.transform(bpmnXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
         validation.validate(bpmnObject, context, (err) => {
           expect(err).to.be.an.error();
@@ -120,7 +120,7 @@ lab.experiment('validation', () => {
 
   lab.experiment('lanes', () => {
     lab.test('validates', (done) => {
-      transformer.transform(factory.resource('lanes.bpmn').toString(), (err, bpmnObject, context) => {
+      transformer.transform(factory.resource('lanes.bpmn').toString(), {}, (err, bpmnObject, context) => {
         if (err) return done(err);
         validation.validate(bpmnObject, context, done);
       });
@@ -138,7 +138,7 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, (terr, bpmnObject, context) => {
+      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
         validation.validate(bpmnObject, context, (err) => {
           expect(err).to.be.an.error(/"targetRef" is required/);
@@ -157,7 +157,7 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, (terr, bpmnObject, context) => {
+      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
         validation.validate(bpmnObject, context, (err) => {
           expect(err).to.be.an.error(/"sourceRef" is required/);
@@ -186,7 +186,7 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, (terr, bpmnObject, context) => {
+      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
         validation.validate(bpmnObject, context, (err) => {
           expect(err).to.exist();
@@ -210,7 +210,7 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, (terr, bpmnObject, context) => {
+      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
         validation.validate(bpmnObject, context, (err) => {
           expect(err).to.exist();
@@ -238,7 +238,7 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, (terr, bpmnObject, context) => {
+      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
 
         validation.validate(bpmnObject, context, (err) => {
@@ -271,7 +271,7 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, (terr, bpmnObject, context) => {
+      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
         validation.validate(bpmnObject, context, (err) => {
           expect(err).to.not.exist();
@@ -289,7 +289,7 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, (terr, bpmnObject, context) => {
+      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
 
         validation.validate(bpmnObject, context, (err) => {

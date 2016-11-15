@@ -147,6 +147,28 @@ lab.experiment('Save state', () => {
           if (err) return done(err);
         });
       });
+
+      lab.test('returns moddleOptions', (done) => {
+        const engine = new Bpmn.Engine({
+          source: processXml,
+          moddleOptions: {
+            camunda: require('camunda-bpmn-moddle/resources/camunda')
+          }
+        });
+        const listener = new EventEmitter();
+
+        listener.on('wait-userTask', () => {
+          const state = engine.getState();
+          expect(state).to.include(['moddleOptions']);
+          done();
+        });
+
+        engine.execute({
+          listener: listener
+        }, (err) => {
+          if (err) return done(err);
+        });
+      });
     });
 
     lab.describe('when completed', () => {

@@ -196,5 +196,73 @@ lab.experiment('Context', () => {
 
     });
 
+    lab.test('takes options and assigns to result', (done) => {
+      testHelpers.getContext(factory.valid(), (err, context) => {
+        if (err) return done(err);
+
+        context.services = {
+          get: {
+            module: 'request',
+            fnName: 'get'
+          }
+        };
+
+        const executionContext = context.getVariablesAndServices({id: 'test'});
+
+        expect(executionContext).to.include({id: 'test'});
+        done();
+      });
+
+    });
+
+  });
+
+  lab.describe('#getFrozenVariablesAndServices', () => {
+    lab.test('returns frozen variables and services', (done) => {
+      testHelpers.getContext(factory.valid(), (err, context) => {
+        if (err) return done(err);
+
+        context.variables = {
+          input: 1
+        };
+        context.services = {
+          fn: () => {},
+          get: {
+            module: 'request',
+            fnName: 'get'
+          }
+        };
+
+        const executionContext = context.getFrozenVariablesAndServices().services;
+
+        expect(Object.isFrozen(executionContext.services)).to.be.true();
+        expect(Object.isFrozen(executionContext.variables)).to.be.true();
+        done();
+      });
+
+    });
+
+    lab.test('options are returned', (done) => {
+      testHelpers.getContext(factory.valid(), (err, context) => {
+        if (err) return done(err);
+
+        context.variables = {
+          input: 1
+        };
+        context.services = {
+          fn: () => {},
+          get: {
+            module: 'request',
+            fnName: 'get'
+          }
+        };
+
+        const executionContext = context.getFrozenVariablesAndServices({id: 'test'});
+        expect(executionContext).to.include({id: 'test'});
+        done();
+      });
+
+    });
+
   });
 });

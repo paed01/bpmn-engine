@@ -20,7 +20,7 @@ lab.experiment('ServiceTask', () => {
   });
 
   lab.describe('ctor', () => {
-    lab.test('stores service name', (done) => {
+    lab.test('stores service if extension name', (done) => {
       const processXml = factory.resource('service-task.bpmn');
 
       const engine = new Bpmn.Engine({
@@ -30,7 +30,31 @@ lab.experiment('ServiceTask', () => {
       engine.getInstance((err, instance) => {
         if (err) return done(err);
         const task = instance.getChildActivityById('serviceTask');
-        expect(task.serviceName).to.equal('postMessage');
+        expect(task).to.include(['service']);
+        done();
+      });
+    });
+
+    lab.test('stores expression', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" />
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.getInstance((err, instance) => {
+        if (err) return done(err);
+        const task = instance.getChildActivityById('serviceTask');
+        expect(task).to.include(['service']);
         done();
       });
     });
@@ -176,6 +200,151 @@ lab.experiment('ServiceTask', () => {
         if (err) return done(err);
         instance.once('end', () => {
           expect(instance.variables.taskInput.serviceTask.result).to.include(['statusCode', 'body']);
+          done();
+        });
+      });
+    });
+
+    lab.test('executes function call expression with context as argument', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.getService()}" camunda:resultVariable="output" />
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.execute({
+        services: {
+          getService: () => {
+            return (executionContext, callback) => {
+              callback(null, executionContext.variables.input);
+            };
+          }
+        },
+        variables: {
+          input: 1
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          expect(instance.variables.taskInput.serviceTask).to.include(['output']);
+          expect(instance.variables.taskInput.serviceTask.output[0]).to.equal(1);
+          done();
+        });
+      });
+    });
+
+    lab.test('executes expression function call with variable reference argument with context as argument', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.getService(variables.input)}" camunda:resultVariable="output" />
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.execute({
+        services: {
+          getService: (input) => {
+            return (executionContext, callback) => {
+              callback(null, input);
+            };
+          }
+        },
+        variables: {
+          input: 1
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          expect(instance.variables.taskInput.serviceTask).to.include(['output']);
+          expect(instance.variables.taskInput.serviceTask.output[0]).to.equal(1);
+          done();
+        });
+      });
+    });
+
+    lab.test('executes expression function call with static value argument with context as argument', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.getService(whatever value)}" camunda:resultVariable="output" />
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.execute({
+        services: {
+          getService: (input) => {
+            return (executionContext, callback) => {
+              callback(null, input);
+            };
+          }
+        },
+        variables: {
+          input: 1
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          expect(instance.variables.taskInput.serviceTask).to.include(['output']);
+          expect(instance.variables.taskInput.serviceTask.output[0]).to.equal('whatever value');
+          done();
+        });
+      });
+    });
+
+    lab.test('executes function reference expression with context as argument', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.getService}" camunda:resultVariable="output" />
+  </process>
+</definitions>`;
+
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.execute({
+        services: {
+          getService: (executionContext, callback) => {
+            callback(null, executionContext.variables.input);
+          }
+        },
+        variables: {
+          input: 1
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          expect(instance.variables.taskInput.serviceTask).to.include(['output']);
           done();
         });
       });

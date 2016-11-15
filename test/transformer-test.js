@@ -23,27 +23,47 @@ lab.experiment('transformer', () => {
   const transformer = Bpmn.Transformer;
 
   lab.test('returns Bpmn object and context in callback', (done) => {
-    transformer.transform(validBpmnDefinition, done);
+    transformer.transform(validBpmnDefinition, {}, done);
   });
 
   lab.test('unless null input', (done) => {
-    transformer.transform(null, (err) => {
+    transformer.transform(null, {}, (err) => {
       expect(err).to.exist();
       done();
     });
   });
 
   lab.test('or empty string', (done) => {
-    transformer.transform('', (err) => {
+    transformer.transform('', {}, (err) => {
       expect(err).to.exist();
       done();
     });
   });
 
   lab.test('or not a string', (done) => {
-    transformer.transform({}, (err) => {
+    transformer.transform({}, {}, (err) => {
       expect(err).to.exist();
       done();
+    });
+  });
+
+  lab.describe('additional packages', () => {
+    lab.test('camunda', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" />
+  </process>
+</definitions>`;
+
+      transformer.transform(processXml, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, moddle, context) => {
+        if (err) return done(err);
+        expect(context.elementsById.serviceTask).to.include({expression: '\${services.get}'});
+        done();
+      });
     });
   });
 });

@@ -18,9 +18,20 @@ lab.experiment('engine', () => {
   });
 
   lab.experiment('#ctor', () => {
-    lab.test('takes process definition as argument', (done) => {
+    lab.test('takes source option', (done) => {
       const engine = new Bpmn.Engine({
         source: factory.valid()
+      });
+      expect(engine.source).to.exist();
+      done();
+    });
+
+    lab.test('takes moddleOptions as option', (done) => {
+      const engine = new Bpmn.Engine({
+        source: factory.valid(),
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
       });
       expect(engine.source).to.exist();
       done();

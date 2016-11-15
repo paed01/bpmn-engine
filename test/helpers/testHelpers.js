@@ -47,7 +47,7 @@ function checkListeners(child, names, scope) {
 
 pub.getContext = function(processXml, callback) {
   const Context = require('../../lib/Context');
-  transformer.transform(processXml, (err, definitions, moddleContext) => {
+  transformer.transform(processXml, {}, (err, definitions, moddleContext) => {
     if (err) return callback(err);
     const context = new Context(contextHelper.getExecutableProcessId(moddleContext), moddleContext, {});
     return callback(null, context);

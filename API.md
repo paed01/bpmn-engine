@@ -37,7 +37,10 @@ Creates a new Engine object where:
 
 - `options`: Optional object
   - `source`: Bpmn definition source as String or Buffer
-  - `name`: Optional name of engine
+  - `name`: Optional name of engine,
+  - `moddleOptions`: Optional moddle parse options
+
+Moddle options can be used if an extension is used when parsing BPMN-source. The object will be passed on to the constructor of `bpmn-moddle`.
 
 ### `execute([options], [callback])`
 

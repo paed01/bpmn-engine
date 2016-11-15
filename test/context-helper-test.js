@@ -15,7 +15,7 @@ lab.experiment('context-helper', () => {
 
   let context;
   lab.beforeEach((done) => {
-    transformer.transform(factory.valid(), (err, bpmnObject, result) => {
+    transformer.transform(factory.valid(), {}, (err, bpmnObject, result) => {
       if (err) return done(err);
       context = result;
       done();
@@ -51,7 +51,7 @@ lab.experiment('context-helper', () => {
 
     lab.test('returns inbound for sub process', (done) => {
       const processXml = factory.resource('sub-process.bpmn');
-      transformer.transform(processXml.toString(), (err, bpmnObject, moddleContext) => {
+      transformer.transform(processXml.toString(), {}, (err, bpmnObject, moddleContext) => {
         if (err) return done(err);
 
         const flows = contextHelper.getInboundSequenceFlows(moddleContext, 'subProcess');
@@ -63,7 +63,7 @@ lab.experiment('context-helper', () => {
 
     lab.test('returns no inbound for main process', (done) => {
       const processXml = factory.resource('sub-process.bpmn');
-      transformer.transform(processXml.toString(), (err, bpmnObject, moddleContext) => {
+      transformer.transform(processXml.toString(), {}, (err, bpmnObject, moddleContext) => {
         if (err) return done(err);
 
         const flows = contextHelper.getInboundSequenceFlows(moddleContext, 'mainProcess');
@@ -78,7 +78,7 @@ lab.experiment('context-helper', () => {
   lab.experiment('#getDataObjectFromRef', () => {
     let userContext;
     lab.before((done) => {
-      transformer.transform(factory.userTask(), (err, bpmnObject, result) => {
+      transformer.transform(factory.userTask(), {}, (err, bpmnObject, result) => {
         if (err) return done(err);
         userContext = result;
         done();
@@ -101,7 +101,7 @@ lab.experiment('context-helper', () => {
   lab.experiment('#getDataObjectFromAssociation', () => {
     let userContext;
     lab.before((done) => {
-      transformer.transform(factory.userTask(), (err, bpmnObject, result) => {
+      transformer.transform(factory.userTask(), {}, (err, bpmnObject, result) => {
         if (err) return done(err);
         userContext = result;
         done();
@@ -140,7 +140,7 @@ lab.experiment('context-helper', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, (err, bpmnObject, result) => {
+      transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
         const dataObject = contextHelper.getDataObjectFromAssociation(result, 'associatedWith');
         expect(dataObject).to.include(['id', '$type']);
@@ -170,7 +170,7 @@ lab.experiment('context-helper', () => {
     <sequenceFlow id="flow4" sourceRef="theStart" targetRef="theEnd3" />
   </process>
 </definitions>`;
-      transformer.transform(processXml, (err, bpmnObject, result) => {
+      transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
         localContext = result;
         done();
@@ -213,7 +213,7 @@ lab.experiment('context-helper', () => {
     <startEvent id="theStart" />
   </process>
 </definitions>`;
-      transformer.transform(processXml, (err, bpmnObject, result) => {
+      transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
         expect(contextHelper.hasInboundSequenceFlows(result, 'theStart')).to.be.false();
         done();
@@ -230,7 +230,7 @@ lab.experiment('context-helper', () => {
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd" />
   </process>
 </definitions>`;
-      transformer.transform(processXml, (err, bpmnObject, result) => {
+      transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
         expect(contextHelper.hasInboundSequenceFlows(result, 'theEnd')).to.be.true();
         done();
@@ -246,7 +246,7 @@ lab.experiment('context-helper', () => {
     <endEvent id="theEnd" />
   </process>
 </definitions>`;
-      transformer.transform(processXml, (err, bpmnObject, result) => {
+      transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
         expect(contextHelper.hasInboundSequenceFlows(result, 'theEnd')).to.be.false();
         done();
@@ -257,7 +257,7 @@ lab.experiment('context-helper', () => {
   lab.experiment('#getActivities', () => {
     lab.test('returns only activities bound to element', (done) => {
       const processXml = factory.resource('sub-process.bpmn');
-      transformer.transform(processXml.toString(), (err, bpmnObject, moddleContext) => {
+      transformer.transform(processXml.toString(), {}, (err, bpmnObject, moddleContext) => {
         if (err) return done(err);
 
         const forParent = contextHelper.getActivities(moddleContext, 'mainProcess');

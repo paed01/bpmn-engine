@@ -474,7 +474,7 @@ if (!variables.input) {
       listener2.once('wait-userTask', (task) => {
         task.signal();
       });
-      engine2.resume(state, {
+      engine2.resume(readFromDb(state), {
         listener: listener2
       }, (err, instance) => {
         if (err) return done(err);
@@ -490,12 +490,83 @@ if (!variables.input) {
     });
   });
 
+  lab.test('resumes with moddle options', (done) => {
+    const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <userTask id="userTask" />
+    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" camunda:resultVariable="output" />
+    <sequenceFlow id="flow1" sourceRef="userTask" targetRef="serviceTask" />
+  </process>
+</definitions>`;
+
+    testHelpers.resumeFn = (executionContext, callback) => {
+      callback(null, {
+        statusCode: 200,
+        body: {
+          input: 1
+        }
+      });
+    };
+
+    const engine1 = new Bpmn.Engine({
+      source: processXml,
+      moddleOptions: {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }
+    });
+    const listener1 = new EventEmitter();
+    const options = {
+      listener: listener1,
+      services: {
+        get: {
+          module: './test/helpers/testHelpers',
+          type: 'require',
+          fnName: 'resumeFn'
+        }
+      }
+    };
+
+    let state;
+    listener1.once('wait-userTask', () => {
+      state = engine1.getState();
+      engine1.stop();
+    });
+
+    engine1.once('end', () => {
+      testHelpers.expectNoLingeringListenersOnEngine(engine1);
+
+      const engine2 = new Bpmn.Engine({
+        source: state.source
+      });
+      const listener2 = new EventEmitter();
+      listener2.once('wait-userTask', (task) => {
+        task.signal();
+      });
+
+      engine2.resume(readFromDb(state), {
+        listener: listener2
+      }, (err, instance) => {
+        if (err) return done(err);
+
+        instance.once('end', () => {
+          expect(instance.variables.taskInput.serviceTask.output[0]).to.include(['statusCode', 'body']);
+          done();
+        });
+      });
+    });
+
+    engine1.execute(options, (err) => {
+      if (err) return done(err);
+    });
+  });
 });
 
 function readFromDb(state) {
   const source = state.source;
   delete state.source;
-  const savedState = JSON.stringify(state, null, 2);
+  const savedState = JSON.stringify(state);
   const loadedState = JSON.parse(savedState);
   loadedState.source = source;
   return loadedState;
