@@ -1,5 +1,5 @@
 <!-- version -->
-# 0.17.0 API Reference
+# 0.18.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -225,6 +225,7 @@ The saved state will include the following content:
 
 - `source`: Buffered representation of the definition
 - `sourceHash`: Calculated md5 hash of the executing definition
+- `moddleOptions`: Engine moddleOptions
 - `processes`: Object with processes with id as key
   - `variables`: Execution variables
   - `services`: Execution services
@@ -373,10 +374,12 @@ The following expressions are supported:
 - `${services.isBelow(variables.input,2)}` - executes the service function `isBelow` with result of `variable.input` value and 2
 
 Expressions are supported in the following elements:
-- TimerEvent
-  - `timeDuration` element value
+- ServiceTask
+  - `camunda:expression` element value. moddleOptions [`require('camunda-bpmn-moddle/resources/camunda')`](https://www.npmjs.com/package/camunda-bpmn-moddle) must be used.
 - SequenceFlow
   - `conditionExpression` element value
+- TimerEvent
+  - `timeDuration` element value
 
 ## Examples
 
@@ -737,10 +740,6 @@ engine.execute({
 or if arguments must be passed, then `inputParameter` `arguments` must be defined. The result is an array with arguments from the service callback where first error argument is omitted.
 
 ```javascript
-'use strict';
-
-const Bpmn = require('bpmn-engine');
-
 const processXml = `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -803,6 +802,43 @@ engine.execute({
 ```
 
 In the above example `request.get` will be called with `variables.apiPath`. The result is passed through `outputParameter` `result`.
+
+Expressions can also be used if `moddleOptions` are passed to engine.
+
+```javascript
+const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.getService()}" camunda:resultVariable="output" />
+  </process>
+</definitions>`;
+
+const engine = new Bpmn.Engine({
+  source: processXml,
+  moddleOptions: {
+    camunda: require('camunda-bpmn-moddle/resources/camunda')
+  }
+});
+
+engine.execute({
+  services: {
+    getService: () => {
+      return (executionContext, callback) => {
+        callback(null, executionContext.variables.input);
+      };
+    }
+  },
+  variables: {
+    input: 1
+  }
+}, (err, instance) => {
+  if (err) return done(err);
+  instance.once('end', () => {
+    console.log(instance.variables.taskInput.serviceTask.output);
+  });
+});
+```
 
 ### Sequence flow with expression
 
