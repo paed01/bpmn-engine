@@ -159,7 +159,7 @@ lab.experiment('SequenceFlow', () => {
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1" />
     <sequenceFlow id="flow3withExpression" sourceRef="decision" targetRef="end2">
-      <conditionExpression xsi:type="tFormalExpression">\${services.isBelow(variables.input,2)}</conditionExpression>
+      <conditionExpression>\${services.isBelow(variables.input,2)}</conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>
