@@ -1,5 +1,5 @@
 <!-- version -->
-# 0.18.0 API Reference
+# 1.0.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -18,6 +18,7 @@
     - [Element events](#element-events)
     - [Sequence flow events](#sequence-flow-events)
   - [Expressions](#expressions)
+  - [Task loop](#task-loop)
 - [Examples](#examples)
   - [Execute](#execute)
   - [Listen for events](#listen-for-events)
@@ -26,6 +27,7 @@
   - [User task](#user-task)
   - [Service task](#service-task)
   - [Sequence flow with expression](#sequence-flow-with-expression)
+  - [Task loop over collection](#task-loop-over-collection)
 
 <!-- tocstop -->
 
@@ -374,12 +376,20 @@ The following expressions are supported:
 - `${services.isBelow(variables.input,2)}` - executes the service function `isBelow` with result of `variable.input` value and 2
 
 Expressions are supported in the following elements:
+- MultiInstanceLoopCharacteristics
+  - `camunda:collection`: variable collection, e.g. `${variables.list}`
 - ServiceTask
   - `camunda:expression` element value. moddleOptions [`require('camunda-bpmn-moddle/resources/camunda')`](https://www.npmjs.com/package/camunda-bpmn-moddle) must be used.
 - SequenceFlow
   - `conditionExpression` element value
 - TimerEvent
   - `timeDuration` element value
+- TimerEvent
+  - `timeDuration` element value
+
+### Task loop
+
+Task loops can made based conditions or cardinality or over a collection. The collection can be fetched when using an expression.
 
 ## Examples
 
@@ -803,7 +813,7 @@ engine.execute({
 
 In the above example `request.get` will be called with `variables.apiPath`. The result is passed through `outputParameter` `result`.
 
-Expressions can also be used if `moddleOptions` are passed to engine.
+Expressions can also be used if camunda extension `moddleOptions` are passed to engine.
 
 ```javascript
 const processXml = `
@@ -884,9 +894,58 @@ engine.execute({
 }, (err, instance) => {
   if (err) return done(err);
   instance.once('end', () => {
-    console.log('WOHO!')
+    console.log('WOHO!');
   });
 });
 
 ```
+
+### Task loop over collection
+
+```javascript
+'use strict';
+
+const Bpmn = require('bpmn-engine');
+
+const sourceXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+  <process id="Process_1" isExecutable="true">
+    <serviceTask id="recurring" name="Each item" camunda:expression="\${services.loop}">
+      <multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.input}" />
+    </serviceTask>
+    <boundaryEvent id="errorEvent" attachedToRef="recurring">
+      <errorEventDefinition />
+    </boundaryEvent>
+  </process>
+</definitions>
+`;
+
+const engine = new Bpmn.Engine({
+  source: sourceXml,
+  moddleOptions: {
+    camunda: require('camunda-bpmn-moddle/resources/camunda')
+  }
+});
+
+engine.execute({
+  services: {
+    loop: (executionContext, callback) => {
+      const prevResult = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurring.result[0] : 0;
+      const result = prevResult + executionContext.item;
+      callback(null, result);
+    }
+  },
+  variables: {
+    input: [1, 2, 3, 7]
+  }
+}, (err, instance) => {
+  if (err) return done(err);
+  instance.once('end', () => {
+    console.log(instance.variables.taskInput.recurring.result[0], 'aught to be 13 blazing fast');
+  });
+});
+```
+
 

@@ -56,7 +56,7 @@ lab.experiment('task loop', () => {
       });
     });
 
-    lab.test('with cardinality loops script task until it has finished', (done) => {
+    lab.test('with cardinality loops script task until cardinality is reached', (done) => {
       const def = `
   <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -321,6 +321,114 @@ lab.experiment('task loop', () => {
           expect(instance.variables.input).to.equal(14);
           testHelpers.expectNoLingeringListeners(instance);
           done();
+        });
+      });
+    });
+
+    lab.describe('camunda collection expression', () => {
+
+      lab.test('loops each item', (done) => {
+        const def = `
+<bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:serviceTask id="recurring" name="Each item" camunda:expression="\${services.loop}">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.input}" />
+    </bpmn:serviceTask>
+  </bpmn:process>
+</bpmn:definitions>
+    `;
+
+        const engine = new Bpmn.Engine({
+          source: def,
+          moddleOptions: {
+            camunda: require('camunda-bpmn-moddle/resources/camunda')
+          }
+        });
+        const listener = new EventEmitter();
+
+        let startCount = 0;
+        listener.on('start-recurring', () => {
+          startCount++;
+        });
+
+        engine.execute({
+          listener: listener,
+          services: {
+            loop: (executionContext, callback) => {
+              const prevResult = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurring.result[0] : 0;
+              callback(null, prevResult + executionContext.item);
+            }
+          },
+          variables: {
+            input: [1, 2, 3, 7]
+          }
+        }, (err, instance) => {
+          if (err) return done(err);
+
+          instance.once('end', () => {
+            expect(startCount).to.equal(4);
+            expect(instance.variables.taskInput.recurring.result).to.equal([13]);
+            testHelpers.expectNoLingeringListeners(instance);
+            done();
+          });
+        });
+      });
+
+      lab.test('breaks loop if error is returned in callback', (done) => {
+        const def = `
+<definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+  <process id="Process_1" isExecutable="true">
+    <serviceTask id="recurring" name="Each item" camunda:expression="\${services.loop}">
+      <multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.input}" />
+    </serviceTask>
+    <boundaryEvent id="errorEvent" attachedToRef="recurring">
+      <errorEventDefinition />
+    </boundaryEvent>
+  </process>
+</definitions>
+    `;
+
+        const engine = new Bpmn.Engine({
+          source: def,
+          moddleOptions: {
+            camunda: require('camunda-bpmn-moddle/resources/camunda')
+          }
+        });
+        const listener = new EventEmitter();
+
+        let startCount = 0;
+        listener.on('start-recurring', () => {
+          startCount++;
+        });
+
+        engine.execute({
+          listener: listener,
+          services: {
+            loop: (executionContext, callback) => {
+              const prevResult = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurring.result[0] : 0;
+
+              const result = prevResult + executionContext.item;
+
+              if (result > 2) {
+                return callback(new Error('Too much'));
+              }
+
+              callback(null, result);
+            }
+          },
+          variables: {
+            input: [1, 2, 3, 7]
+          }
+        }, (err, instance) => {
+          if (err) return done(err);
+
+          instance.once('end', () => {
+            expect(startCount).to.equal(2);
+            testHelpers.expectNoLingeringListeners(instance);
+            done();
+          });
         });
       });
     });

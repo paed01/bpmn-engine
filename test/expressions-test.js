@@ -6,12 +6,12 @@ const Lab = require('lab');
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 
-const getExpressionValue = require('../lib/expressions');
+const expressions = require('../lib/expressions');
 
 lab.experiment('expressions', () => {
   lab.describe('addressing variables', () => {
     lab.test('extracts variable value', (done) => {
-      expect(getExpressionValue('${variables.input}', {
+      expect(expressions('${variables.input}', {
         variables: {
           input: 1
         }
@@ -20,7 +20,7 @@ lab.experiment('expressions', () => {
     });
 
     lab.test('returns undefined if not found', (done) => {
-      expect(getExpressionValue('${variables.input}', {
+      expect(expressions('${variables.input}', {
         variables: {
           output: 1
         }
@@ -29,7 +29,7 @@ lab.experiment('expressions', () => {
     });
 
     lab.test('misspelled varailbes returns undefined', (done) => {
-      expect(getExpressionValue('${varailbes.input}', {
+      expect(expressions('${varailbes.input}', {
         variables: {
           input: 1
         }
@@ -38,7 +38,7 @@ lab.experiment('expressions', () => {
     });
 
     lab.test('addressing arrays returns value', (done) => {
-      expect(getExpressionValue('${variables.input[1]}', {
+      expect(expressions('${variables.input[1]}', {
         variables: {
           input: [0, 1]
         }
@@ -47,7 +47,7 @@ lab.experiment('expressions', () => {
     });
 
     lab.test('addressing array without index returns undefined', (done) => {
-      expect(getExpressionValue('${variables.input[]}', {
+      expect(expressions('${variables.input[]}', {
         variables: {
           input: [0, 1]
         }
@@ -56,7 +56,7 @@ lab.experiment('expressions', () => {
     });
 
     lab.test('addressing named property returns value', (done) => {
-      expect(getExpressionValue('${variables.input[#complexName]}', {
+      expect(expressions('${variables.input[#complexName]}', {
         variables: {
           input: {
             '#complexName': 1
@@ -67,7 +67,7 @@ lab.experiment('expressions', () => {
     });
 
     lab.test('deep property path returns value', (done) => {
-      expect(getExpressionValue('${variables.input[#complexName].list[0]}', {
+      expect(expressions('${variables.input[#complexName].list[0]}', {
         variables: {
           input: {
             '#complexName': {
@@ -81,7 +81,7 @@ lab.experiment('expressions', () => {
 
     lab.describe('inline', () => {
       lab.test('variables in string', (done) => {
-        expect(getExpressionValue('PT${variables.input}S', {
+        expect(expressions('PT${variables.input}S', {
           variables: {
             input: 0.1
           }
@@ -90,7 +90,7 @@ lab.experiment('expressions', () => {
       });
 
       lab.test('expression in expression is not supported', (done) => {
-        expect(getExpressionValue('PT${variables[${variables.property}]}S', {
+        expect(expressions('PT${variables[${variables.property}]}S', {
           variables: {
             input: 0.1,
             property: 'input'
@@ -103,7 +103,7 @@ lab.experiment('expressions', () => {
 
   lab.describe('services', () => {
     lab.test('returns service function', (done) => {
-      expect(getExpressionValue('${services.get}', {
+      expect(expressions('${services.get}', {
         services: {
           get: () => {
             return 'PT0.1S';
@@ -114,7 +114,7 @@ lab.experiment('expressions', () => {
     });
 
     lab.test('service accessing variables returns value', (done) => {
-      expect(getExpressionValue('${services.get()}', {
+      expect(expressions('${services.get()}', {
         variables: {
           timeout: 'PT0.1S'
         },
@@ -128,7 +128,7 @@ lab.experiment('expressions', () => {
     });
 
     lab.test('expression with argument returns value', (done) => {
-      expect(getExpressionValue('${services.get(200)}', {
+      expect(expressions('${services.get(200)}', {
         services: {
           get: (statusCode) => {
             return statusCode;
@@ -139,7 +139,7 @@ lab.experiment('expressions', () => {
     });
 
     lab.test('expression with empty arguments returns value', (done) => {
-      expect(getExpressionValue('${services.get()}', {
+      expect(expressions('${services.get()}', {
         services: {
           get: () => {
             return '200';
@@ -150,7 +150,7 @@ lab.experiment('expressions', () => {
     });
 
     lab.test('expression with argument adressing variables returns value', (done) => {
-      expect(getExpressionValue('${services.get(variables.input[0])}', {
+      expect(expressions('${services.get(variables.input[0])}', {
         variables: {
           input: [200]
         },
@@ -164,7 +164,7 @@ lab.experiment('expressions', () => {
     });
 
     lab.test('expression with arguments adressing variables returns value', (done) => {
-      expect(getExpressionValue('${services.get(variables.input[0],variables.add)}', {
+      expect(expressions('${services.get(variables.input[0],variables.add)}', {
         variables: {
           input: [200],
           add: 1
@@ -178,5 +178,36 @@ lab.experiment('expressions', () => {
       done();
     });
 
+  });
+
+  lab.describe('isExpression(text)', () => {
+    lab.test('returns true if expression', (done) => {
+      expect(expressions.isExpression('${input}')).to.be.true();
+      expect(expressions.isExpression('${variables.input[#complexName].list[0]}')).to.be.true();
+      expect(expressions.isExpression('${services.get()}')).to.be.true();
+      done();
+    });
+
+    lab.test('returns false if the string is not an explicit expression', (done) => {
+      expect(expressions.isExpression('return `${input}`;')).to.be.false();
+      expect(expressions.isExpression('`${input}`;')).to.be.false();
+      expect(expressions.isExpression('`${input}`')).to.be.false();
+      done();
+    });
+
+    lab.test('returns false if not expression', (done) => {
+      expect(expressions.isExpression('{input}')).to.be.false();
+      done();
+    });
+
+    lab.test('returns false if empty expression', (done) => {
+      expect(expressions.isExpression('${}')).to.be.false();
+      done();
+    });
+
+    lab.test('returns false if no argument is passed', (done) => {
+      expect(expressions.isExpression()).to.be.false();
+      done();
+    });
   });
 });

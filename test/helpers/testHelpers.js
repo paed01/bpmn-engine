@@ -61,4 +61,13 @@ pub.serviceFn = (message, callback) => {
   });
 };
 
+pub.readFromDb = (state) => {
+  const source = state.source;
+  delete state.source;
+  const savedState = JSON.stringify(state);
+  const loadedState = JSON.parse(savedState);
+  loadedState.source = source;
+  return loadedState;
+};
+
 module.exports = pub;

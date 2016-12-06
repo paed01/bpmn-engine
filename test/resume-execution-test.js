@@ -46,7 +46,7 @@ lab.experiment('Resume execution', () => {
         done();
       });
 
-      engine.resume(readFromDb(state), {
+      engine.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err) => {
         if (err) return done(err);
@@ -97,7 +97,7 @@ lab.experiment('Resume execution', () => {
         done();
       });
 
-      engine2.resume(readFromDb(state), {
+      engine2.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err) => {
         if (err) return done(err);
@@ -156,7 +156,7 @@ lab.experiment('Resume execution', () => {
         source: state.source,
         name: 'resumeMe'
       });
-      engine2.resume(readFromDb(state), {
+      engine2.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err, resumedInstance) => {
         if (err) return done(err);
@@ -221,7 +221,7 @@ lab.experiment('Resume execution', () => {
         source: state.source,
         name: 'resumeMe'
       });
-      engine2.resume(readFromDb(state), (err, resumedInstance) => {
+      engine2.resume(testHelpers.readFromDb(state), (err, resumedInstance) => {
         const startedAt = new Date();
         if (err) return done(err);
 
@@ -306,7 +306,7 @@ if (!variables.input) {
         Code.fail(`<${activity.id}> should not have been taken`);
       });
 
-      engine2.resume(readFromDb(state), {
+      engine2.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err, resumedInstance) => {
         if (err) return done(err);
@@ -389,7 +389,7 @@ if (!variables.input) {
       listener2.once('wait-userTask', (task) => {
         task.signal();
       });
-      engine2.resume(readFromDb(state), {
+      engine2.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err, instance) => {
         if (err) return done(err);
@@ -474,7 +474,7 @@ if (!variables.input) {
       listener2.once('wait-userTask', (task) => {
         task.signal();
       });
-      engine2.resume(readFromDb(state), {
+      engine2.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err, instance) => {
         if (err) return done(err);
@@ -545,7 +545,7 @@ if (!variables.input) {
         task.signal();
       });
 
-      engine2.resume(readFromDb(state), {
+      engine2.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err, instance) => {
         if (err) return done(err);
@@ -562,12 +562,3 @@ if (!variables.input) {
     });
   });
 });
-
-function readFromDb(state) {
-  const source = state.source;
-  delete state.source;
-  const savedState = JSON.stringify(state);
-  const loadedState = JSON.parse(savedState);
-  loadedState.source = source;
-  return loadedState;
-}

@@ -155,8 +155,8 @@ lab.experiment('Save state', () => {
             camunda: require('camunda-bpmn-moddle/resources/camunda')
           }
         });
-        const listener = new EventEmitter();
 
+        const listener = new EventEmitter();
         listener.on('wait-userTask', () => {
           const state = engine.getState();
           expect(state).to.include(['moddleOptions']);
@@ -167,6 +167,67 @@ lab.experiment('Save state', () => {
           listener: listener
         }, (err) => {
           if (err) return done(err);
+        });
+      });
+
+      lab.test('returns state of task in loop', (done) => {
+        const loopProcessXml = `
+    <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+      <bpmn:process id="Process_1" isExecutable="true">
+        <bpmn:userTask id="recurring" name="Each item">
+          <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.list}">
+            <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">7</bpmn:loopCardinality>
+          </bpmn:multiInstanceLoopCharacteristics>
+        </bpmn:userTask>
+      </bpmn:process>
+    </bpmn:definitions>
+        `;
+
+        const engine = new Bpmn.Engine({
+          source: loopProcessXml,
+          moddleOptions: {
+            camunda: require('camunda-bpmn-moddle/resources/camunda')
+          }
+        });
+
+        const listener = new EventEmitter();
+        let iteration = 0;
+        listener.on('wait-recurring', (task) => {
+          iteration++;
+
+          if (iteration < 2) {
+            task.signal();
+          } else if (iteration === 2) {
+            engine.stop();
+          }
+        });
+
+        engine.execute({
+          listener: listener,
+          variables: {
+            list: [1, 2, 3, 7]
+          }
+        }, (err) => {
+          if (err) return done(err);
+        });
+
+        engine.once('end', () => {
+          const state = engine.getState();
+          const childState = state.processes[engine.entryPointId].children.find(c => c.id === 'recurring');
+          expect(childState).to.include({
+            entered: true,
+            loop: {
+              isSequential: true,
+              iteration: 1,
+              characteristics: {
+                cardinality: 7,
+                type: 'collection'
+              }
+            }
+          });
+
+          done();
         });
       });
     });
