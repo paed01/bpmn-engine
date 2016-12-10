@@ -10,6 +10,7 @@ bpmn-engine
 
 ## Table of Contents
 - [Supported elements](#supported-elements)
+- [Process modeller](#process-modeller)
 - [Debug](#debug)
 - [Acknowledgments](#acknowledgments)
 - [API](#api)
@@ -37,18 +38,24 @@ The following elements are tested and supported.
     - Boundary Non-interupting
 - Tasks
   - Sequential loop
-    - Cardinality
+    - Cardinality, integer or expression
     - Condition, script or expression
     - Collection (camunda expression)
   - SubProcess
   - Script: javascript only
   - Task: completes immediately
   - User: needs signal
-  - Service: Declared when starting instance
+  - Service: declared when starting instance
 - Gateways
   - Exclusive
   - Inclusive
   - Parallel: join and fork
+
+# Process modeller
+
+The processes are modelled using [Camunda modeler](https://camunda.org/bpmn/tool/).
+
+![Mother of all](https://raw.github.com/paed01/bpmn-engine/master/images/mother-of-all.svg)
 
 # Debug
 

@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Pål Edman <pal.edman@gmail.com> (https://github.com/paed01)",
   "main": "index.js",
   "repository": {
@@ -11,9 +11,13 @@
   "engines": {
     "node": ">=4"
   },
-  "directories": {
-    "test": "test"
-  },
+  "files": [
+    "API.md",
+    "index.js",
+    "LICENSE",
+    "README.md",
+    "lib/"
+  ],
   "scripts": {
     "test": "make test-cov-lcov",
     "wintest": "node_modules/.bin/lab -v"
@@ -31,7 +35,7 @@
     "code": "^4.0.0",
     "coveralls": "^2.11.15",
     "lab": "^11.2.1",
-    "markdown-toc": "^0.13.0",
+    "markdown-toc": "^1.0.2",
     "nock": "^9.0.2",
     "request": "~2.79.0"
   },

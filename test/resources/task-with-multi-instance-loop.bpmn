@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.3.2">
   <bpmn:process id="taskLoopProcess" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>SequenceFlow_00cfpc8</bpmn:outgoing>
@@ -8,8 +8,11 @@
     <bpmn:scriptTask id="recurring" name="Recurring" scriptFormat="JavaScript" camunda:resultVariable="">
       <bpmn:incoming>SequenceFlow_00cfpc8</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0givraz</bpmn:outgoing>
-      <bpmn:multiInstanceLoopCharacteristics camunda:collection="contex.items" camunda:elementVariable="item" />
-      <bpmn:script><![CDATA[context.input++;
+      <bpmn:multiInstanceLoopCharacteristics camunda:collection="${variables.list}" camunda:elementVariable="item">
+        <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">10</bpmn:loopCardinality>
+        <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">${services.loopCondition}</bpmn:completionCondition>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:script><![CDATA[this.variables.input++;
 next()]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:endEvent id="EndEvent_16n25gf">

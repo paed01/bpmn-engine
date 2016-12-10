@@ -1,5 +1,5 @@
 <!-- version -->
-# 1.0.0 API Reference
+# 1.1.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -19,6 +19,9 @@
     - [Sequence flow events](#sequence-flow-events)
   - [Expressions](#expressions)
   - [Task loop](#task-loop)
+    - [Cardinality loop](#cardinality-loop)
+    - [Conditional loop](#conditional-loop)
+    - [Collection loop](#collection-loop)
 - [Examples](#examples)
   - [Execute](#execute)
   - [Listen for events](#listen-for-events)
@@ -42,7 +45,16 @@ Creates a new Engine object where:
   - `name`: Optional name of engine,
   - `moddleOptions`: Optional moddle parse options
 
-Moddle options can be used if an extension is used when parsing BPMN-source. The object will be passed on to the constructor of `bpmn-moddle`.
+Moddle options can be used if an extension is required when parsing BPMN-source. The object will be passed on to the constructor of `bpmn-moddle`. See [camunda-bpmn-moddle][1] for example.
+
+```javascript
+const engine = new Bpmn.Engine({
+  source: fs.readFileSync('./test/resources/mother-of-all.bpmn'),
+  moddleOptions: {
+    camunda: require('camunda-bpmn-moddle/resources/camunda')
+  }
+});
+```
 
 ### `execute([options], [callback])`
 
@@ -379,17 +391,41 @@ Expressions are supported in the following elements:
 - MultiInstanceLoopCharacteristics
   - `camunda:collection`: variable collection, e.g. `${variables.list}`
 - ServiceTask
-  - `camunda:expression` element value. moddleOptions [`require('camunda-bpmn-moddle/resources/camunda')`](https://www.npmjs.com/package/camunda-bpmn-moddle) must be used.
+  - `camunda:expression` element value. moddleOptions [`require('camunda-bpmn-moddle/resources/camunda')`][1] must be used.
 - SequenceFlow
   - `conditionExpression` element value
-- TimerEvent
-  - `timeDuration` element value
 - TimerEvent
   - `timeDuration` element value
 
 ### Task loop
 
-Task loops can made based conditions or cardinality or over a collection. The collection can be fetched when using an expression.
+Task loops can made based conditions, cardinality, or a collection.
+
+#### Cardinality loop
+
+Loop a fixed number of times or until number of iterations match cardinality. The condition body can be a script or an expression.
+
+```xml
+<bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">${variables.list.length}</bpmn:loopCardinality>
+```
+
+#### Conditional loop
+
+Loop until condition is met. The condition body can be a script or an expression.
+
+```xml
+<completionCondition xsi:type="tFormalExpression">\${services.condition(variables.input)}</completionCondition>
+```
+
+#### Collection loop
+
+Loop all items in a list.
+
+```xml
+<bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.list}" />
+```
+
+For `bpmn-moddle` to read the `camunda:collection` namespaced attribute, the engine must be instantiated with moddle options referring [`camunda-bpmn-moddle/resources/camunda`][1].
 
 ## Examples
 
@@ -948,4 +984,4 @@ engine.execute({
 });
 ```
 
-
+[1]: https://www.npmjs.com/package/camunda-bpmn-moddle

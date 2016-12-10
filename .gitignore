@@ -26,9 +26,6 @@ config/_revision
 # OS X
 .DS_Store
 
-# The .env file is developer local and should never be checked in
-.env
-
 # vim
 *.swp
 *.swo
