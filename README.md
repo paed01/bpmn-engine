@@ -55,7 +55,7 @@ The following elements are tested and supported.
 
 The processes are modelled using [Camunda modeler](https://camunda.org/bpmn/tool/).
 
-![Mother of all](https://raw.github.com/paed01/bpmn-engine/master/images/mother-of-all.svg)
+![Mother of all](https://raw.github.com/paed01/bpmn-engine/master/images/mother-of-all.png)
 
 # Debug
 
