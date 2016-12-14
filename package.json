@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "Pål Edman <pal.edman@gmail.com> (https://github.com/paed01)",
   "main": "index.js",
   "repository": {
@@ -23,12 +23,12 @@
     "wintest": "node_modules/.bin/lab -v"
   },
   "keywords": [
-    "bpmn",
-    "bpmn 2",
-    "engine",
     "workflow",
+    "engine",
     "process",
-    "automation"
+    "automation",
+    "bpmn",
+    "bpmn 2"
   ],
   "devDependencies": {
     "camunda-bpmn-moddle": "^0.9.1",
@@ -43,8 +43,8 @@
     "async": "^2.1.4",
     "bpmn-moddle": "^0.13.0",
     "debug": "^2.3.3",
-    "joi": "^10.0.5",
-    "moment": "^2.17.1"
+    "iso8601-duration": "^1.0.6",
+    "joi": "^10.0.5"
   },
   "license": "BSD-3-Clause",
   "licenses": [
