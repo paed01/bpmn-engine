@@ -70,4 +70,15 @@ pub.readFromDb = (state) => {
   return loadedState;
 };
 
+pub.serializeModdleContext = (context) => {
+  const serializableContext = {
+    rootHandler: {
+      element: JSON.parse(JSON.stringify(context.rootHandler.element))
+    },
+    elementsById: JSON.parse(JSON.stringify(context.elementsById)),
+    references: JSON.parse(JSON.stringify(context.references))
+  };
+  return JSON.stringify(serializableContext);
+};
+
 module.exports = pub;

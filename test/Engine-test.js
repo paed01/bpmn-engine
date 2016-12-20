@@ -1,10 +1,11 @@
 'use strict';
 
 const Code = require('code');
+const BpmnModdle = require('bpmn-moddle');
 const EventEmitter = require('events').EventEmitter;
 const factory = require('./helpers/factory');
 const Lab = require('lab');
-const testHelper = require('./helpers/testHelpers');
+const testHelpers = require('./helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
@@ -17,7 +18,14 @@ lab.experiment('engine', () => {
     done();
   });
 
-  lab.experiment('#ctor', () => {
+  lab.experiment('ctor', () => {
+    lab.test('without arguments', (done) => {
+      expect(() => {
+        new Bpmn.Engine(); /* eslint no-new: 0 */
+      }).to.not.throw();
+      done();
+    });
+
     lab.test('takes source option', (done) => {
       const engine = new Bpmn.Engine({
         source: factory.valid()
@@ -58,7 +66,7 @@ lab.experiment('engine', () => {
       done();
     });
 
-    lab.test('accepts no source', (done) => {
+    lab.test('accepts name', (done) => {
       expect(() => {
         new Bpmn.Engine({
           name: 'no source'
@@ -67,9 +75,11 @@ lab.experiment('engine', () => {
       done();
     });
 
-    lab.test('accepts no arguments', (done) => {
+    lab.test('accepts context as object', (done) => {
       expect(() => {
-        new Bpmn.Engine(); /* eslint no-new: 0 */
+        new Bpmn.Engine({
+          context: {}
+        }); /* eslint no-new: 0 */
       }).to.not.throw();
       done();
     });
@@ -86,11 +96,41 @@ lab.experiment('engine', () => {
       });
     });
 
-    lab.test('throws if no source', (done) => {
+    lab.test('returns error in callback if no source', (done) => {
       const engine = new Bpmn.Engine();
       engine.getInstance((err) => {
-        expect(err).to.be.an.error(/Nothing to transform/);
+        expect(err).to.be.an.error(/context is required if no source/);
         done();
+      });
+    });
+
+    lab.test('returns instance of passed moddle context', (done) => {
+      const moddle = new BpmnModdle();
+      moddle.fromXML(factory.valid('contextTest'), (moddleErr, definition, context) => {
+        if (moddleErr) return done(moddleErr);
+        const engine = new Bpmn.Engine({
+          context: context
+        });
+        engine.getInstance((err) => {
+          if (err) return done(err);
+          expect(engine.id).to.equal('contextTest');
+          done();
+        });
+      });
+    });
+
+    lab.test('returns instance of passed deserialized moddle context', (done) => {
+      const moddle = new BpmnModdle();
+      moddle.fromXML(factory.valid('contextTest'), (moddleErr, definition, context) => {
+        if (moddleErr) return done(moddleErr);
+        const engine = new Bpmn.Engine({
+          context: JSON.parse(testHelpers.serializeModdleContext(context))
+        });
+        engine.getInstance((err) => {
+          if (err) return done(err);
+          expect(engine.id).to.equal('contextTest');
+          done();
+        });
       });
     });
   });
@@ -148,7 +188,7 @@ lab.experiment('engine', () => {
         source: factory.resource('lanes.bpmn')
       });
       engine.once('end', () => {
-        testHelper.expectNoLingeringListenersOnEngine(engine);
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
 

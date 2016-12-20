@@ -4,6 +4,7 @@ const Code = require('code');
 const Bpmn = require('..');
 const factory = require('./helpers/factory');
 const Lab = require('lab');
+const testHelpers = require('./helpers/testHelpers');
 const validation = require('../lib/validation');
 
 const lab = exports.lab = Lab.script();
@@ -24,17 +25,17 @@ const validBpmnDefinition = `
 lab.experiment('validation', () => {
   const transformer = Bpmn.Transformer;
 
-  lab.experiment('definitions', () => {
+  lab.experiment('moddle context', () => {
 
     lab.test('validates', (done) => {
       transformer.transform(validBpmnDefinition, {}, (err, bpmnObject, context) => {
         if (err) return done(err);
-        validation.validate(bpmnObject, context, done);
+        validation.validate(context, done);
       });
     });
 
     lab.test('or if definitions are missing', (done) => {
-      validation.validate(null, null, (err) => {
+      validation.validate(null, (err) => {
         expect(err).to.be.an.error();
         done();
       });
@@ -53,40 +54,23 @@ lab.experiment('validation', () => {
       transformer.transform(bpmnXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
 
-        validation.validate(bpmnObject, context, (err) => {
+        validation.validate(context, (err) => {
           expect(err).to.be.an.error(/no-end/);
           done();
         });
       });
     });
-
   });
 
   lab.experiment('processes', () => {
     lab.test('validates', (done) => {
       transformer.transform(validBpmnDefinition, {}, (err, bpmnObject, context) => {
         if (err) return done(err);
-        validation.validate(bpmnObject, context, done);
+        validation.validate(context, done);
       });
     });
 
-    lab.test('but not without id', (done) => {
-      const bpmnXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process isExecutable="true" />
-</definitions>`;
-
-      transformer.transform(bpmnXml, {}, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
-        validation.validate(bpmnObject, context, (err) => {
-          expect(err).to.be.an.error();
-          done();
-        });
-      });
-    });
-
-    lab.test('but without flowElements', (done) => {
+    lab.test('process without flowElements', (done) => {
       const bpmnXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -95,25 +79,7 @@ lab.experiment('validation', () => {
 
       transformer.transform(bpmnXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
-        validation.validate(bpmnObject, context, done);
-      });
-    });
-
-    lab.test('or with a flowElement without id', (done) => {
-      const bpmnXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent />
-  </process>
-</definitions>`;
-
-      transformer.transform(bpmnXml, {}, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
-        validation.validate(bpmnObject, context, (err) => {
-          expect(err).to.be.an.error();
-          done();
-        });
+        validation.validate(context, done);
       });
     });
   });
@@ -122,7 +88,7 @@ lab.experiment('validation', () => {
     lab.test('validates', (done) => {
       transformer.transform(factory.resource('lanes.bpmn').toString(), {}, (err, bpmnObject, context) => {
         if (err) return done(err);
-        validation.validate(bpmnObject, context, done);
+        validation.validate(context, done);
       });
     });
   });
@@ -140,7 +106,7 @@ lab.experiment('validation', () => {
 
       transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
-        validation.validate(bpmnObject, context, (err) => {
+        validation.validate(context, (err) => {
           expect(err).to.be.an.error(/"targetRef" is required/);
           done();
         });
@@ -159,7 +125,7 @@ lab.experiment('validation', () => {
 
       transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
-        validation.validate(bpmnObject, context, (err) => {
+        validation.validate(context, (err) => {
           expect(err).to.be.an.error(/"sourceRef" is required/);
           done();
         });
@@ -188,7 +154,7 @@ lab.experiment('validation', () => {
 
       transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
-        validation.validate(bpmnObject, context, (err) => {
+        validation.validate(context, (err) => {
           expect(err).to.exist();
           done();
         });
@@ -212,7 +178,7 @@ lab.experiment('validation', () => {
 
       transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
-        validation.validate(bpmnObject, context, (err) => {
+        validation.validate(context, (err) => {
           expect(err).to.exist();
           done();
         });
@@ -241,7 +207,7 @@ lab.experiment('validation', () => {
       transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
 
-        validation.validate(bpmnObject, context, (err) => {
+        validation.validate(context, (err) => {
           expect(err).to.not.exist();
           done();
         });
@@ -273,7 +239,7 @@ lab.experiment('validation', () => {
 
       transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
-        validation.validate(bpmnObject, context, (err) => {
+        validation.validate(context, (err) => {
           expect(err).to.not.exist();
           done();
         });
@@ -292,7 +258,7 @@ lab.experiment('validation', () => {
       transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
         if (terr) return done(terr);
 
-        validation.validate(bpmnObject, context, (err) => {
+        validation.validate(context, (err) => {
           expect(err).to.exist();
           done();
         });
@@ -300,4 +266,55 @@ lab.experiment('validation', () => {
     });
 
   });
+
+  lab.describe('serialized bpmn-moddle context', () => {
+    lab.test('returns error if warnings', (done) => {
+      const bpmnXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="no-end" />
+  </process>
+</definitions>`;
+
+      transformer.transform(bpmnXml, {}, (terr, bpmnObject, context) => {
+        if (terr) return done(terr);
+
+        const contextFromDb = JSON.parse(testHelpers.serializeModdleContext(context));
+        contextFromDb.warnings = [{
+          message: 'no-end'
+        }];
+
+        validation.validate(contextFromDb, (err) => {
+          expect(err).to.be.an.error(/no-end/);
+          done();
+        });
+      });
+    });
+
+    lab.test('validation is performed', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <sequenceFlow id="flow1" sourceRef="theStart" />
+  </process>
+</definitions>`;
+
+      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
+        if (terr) return done(terr);
+
+        const contextFromDb = JSON.parse(testHelpers.serializeModdleContext(context));
+
+        validation.validate(contextFromDb, (err) => {
+          expect(err).to.be.an.error(/"targetRef" is required/);
+          done();
+        });
+      });
+    });
+
+  });
+
 });
