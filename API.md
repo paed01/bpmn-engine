@@ -41,9 +41,12 @@
 Creates a new Engine object where:
 
 - `options`: Optional object
-  - `source`: Bpmn definition source as String or Buffer
+  - `source`: Optional Bpmn definition source as String or Buffer
+  - `context`: Optional parsed moddle context object
   - `name`: Optional name of engine,
   - `moddleOptions`: Optional moddle parse options
+
+Options `source` and `context` are mutually exclusive.
 
 Moddle options can be used if an extension is required when parsing BPMN-source. The object will be passed on to the constructor of `bpmn-moddle`. See [camunda-bpmn-moddle][1] for example.
 
