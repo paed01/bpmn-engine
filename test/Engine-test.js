@@ -197,6 +197,25 @@ lab.experiment('engine', () => {
       });
     });
 
+    lab.test('runs process with deserialized context', (done) => {
+      const moddle = new BpmnModdle();
+      moddle.fromXML(factory.resource('lanes.bpmn').toString(), (moddleErr, definition, context) => {
+        if (moddleErr) return done(moddleErr);
+
+        const engine = new Bpmn.Engine({
+          context: JSON.parse(testHelpers.serializeModdleContext(context))
+        });
+        engine.once('end', () => {
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
+          done();
+        });
+
+        engine.execute((err) => {
+          if (err) return done(err);
+        });
+      });
+    });
+
     lab.describe('options', () => {
       lab.test('returns error in callback if listener doesn´t have an emit function', (done) => {
         const engine = new Bpmn.Engine({
