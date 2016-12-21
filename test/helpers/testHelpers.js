@@ -71,14 +71,7 @@ pub.readFromDb = (state) => {
 };
 
 pub.serializeModdleContext = (context) => {
-  const serializableContext = {
-    rootHandler: {
-      element: JSON.parse(JSON.stringify(context.rootHandler.element))
-    },
-    elementsById: JSON.parse(JSON.stringify(context.elementsById)),
-    references: JSON.parse(JSON.stringify(context.references))
-  };
-  return JSON.stringify(serializableContext);
+  return JSON.stringify(contextHelper.cloneContext(context));
 };
 
 module.exports = pub;

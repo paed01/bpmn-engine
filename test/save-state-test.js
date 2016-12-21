@@ -4,6 +4,7 @@ const Code = require('code');
 const EventEmitter = require('events').EventEmitter;
 const factory = require('./helpers/factory');
 const Lab = require('lab');
+const testHelpers = require('./helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const Bpmn = require('../');
@@ -12,7 +13,8 @@ const expect = Code.expect;
 lab.experiment('Save state', () => {
   const processXml = factory.userTask();
 
-  lab.describe('engine #getState', () => {
+  lab.describe('engine getState()', () => {
+
     lab.describe('when running', () => {
       lab.test('returns state started for running execution', (done) => {
         const engine = new Bpmn.Engine({
@@ -230,9 +232,49 @@ lab.experiment('Save state', () => {
           done();
         });
       });
+
+    });
+
+    lab.describe('when initiated with moddle context', () => {
+
+      lab.test('returns state including context', (done) => {
+        Bpmn.Transformer.transform(processXml, null, (terr, def, moddleContext) => {
+          if (terr) return done(terr);
+
+          const engine = new Bpmn.Engine({
+            context: JSON.parse(testHelpers.serializeModdleContext(moddleContext))
+          });
+          const listener = new EventEmitter();
+
+          let state;
+          listener.on('wait-userTask', () => {
+            state = engine.getState();
+            engine.stop();
+          });
+
+          engine.once('end', () => {
+            expect(state).to.include({
+              context: JSON.parse(testHelpers.serializeModdleContext(moddleContext))
+            });
+            done();
+          });
+
+          engine.execute({
+            listener: listener,
+            variables: {
+              input: null
+            }
+          }, (err) => {
+            if (err) return done(err);
+          });
+
+        });
+      });
+
     });
 
     lab.describe('when completed', () => {
+
       lab.test('returns state completed for completed execution', (done) => {
         const engine = new Bpmn.Engine({
           source: processXml
