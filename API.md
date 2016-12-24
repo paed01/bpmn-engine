@@ -1,5 +1,5 @@
 <!-- version -->
-# 1.2.0 API Reference
+# 1.1.1 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -470,7 +470,7 @@ Bpmn.Transformer(processXml, {
 
   engine.execute({
     variables: {
-      shortid: shortid.generate()
+      shortid: '42'
     }
   }, (err, instance) => {
     console.log('Process instance started with id', instance.variables.shortid);
