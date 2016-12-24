@@ -1,5 +1,5 @@
 <!-- version -->
-# 1.1.0 API Reference
+# 1.1.1 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -22,6 +22,8 @@
     - [Cardinality loop](#cardinality-loop)
     - [Conditional loop](#conditional-loop)
     - [Collection loop](#collection-loop)
+- [Transformer](#transformer)
+  - [`transform(sourceXml, options, callback)`](#transformsourcexml-options-callback)
 - [Examples](#examples)
   - [Execute](#execute)
   - [Listen for events](#listen-for-events)
@@ -41,7 +43,7 @@
 Creates a new Engine object where:
 
 - `options`: Optional object
-  - `source`: Optional Bpmn definition source as String or Buffer
+  - `source`: Bpmn definition source as String or Buffer
   - `context`: Optional parsed moddle context object
   - `name`: Optional name of engine,
   - `moddleOptions`: Optional moddle parse options
@@ -242,6 +244,7 @@ The saved state will include the following content:
 
 - `source`: Buffered representation of the definition
 - `sourceHash`: Calculated md5 hash of the executing definition
+- `context`: Moddle context
 - `moddleOptions`: Engine moddleOptions
 - `processes`: Object with processes with id as key
   - `variables`: Execution variables
@@ -429,6 +432,51 @@ Loop all items in a list.
 ```
 
 For `bpmn-moddle` to read the `camunda:collection` namespaced attribute, the engine must be instantiated with moddle options referring [`camunda-bpmn-moddle/resources/camunda`][1].
+
+## Transformer
+
+Basically a wrapper around [`bpmn-moddle.fromXml`][2].
+
+### `transform(sourceXml, options, callback)`
+
+- `sourceXml`: String with bpmn definition source
+- `options`: Options to pass to [`bpmn-moddle`][2]
+- `callback`: callback
+  - `err`: Occasional error
+  - `definition`: Bpmn definition
+  - `context`: Bpmn moddle context
+
+```javascript
+const Bpmn = require('bpmn-engine');
+
+const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <userTask id="userTask" />
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+  </process>
+</definitions>`;
+
+Bpmn.Transformer(processXml, {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+}, (err, def, moddleContext) => {
+  const engine = new Bpmn.Engine({
+    context: moddleContext
+  });
+
+  engine.execute({
+    variables: {
+      shortid: shortid.generate()
+    }
+  }, (err, instance) => {
+    console.log('Process instance started with id', instance.variables.shortid);
+  });
+});
+```
 
 ## Examples
 
@@ -988,3 +1036,4 @@ engine.execute({
 ```
 
 [1]: https://www.npmjs.com/package/camunda-bpmn-moddle
+[2]: https://www.npmjs.com/package/bpmn-moddle

@@ -42,9 +42,9 @@
   "dependencies": {
     "async": "^2.1.4",
     "bpmn-moddle": "^0.13.0",
-    "debug": "^2.3.3",
+    "debug": "^2.5.1",
     "iso8601-duration": "^1.0.6",
-    "joi": "^10.0.5"
+    "joi": "^10.1.0"
   },
   "license": "BSD-3-Clause",
   "licenses": [
