@@ -3,6 +3,7 @@
 const Code = require('code');
 const Bpmn = require('..');
 const factory = require('./helpers/factory');
+const Joi = require('joi');
 const Lab = require('lab');
 const testHelpers = require('./helpers/testHelpers');
 const validation = require('../lib/validation');
@@ -317,4 +318,173 @@ lab.experiment('validation', () => {
 
   });
 
+  lab.experiment('options', () => {
+    lab.test('undefined options is valid', (done) => {
+      function fn() {
+        validation.validateOptions();
+      }
+      expect(fn).to.not.throw();
+      done();
+    });
+
+    lab.test('empty options is valid', (done) => {
+      function fn() {
+        validation.validateOptions({});
+      }
+      expect(fn).to.not.throw();
+      done();
+    });
+
+    lab.describe('listener', () => {
+      lab.test('with emit function is valid', (done) => {
+        function fn() {
+          validation.validateOptions({
+            listener: {
+              emit: () => {}
+            }
+          });
+        }
+        expect(fn).to.throw(Error, /"emit" function is required/);
+        done();
+      });
+
+      lab.test('without emit function is invalid', (done) => {
+        function fn() {
+          validation.validateOptions({
+            listener: {}
+          });
+        }
+        expect(fn).to.throw(Error, /"emit" function is required/);
+        done();
+      });
+    });
+
+    lab.describe('variables', () => {
+      lab.test('as an object is valid', (done) => {
+        function fn() {
+          validation.validateOptions({
+            variables: {}
+          });
+        }
+        expect(fn).to.not.throw();
+        done();
+      });
+
+      lab.test('as not an object is invalid', (done) => {
+        function fn() {
+          validation.validateOptions({
+            variables: 'gr'
+          });
+        }
+        expect(fn).to.throw(Error, /must be an object/);
+        done();
+      });
+    });
+
+    lab.describe('services', () => {
+      lab.test('with service as a function is valid', (done) => {
+        function fn() {
+          validation.validateOptions({
+            services: {
+              testFn: function() {}
+            }
+          });
+        }
+        expect(fn).to.not.throw();
+        done();
+      });
+
+      lab.test('service type require', (done) => {
+        function fn() {
+          validation.validateOptions({
+            services: {
+              get: {
+                module: 'request',
+                type: 'require',
+                fnName: 'get'
+              }
+            }
+          });
+        }
+        expect(fn).to.not.throw();
+        done();
+      });
+
+      lab.test('service type global', (done) => {
+        function fn() {
+          validation.validateOptions({
+            services: {
+              getElementById: {
+                module: 'document',
+                type: 'global'
+              }
+            }
+          });
+        }
+        expect(fn).to.not.throw();
+        done();
+      });
+
+      lab.test('without type', (done) => {
+        function fn() {
+          validation.validateOptions({
+            services: {
+              get: {
+                module: 'request'
+              }
+            }
+          });
+        }
+        expect(fn).to.not.throw();
+        done();
+      });
+
+      lab.test('empty service object is valid', (done) => {
+        function fn() {
+          validation.validateOptions({
+            services: {}
+          });
+        }
+        expect(fn).to.not.throw();
+        done();
+      });
+
+      lab.test('not an object is invalid', (done) => {
+        function fn() {
+          validation.validateOptions({
+            services: function() {}
+          });
+        }
+        expect(fn).to.throw(Error, /must be an object/);
+        done();
+      });
+
+      lab.test('service as string is invalid', (done) => {
+        function fn() {
+          validation.validateOptions({
+            services: {
+              put: 'myService'
+            }
+          });
+        }
+        expect(fn).to.throw(Error, /is not a function or an object/);
+        done();
+      });
+
+      lab.test('type not global or require is invalid', (done) => {
+        function fn() {
+          validation.validateOptions({
+            services: {
+              put: {
+                module: 'request',
+                type: 'POST'
+              }
+            }
+          });
+        }
+        expect(fn).to.throw(Error, /must be global or require/);
+        done();
+      });
+    });
+  });
 });
