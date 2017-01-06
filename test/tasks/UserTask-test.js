@@ -1,9 +1,11 @@
 'use strict';
 
+const BaseProcess = require('../../lib/mapper').Process;
 const Code = require('code');
 const Lab = require('lab');
 const EventEmitter = require('events').EventEmitter;
 const factory = require('../helpers/factory');
+const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
@@ -14,12 +16,10 @@ lab.experiment('UserTask', () => {
   const processXml = factory.userTask();
 
   lab.test('should have inbound and outbound sequence flows', (done) => {
-    const engine = new Bpmn.Engine({
-      source: processXml
-    });
-    engine.getInstance((err, execution) => {
-      if (err) return done(err);
-      const task = execution.getChildActivityById('userTask');
+    testHelpers.getModdleContext(processXml, (cerr, moddleContext) => {
+      if (cerr) return done(cerr);
+      const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
+      const task = process.getChildActivityById('userTask');
       expect(task).to.include('inbound');
       expect(task.inbound).to.have.length(1);
       expect(task).to.include('outbound');
@@ -37,12 +37,10 @@ lab.experiment('UserTask', () => {
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine({
-      source: alternativeProcessXml
-    });
-    engine.getInstance((err, execution) => {
-      if (err) return done(err);
-      const task = execution.getChildActivityById('userTask');
+    testHelpers.getModdleContext(alternativeProcessXml, (cerr, moddleContext) => {
+      if (cerr) return done(cerr);
+      const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
+      const task = process.getChildActivityById('userTask');
       expect(task.isEnd).to.be.true();
       done();
     });
@@ -58,33 +56,33 @@ lab.experiment('UserTask', () => {
 </definitions>`;
 
     lab.test('process emits wait when entering user task', (done) => {
-      const engine = new Bpmn.Engine({
-        source: processXml
-      });
-      const listener = new EventEmitter();
+      testHelpers.getModdleContext(processXml, (cerr, moddleContext) => {
+        if (cerr) return done(cerr);
 
-      listener.on('wait', (activity, execution) => {
-        if (activity.type !== 'bpmn:UserTask') return;
-
-        execution.signal(activity.id, {
-          sirname: 'von Rosen'
+        const listener = new EventEmitter();
+        const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {
+          listener: listener,
+          variables: {
+            input: null
+          }
         });
-      });
 
-      engine.execute({
-        listener: listener,
-        variables: {
-          input: null
-        }
-      }, (err, execution) => {
-        if (err) return done(err);
+        listener.on('wait', (activity, execution) => {
+          if (activity.type !== 'bpmn:UserTask') return;
 
-        execution.once('end', () => {
-          expect(execution.variables.inputFromUser).to.equal({
+          execution.signal(activity.id, {
+            sirname: 'von Rosen'
+          });
+        });
+
+        process.once('end', () => {
+          expect(process.variables.inputFromUser).to.equal({
             sirname: 'von Rosen'
           });
           done();
         });
+
+        process.run();
       });
     });
 
@@ -156,6 +154,7 @@ lab.experiment('UserTask', () => {
 
   lab.experiment('#signal', () => {
     lab.test('user input is stored with process', (done) => {
+
       const engine = new Bpmn.Engine({
         source: processXml
       });
@@ -204,14 +203,11 @@ lab.experiment('UserTask', () => {
     });
 
     lab.test('throws if not waiting for input', (done) => {
-      const engine = new Bpmn.Engine({
-        source: processXml
-      });
+      testHelpers.getModdleContext(processXml, (cerr, moddleContext) => {
+        if (cerr) return done(cerr);
 
-      engine.getInstance((err, instance) => {
-        if (err) return done(err);
-
-        const task = instance.getChildActivityById('userTask');
+        const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
+        const task = process.getChildActivityById('userTask');
 
         expect(task.signal.bind(task)).to.throw(Error);
         done();

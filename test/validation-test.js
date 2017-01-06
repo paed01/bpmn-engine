@@ -1,9 +1,8 @@
 'use strict';
 
 const Code = require('code');
-const Bpmn = require('..');
+const EventEmitter = require('events').EventEmitter;
 const factory = require('./helpers/factory');
-const Joi = require('joi');
 const Lab = require('lab');
 const testHelpers = require('./helpers/testHelpers');
 const validation = require('../lib/validation');
@@ -24,22 +23,19 @@ const validBpmnDefinition = `
 </definitions>`;
 
 lab.experiment('validation', () => {
-  const transformer = Bpmn.Transformer;
-
   lab.experiment('moddle context', () => {
 
     lab.test('validates', (done) => {
-      transformer.transform(validBpmnDefinition, {}, (err, bpmnObject, context) => {
+      testHelpers.getModdleContext(validBpmnDefinition, {}, (err, context) => {
         if (err) return done(err);
-        validation.validate(context, done);
+        done(validation.validateModdleContext(context)[0]);
       });
     });
 
-    lab.test('or if definitions are missing', (done) => {
-      validation.validate(null, (err) => {
-        expect(err).to.be.an.error();
-        done();
-      });
+    lab.test('is invalid if definitions are missing', (done) => {
+      const warnings = validation.validateModdleContext(null);
+      expect(warnings[0]).to.be.an.error();
+      done();
     });
 
     lab.test('or if bpmn-moddle returns warnings in context', (done) => {
@@ -52,22 +48,21 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(bpmnXml, {}, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
+      testHelpers.getModdleContext(bpmnXml, (err, context) => {
+        if (err) return done(err);
 
-        validation.validate(context, (err) => {
-          expect(err).to.be.an.error(/no-end/);
-          done();
-        });
+        const warnings = validation.validateModdleContext(context);
+        expect(warnings[0]).to.be.an.error(/no-end/);
+        done();
       });
     });
   });
 
   lab.experiment('processes', () => {
     lab.test('validates', (done) => {
-      transformer.transform(validBpmnDefinition, {}, (err, bpmnObject, context) => {
+      testHelpers.getModdleContext(validBpmnDefinition, (err, context) => {
         if (err) return done(err);
-        validation.validate(context, done);
+        done(validation.validateModdleContext(context)[0]);
       });
     });
 
@@ -78,18 +73,18 @@ lab.experiment('validation', () => {
   <process id="theProcess" isExecutable="true" />
 </definitions>`;
 
-      transformer.transform(bpmnXml, {}, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
-        validation.validate(context, done);
+      testHelpers.getModdleContext(bpmnXml, {}, (err, context) => {
+        if (err) return done(err);
+        done(validation.validateModdleContext(context)[0]);
       });
     });
   });
 
   lab.experiment('lanes', () => {
     lab.test('validates', (done) => {
-      transformer.transform(factory.resource('lanes.bpmn').toString(), {}, (err, bpmnObject, context) => {
+      testHelpers.getModdleContext(factory.resource('lanes.bpmn').toString(), {}, (err, context) => {
         if (err) return done(err);
-        validation.validate(context, done);
+        done(validation.validateModdleContext(context)[0]);
       });
     });
   });
@@ -105,12 +100,11 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
-        validation.validate(context, (err) => {
-          expect(err).to.be.an.error(/"targetRef" is required/);
-          done();
-        });
+      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+        if (err) return done(err);
+        const warnings = validation.validateModdleContext(context);
+        expect(warnings[0]).to.be.an.error(/"targetRef" is required/);
+        done();
       });
     });
 
@@ -124,12 +118,11 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
-        validation.validate(context, (err) => {
-          expect(err).to.be.an.error(/"sourceRef" is required/);
-          done();
-        });
+      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+        if (err) return done(err);
+        const warnings = validation.validateModdleContext(context);
+        expect(warnings[0]).to.be.an.error(/"sourceRef" is required/);
+        done();
       });
     });
   });
@@ -153,9 +146,9 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
-        validation.validate(context, (err) => {
+      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+        if (err) return done(err);
+        validation.validateModdleContext(context, (err) => {
           expect(err).to.exist();
           done();
         });
@@ -177,9 +170,9 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
-        validation.validate(context, (err) => {
+      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+        if (err) return done(err);
+        validation.validateModdleContext(context, (err) => {
           expect(err).to.exist();
           done();
         });
@@ -205,10 +198,10 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
+      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+        if (err) return done(err);
 
-        validation.validate(context, (err) => {
+        validation.validateModdleContext(context, (err) => {
           expect(err).to.not.exist();
           done();
         });
@@ -238,9 +231,9 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
-        validation.validate(context, (err) => {
+      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+        if (err) return done(err);
+        validation.validateModdleContext(context, (err) => {
           expect(err).to.not.exist();
           done();
         });
@@ -256,10 +249,10 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
+      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+        if (err) return done(err);
 
-        validation.validate(context, (err) => {
+        validation.validateModdleContext(context, (err) => {
           expect(err).to.exist();
           done();
         });
@@ -279,15 +272,15 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(bpmnXml, {}, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
+      testHelpers.getModdleContext(bpmnXml, {}, (err, context) => {
+        if (err) return done(err);
 
         const contextFromDb = JSON.parse(testHelpers.serializeModdleContext(context));
         contextFromDb.warnings = [{
           message: 'no-end'
         }];
 
-        validation.validate(contextFromDb, (err) => {
+        validation.validateModdleContext(contextFromDb, (err) => {
           expect(err).to.be.an.error(/no-end/);
           done();
         });
@@ -304,12 +297,12 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      transformer.transform(processXml, {}, (terr, bpmnObject, context) => {
-        if (terr) return done(terr);
+      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+        if (err) return done(err);
 
         const contextFromDb = JSON.parse(testHelpers.serializeModdleContext(context));
 
-        validation.validate(contextFromDb, (err) => {
+        validation.validateModdleContext(contextFromDb, (err) => {
           expect(err).to.be.an.error(/"targetRef" is required/);
           done();
         });
@@ -336,7 +329,17 @@ lab.experiment('validation', () => {
     });
 
     lab.describe('listener', () => {
-      lab.test('with emit function is valid', (done) => {
+      lab.test('as EventEmitter is valid', (done) => {
+        function fn() {
+          validation.validateOptions({
+            listener: new EventEmitter()
+          });
+        }
+        expect(fn).to.not.throw();
+        done();
+      });
+
+      lab.test('with self declared emit function is valid', (done) => {
         function fn() {
           validation.validateOptions({
             listener: {
@@ -344,7 +347,7 @@ lab.experiment('validation', () => {
             }
           });
         }
-        expect(fn).to.throw(Error, /"emit" function is required/);
+        expect(fn).to.not.throw();
         done();
       });
 
@@ -436,6 +439,20 @@ lab.experiment('validation', () => {
           });
         }
         expect(fn).to.not.throw();
+        done();
+      });
+
+      lab.test('without service module is invalid', (done) => {
+        function fn() {
+          validation.validateOptions({
+            services: {
+              get: {
+                type: 'require'
+              }
+            }
+          });
+        }
+        expect(fn).to.throw(Error, /module must be a string/);
         done();
       });
 

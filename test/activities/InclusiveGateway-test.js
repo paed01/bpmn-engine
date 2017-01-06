@@ -36,10 +36,10 @@ lab.experiment('InclusiveGateway', () => {
     const engine = new Bpmn.Engine({
       source: processXml
     });
-    engine.getInstance((err, execution) => {
+    engine.getDefinition((err, definition) => {
       if (err) return done(err);
 
-      const gateway = execution.getChildActivityById('decision');
+      const gateway = definition.getChildActivityById('decision');
       expect(gateway).to.include('inbound');
       expect(gateway.inbound).to.have.length(1);
       expect(gateway).to.include('outbound');

@@ -25,9 +25,9 @@ lab.experiment('ExclusiveGateway', () => {
     const engine = new Bpmn.Engine({
       source: processXml
     });
-    engine.execute((err, execution) => {
+    engine.execute((err, definition) => {
       if (err) return done(err);
-      const activity = execution.getChildActivityById('decision');
+      const activity = definition.getChildActivityById('decision');
       expect(activity).to.include('inbound');
       expect(activity.inbound).to.have.length(1);
       expect(activity).to.include('outbound');

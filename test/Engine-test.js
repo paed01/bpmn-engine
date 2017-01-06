@@ -30,7 +30,8 @@ lab.experiment('engine', () => {
       const engine = new Bpmn.Engine({
         source: factory.valid()
       });
-      expect(engine.source).to.exist();
+      expect(engine.sources).to.exist();
+      expect(engine.sources.length).to.equal(1);
       done();
     });
 
@@ -41,7 +42,7 @@ lab.experiment('engine', () => {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
       });
-      expect(engine.source).to.exist();
+      expect(engine.moddleOptions).to.exist();
       done();
     });
 
@@ -67,68 +68,54 @@ lab.experiment('engine', () => {
     });
 
     lab.test('accepts name', (done) => {
+      let engine;
       expect(() => {
-        new Bpmn.Engine({
+        engine = new Bpmn.Engine({
           name: 'no source'
         }); /* eslint no-new: 0 */
       }).to.not.throw();
+
+      expect(engine.name).to.equal('no source');
+
       done();
     });
 
-    lab.test('accepts context as object', (done) => {
+    lab.test('accepts moddleContext as object', (done) => {
       expect(() => {
         new Bpmn.Engine({
-          context: {}
+          moddleContext: {}
         }); /* eslint no-new: 0 */
       }).to.not.throw();
       done();
     });
   });
 
-  lab.experiment('getInstance()', () => {
-    lab.test('after transform engine id is definition id', (done) => {
-      const engine = new Bpmn.Engine({
-        source: factory.valid('myValidDefinition')
-      });
-      engine.getInstance(() => {
-        expect(engine.id).to.equal('myValidDefinition');
-        done();
-      });
-    });
-
-    lab.test('returns error in callback if no source', (done) => {
-      const engine = new Bpmn.Engine();
-      engine.getInstance((err) => {
-        expect(err).to.be.an.error(/context is required if no source/);
-        done();
-      });
-    });
-
-    lab.test('returns instance of passed moddle context', (done) => {
+  lab.experiment('getDefinition()', () => {
+    lab.test('returns definition of passed moddle context', (done) => {
       const moddle = new BpmnModdle();
-      moddle.fromXML(factory.valid('contextTest'), (moddleErr, definition, context) => {
+      moddle.fromXML(factory.valid('contextTest'), (moddleErr, definition, moddleContext) => {
         if (moddleErr) return done(moddleErr);
         const engine = new Bpmn.Engine({
-          context: context
+          moddleContext: moddleContext
         });
-        engine.getInstance((err) => {
+        engine.getDefinition((err) => {
           if (err) return done(err);
-          expect(engine.id).to.equal('contextTest');
+          expect(engine.getDefinitionById('contextTest')).to.exist();
           done();
         });
       });
     });
 
-    lab.test('returns instance of passed deserialized moddle context', (done) => {
+    lab.test('returns definition of passed deserialized moddle context', (done) => {
       const moddle = new BpmnModdle();
       moddle.fromXML(factory.valid('contextTest'), (moddleErr, definition, context) => {
         if (moddleErr) return done(moddleErr);
         const engine = new Bpmn.Engine({
-          context: JSON.parse(testHelpers.serializeModdleContext(context))
+          moddleContext: JSON.parse(testHelpers.serializeModdleContext(context))
         });
-        engine.getInstance((err) => {
+        engine.getDefinition((err) => {
           if (err) return done(err);
-          expect(engine.id).to.equal('contextTest');
+          expect(engine.getDefinitionById('contextTest')).to.exist();
           done();
         });
       });
@@ -136,23 +123,12 @@ lab.experiment('engine', () => {
   });
 
   lab.describe('execute()', () => {
-    lab.test('sets entry point id to executable process', (done) => {
-      const engine = new Bpmn.Engine({
-        source: factory.valid()
-      });
-      engine.execute((err) => {
-        expect(err).to.not.exist();
-        expect(engine.entryPointId).to.equal('theProcess1');
-        done();
-      });
-    });
-
     lab.test('returns error in callback if no source', (done) => {
       const engine = new Bpmn.Engine({
         source: ''
       });
       engine.execute((err) => {
-        expect(err).to.exist();
+        expect(err).to.be.an.error(/nothing to execute/i);
         done();
       });
     });
@@ -185,6 +161,7 @@ lab.experiment('engine', () => {
 
     lab.test('emits end when all processes are completed', (done) => {
       const engine = new Bpmn.Engine({
+        name: 'end test',
         source: factory.resource('lanes.bpmn')
       });
       engine.once('end', () => {
@@ -203,7 +180,8 @@ lab.experiment('engine', () => {
         if (moddleErr) return done(moddleErr);
 
         const engine = new Bpmn.Engine({
-          context: JSON.parse(testHelpers.serializeModdleContext(context))
+          name: 'deserialized context',
+          moddleContext: JSON.parse(testHelpers.serializeModdleContext(context))
         });
         engine.once('end', () => {
           testHelpers.expectNoLingeringListenersOnEngine(engine);
@@ -216,34 +194,40 @@ lab.experiment('engine', () => {
       });
     });
 
-    lab.describe('options', () => {
-      lab.test('returns error in callback if listener doesn´t have an emit function', (done) => {
+    lab.describe('execute options', () => {
+      lab.test('throws error if listener doesn´t have an emit function', (done) => {
         const engine = new Bpmn.Engine({
           source: factory.resource('lanes.bpmn')
         });
-        engine.execute({
-          listener: {}
-        }, (err) => {
-          expect(err).to.be.an.error(/\"emit\" is required/);
-          done();
-        });
+
+        function testFn() {
+          engine.execute({
+            listener: {}
+          });
+        }
+
+        expect(testFn).to.throw(Error, /\"emit\" function is required/);
+        done();
       });
 
       lab.test('returns error in callback if service type is not "global" or "require"', (done) => {
         const engine = new Bpmn.Engine({
           source: factory.resource('lanes.bpmn')
         });
-        engine.execute({
-          services: {
-            test: {
-              module: 'require',
-              type: 'misc'
+
+        function testFn() {
+          engine.execute({
+            services: {
+              test: {
+                module: 'require',
+                type: 'misc'
+              }
             }
-          }
-        }, (err) => {
-          expect(err).to.be.an.error(/must be one of/);
-          done();
-        });
+          });
+        }
+
+        expect(testFn).to.throw(Error, /must be global or require/);
+        done();
       });
     });
 
@@ -274,6 +258,74 @@ lab.experiment('engine', () => {
           input: 0
         },
         listener: listener
+      }, (err) => {
+        if (err) return done(err);
+      });
+    });
+  });
+
+  lab.describe('getState()', () => {
+    const processXml = factory.userTask();
+
+    lab.test('returns state "running" when running definitions', (done) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      const listener = new EventEmitter();
+
+      listener.on('wait-userTask', () => {
+        const state = engine.getState();
+        expect(state).to.be.an.object();
+        expect(state).to.include({
+          state: 'running'
+        });
+        done();
+      });
+
+      engine.execute({
+        listener: listener,
+        variables: {
+          input: null
+        }
+      }, (err) => {
+        if (err) return done(err);
+      });
+    });
+
+    lab.test('returns state "idle" when nothing is running', (done) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+
+      const state = engine.getState();
+
+      expect(state).to.be.an.object();
+      expect(state).to.include({
+        state: 'idle',
+        definitions: []
+      });
+      done();
+    });
+
+    lab.test('returns state of running definitions', (done) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      const listener = new EventEmitter();
+
+      listener.on('wait-userTask', () => {
+        const state = engine.getState();
+        expect(state.definitions).to.have.length(1);
+        expect(state.definitions[0]).to.be.an.object();
+        expect(state.definitions[0].processes).to.be.an.object();
+        done();
+      });
+
+      engine.execute({
+        listener: listener,
+        variables: {
+          input: null
+        }
       }, (err) => {
         if (err) return done(err);
       });

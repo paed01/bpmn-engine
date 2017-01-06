@@ -1,5 +1,6 @@
 'use strict';
 
+const BpmnModdle = require('bpmn-moddle');
 const debug = require('debug')('bpmn-engine:test');
 const contextHelper = require('../../lib/context-helper');
 const expect = require('code').expect;
@@ -31,10 +32,17 @@ pub.expectNoLingeringListeners = (instance) => {
   });
 };
 
-pub.expectNoLingeringListenersOnEngine = (instance) => {
-  instance.processes.forEach((p) => {
-    checkListeners(p, ['enter', 'start', 'wait', 'end', 'cancel', 'error', 'leave'], '');
+pub.expectNoLingeringListenersOnDefinition = (definition) => {
+  definition.processes.forEach((p) => {
+    checkListeners(p, ['enter', 'start', 'wait', 'end', 'cancel', 'error', 'leave'], ` on process <${p.id}>`);
     pub.expectNoLingeringListeners(p);
+  });
+};
+
+pub.expectNoLingeringListenersOnEngine = (engine) => {
+  engine.definitions.forEach((d) => {
+    checkListeners(d, ['enter', 'start', 'wait', 'end', 'cancel', 'error', 'leave', 'message'], ` on definition <${d.id}>`);
+    pub.expectNoLingeringListenersOnDefinition(d);
   });
 };
 
@@ -51,6 +59,19 @@ pub.getContext = function(processXml, callback) {
     if (err) return callback(err);
     const context = new Context(contextHelper.getExecutableProcessId(moddleContext), moddleContext, {});
     return callback(null, context);
+  });
+};
+
+pub.getModdleContext = function(processXml, optionsOrCallback, callback) {
+  if (!callback) {
+    callback = optionsOrCallback;
+    optionsOrCallback = {};
+  }
+
+  const bpmnModdle = new BpmnModdle(optionsOrCallback);
+
+  bpmnModdle.fromXML(Buffer.isBuffer(processXml) ? processXml.toString() : processXml, (err, definitions, moddleContext) => {
+    return callback(err, moddleContext);
   });
 };
 

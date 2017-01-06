@@ -10,6 +10,7 @@ const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 
 const Bpmn = require('../..');
+const BaseProcess = require('../../lib/mapper').Process;
 
 const bupServiceFn = testHelpers.serviceFn;
 
@@ -22,14 +23,10 @@ lab.experiment('ServiceTask', () => {
   lab.describe('ctor', () => {
     lab.test('stores service if extension name', (done) => {
       const processXml = factory.resource('service-task.bpmn');
-
-      const engine = new Bpmn.Engine({
-        source: processXml
-      });
-
-      engine.getInstance((err, instance) => {
-        if (err) return done(err);
-        const task = instance.getChildActivityById('serviceTask');
+      testHelpers.getModdleContext(processXml, (cerr, moddleContext) => {
+        if (cerr) return done(cerr);
+        const process = new BaseProcess(moddleContext.elementsById.serviceTaskProcess, moddleContext, {});
+        const task = process.getChildActivityById('serviceTask');
         expect(task).to.include(['service']);
         done();
       });
@@ -44,16 +41,12 @@ lab.experiment('ServiceTask', () => {
   </process>
 </definitions>`;
 
-      const engine = new Bpmn.Engine({
-        source: processXml,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
-      });
-
-      engine.getInstance((err, instance) => {
-        if (err) return done(err);
-        const task = instance.getChildActivityById('serviceTask');
+      testHelpers.getModdleContext(processXml, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (cerr, moddleContext) => {
+        if (cerr) return done(cerr);
+        const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
+        const task = process.getChildActivityById('serviceTask');
         expect(task).to.include(['service']);
         done();
       });

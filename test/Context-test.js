@@ -10,6 +10,7 @@ const expect = Code.expect;
 
 const Bpmn = require('..');
 const Context = require('../lib/Context');
+const Definition = require('../lib/Definition');
 const Activity = require('../lib/activities/Activity');
 
 lab.experiment('Context', () => {
@@ -18,16 +19,19 @@ lab.experiment('Context', () => {
     const engine = new Bpmn.Engine({
       source: factory.resource('lanes.bpmn')
     });
-    engine.getInstance({
+    engine.getDefinition({
       variables: {
         init: 1
       }
-    }, (err, inst, sibl) => {
-      if (err) return done(err);
-      instance = inst;
-      siblings = sibl;
-      expect(siblings.length, 'No processes loaded').to.be.above(1);
-      done();
+    }, (err1, definition) => {
+      if (err1) return done(err1);
+      definition.getInstance((err, inst, sibl) => {
+        if (err) return done(err);
+        instance = inst;
+        siblings = sibl;
+        expect(siblings.length, 'No processes loaded').to.be.above(1);
+        done();
+      });
     });
   });
 
@@ -103,45 +107,48 @@ lab.experiment('Context', () => {
 
   lab.describe('#getState', () => {
     lab.test('returns variables, services and children', (done) => {
-      const engine = new Bpmn.Engine({
-        source: factory.resource('lanes.bpmn')
-      });
-      engine.getInstance({
-        variables: {
-          init: 1,
-          loadedAt: new Date(),
-          myArray: [1, 2, 3, 5],
-        },
-        services: {
-          request: {
-            type: 'require',
-            module: 'request'
+      testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (gerr, moddleContext) => {
+        if (gerr) return done(gerr);
+
+        const definition = new Definition(moddleContext);
+
+        definition.getInstance({
+          variables: {
+            init: 1,
+            loadedAt: new Date(),
+            myArray: [1, 2, 3, 5],
           },
-          myFuncs: {
+          services: {
+            request: {
+              type: 'require',
+              module: 'request'
+            },
+            myFuncs: {
+              type: 'require',
+              module: './helpers/testHelpers'
+            }
+          }
+        }, (err, inst) => {
+          if (err) return done(err);
+          instance = inst;
+
+          const state = instance.context.getState();
+
+          expect(state).to.only.include(['variables', 'services', 'children']);
+
+          expect(state.variables).to.only.include(['init', 'loadedAt', 'myArray']);
+          expect(state.services).to.include(['request', 'myFuncs']);
+          expect(state.services.myFuncs).to.include({
             type: 'require',
             module: './helpers/testHelpers'
-          }
-        }
-      }, (err, inst) => {
-        if (err) return done(err);
-        instance = inst;
+          });
+          expect(state.services.request).to.include({
+            type: 'require',
+            module: 'request'
+          });
 
-        const state = instance.context.getState();
-
-        expect(state).to.only.include(['variables', 'services', 'children']);
-
-        expect(state.variables).to.only.include(['init', 'loadedAt', 'myArray']);
-        expect(state.services).to.include(['request', 'myFuncs']);
-        expect(state.services.myFuncs).to.include({
-          type: 'require',
-          module: './helpers/testHelpers'
+          done();
         });
-        expect(state.services.request).to.include({
-          type: 'require',
-          module: 'request'
-        });
-
-        done();
       });
 
     });

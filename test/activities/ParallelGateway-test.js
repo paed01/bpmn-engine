@@ -31,16 +31,16 @@ lab.experiment('ParallelGateway', () => {
     const engine = new Bpmn.Engine({
       source: processXml
     });
-    engine.getInstance((err, instance) => {
+    engine.getDefinition((err, definition) => {
       if (err) return done(err);
 
-      const forkActivity = instance.getChildActivityById('fork');
+      const forkActivity = definition.getChildActivityById('fork');
       expect(forkActivity).to.include('inbound');
       expect(forkActivity.inbound).to.have.length(1);
       expect(forkActivity).to.include('outbound');
       expect(forkActivity.outbound).to.have.length(2);
 
-      const joinActivity = instance.getChildActivityById('join');
+      const joinActivity = definition.getChildActivityById('join');
       expect(joinActivity).to.include('inbound');
       expect(joinActivity.inbound).to.have.length(2);
       expect(joinActivity).to.include('outbound');

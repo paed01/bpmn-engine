@@ -22,7 +22,7 @@ lab.experiment('context-helper', () => {
     });
   });
 
-  lab.experiment('#getOutboundSequenceFlows', () => {
+  lab.describe('getOutboundSequenceFlows()', () => {
     lab.test('returns activity outbound sequence flows', (done) => {
       const flows = contextHelper.getOutboundSequenceFlows(context, 'theStart');
       expect(flows).to.have.length(1);
@@ -36,7 +36,7 @@ lab.experiment('context-helper', () => {
     });
   });
 
-  lab.experiment('#getInboundSequenceFlows', () => {
+  lab.experiment('getInboundSequenceFlows()', () => {
     lab.test('returns activity inbound sequence flows', (done) => {
       const flows = contextHelper.getInboundSequenceFlows(context, 'end2');
       expect(flows).to.have.length(1);
@@ -75,7 +75,7 @@ lab.experiment('context-helper', () => {
 
   });
 
-  lab.experiment('#getDataObjectFromRef', () => {
+  lab.experiment('getDataObjectFromRef()', () => {
     let userContext;
     lab.before((done) => {
       transformer.transform(factory.userTask(), {}, (err, bpmnObject, result) => {
@@ -98,7 +98,7 @@ lab.experiment('context-helper', () => {
     });
   });
 
-  lab.experiment('#getDataObjectFromAssociation', () => {
+  lab.experiment('getDataObjectFromAssociation()', () => {
     let userContext;
     lab.before((done) => {
       transformer.transform(factory.userTask(), {}, (err, bpmnObject, result) => {
@@ -150,7 +150,7 @@ lab.experiment('context-helper', () => {
     });
   });
 
-  lab.experiment('#isTerminationElement', () => {
+  lab.experiment('isTerminationElement()', () => {
     let localContext;
     lab.before((done) => {
       const processXml = `
@@ -204,7 +204,7 @@ lab.experiment('context-helper', () => {
     });
   });
 
-  lab.experiment('#hasInboundSequenceFlows', () => {
+  lab.experiment('hasInboundSequenceFlows()', () => {
     lab.test('returns false if no inbound sequenceFlows', (done) => {
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -254,7 +254,7 @@ lab.experiment('context-helper', () => {
     });
   });
 
-  lab.experiment('#getActivities', () => {
+  lab.experiment('getActivities()', () => {
     lab.test('returns only activities bound to element', (done) => {
       const processXml = factory.resource('sub-process.bpmn');
       transformer.transform(processXml.toString(), {}, (err, bpmnObject, moddleContext) => {
@@ -272,7 +272,7 @@ lab.experiment('context-helper', () => {
     });
   });
 
-  lab.experiment('#getSequenceFlowTargetId', () => {
+  lab.experiment('getSequenceFlowTargetId()', () => {
 
     lab.test('returns target id', (done) => {
       expect(contextHelper.getSequenceFlowTargetId(context, 'flow1')).to.equal('decision');
@@ -285,7 +285,7 @@ lab.experiment('context-helper', () => {
     });
   });
 
-  lab.experiment('#getElementServiceName', () => {
+  lab.experiment('getElementServiceName()', () => {
 
     lab.test('returns service name from properties named service', (done) => {
       const element = {

@@ -15,15 +15,14 @@ lab.experiment('ErrorEvent', () => {
     const processXml = factory.resource('bound-error.bpmn');
 
     lab.describe('ctor', () => {
-      let event, instance;
+      let event;
       lab.before((done) => {
         const engine = new Bpmn.Engine({
           source: processXml
         });
-        engine.getInstance((err, processInstance) => {
+        engine.getDefinition((err, definition) => {
           if (err) return done(err);
-          instance = processInstance;
-          event = instance.getChildActivityById('errorEvent');
+          event = definition.getChildActivityById('errorEvent');
           done();
         });
       });

@@ -4,10 +4,11 @@ const Code = require('code');
 const EventEmitter = require('events').EventEmitter;
 const factory = require('../helpers/factory');
 const Lab = require('lab');
-const testHelper = require('../helpers/testHelpers');
+const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
+const BaseProcess = require('../../lib/mapper').Process;
 const Bpmn = require('../..');
 
 lab.experiment('SubProcess', () => {
@@ -16,14 +17,11 @@ lab.experiment('SubProcess', () => {
   lab.describe('ctor', () => {
     let parentProcess, subProcess;
 
-    const engine = new Bpmn.Engine({
-      source: processXml
-    });
     lab.before((done) => {
-      engine.getInstance((err, instance) => {
-        if (err) return done(err);
-        parentProcess = instance;
-        subProcess = instance.getChildActivityById('subProcess');
+      testHelpers.getModdleContext(processXml, (cerr, moddleContext) => {
+        if (cerr) return done(cerr);
+        parentProcess = new BaseProcess(moddleContext.elementsById.mainProcess, moddleContext, {});
+        subProcess = parentProcess.getChildActivityById('subProcess');
         done();
       });
     });
@@ -52,7 +50,7 @@ lab.experiment('SubProcess', () => {
 
   });
 
-  lab.describe('#run', () => {
+  lab.describe('run()', () => {
 
     lab.test('completes parent process', (done) => {
       const listener = new EventEmitter();
@@ -71,8 +69,8 @@ lab.experiment('SubProcess', () => {
       }, (err, mainInstance) => {
         if (err) return done(err);
         mainInstance.once('end', () => {
-          testHelper.expectNoLingeringListeners(mainInstance);
-          testHelper.expectNoLingeringListeners(mainInstance.getChildActivityById('subProcess'));
+          testHelpers.expectNoLingeringListeners(mainInstance);
+          testHelpers.expectNoLingeringListeners(mainInstance.getChildActivityById('subProcess'));
 
           const subProcess = mainInstance.getChildActivityById('subProcess');
           expect(subProcess.variables).to.only.include({
@@ -86,7 +84,7 @@ lab.experiment('SubProcess', () => {
     });
   });
 
-  lab.describe('#cancel', () => {
+  lab.describe('cancel()', () => {
     lab.test('takes all outbound and completes parent process', (done) => {
       const listener = new EventEmitter();
       listener.on('wait-subUserTask', (task, subProcessInstance) => {
@@ -108,8 +106,8 @@ lab.experiment('SubProcess', () => {
           expect(mainInstance.getChildActivityById('theEnd').taken, 'theEnd taken').to.be.true();
           expect(mainInstance.getChildActivityById('subProcess').canceled, 'subProcess canceled').to.be.true();
 
-          testHelper.expectNoLingeringListeners(mainInstance);
-          testHelper.expectNoLingeringListeners(mainInstance.getChildActivityById('subProcess'));
+          testHelpers.expectNoLingeringListeners(mainInstance);
+          testHelpers.expectNoLingeringListeners(mainInstance.getChildActivityById('subProcess'));
           done();
         });
       });
@@ -142,8 +140,8 @@ lab.experiment('SubProcess', () => {
           expect(mainInstance.getChildActivityById('theEnd').taken, 'theEnd taken').to.be.true();
           expect(mainInstance.getChildActivityById('subProcess').canceled, 'subProcess canceled').to.be.false();
 
-          testHelper.expectNoLingeringListeners(mainInstance);
-          testHelper.expectNoLingeringListeners(mainInstance.getChildActivityById('subProcess'));
+          testHelpers.expectNoLingeringListeners(mainInstance);
+          testHelpers.expectNoLingeringListeners(mainInstance.getChildActivityById('subProcess'));
           done();
         });
       });

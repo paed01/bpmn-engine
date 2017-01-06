@@ -13,19 +13,6 @@ const expect = Code.expect;
 lab.experiment('Lanes', () => {
   const processXml = factory.resource('lanes.bpmn');
 
-  lab.test('main process stores outbound messageFlows', (done) => {
-    const engine = new Bpmn.Engine({
-      source: processXml
-    });
-    engine.getInstance((err, mainInstance) => {
-      if (err) return done(err);
-
-      expect(mainInstance.context.messageFlows.length).to.equal(1);
-
-      done();
-    });
-  });
-
   lab.test('completes process', (done) => {
     const listener = new EventEmitter();
     const engine = new Bpmn.Engine({
@@ -54,14 +41,14 @@ lab.experiment('Lanes', () => {
     });
 
     engine.once('end', () => {
-      const participant = engine.processes.find((p) => p.id === 'participantProcess');
+      const participant = engine.definitions[0].processes.find((p) => p.id === 'participantProcess');
       expect(participant.variables).to.include({
         input: 0,
         message: 'I\'m done',
         arbval: '10'
       });
 
-      const mainProcess = engine.processes.find((p) => p.id === 'mainProcess');
+      const mainProcess = engine.definitions[0].processes.find((p) => p.id === 'mainProcess');
       expect(mainProcess.variables.taskInput).to.include({
         intermediate: {
           message: 'Done! Aswell!'

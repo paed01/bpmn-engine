@@ -18,9 +18,9 @@ lab.experiment('IntermediateCatchEvent', () => {
     const engine = new Bpmn.Engine({
       source: processXml
     });
-    engine.getInstance((err, inst) => {
+    engine.getDefinition((err, definition) => {
       if (err) return done(err);
-      expect(inst.getChildActivityById('duration')).to.be.instanceOf(TimerEvent);
+      expect(definition.getChildActivityById('duration')).to.be.instanceOf(TimerEvent);
       done();
     });
   });
@@ -30,9 +30,9 @@ lab.experiment('IntermediateCatchEvent', () => {
     const engine = new Bpmn.Engine({
       source: processXml
     });
-    engine.getInstance((err, inst) => {
+    engine.getDefinition((err, definition) => {
       if (err) return done(err);
-      expect(inst.getChildActivityById('intermediate')).to.be.instanceOf(MessageEvent);
+      expect(definition.getChildActivityById('intermediate')).to.be.instanceOf(MessageEvent);
       done();
     });
   });

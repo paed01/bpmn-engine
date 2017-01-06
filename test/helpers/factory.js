@@ -49,7 +49,7 @@ pub.userTask = (name) => {
   if (!name) name = 'userTask';
   return `
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<definitions id="testUserTask" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
     <dataObjectReference id="inputFromUserRef" dataObjectRef="inputFromUser" />
     <dataObject id="inputFromUser" />

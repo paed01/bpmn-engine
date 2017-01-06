@@ -242,15 +242,15 @@ Get state of a running execution.
 
 The saved state will include the following content:
 
-- `source`: Buffered representation of the definition
-- `sourceHash`: Calculated md5 hash of the executing definition
-- `context`: Moddle context
+- `state`: `running` or `idle`
 - `moddleOptions`: Engine moddleOptions
-- `processes`: Object with processes with id as key
-  - `variables`: Execution variables
-  - `services`: Execution services
-  - `children`: List of child states
-    - `entered`: Boolean indicating if the child is currently executing
+- `definitions`: Running definitions
+  - `state`:
+  - `processes`: Object with processes with id as key
+    - `variables`: Execution variables
+    - `services`: Execution services
+    - `children`: List of child states
+      - `entered`: Boolean indicating if the child is currently executing
 
 ```javascript
 'use strict';

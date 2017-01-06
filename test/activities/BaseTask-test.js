@@ -1,10 +1,11 @@
 'use strict';
 
+const BaseProcess = require('../../lib/mapper').Process;
 const Code = require('code');
 const EventEmitter = require('events').EventEmitter;
 const factory = require('../helpers/factory');
 const Lab = require('lab');
-const testHelper = require('../helpers/testHelpers');
+const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
@@ -13,7 +14,7 @@ const Bpmn = require('../..');
 
 lab.experiment('BaseTask', () => {
 
-  lab.describe('#cancel', () => {
+  lab.describe('cancel()', () => {
     lab.test('cancels bound events and takes all outbound', (done) => {
       const engine = new Bpmn.Engine({
         source: factory.resource('boundary-timeout.bpmn')
@@ -30,7 +31,7 @@ lab.experiment('BaseTask', () => {
         instance.once('end', () => {
           expect(instance.getChildActivityById('join').taken, 'join').to.be.true();
           expect(instance.getChildActivityById('end').taken, 'end').to.be.true();
-          testHelper.expectNoLingeringListeners(instance);
+          testHelpers.expectNoLingeringListeners(instance);
           done();
         });
       });
@@ -76,23 +77,14 @@ lab.experiment('BaseTask', () => {
   });
 
   lab.describe('in lane with outbound message', () => {
-    const processXml = factory.resource('lanes.bpmn');
-    let instance;
-    lab.before((done) => {
-      const engine = new Bpmn.Engine({
-        source: processXml
-      });
-      engine.getInstance((err, inst) => {
-        if (err) return done(err);
-        instance = inst;
+    lab.test('will have outbound that point to other lane', (done) => {
+      testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (cerr, moddleContext) => {
+        if (cerr) return done(cerr);
+        const process = new BaseProcess(moddleContext.elementsById.mainProcess, moddleContext, {});
+        const task = process.getChildActivityById('task1');
+        expect(task.outbound).to.have.length(2);
         done();
       });
-    });
-
-    lab.test('will have outbound that point to other lane', (done) => {
-      const task = instance.getChildActivityById('task1');
-      expect(task.outbound).to.have.length(2);
-      done();
     });
   });
 });
