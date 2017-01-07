@@ -30,7 +30,7 @@ lab.experiment('Resume execution', () => {
     engine.once('end', () => {
       testHelpers.expectNoLingeringListenersOnEngine(engine);
 
-      state.processes.theProcess.variables.input = 'resumed';
+      state.definitions[0].processes.theProcess.variables.input = 'resumed';
 
       const listener2 = new EventEmitter();
 
@@ -162,7 +162,7 @@ lab.experiment('Resume execution', () => {
         if (err) return done(err);
 
         resumedInstance.once('end', () => {
-          expect(resumedInstance.variables.taskInput.userTask1).to.equal('resumed');
+          expect(resumedInstance.processes[0].variables.taskInput.userTask1).to.equal('resumed');
           done();
         });
       });
@@ -214,7 +214,7 @@ lab.experiment('Resume execution', () => {
     });
 
     engine1.once('end', () => {
-      const timeout = state.processes.interruptedProcess.children.find(c => c.id === 'timeoutEvent').timeout;
+      const timeout = state.definitions[0].processes.interruptedProcess.children.find(c => c.id === 'timeoutEvent').timeout;
       expect(timeout).to.be.between(0, 99);
 
       const engine2 = new Bpmn.Engine({
@@ -290,7 +290,7 @@ if (!variables.input) {
     engine1.once('end', () => {
       testHelpers.expectNoLingeringListenersOnEngine(engine1);
 
-      delete state.processes.interruptedProcess.variables.input;
+      delete state.definitions[0].processes.interruptedProcess.variables.input;
 
       const engine2 = new Bpmn.Engine({
         source: state.source,
@@ -551,7 +551,7 @@ if (!variables.input) {
         if (err) return done(err);
 
         instance.once('end', () => {
-          expect(instance.variables.taskInput.serviceTask.output[0]).to.include(['statusCode', 'body']);
+          expect(instance.processes[0].variables.taskInput.serviceTask.output[0]).to.include(['statusCode', 'body']);
           done();
         });
       });
@@ -560,80 +560,5 @@ if (!variables.input) {
     engine1.execute(options, (err) => {
       if (err) return done(err);
     });
-  });
-
-  lab.test('resumes if moddle context is passed to engine', (done) => {
-    const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-  <process id="theProcess" isExecutable="true">
-    <userTask id="userTask" />
-    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" camunda:resultVariable="output" />
-    <sequenceFlow id="flow1" sourceRef="userTask" targetRef="serviceTask" />
-  </process>
-</definitions>`;
-
-    testHelpers.resumeFn = (executionContext, callback) => {
-      callback(null, {
-        statusCode: 200,
-        body: {
-          input: 1
-        }
-      });
-    };
-
-    Bpmn.Transformer.transform(processXml, {
-      camunda: require('camunda-bpmn-moddle/resources/camunda')
-    }, (terr, def, moddleContext) => {
-      if (terr) return done(terr);
-
-      const engine1 = new Bpmn.Engine({
-        context: moddleContext
-      });
-
-      const listener1 = new EventEmitter();
-      const options = {
-        listener: listener1,
-        services: {
-          get: {
-            module: './test/helpers/testHelpers',
-            type: 'require',
-            fnName: 'resumeFn'
-          }
-        }
-      };
-
-      let state;
-      listener1.once('wait-userTask', () => {
-        state = engine1.getState();
-        engine1.stop();
-      });
-
-      engine1.once('end', () => {
-        testHelpers.expectNoLingeringListenersOnEngine(engine1);
-
-        const engine2 = new Bpmn.Engine();
-        const listener2 = new EventEmitter();
-        listener2.once('wait-userTask', (task) => {
-          task.signal();
-        });
-
-        engine2.resume(testHelpers.readFromDb(state), {
-          listener: listener2
-        }, (err, instance) => {
-          if (err) return done(err);
-
-          instance.once('end', () => {
-            expect(instance.variables.taskInput.serviceTask.output[0]).to.include(['statusCode', 'body']);
-            done();
-          });
-        });
-      });
-
-      engine1.execute(options, (err) => {
-        if (err) return done(err);
-      });
-    });
-
   });
 });

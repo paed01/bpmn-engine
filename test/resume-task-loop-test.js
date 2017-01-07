@@ -130,7 +130,7 @@ lab.experiment('Resume task loop', () => {
           if (err) return done(err);
 
           instance.once('end', () => {
-            expect(instance.variables.taskInput.recurring.result[0]).to.equal(13);
+            expect(instance.processes[0].variables.taskInput.recurring.result[0]).to.equal(13);
             done();
           });
         });

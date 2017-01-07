@@ -9,21 +9,21 @@ const Bpmn = require('../..');
 const expect = Code.expect;
 
 lab.experiment('MessageEvent', () => {
-  let instance;
+  let definition;
   lab.before((done) => {
     const engine = new Bpmn.Engine({
       source: factory.resource('lanes.bpmn')
     });
-    engine.getInstance((err, mainInstance) => {
+    engine.getDefinition((err, def) => {
       if (err) return done(err);
-      instance = mainInstance;
+      definition = def;
       done();
     });
   });
 
   lab.describe('inbound', () => {
     lab.test('does not contain message flow', (done) => {
-      const event = instance.getChildActivityById('intermediate');
+      const event = definition.getChildActivityById('intermediate');
       expect(event.inbound.length).to.equal(1);
       expect(event.inbound[0].type).to.equal('bpmn:SequenceFlow');
       done();

@@ -9,7 +9,6 @@ const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const Bpmn = require('../..');
-const BaseProcess = require('../../lib/mapper').Process;
 const TimerEvent = require('../../lib/mapper')('bpmn:TimerEventDefinition');
 const ErrorEvent = require('../../lib/mapper')('bpmn:ErrorEventDefinition');
 

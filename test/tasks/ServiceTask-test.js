@@ -53,7 +53,7 @@ lab.experiment('ServiceTask', () => {
     });
   });
 
-  lab.describe('execute', () => {
+  lab.describe('execute()', () => {
     lab.test('executes service', (done) => {
       testHelpers.serviceFn = (message, callback) => {
         callback();

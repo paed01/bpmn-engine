@@ -333,12 +333,12 @@ lab.experiment('engine', () => {
   });
 
   lab.describe('resume()', () => {
-    lab.test('with invalid source returns error in callback', (done) => {
+    lab.test('with invalid state returns error in callback', (done) => {
       const engine = new Bpmn.Engine();
       engine.resume({
-        source: 'invalid xml'
+        definitions: 'invalid array'
       }, (err) => {
-        expect(err).to.be.an.error(/data outside of root node/);
+        expect(err).to.be.an.error(/must be an array/);
         done();
       });
     });

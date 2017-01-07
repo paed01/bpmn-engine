@@ -9,7 +9,7 @@ const expect = Code.expect;
 const scriptHelper = require('../lib/script-helper');
 
 lab.experiment('script-helper', () => {
-  lab.describe('#isJavascript', () => {
+  lab.describe('isJavascript()', () => {
     lab.test('returns true if JavaScript', (done) => {
       expect(scriptHelper.isJavascript('JavaScript')).to.be.true();
       done();
