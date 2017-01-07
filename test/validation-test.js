@@ -148,10 +148,9 @@ lab.experiment('validation', () => {
 
       testHelpers.getModdleContext(processXml, {}, (err, context) => {
         if (err) return done(err);
-        validation.validateModdleContext(context, (err) => {
-          expect(err).to.exist();
-          done();
-        });
+        const warnings = validation.validateModdleContext(context);
+        expect(warnings[0]).to.be.an.error(/single diverging flow/);
+        done();
       });
     });
 
@@ -172,10 +171,9 @@ lab.experiment('validation', () => {
 
       testHelpers.getModdleContext(processXml, {}, (err, context) => {
         if (err) return done(err);
-        validation.validateModdleContext(context, (err) => {
-          expect(err).to.exist();
-          done();
-        });
+        const warnings = validation.validateModdleContext(context);
+        expect(warnings[0]).to.be.an.error(/has no condition/);
+        done();
       });
     });
 
@@ -201,10 +199,9 @@ lab.experiment('validation', () => {
       testHelpers.getModdleContext(processXml, {}, (err, context) => {
         if (err) return done(err);
 
-        validation.validateModdleContext(context, (err) => {
-          expect(err).to.not.exist();
-          done();
-        });
+        const warnings = validation.validateModdleContext(context);
+        expect(warnings.length, 'Errors').to.equal(0);
+        done();
       });
     });
 
@@ -233,14 +230,14 @@ lab.experiment('validation', () => {
 
       testHelpers.getModdleContext(processXml, {}, (err, context) => {
         if (err) return done(err);
-        validation.validateModdleContext(context, (err) => {
-          expect(err).to.not.exist();
-          done();
-        });
+
+        const warnings = validation.validateModdleContext(context);
+        expect(warnings.length, 'Errors').to.equal(0);
+        done();
       });
     });
 
-    lab.test('no flows are not supported', (done) => {
+    lab.test('without flows is NOT supported', (done) => {
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -252,17 +249,16 @@ lab.experiment('validation', () => {
       testHelpers.getModdleContext(processXml, {}, (err, context) => {
         if (err) return done(err);
 
-        validation.validateModdleContext(context, (err) => {
-          expect(err).to.exist();
-          done();
-        });
+        const warnings = validation.validateModdleContext(context);
+        expect(warnings[0]).to.be.an.error(/has no outgoing flow/);
+        done();
       });
     });
 
   });
 
   lab.describe('serialized bpmn-moddle context', () => {
-    lab.test('returns error if warnings', (done) => {
+    lab.test('returns bpmn-moddle warnings', (done) => {
       const bpmnXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -272,18 +268,12 @@ lab.experiment('validation', () => {
   </process>
 </definitions>`;
 
-      testHelpers.getModdleContext(bpmnXml, {}, (err, context) => {
+      testHelpers.getModdleContext(bpmnXml, (err, context) => {
         if (err) return done(err);
-
         const contextFromDb = JSON.parse(testHelpers.serializeModdleContext(context));
-        contextFromDb.warnings = [{
-          message: 'no-end'
-        }];
-
-        validation.validateModdleContext(contextFromDb, (err) => {
-          expect(err).to.be.an.error(/no-end/);
-          done();
-        });
+        const warnings = validation.validateModdleContext(contextFromDb);
+        expect(warnings.length, 'Errors').to.be.above(0);
+        done();
       });
     });
 
@@ -302,10 +292,9 @@ lab.experiment('validation', () => {
 
         const contextFromDb = JSON.parse(testHelpers.serializeModdleContext(context));
 
-        validation.validateModdleContext(contextFromDb, (err) => {
-          expect(err).to.be.an.error(/"targetRef" is required/);
-          done();
-        });
+        const warnings = validation.validateModdleContext(contextFromDb);
+        expect(warnings[0]).to.be.an.error(/"targetRef" is required/);
+        done();
       });
     });
 
