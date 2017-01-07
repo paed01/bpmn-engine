@@ -170,11 +170,11 @@ lab.experiment('TimerEvent', () => {
 
         engine.execute({
           listener: listener
-        }, (err, inst) => {
+        }, (err, definition) => {
           if (err) return done(err);
 
-          inst.once('end', () => {
-            testHelper.expectNoLingeringListeners(inst);
+          definition.once('end', () => {
+            testHelper.expectNoLingeringListenersOnDefinition(definition);
             done();
           });
         });
@@ -194,11 +194,11 @@ lab.experiment('TimerEvent', () => {
 
         engine.execute({
           listener: listener
-        }, (err, inst) => {
+        }, (err, definition) => {
           if (err) return done(err);
 
-          inst.once('end', () => {
-            testHelper.expectNoLingeringListeners(inst);
+          definition.once('end', () => {
+            testHelper.expectNoLingeringListenersOnDefinition(definition);
             done();
           });
         });
@@ -215,11 +215,11 @@ lab.experiment('TimerEvent', () => {
 
         engine.execute({
           listener: listener
-        }, (err, inst) => {
+        }, (err, definition) => {
           if (err) return done(err);
 
-          inst.once('end', () => {
-            testHelper.expectNoLingeringListeners(inst);
+          definition.once('end', () => {
+            testHelper.expectNoLingeringListenersOnDefinition(definition);
             done();
           });
         });
@@ -248,12 +248,12 @@ lab.experiment('TimerEvent', () => {
 
         engine.execute({
           listener: listener
-        }, (err, inst) => {
+        }, (err, definition) => {
           if (err) return done(err);
 
-          inst.once('end', () => {
+          definition.once('end', () => {
             expect(calledEnds).to.include(['userTask', 'boundaryEvent']);
-            testHelper.expectNoLingeringListeners(inst);
+            testHelper.expectNoLingeringListenersOnDefinition(definition);
             done();
           });
         });
@@ -280,11 +280,11 @@ lab.experiment('TimerEvent', () => {
 
         engine.execute({
           listener: listener
-        }, (err, inst) => {
+        }, (err, definition) => {
           if (err) return done(err);
-          inst.once('end', () => {
+          definition.once('end', () => {
             expect(calledEnds).to.include(['userTask']);
-            testHelper.expectNoLingeringListeners(inst);
+            testHelper.expectNoLingeringListenersOnDefinition(definition);
             done();
           });
         });
@@ -304,11 +304,11 @@ lab.experiment('TimerEvent', () => {
 
         engine.execute({
           listener: listener
-        }, (err, inst) => {
+        }, (err, definition) => {
           if (err) return done(err);
 
-          inst.once('end', () => {
-            testHelper.expectNoLingeringListeners(inst);
+          definition.once('end', () => {
+            testHelper.expectNoLingeringListenersOnDefinition(definition);
             done();
           });
         });
@@ -359,12 +359,12 @@ lab.experiment('TimerEvent', () => {
 
       engine.execute({
         listener: listener
-      }, (err, inst) => {
+      }, (err, definition) => {
         if (err) return done(err);
 
-        inst.once('end', () => {
+        definition.once('end', () => {
           expect(calledEnds).to.include(['task1', 'duration', 'task2']);
-          testHelper.expectNoLingeringListeners(inst);
+          testHelper.expectNoLingeringListenersOnDefinition(definition);
           done();
         });
       });

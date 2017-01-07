@@ -131,7 +131,7 @@ lab.experiment('ScriptTask', () => {
 
         instance.once('end', () => {
           expect(instance.variables.input, 'input variable').to.equal(2);
-          testHelpers.expectNoLingeringListeners(instance);
+          testHelpers.expectNoLingeringListenersOnDefinition(instance);
           done();
         });
       });

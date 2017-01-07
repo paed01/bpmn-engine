@@ -61,9 +61,9 @@ lab.experiment('BoundaryEvent', () => {
 
     engine.execute({
       listener: listener
-    }, (err, instance) => {
+    }, (err, definition) => {
       if (err) return done(err);
-      const timer = instance.getChildActivityById('timerEvent');
+      const timer = definition.getChildActivityById('timerEvent');
 
       let leaveTimerCount = 0;
 
@@ -73,7 +73,7 @@ lab.experiment('BoundaryEvent', () => {
       }
       timer.on('enter', timerListener);
 
-      const error = instance.getChildActivityById('errorEvent');
+      const error = definition.getChildActivityById('errorEvent');
 
       let leaveErrorCount = 0;
 
@@ -83,10 +83,10 @@ lab.experiment('BoundaryEvent', () => {
       }
       error.on('enter', errorListener);
 
-      instance.once('end', () => {
+      definition.once('end', () => {
         timer.removeListener('enter', timerListener);
         error.removeListener('enter', errorListener);
-        testHelpers.expectNoLingeringListeners(instance);
+        testHelpers.expectNoLingeringListenersOnDefinition(definition);
         done();
       });
     });
@@ -106,11 +106,11 @@ lab.experiment('BoundaryEvent', () => {
       variables: {
         input: 2
       }
-    }, (err, instance) => {
+    }, (err, definition) => {
       if (err) return done(err);
 
-      instance.once('end', () => {
-        testHelpers.expectNoLingeringListeners(instance);
+      definition.once('end', () => {
+        testHelpers.expectNoLingeringListenersOnDefinition(definition);
         done();
       });
     });

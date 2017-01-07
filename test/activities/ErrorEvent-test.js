@@ -58,7 +58,7 @@ lab.experiment('ErrorEvent', () => {
           if (err) return done(err);
 
           inst.once('end', () => {
-            testHelper.expectNoLingeringListeners(inst);
+            testHelper.expectNoLingeringListenersOnDefinition(inst);
             done();
           });
         });
@@ -85,7 +85,7 @@ lab.experiment('ErrorEvent', () => {
           if (err) return done(err);
 
           inst.once('end', () => {
-            testHelper.expectNoLingeringListeners(inst);
+            testHelper.expectNoLingeringListenersOnDefinition(inst);
             done();
           });
         });
@@ -106,7 +106,7 @@ lab.experiment('ErrorEvent', () => {
           if (err) return done(err);
 
           inst.once('end', () => {
-            testHelper.expectNoLingeringListeners(inst);
+            testHelper.expectNoLingeringListenersOnDefinition(inst);
             done();
           });
         });

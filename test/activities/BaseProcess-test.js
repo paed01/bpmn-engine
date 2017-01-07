@@ -243,10 +243,10 @@ lab.experiment('BaseProcess', () => {
         variables: {
           input: 0
         }
-      }, (err, execution) => {
+      }, (err, definition) => {
         if (err) return done(err);
-        execution.once('end', () => {
-          expect(execution.variables.input, 'iterated input').to.equal(2);
+        definition.once('end', () => {
+          expect(definition.variables.input, 'iterated input').to.equal(2);
           done();
         });
       });
@@ -270,11 +270,11 @@ lab.experiment('BaseProcess', () => {
         variables: {
           input: 0
         }
-      }, (err, execution) => {
+      }, (err, definition) => {
         if (err) return done(err);
 
-        execution.once('end', () => {
-          testHelpers.expectNoLingeringListeners(execution);
+        definition.once('end', () => {
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
           done();
         });
       });
@@ -301,11 +301,11 @@ lab.experiment('BaseProcess', () => {
         variables: {
           input: 0
         }
-      }, (err, execution) => {
+      }, (err, definition) => {
         if (err) return done(err);
 
-        execution.once('end', () => {
-          testHelpers.expectNoLingeringListeners(execution);
+        definition.once('end', () => {
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
           done();
         });
       });

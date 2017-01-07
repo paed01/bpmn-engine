@@ -25,9 +25,9 @@ lab.experiment('EndEvent', () => {
     const engine = new Bpmn.Engine({
       source: processXml
     });
-    engine.execute((err, execution) => {
+    engine.execute((err, definition) => {
       if (err) return done(err);
-      const event = execution.getChildActivityById('end');
+      const event = definition.getChildActivityById('end');
       expect(event).to.include('inbound');
       expect(event.inbound).to.have.length(1);
       expect(event.inbound).to.have.length(1);
@@ -91,13 +91,13 @@ lab.experiment('EndEvent', () => {
 
       engine.execute({
         listener: listener
-      }, (err, execution) => {
+      }, (err, instance) => {
         if (err) return done(err);
 
-        execution.on('end', () => {
-          expect(execution.isEnded).to.equal(true);
-          expect(execution.getChildActivityById('fatal').taken, 'fatal').to.be.true();
-          testHelper.expectNoLingeringListeners(execution);
+        instance.once('end', () => {
+          expect(instance.isEnded).to.equal(true);
+          expect(instance.getChildActivityById('fatal').taken, 'fatal').to.be.true();
+          testHelper.expectNoLingeringListenersOnDefinition(instance);
           done();
         });
       });

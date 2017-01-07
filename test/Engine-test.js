@@ -49,6 +49,7 @@ lab.experiment('engine', () => {
     lab.test('accepts source as Buffer', (done) => {
       const buff = new Buffer(factory.valid());
       const engine = new Bpmn.Engine({
+        name: 'source from buffer',
         source: buff
       });
       engine.execute((err) => {
@@ -77,15 +78,6 @@ lab.experiment('engine', () => {
 
       expect(engine.name).to.equal('no source');
 
-      done();
-    });
-
-    lab.test('accepts moddleContext as object', (done) => {
-      expect(() => {
-        new Bpmn.Engine({
-          moddleContext: {}
-        }); /* eslint no-new: 0 */
-      }).to.not.throw();
       done();
     });
   });
@@ -341,6 +333,68 @@ lab.experiment('engine', () => {
         expect(err).to.be.an.error(/must be an array/);
         done();
       });
+    });
+  });
+
+  lab.describe('multiple definitions', () => {
+    const engine = new Bpmn.Engine();
+    const listener = new EventEmitter();
+    const processes = [];
+
+    lab.test('given we have a first definition', (done) => {
+      engine.addDefinitionBySource(factory.userTask('userTask1', 'def1'), done);
+    });
+
+    lab.test('and a second definition', (done) => {
+      engine.addDefinitionBySource(factory.userTask('userTask2', 'def2'), done);
+    });
+
+    lab.test('when we execute', (done) => {
+      let startCount = 0;
+      listener.on('start-theProcess', function EH(process) {
+        startCount++;
+        processes.push(process);
+        if (startCount === 2) {
+          listener.removeListener('start-theProcess', EH);
+          return done();
+        }
+      });
+
+      engine.execute({
+        listener: listener
+      });
+    });
+
+    lab.test('then both processes has started', (done) => {
+      expect(processes.length).to.equal(2);
+      expect(processes[0]).to.contain({entered: true});
+      expect(processes[1]).to.contain({entered: true});
+      done();
+    });
+
+    lab.test('when first process user task is signaled engine doesn´t emit end event', (done) => {
+      const endListener = () => {
+        Code.fail('Should not have ended');
+      };
+      engine.once('end', endListener);
+
+      const definition = engine.getDefinitionById('def1');
+      const task = definition.getChildActivityById('userTask1');
+      task.signal();
+
+      definition.once('end', () => {
+        engine.removeListener('end', endListener);
+        done();
+      });
+    });
+
+    lab.test('when second process user task is signaled engine emits end event', (done) => {
+      engine.once('end', () => {
+        done();
+      });
+
+      const task = engine.getDefinitionById('def2').getChildActivityById('userTask2');
+      task.signal();
     });
   });
 });

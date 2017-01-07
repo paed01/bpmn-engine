@@ -7,13 +7,14 @@ const expect = require('code').expect;
 const transformer = require('../../lib/transformer');
 
 const pub = {};
+const eventNames = ['enter', 'start', 'wait', 'end', 'cancel', 'error', 'leave', 'message'];
 
 pub.expectNoLingeringListeners = (instance) => {
   Object.keys(instance.context.children).forEach((id) => {
     debug(`check listeners of <${id}>`);
     const child = instance.context.children[id];
 
-    checkListeners(child, ['enter', 'start', 'wait', 'end', 'cancel', 'error', 'leave'], '');
+    checkListeners(child, eventNames, '');
 
     // Boundary events
     if (child.boundEvents) {
@@ -34,14 +35,14 @@ pub.expectNoLingeringListeners = (instance) => {
 
 pub.expectNoLingeringListenersOnDefinition = (definition) => {
   definition.processes.forEach((p) => {
-    checkListeners(p, ['enter', 'start', 'wait', 'end', 'cancel', 'error', 'leave'], ` on process <${p.id}>`);
+    checkListeners(p, eventNames, ` on process <${p.id}>`);
     pub.expectNoLingeringListeners(p);
   });
 };
 
 pub.expectNoLingeringListenersOnEngine = (engine) => {
   engine.definitions.forEach((d) => {
-    checkListeners(d, ['enter', 'start', 'wait', 'end', 'cancel', 'error', 'leave', 'message'], ` on definition <${d.id}>`);
+    checkListeners(d, eventNames, ` on definition <${d.id}>`);
     pub.expectNoLingeringListenersOnDefinition(d);
   });
 };

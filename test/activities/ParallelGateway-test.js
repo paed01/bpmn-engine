@@ -68,12 +68,12 @@ lab.experiment('ParallelGateway', () => {
     const engine = new Bpmn.Engine({
       source: processXml
     });
-    engine.execute((err, execution) => {
+    engine.execute((err, definition) => {
       if (err) return done(err);
 
-      execution.on('end', () => {
-        expect(execution.getChildActivityById('end1').taken, 'end1').to.be.true();
-        expect(execution.getChildActivityById('end2').taken, 'end2').to.be.true();
+      definition.on('end', () => {
+        expect(definition.getChildActivityById('end1').taken, 'end1').to.be.true();
+        expect(definition.getChildActivityById('end2').taken, 'end2').to.be.true();
         done();
       });
     });
@@ -98,11 +98,11 @@ lab.experiment('ParallelGateway', () => {
     const engine = new Bpmn.Engine({
       source: processXml
     });
-    engine.execute((err, execution) => {
+    engine.execute((err, definition) => {
       if (err) return done(err);
 
-      execution.on('end', () => {
-        expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
+      definition.on('end', () => {
+        expect(definition.getChildActivityById('end').taken, 'end').to.be.true();
         done();
       });
     });
@@ -130,12 +130,12 @@ lab.experiment('ParallelGateway', () => {
       const engine = new Bpmn.Engine({
         source: processXml
       });
-      engine.execute((err, execution) => {
+      engine.execute((err, definition) => {
         if (err) return done(err);
 
-        execution.on('end', () => {
-          expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
-          testHelpers.expectNoLingeringListeners(execution);
+        definition.on('end', () => {
+          expect(definition.getChildActivityById('end').taken, 'end').to.be.true();
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
           done();
         });
       });
@@ -170,12 +170,12 @@ lab.experiment('ParallelGateway', () => {
         variables: {
           input: 51
         }
-      }, (err, execution) => {
+      }, (err, definition) => {
         if (err) return done(err);
 
-        execution.on('end', () => {
-          expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
-          testHelpers.expectNoLingeringListeners(execution);
+        definition.on('end', () => {
+          expect(definition.getChildActivityById('end').taken, 'end').to.be.true();
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
           done();
         });
       });
@@ -214,12 +214,12 @@ lab.experiment('ParallelGateway', () => {
         variables: {
           input: 51
         }
-      }, (err, execution) => {
+      }, (err, definition) => {
         if (err) return done(err);
 
-        execution.on('end', () => {
-          expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
-          testHelpers.expectNoLingeringListeners(execution);
+        definition.on('end', () => {
+          expect(definition.getChildActivityById('end').taken, 'end').to.be.true();
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
           done();
         });
       });
@@ -258,12 +258,12 @@ lab.experiment('ParallelGateway', () => {
         variables: {
           input: 51
         }
-      }, (err, execution) => {
+      }, (err, definition) => {
         if (err) return done(err);
 
-        execution.on('end', () => {
-          expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
-          testHelpers.expectNoLingeringListeners(execution);
+        definition.on('end', () => {
+          expect(definition.getChildActivityById('end').taken, 'end').to.be.true();
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
           done();
         });
       });
@@ -302,12 +302,12 @@ lab.experiment('ParallelGateway', () => {
         variables: {
           input: 50
         }
-      }, (err, execution) => {
+      }, (err, definition) => {
         if (err) return done(err);
 
-        execution.on('end', () => {
-          expect(execution.getChildActivityById('end').taken, 'end').to.be.true();
-          testHelpers.expectNoLingeringListeners(execution);
+        definition.on('end', () => {
+          expect(definition.getChildActivityById('end').taken, 'end').to.be.true();
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
           done();
         });
       });
@@ -330,13 +330,13 @@ lab.experiment('ParallelGateway', () => {
         variables: {
           input: 51
         }
-      }, (err, execution) => {
+      }, (err, definition) => {
         if (err) return done(err);
 
-        execution.on('end', () => {
-          expect(execution.getChildActivityById('scriptTask1').taken, 'scriptTask1').to.be.true();
-          expect(execution.getChildActivityById('scriptTask2').taken, 'scriptTask2').to.be.true();
-          testHelpers.expectNoLingeringListeners(execution);
+        definition.on('end', () => {
+          expect(definition.getChildActivityById('scriptTask1').taken, 'scriptTask1').to.be.true();
+          expect(definition.getChildActivityById('scriptTask2').taken, 'scriptTask2').to.be.true();
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
           done();
         });
       });

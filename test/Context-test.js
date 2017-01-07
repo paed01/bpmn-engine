@@ -19,13 +19,13 @@ lab.experiment('Context', () => {
     const engine = new Bpmn.Engine({
       source: factory.resource('lanes.bpmn')
     });
-    engine.getDefinition({
-      variables: {
-        init: 1
-      }
-    }, (err1, definition) => {
+    engine.getDefinition((err1, definition) => {
       if (err1) return done(err1);
-      definition.getInstance((err, inst, sibl) => {
+      definition.getInstance({
+        variables: {
+          init: 1
+        }
+      }, (err, inst, sibl) => {
         if (err) return done(err);
         instance = inst;
         siblings = sibl;
@@ -47,19 +47,6 @@ lab.experiment('Context', () => {
     });
   });
 
-  lab.describe('#getChildActivityById', () => {
-    lab.test('returns activity instance', (done) => {
-      expect(instance.context.getChildActivityById('mainStartEvent')).to.be.instanceof(Activity);
-      done();
-    });
-
-    lab.test('throws if child was not found', (done) => {
-      expect(() => {
-        instance.context.getChildActivityById('no-mainStartEvent');
-      }).to.throw(Error, /no-mainStartEvent/);
-      done();
-    });
-  });
 
   lab.describe('variables', () => {
     lab.test('initiating variables are stored for each context', (done) => {
@@ -84,7 +71,21 @@ lab.experiment('Context', () => {
     });
   });
 
-  lab.describe('#applyMessage', () => {
+  lab.describe('getChildActivityById()', () => {
+    lab.test('returns activity instance', (done) => {
+      expect(instance.context.getChildActivityById('mainStartEvent')).to.be.instanceof(Activity);
+      done();
+    });
+
+    lab.test('throws if child was not found', (done) => {
+      expect(() => {
+        instance.context.getChildActivityById('no-mainStartEvent');
+      }).to.throw(Error, /no-mainStartEvent/);
+      done();
+    });
+  });
+
+  lab.describe('applyMessage()', () => {
     lab.test('shallow copies message to variables', (done) => {
       const participant = siblings.find((p) => p.id !== instance.id);
       const message = {
@@ -105,7 +106,7 @@ lab.experiment('Context', () => {
     });
   });
 
-  lab.describe('#getState', () => {
+  lab.describe('getState()', () => {
     lab.test('returns variables, services and children', (done) => {
       testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (gerr, moddleContext) => {
         if (gerr) return done(gerr);
@@ -154,7 +155,7 @@ lab.experiment('Context', () => {
     });
   });
 
-  lab.describe('#getVariablesAndServices', () => {
+  lab.describe('getVariablesAndServices()', () => {
     lab.test('returns resolved services', (done) => {
       testHelpers.getContext(factory.valid(), (err, context) => {
         if (err) return done(err);
@@ -214,9 +215,13 @@ lab.experiment('Context', () => {
           }
         };
 
-        const executionContext = context.getVariablesAndServices({id: 'test'});
+        const executionContext = context.getVariablesAndServices({
+          id: 'test'
+        });
 
-        expect(executionContext).to.include({id: 'test'});
+        expect(executionContext).to.include({
+          id: 'test'
+        });
         done();
       });
 
@@ -224,7 +229,7 @@ lab.experiment('Context', () => {
 
   });
 
-  lab.describe('#getFrozenVariablesAndServices', () => {
+  lab.describe('getFrozenVariablesAndServices()', () => {
     lab.test('returns frozen variables and services', (done) => {
       testHelpers.getContext(factory.valid(), (err, context) => {
         if (err) return done(err);
@@ -264,11 +269,54 @@ lab.experiment('Context', () => {
           }
         };
 
-        const executionContext = context.getFrozenVariablesAndServices({id: 'test'});
-        expect(executionContext).to.include({id: 'test'});
+        const executionContext = context.getFrozenVariablesAndServices({
+          id: 'test'
+        });
+        expect(executionContext).to.include({
+          id: 'test'
+        });
         done();
       });
 
+    });
+
+  });
+
+  lab.describe('getServiceByName()', () => {
+    lab.test('returns service function', (done) => {
+      testHelpers.getContext(factory.valid(), (err, context) => {
+        if (err) return done(err);
+
+        context.services = {
+          get: {
+            module: 'request',
+            fnName: 'get'
+          }
+        };
+
+        const service = context.getServiceByName('get');
+
+        expect(service).to.be.a.function();
+        done();
+      });
+    });
+
+    lab.test('returns undefined if service is not found', (done) => {
+      testHelpers.getContext(factory.valid(), (err, context) => {
+        if (err) return done(err);
+
+        context.services = {
+          get: {
+            module: 'request',
+            fnName: 'get'
+          }
+        };
+
+        const service = context.getServiceByName('put');
+
+        expect(service).to.be.undefined();
+        done();
+      });
     });
 
   });

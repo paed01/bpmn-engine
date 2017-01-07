@@ -26,12 +26,12 @@ lab.experiment('BaseTask', () => {
 
       engine.execute({
         listener: listener
-      }, (err, instance) => {
+      }, (err, definition) => {
         if (err) return done(err);
-        instance.once('end', () => {
-          expect(instance.getChildActivityById('join').taken, 'join').to.be.true();
-          expect(instance.getChildActivityById('end').taken, 'end').to.be.true();
-          testHelpers.expectNoLingeringListeners(instance);
+        definition.once('end', () => {
+          expect(definition.getChildActivityById('join').taken, 'join').to.be.true();
+          expect(definition.getChildActivityById('end').taken, 'end').to.be.true();
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
           done();
         });
       });

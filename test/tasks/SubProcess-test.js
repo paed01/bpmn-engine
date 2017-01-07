@@ -66,13 +66,13 @@ lab.experiment('SubProcess', () => {
         variables: {
           input: 1
         }
-      }, (err, mainInstance) => {
+      }, (err, definition) => {
         if (err) return done(err);
-        mainInstance.once('end', () => {
-          testHelpers.expectNoLingeringListeners(mainInstance);
-          testHelpers.expectNoLingeringListeners(mainInstance.getChildActivityById('subProcess'));
+        definition.once('end', () => {
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
+          testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
 
-          const subProcess = mainInstance.getChildActivityById('subProcess');
+          const subProcess = definition.getChildActivityById('subProcess');
           expect(subProcess.variables).to.only.include({
             input: 1,
             subScript: true
@@ -99,15 +99,15 @@ lab.experiment('SubProcess', () => {
         variables: {
           input: 0
         }
-      }, (err, mainInstance) => {
+      }, (err, definition) => {
         if (err) return done(err);
 
-        mainInstance.once('end', () => {
-          expect(mainInstance.getChildActivityById('theEnd').taken, 'theEnd taken').to.be.true();
-          expect(mainInstance.getChildActivityById('subProcess').canceled, 'subProcess canceled').to.be.true();
+        definition.once('end', () => {
+          expect(definition.getChildActivityById('theEnd').taken, 'theEnd taken').to.be.true();
+          expect(definition.getChildActivityById('subProcess').canceled, 'subProcess canceled').to.be.true();
 
-          testHelpers.expectNoLingeringListeners(mainInstance);
-          testHelpers.expectNoLingeringListeners(mainInstance.getChildActivityById('subProcess'));
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
+          testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
           done();
         });
       });
@@ -133,15 +133,15 @@ lab.experiment('SubProcess', () => {
         variables: {
           input: 127
         }
-      }, (err, mainInstance) => {
+      }, (err, definition) => {
         if (err) return done(err);
 
-        mainInstance.once('end', () => {
-          expect(mainInstance.getChildActivityById('theEnd').taken, 'theEnd taken').to.be.true();
-          expect(mainInstance.getChildActivityById('subProcess').canceled, 'subProcess canceled').to.be.false();
+        definition.once('end', () => {
+          expect(definition.getChildActivityById('theEnd').taken, 'theEnd taken').to.be.true();
+          expect(definition.getChildActivityById('subProcess').canceled, 'subProcess canceled').to.be.false();
 
-          testHelpers.expectNoLingeringListeners(mainInstance);
-          testHelpers.expectNoLingeringListeners(mainInstance.getChildActivityById('subProcess'));
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
+          testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
           done();
         });
       });
