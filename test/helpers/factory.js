@@ -45,24 +45,24 @@ pub.invalid = () => {
   return invalidProcess;
 };
 
-pub.userTask = (name) => {
-  if (!name) name = 'userTask';
+pub.userTask = (userTaskId, definitionId) => {
+  if (!userTaskId) userTaskId = 'userTask';
   return `
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions id="testUserTask" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<definitions id="${definitionId || 'testUserTask'}" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
     <dataObjectReference id="inputFromUserRef" dataObjectRef="inputFromUser" />
     <dataObject id="inputFromUser" />
     <startEvent id="theStart" />
-    <userTask id="${name}">
+    <userTask id="${userTaskId}">
       <ioSpecification id="inputSpec">
         <dataOutput id="userInput" />
       </ioSpecification>
       <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUserRef" />
     </userTask>
     <endEvent id="theEnd" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
-    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="${userTaskId}" />
+    <sequenceFlow id="flow2" sourceRef="${userTaskId}" targetRef="theEnd" />
   </process>
 </definitions>`;
 };
