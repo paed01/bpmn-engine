@@ -10,7 +10,7 @@ const Package = require('./package.json');
 // Declare internals
 
 const internals = {
-  filename: './API.md'
+  filename: process.argv[2] || './API.md'
 };
 
 

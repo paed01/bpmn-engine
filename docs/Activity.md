@@ -1,10 +1,20 @@
 Activity
 ========
 
-Base of all bpmn activities.
+Base of all bpmn activity types.
 
 <!-- toc -->
 
+- [API](#api)
+  - [`execute([message])`](#executemessage)
+  - [`signal([output])`](#signaloutput)
+  - [`cancel()`](#cancel)
+  - [`getState()`](#getstate)
+  - [`resume(activityState)`](#resumeactivitystate)
+  - [`discard([discardedFlow[,rootFlow]])`](#discarddiscardedflowrootflow)
+- [Events](#events)
+  - [`enter`](#enter)
+  - [`leave`](#leave)
 
 <!-- tocstop -->
 
@@ -34,3 +44,8 @@ Cancels execution and discards all outbound sequence flows.
 
 - `discardedFlow`: Optional. Sequence flow instance that was discarded
 - `rootFlow`: Optional. First sequence flow instance that was discarded
+
+# Events
+
+## `enter`
+## `leave`

@@ -21,7 +21,7 @@ lab.experiment('Context', () => {
     });
     engine.getDefinition((err1, definition) => {
       if (err1) return done(err1);
-      definition.getInstance({
+      definition.getProcesses({
         variables: {
           init: 1
         }
@@ -113,7 +113,7 @@ lab.experiment('Context', () => {
 
         const definition = new Definition(moddleContext);
 
-        definition.getInstance({
+        definition.getProcesses({
           variables: {
             init: 1,
             loadedAt: new Date(),

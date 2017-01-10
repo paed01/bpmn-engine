@@ -12,7 +12,7 @@ const expect = Code.expect;
 
 const Bpmn = require('..');
 
-lab.experiment('engine', () => {
+lab.experiment('Engine', () => {
   lab.test('Bpmn exposes executor module', (done) => {
     expect(Bpmn).to.include('Engine');
     done();

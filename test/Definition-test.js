@@ -10,14 +10,12 @@ const testHelpers = require('./helpers/testHelpers');
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 
-const Bpmn = require('..');
-
 lab.experiment('Definition', () => {
   lab.experiment('ctor', () => {
     let moddleContext;
     lab.before((done) => {
-      Bpmn.Transformer.transform(factory.valid('testingCtor'), {}, (err, def, context) => {
-        moddleContext = context;
+      testHelpers.getModdleContext(factory.valid('testingCtor'), (err, result) => {
+        moddleContext = result;
         done(err);
       });
     });
@@ -29,9 +27,42 @@ lab.experiment('Definition', () => {
       done();
     });
 
-    lab.test('throws if invalid options', (done) => {
+    lab.test('takes moddle context as first argument', (done) => {
+      const definition = new Definition(moddleContext);
+      expect(definition.moddleContext).to.exist();
+      done();
+    });
+
+    lab.test('stores definition id on instance', (done) => {
+      const definition = new Definition(moddleContext);
+      expect(definition.id).to.equal('testingCtor');
+      done();
+    });
+
+    lab.test('throws if invalid moddleContext', (done) => {
+      testHelpers.getModdleContext(factory.invalid(), (err, result) => {
+        if (err) return done(err);
+
+        expect(() => {
+          new Definition(result); // eslint-disable-line no-new
+        }).to.throw(Error);
+        done();
+      });
+    });
+
+    lab.test('stores options on instance', (done) => {
+      const definition = new Definition(moddleContext, {
+        variables: {
+          input: 1
+        }
+      });
+      expect(definition.options).to.be.an.object();
+      done();
+    });
+
+    lab.test('throws if options are invalid', (done) => {
       expect(() => {
-        new Definition(moddleContext, {  // eslint-disable-line no-new
+        new Definition(moddleContext, { // eslint-disable-line no-new
           services: {
             invalid: {
               type: 'require'
@@ -41,25 +72,53 @@ lab.experiment('Definition', () => {
       }).to.throw(Error);
       done();
     });
+  });
 
-    lab.test('takes moddle context as first argument', (done) => {
-      const definition = new Definition(moddleContext);
-      expect(definition.moddleContext).to.exist();
-      done();
-    });
-
-    lab.test('stores id on instance', (done) => {
-      const definition = new Definition(moddleContext);
-      expect(definition.id).to.equal('testingCtor');
-      done();
-    });
-
-    lab.test('takes option listener', (done) => {
-      const definition = new Definition(moddleContext, {
-        listener: new EventEmitter()
+  lab.describe('getProcesses()', () => {
+    let definition;
+    lab.test('Given definition is initiated with two processes', (done) => {
+      testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (merr, moddleContext) => {
+        if (merr) return done(merr);
+        definition = new Definition(moddleContext);
+        done();
       });
-      expect(definition.listener).to.exist();
+    });
+
+    lab.test('returns processes from passed moddle context', (done) => {
+      expect(definition.getProcesses().length).to.equal(2);
       done();
+    });
+
+    lab.test('returns executable process in callback', (done) => {
+      definition.getProcesses((err, mainProcess) => {
+        if (err) return done(err);
+        expect(mainProcess).to.exist();
+        done();
+      });
+    });
+
+    lab.test('returns all processes in callback', (done) => {
+      definition.getProcesses((err, mainProcess, processes) => {
+        if (err) return done(err);
+        expect(processes).to.exist();
+        expect(processes.length).to.equal(2);
+        done();
+      });
+    });
+
+    lab.test('passes options to initialized processes', (done) => {
+      definition.getProcesses({
+        variables: {
+          input: 1
+        }
+      }, (err, mainProcess, processes) => {
+        if (err) return done(err);
+        expect(processes).to.exist();
+        expect(processes.length).to.equal(2);
+        expect(processes[0].context.variables.input).to.equal(1);
+        expect(processes[1].context.variables.input).to.equal(1);
+        done();
+      });
     });
   });
 
@@ -96,14 +155,77 @@ lab.experiment('Definition', () => {
         });
       });
     });
-  });
 
-  lab.describe('execute options', () => {
+    lab.test('takes options as arguments', (done) => {
+      testHelpers.getModdleContext(factory.valid(), (cerr, moddleContext) => {
+        if (cerr) return done(cerr);
+
+        const listener = new EventEmitter();
+        let activity;
+        listener.once('end-end2', (a) => {
+          activity = a;
+        });
+
+        const definition = new Definition(moddleContext);
+        definition.once('end', () => {
+          expect(activity, 'event listener').to.exist();
+          expect(definition.variables).to.include({
+            input: 1
+          });
+
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
+          done();
+        });
+
+        definition.execute({
+          listener: listener,
+          variables: {
+            input: 1
+          }
+        }, (err) => {
+          if (err) return done(err);
+        });
+      });
+    });
+
+    lab.test('defaults to use ctor options', (done) => {
+      testHelpers.getModdleContext(factory.valid(), (cerr, moddleContext) => {
+        if (cerr) return done(cerr);
+
+        const listener = new EventEmitter();
+        let activity;
+        listener.once('end-end2', (a) => {
+          activity = a;
+        });
+
+        const definition = new Definition(moddleContext, {
+          listener: listener,
+          variables: {
+            input: 1
+          }
+        });
+        definition.once('end', () => {
+          expect(activity, 'event listener').to.exist();
+          expect(definition.variables).to.include({
+            input: 1
+          });
+
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
+          done();
+        });
+
+        definition.execute((err) => {
+          if (err) return done(err);
+        });
+      });
+    });
+
     lab.test('throws if options are invalid', (done) => {
       testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (cerr, moddleContext) => {
         if (cerr) return done(cerr);
 
         const definition = new Definition(moddleContext);
+
         function testFn() {
           definition.execute({
             listener: {}
