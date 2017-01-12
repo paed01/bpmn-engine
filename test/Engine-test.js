@@ -112,6 +112,25 @@ lab.experiment('Engine', () => {
         });
       });
     });
+
+    lab.test('returns error in callback if invalid definition', (done) => {
+      const engine = new Bpmn.Engine({
+        source: 'not xml'
+      });
+      engine.getDefinition((err) => {
+        expect(err).to.exist();
+        done();
+      });
+    });
+
+    lab.test('returns undefined in callback if no definitions', (done) => {
+      const engine = new Bpmn.Engine();
+      engine.getDefinition((err, def) => {
+        expect(err).not.to.exist();
+        expect(def).not.to.exist();
+        done();
+      });
+    });
   });
 
   lab.describe('execute()', () => {
@@ -149,6 +168,25 @@ lab.experiment('Engine', () => {
         expect(err).to.be.an.error(/no executable process/);
         done();
       });
+    });
+
+    lab.test('emits error if called with invalid definition and no callback', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="false" />
+</definitions>`;
+
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+
+      engine.once('error', (err) => {
+        expect(err).to.be.an.error(/no executable process/);
+        done();
+      });
+
+      engine.execute();
     });
 
     lab.test('emits end when all processes are completed', (done) => {
@@ -395,6 +433,37 @@ lab.experiment('Engine', () => {
 
       const task = engine.getDefinitionById('def2').getChildActivityById('userTask2');
       task.signal();
+    });
+  });
+
+  lab.describe('addDefinitionBySource()', () => {
+    lab.test('adds definition', (done) => {
+      const engine = new Bpmn.Engine();
+      engine.addDefinitionBySource(factory.valid(), (err) => {
+        if (err) return done(err);
+        expect(engine.definitions.length).to.equal(1);
+        done();
+      });
+    });
+
+    lab.test('adds definition with moddleOptions', (done) => {
+      const engine = new Bpmn.Engine();
+      engine.addDefinitionBySource(factory.valid(), {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err) => {
+        if (err) return done(err);
+        expect(engine.definitions.length).to.equal(1);
+        done();
+      });
+    });
+
+    lab.test('returns error in callback if transform error', (done) => {
+      const engine = new Bpmn.Engine();
+      engine.addDefinitionBySource('not xml', (err) => {
+        expect(err).to.exist();
+        expect(engine.definitions.length).to.equal(0);
+        done();
+      });
     });
   });
 });
