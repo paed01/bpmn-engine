@@ -39,17 +39,6 @@ lab.experiment('Definition', () => {
       done();
     });
 
-    lab.test('throws if invalid moddleContext', (done) => {
-      testHelpers.getModdleContext(factory.invalid(), (err, result) => {
-        if (err) return done(err);
-
-        expect(() => {
-          new Definition(result); // eslint-disable-line no-new
-        }).to.throw(Error);
-        done();
-      });
-    });
-
     lab.test('stores options on instance', (done) => {
       const definition = new Definition(moddleContext, {
         variables: {
@@ -120,6 +109,86 @@ lab.experiment('Definition', () => {
         done();
       });
     });
+
+    lab.test('emits error if invalid moddleContext', (done) => {
+      testHelpers.getModdleContext(factory.invalid(), (merr, result) => {
+        if (merr) return done(merr);
+
+        const def = new Definition(result);
+        def.once('error', (err) => {
+          expect(err).to.be.an.error();
+          done();
+        });
+
+        def.getProcesses();
+      });
+    });
+
+    lab.test('returns error in callback if invalid moddleContext', (done) => {
+      testHelpers.getModdleContext(factory.invalid(), (merr, result) => {
+        if (merr) return done(merr);
+
+        const def = new Definition(result);
+        def.getProcesses((err) => {
+          expect(err).to.be.an.error();
+          done();
+        });
+      });
+    });
+
+    lab.test('returns running processes in callback if started regardless of options', (done) => {
+      testHelpers.getModdleContext(factory.userTask(), (merr, result) => {
+        if (merr) return done(merr);
+
+        const listener = new EventEmitter();
+        const def = new Definition(result, {
+          listener: listener,
+          variables: {
+            input: 1
+          }
+        });
+        listener.once('wait', () => {
+          def.getProcesses({
+            variables: {
+              input: 2
+            }
+          }, (err, mainProcess) => {
+            if (err) return done(err);
+            expect(mainProcess.listener).to.equal(listener);
+            expect(mainProcess.context.variables.input).to.equal(1);
+            done();
+          });
+        });
+        def.execute();
+
+      });
+    });
+
+    lab.test('returns running processes if started regardless of options', (done) => {
+      testHelpers.getModdleContext(factory.userTask(), (merr, result) => {
+        if (merr) return done(merr);
+
+        const listener = new EventEmitter();
+        const def = new Definition(result, {
+          listener: listener,
+          variables: {
+            input: 1
+          }
+        });
+        listener.once('wait', () => {
+          const processes = def.getProcesses({
+            variables: {
+              input: 2
+            }
+          });
+          expect(processes[0].listener).to.equal(listener);
+          expect(processes[0].context.variables.input).to.equal(1);
+          done();
+        });
+        def.execute();
+      });
+    });
+
   });
 
   lab.describe('execute()', () => {
@@ -271,6 +340,66 @@ lab.experiment('Definition', () => {
         });
       });
     });
+
+    lab.test('returns error in callback if invalid moddleContext', (done) => {
+      testHelpers.getModdleContext(factory.invalid(), (merr, result) => {
+        if (merr) return done(merr);
+
+        const def = new Definition(result);
+        def.execute((err) => {
+          expect(err).to.be.an.error();
+          done();
+        });
+      });
+    });
+
+    lab.test('emits error if invalid moddleContext', (done) => {
+      testHelpers.getModdleContext(factory.invalid(), (merr, result) => {
+        if (merr) return done(merr);
+
+        const def = new Definition(result);
+        def.once('error', (err) => {
+          expect(err).to.be.an.error();
+          done();
+        });
+        def.execute();
+      });
+    });
+
+    lab.test('returns error in callback if no executable process', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="false" />
+</definitions>`;
+      testHelpers.getModdleContext(processXml, (merr, result) => {
+        if (merr) return done(merr);
+
+        const def = new Definition(result);
+        def.execute((err) => {
+          expect(err).to.be.an.error();
+          done();
+        });
+      });
+    });
+
+    lab.test('emits error if no executable process', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="false" />
+</definitions>`;
+      testHelpers.getModdleContext(processXml, (merr, result) => {
+        if (merr) return done(merr);
+
+        const def = new Definition(result);
+        def.once('error', (err) => {
+          expect(err).to.be.an.error();
+          done();
+        });
+        def.execute();
+      });
+    });
   });
 
   lab.describe('getState()', () => {
@@ -383,6 +512,142 @@ lab.experiment('Definition', () => {
         if (err) return done(err);
       });
     });
+  });
 
+  lab.describe('resume()', () => {
+    const processXml = factory.userTask();
+    let moddleContext, state;
+    lab.before((done) => {
+      testHelpers.getModdleContext(processXml, (err, result) => {
+        if (err) return done(err);
+        moddleContext = result;
+        done();
+      });
+    });
+    lab.beforeEach((done)=> {
+      const listener = new EventEmitter();
+      const definition = new Definition(moddleContext);
+      listener.on('wait-userTask', () => {
+        state = definition.getState();
+        state.processes.theProcess.variables.input = 'resumed';
+        definition.stop();
+      });
+      definition.once('end', () => {
+        done();
+      });
+      definition.execute({
+        listener: listener,
+        variables: {
+          input: 'start'
+        }
+      }, (err) => {
+        if (err) return done(err);
+      });
+    });
+
+    lab.test('starts with stopped task', (done) => {
+      const listener2 = new EventEmitter();
+      listener2.once('start-theStart', (activity) => {
+        Code.fail(`<${activity.id}> should not have been started`);
+      });
+
+      listener2.once('wait-userTask', (task) => {
+        task.signal('Continue');
+      });
+
+      const definition2 = new Definition(state.moddleContext, {
+        listener: listener2
+      });
+      definition2.once('end', () => {
+        testHelpers.expectNoLingeringListenersOnDefinition(definition2);
+        done();
+      });
+
+      definition2.resume(testHelpers.readFromDb(state), (err) => {
+        if (err) return done(err);
+      });
+    });
+
+    lab.test('callback is optional', (done) => {
+      const listener2 = new EventEmitter();
+
+      listener2.once('wait-userTask', (task) => {
+        task.signal('Continue');
+      });
+
+      const definition2 = new Definition(state.moddleContext, {
+        listener: listener2
+      });
+      definition2.once('end', () => {
+        testHelpers.expectNoLingeringListenersOnDefinition(definition2);
+        done();
+      });
+
+      definition2.resume(testHelpers.readFromDb(state));
+    });
+
+    lab.test('takes options', (done) => {
+      const listener2 = new EventEmitter();
+
+      listener2.once('wait-userTask', (task) => {
+        task.signal('Continue');
+      });
+
+      const definition2 = new Definition(state.moddleContext);
+      definition2.once('end', () => {
+        testHelpers.expectNoLingeringListenersOnDefinition(definition2);
+        done();
+      });
+
+      definition2.resume(testHelpers.readFromDb(state), {
+        listener: listener2
+      }, (err) => {
+        if (err) return done(err);
+      });
+    });
+
+    lab.test('returns error in callback if the moddleContext is invalid (for some inexplicable reason)', (done) => {
+      testHelpers.getModdleContext(factory.invalid(), (merr, invalidContext) => {
+        const invalidState = Object.assign({}, state, {
+          moddleContext: invalidContext
+        });
+
+        const definition2 = new Definition(state.moddleContext);
+        definition2.resume(invalidState, (err) => {
+          expect(err).to.be.an.error();
+          done();
+        });
+      });
+    });
+  });
+
+  lab.describe('getChildActivityById', () => {
+    let moddleContext;
+    lab.before((done) => {
+      const processXml = factory.resource('lanes.bpmn');
+      testHelpers.getModdleContext(processXml, (err, result) => {
+        if (err) return done(err);
+        moddleContext = result;
+        done();
+      });
+    });
+
+    lab.test('returns child activity', (done) => {
+      const definition = new Definition(moddleContext);
+      expect(definition.getChildActivityById('task1')).to.exist();
+      done();
+    });
+
+    lab.test('returns child activity from participant process', (done) => {
+      const definition = new Definition(moddleContext);
+      expect(definition.getChildActivityById('meTooTask')).to.exist();
+      done();
+    });
+
+    lab.test('throws if activity is not found', (done) => {
+      const definition = new Definition(moddleContext);
+      expect(definition.getChildActivityById('whoAmITask')).to.not.exist();
+      done();
+    });
   });
 });
