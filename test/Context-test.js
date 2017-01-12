@@ -77,11 +77,25 @@ lab.experiment('Context', () => {
       done();
     });
 
-    lab.test('throws if child was not found', (done) => {
-      expect(() => {
-        instance.context.getChildActivityById('no-mainStartEvent');
-      }).to.throw(Error, /no-mainStartEvent/);
-      done();
+    lab.test('returns child instance', (done) => {
+      testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (merr, result) => {
+        if (merr) return done(merr);
+        const context = new Context('mainProcess', result, {});
+        const actitivy = context.getChildActivityById('task1');
+        expect(context.children).to.contain([actitivy.id]);
+        done();
+      });
+    });
+
+    lab.test('but not if it is not in process scope', (done) => {
+      testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (merr, result) => {
+        if (merr) return done(merr);
+        const context = new Context('mainProcess', result, {});
+        const actitivy = context.getChildActivityById('meTooTask');
+        expect(actitivy).to.not.exist();
+        expect(context.children).to.not.contain(['meTooTask']);
+        done();
+      });
     });
   });
 
