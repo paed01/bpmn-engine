@@ -56,6 +56,7 @@ lab.experiment('validation', () => {
         done();
       });
     });
+
   });
 
   lab.experiment('processes', () => {
@@ -122,6 +123,27 @@ lab.experiment('validation', () => {
         if (err) return done(err);
         const warnings = validation.validateModdleContext(context);
         expect(warnings[0]).to.be.an.error(/"sourceRef" is required/);
+        done();
+      });
+    });
+
+    lab.test('accepts missing references if bpmn-moddle warnings are absent, for some reason', (done) => {
+      const bpmnXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="no-end" />
+  </process>
+</definitions>`;
+
+      testHelpers.getModdleContext(bpmnXml, (err, context) => {
+        if (err) return done(err);
+
+        delete context.warnings;
+
+        const warnings = validation.validateModdleContext(context);
+        expect(warnings.length).to.equal(0);
         done();
       });
     });
@@ -489,6 +511,28 @@ lab.experiment('validation', () => {
           });
         }
         expect(fn).to.throw(Error, /must be global or require/);
+        done();
+      });
+
+      lab.test('services undefined is valid', (done) => {
+        function fn() {
+          validation.validateOptions({
+            services: undefined
+          });
+        }
+        expect(fn).to.not.throw();
+        done();
+      });
+
+      lab.test('service undefined is invalid', (done) => {
+        function fn() {
+          validation.validateOptions({
+            services: {
+              missing: undefined
+            }
+          });
+        }
+        expect(fn).to.throw(Error, /is undefined/);
         done();
       });
     });
