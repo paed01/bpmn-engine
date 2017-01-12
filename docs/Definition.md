@@ -72,9 +72,16 @@ Get activity state.
 - `type`: Activity type
 - `entered`: The activity is entered, i.e. in a running state
 
-## `resume(definitionState)`
+## `resume(definitionState[options[, callback]])`
 
 Resume execution. Resumed with data from [`getState()`](#getstate).
+
+- `options`: Optional execute options, defaults to constructor options
+  - `listener`
+- `callback`: Optional callback
+  - `err`: Occasional error
+  - `mainProcess`: Executing process
+  - `processes`: All processes including executable process
 
 # Events
 

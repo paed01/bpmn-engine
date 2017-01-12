@@ -13,12 +13,14 @@ bpmn-engine
 - [Process modeller](#process-modeller)
 - [Debug](#debug)
 - [Acknowledgments](#acknowledgments)
-- [API](#api)
+- [API](/API.md)
+- [Examples](/docs/Examples.md)
 
 # Supported elements
 
 The following elements are tested and supported.
 
+- [Definition](/docs/Definition.md)
 - Process
 - Lane
 - Flows:
@@ -64,7 +66,3 @@ The module uses [debug](github.com/visionmedia/debug) so run with environment va
 # Acknowledgments
 
 The **bpmn-engine** resides upon the excellent library [bpmn-io/bpmn-moddle](https://github.com/bpmn-io/bpmn-moddle) developed by [bpmn.io](http://bpmn.io/)
-
-# API
-
-See the [API Reference](API.md)

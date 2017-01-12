@@ -52,9 +52,9 @@ const engine = new Bpmn.Engine({
 });
 ```
 
-### `execute([options], [callback])`
+### `execute([options[, callback]])`
 
-Execute process with:
+Execute definition with:
 
 - `options`: Optional object
   - [`listener`](#execution-listener): an `EventEmitter` object
@@ -63,7 +63,7 @@ Execute process with:
 - `callback`: optional callback
   - `err`: Error if any
   - `definition`: Executing definition
-  - `siblings`: List of all definitions
+  - `siblings`: List of all definitions including executing
 
 ```javascript
 'use strict';
@@ -344,6 +344,14 @@ engine.resume(state, (err, instance) => {
   if (err) throw err;
 });
 ```
+
+### `getDefinitions(callback)`
+
+Get definitions. Loads definitions from sources or passed moddle contexts.
+
+### `getDefinition(callback)`
+
+Utility function to get first definition.
 
 ### Engine events
 
