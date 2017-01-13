@@ -1,18 +1,18 @@
 Definition
 ==========
 
-Base of all bpmn activity types.
+Executable BPMN 2 definition. Pass moddle context and execute.
 
 <!-- toc -->
 
 - [API](#api)
   - [`new Definition(moddleContext[, options])`](#new-definitionmoddlecontext-options)
   - [`execute([options[, callback]])`](#executeoptions-callback)
-  - [`getProcesses([options[, callback]])`](#getprocessesoptions-callback)
-  - [`getChildActivityById(id)`](#getchildactivitybyidid)
   - [`stop()`](#stop)
   - [`getState()`](#getstate)
-  - [`resume(definitionState)`](#resumedefinitionstate)
+  - [`resume(definitionState[, options[, callback]])`](#resumedefinitionstate-options-callback)
+  - [`getProcesses([options[, callback]])`](#getprocessesoptions-callback)
+  - [`getChildActivityById(id)`](#getchildactivitybyidid)
 - [Events](#events)
   - [`start`](#start)
   - [`end`](#end)
@@ -43,36 +43,23 @@ Definition constructor.
   - `mainProcess`: Executing process
   - `processes`: All processes including executable process
 
-## `getProcesses([options[, callback]])`
-
-Get process(es) from passed moddle context. If the definition has status running the running processes are returned.
-
-- `options`: Optional execute options, defaults to constructor options
-  - `variables`
-  - `services`
-  - `listener`
-- `callback`: Optional callback
-  - `err`: Occasional error
-  - `mainProcess`: Executable process
-  - `processes`: All processes including executable process
-
-## `getChildActivityById(id)`
-
-Get process actitivy by id. Loops processes to return first child activity with id.
-
 ## `stop()`
 
 Stop execution.
 
 ## `getState()`
 
-Get activity state.
+Get definition state.
 
-- `id`: Activity id
-- `type`: Activity type
-- `entered`: The activity is entered, i.e. in a running state
+- `state`: State of definition, `pending`, `running`, or `completed`
+- `moddleContext`: Definition moddle context
+- `processes`: Object with processes with id as key
+  - `variables`: Execution variables
+  - `services`: Execution services
+  - `children`: List of child states
+    - `entered`: Boolean indicating if the child is currently executing
 
-## `resume(definitionState[options[, callback]])`
+## `resume(definitionState[, options[, callback]])`
 
 Resume execution. Resumed with data from [`getState()`](#getstate).
 
@@ -83,8 +70,37 @@ Resume execution. Resumed with data from [`getState()`](#getstate).
   - `mainProcess`: Executing process
   - `processes`: All processes including executable process
 
+## `getProcesses([options[, callback]])`
+
+Returns list of definiton processes with options. If the definition is running the running processes are returned.
+
+The function is synchronous but can be passed a callback to get the first executable process.
+
+- `options`: Optional execute options, defaults to constructor options
+  - `variables`
+  - `services`
+  - `listener`
+- `callback`: Optional callback
+  - `err`: Occasional error
+  - `mainProcess`: First executable process
+  - `processes`: All processes including executable process
+
+## `getChildActivityById(id)`
+
+Get process activity by id. Loops processes to return first child activity that match id.
+
 # Events
 
+Emitted events.
+
 ## `start`
+
+Definition has executed but not yet started any processes.
+
 ## `end`
+
+All processes have completed.
+
 ## `error`
+
+A non-recoverable error has ocurred.
