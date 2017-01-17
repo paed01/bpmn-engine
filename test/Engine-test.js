@@ -21,7 +21,7 @@ lab.experiment('Engine', () => {
   lab.experiment('ctor', () => {
     lab.test('without arguments', (done) => {
       expect(() => {
-        new Bpmn.Engine(); /* eslint no-new: 0 */
+        new Bpmn.Engine(); // eslint-disable-line no-new
       }).to.not.throw();
       done();
     });
@@ -32,6 +32,15 @@ lab.experiment('Engine', () => {
       });
       expect(engine.sources).to.exist();
       expect(engine.sources.length).to.equal(1);
+      done();
+    });
+
+    lab.test('throws if unsupported option is passed', (done) => {
+      expect(() => {
+        new Bpmn.Engine({ // eslint-disable-line no-new
+          context: {}
+        });
+      }).to.throw();
       done();
     });
 
@@ -61,9 +70,9 @@ lab.experiment('Engine', () => {
     lab.test('but not function', (done) => {
       const source = () => {};
       expect(() => {
-        new Bpmn.Engine({
+        new Bpmn.Engine({ // eslint-disable-line no-new
           source: source
-        }); /* eslint no-new: 0 */
+        });
       }).to.throw();
       done();
     });
@@ -71,9 +80,9 @@ lab.experiment('Engine', () => {
     lab.test('accepts name', (done) => {
       let engine;
       expect(() => {
-        engine = new Bpmn.Engine({
+        engine = new Bpmn.Engine({ // eslint-disable-line no-new
           name: 'no source'
-        }); /* eslint no-new: 0 */
+        });
       }).to.not.throw();
 
       expect(engine.name).to.equal('no source');
@@ -403,14 +412,14 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('then both processes has started', (done) => {
+    lab.test('all processes are started', (done) => {
       expect(processes.length).to.equal(2);
       expect(processes[0]).to.contain({entered: true});
       expect(processes[1]).to.contain({entered: true});
       done();
     });
 
-    lab.test('when first process user task is signaled engine doesn´t emit end event', (done) => {
+    lab.test('when first process completes engine doesn´t emit end event', (done) => {
       const endListener = () => {
         Code.fail('Should not have ended');
       };
@@ -426,7 +435,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('when second process user task is signaled engine emits end event', (done) => {
+    lab.test('when second process is completed engine emits end event', (done) => {
       engine.once('end', () => {
         done();
       });
