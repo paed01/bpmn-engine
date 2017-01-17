@@ -226,7 +226,7 @@ lab.experiment('Resume execution', () => {
         if (err) return done(err);
 
         resumedInstance.once('end', () => {
-          expect((new Date()) - startedAt, `resumed timout is ${timeout}ms`).to.be.below(100);
+          expect((new Date()) - startedAt, `resumed timout is ${timeout}ms`).to.not.be.above(102); // Close to 100
           done();
         });
       });
