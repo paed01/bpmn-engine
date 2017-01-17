@@ -17,7 +17,8 @@ Examples
 # Execute
 ```javascript
 const Bpmn = require('bpmn-engine');
-const shortid = require('shortid');
+
+const id = Math.floor(Math.random() * 10000);
 
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -41,10 +42,10 @@ const engine = new Bpmn.Engine({
 
 engine.execute({
   variables: {
-    shortid: shortid.generate()
+    id: id
   }
 }, (err, definition) => {
-  console.log('Bpmn definition definition started with id', definition.variables.shortid);
+  console.log('Bpmn definition definition started with id', definition.getProcesses()[0].context.variables.id);
 });
 ```
 
@@ -216,6 +217,7 @@ User tasks waits for signal to complete. The signal function can be called on th
 'use strict';
 
 const Bpmn = require('bpmn-engine');
+const EventEmitter = require('events').EventEmitter;
 
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -371,6 +373,8 @@ engine.execute({
 or if arguments must be passed, then `inputParameter` `arguments` must be defined. The result is an array with arguments from the service callback where first error argument is omitted.
 
 ```javascript
+const Bpmn = require('bpmn-engine');
+
 const processXml = `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -437,6 +441,8 @@ In the above example `request.get` will be called with `variables.apiPath`. The 
 Expressions can also be used if camunda extension `moddleOptions` are passed to engine.
 
 ```javascript
+const Bpmn = require('bpmn-engine');
+
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -464,7 +470,7 @@ engine.execute({
     input: 1
   }
 }, (err, instance) => {
-  if (err) return done(err);
+  if (err) throw err;
   instance.once('end', () => {
     console.log(instance.variables.taskInput.serviceTask.output);
   });
@@ -477,6 +483,7 @@ engine.execute({
 'use strict';
 
 const Bpmn = require('bpmn-engine');
+const EventEmitter = require('events').EventEmitter;
 
 const sourceXml = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -513,7 +520,7 @@ engine.execute({
     input: 2
   }
 }, (err, instance) => {
-  if (err) return done(err);
+  if (err) throw err;
   instance.once('end', () => {
     console.log('WOHO!');
   });
@@ -562,7 +569,7 @@ engine.execute({
     input: [1, 2, 3, 7]
   }
 }, (err, instance) => {
-  if (err) return done(err);
+  if (err) throw err;
   instance.once('end', () => {
     console.log(instance.variables.taskInput.recurring.result[0], 'aught to be 13 blazing fast');
   });

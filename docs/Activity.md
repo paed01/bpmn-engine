@@ -1,7 +1,7 @@
 Activity
 ========
 
-Base of all bpmn activity types.
+Base of almost all bpmn activity types.
 
 <!-- toc -->
 
@@ -46,6 +46,8 @@ Cancels execution and discards all outbound sequence flows.
 - `rootFlow`: Optional. First sequence flow instance that was discarded
 
 # Events
+
+Inherits `require('events').EventEmitter`.
 
 ## `enter`
 ## `leave`

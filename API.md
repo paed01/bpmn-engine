@@ -35,7 +35,7 @@ Creates a new Engine object where:
 
 - `options`: Optional object
   - `source`: Bpmn definition source as String or Buffer
-  - `context`: Optional parsed moddle context object
+  - `moddleContext`: Optional parsed moddle context object
   - `name`: Optional name of engine,
   - `moddleOptions`: Optional moddle parse options
 
@@ -44,6 +44,9 @@ Options `source` and `context` are mutually exclusive.
 Moddle options can be used if an extension is required when parsing BPMN-source. The object will be passed on to the constructor of `bpmn-moddle`. See [camunda-bpmn-moddle][1] for example.
 
 ```javascript
+const Bpmn = require('bpmn-engine');
+const fs = require('fs');
+
 const engine = new Bpmn.Engine({
   source: fs.readFileSync('./test/resources/mother-of-all.bpmn'),
   moddleOptions: {
@@ -109,8 +112,11 @@ Execution variables are passed as the first argument to `#execute`. To be able t
 'use strict';
 
 const Bpmn = require('bpmn-engine');
+const fs = require('fs');
 
-const engine = new Bpmn.Engine();
+const engine = new Bpmn.Engine({
+  source: fs.readFileSync('./test/resources/simple-task.bpmn')
+});
 
 const variables = {
   input: 1
@@ -131,13 +137,13 @@ engine.execute({
 A service is a module used by e.g. a script tasks or a condition where:
 
 ```javascript
-{
+const executeOptions = {
   services: {
     get: {
       module: 'request',
       type: 'require',
       fnName: 'get'
-    }
+    },
     checkState: (message) => {
       return message.variables.statusCode === 200;
     }
@@ -194,10 +200,6 @@ const services = {
   request: {
     module: 'request'
   },
-  getUser: {
-    module: 'user-module',
-    fnName: 'getUser'
-  },
   require: {
     module: 'require',
     type: 'global'
@@ -235,8 +237,8 @@ The saved state will include the following content:
 
 - `state`: `running` or `idle`
 - `moddleOptions`: Engine moddleOptions
-- `definitions`: Running definitions
-  - `state`:
+- `definitions`: List of definitions
+  - `state`: State of definition, `pending`, `running`, or `completed`
   - `processes`: Object with processes with id as key
     - `variables`: Execution variables
     - `services`: Execution services
@@ -302,7 +304,9 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine(processXml);
+const engine = new Bpmn.Engine({
+  source: processXml
+});
 const listener = new EventEmitter();
 
 let state;
@@ -450,7 +454,7 @@ const Bpmn = require('bpmn-engine');
 
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<definitions id="transformer" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
     <startEvent id="theStart" />
     <userTask id="userTask" />
@@ -460,19 +464,17 @@ const processXml = `
   </process>
 </definitions>`;
 
-Bpmn.Transformer(processXml, {
+Bpmn.Transformer.transform(processXml, {
   camunda: require('camunda-bpmn-moddle/resources/camunda')
 }, (err, def, moddleContext) => {
   const engine = new Bpmn.Engine({
-    context: moddleContext
+    moddleContext: moddleContext
   });
 
-  engine.execute({
-    variables: {
-      shortid: '42'
-    }
-  }, (err, instance) => {
-    console.log('Process instance started with id', instance.variables.shortid);
+  engine.execute((err, instance) => {
+    if (err) throw err;
+
+    console.log('Definition started with process', instance.mainProcess.id);
   });
 });
 ```
