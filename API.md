@@ -6,13 +6,15 @@
 
 - [Engine](#engine)
   - [`new Engine([options])`](#new-engineoptions)
-  - [`execute([options], [callback])`](#executeoptions-callback)
+  - [`execute([options[, callback]])`](#executeoptions-callback)
     - [Execution `variables`](#execution-variables)
     - [Execution `services`](#execution-services)
     - [Execution `listener`](#execution-listener)
   - [`getState()`](#getstate)
   - [`stop()`](#stop)
   - [`resume(state, [options], [callback])`](#resumestate-options-callback)
+  - [`getDefinitions(callback)`](#getdefinitionscallback)
+  - [`getDefinition(callback)`](#getdefinitioncallback)
   - [Engine events](#engine-events)
   - [Activity events](#activity-events)
     - [Element events](#element-events)
@@ -24,6 +26,9 @@
     - [Collection loop](#collection-loop)
 - [Transformer](#transformer)
   - [`transform(sourceXml, options, callback)`](#transformsourcexml-options-callback)
+- [Validation](#validation)
+  - [`validateModdleContext(moddleContext)`](#validatemoddlecontextmoddlecontext)
+  - [`validateOptions(executeOptions)`](#validateoptionsexecuteoptions)
 
 <!-- tocstop -->
 
@@ -478,6 +483,47 @@ Bpmn.Transformer.transform(processXml, {
   });
 });
 ```
+
+## Validation
+
+Bpmn engine exposes validation functions.
+
+### `validateModdleContext(moddleContext)`
+
+Validate moddle context to ensure that it is executable. Returns list of error instances, if any.
+
+- `moddleContext`: Moddle context object
+
+```javascript
+const Bpmn = require('bpmn-engine');
+
+const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="validate" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess2" isExecutable="true">
+    <startEvent id="theStart" />
+    <exclusiveGateway id="decision" default="flow2" />
+    <endEvent id="end1" />
+    <endEvent id="end2" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end2">
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript">true</conditionExpression>
+    </sequenceFlow>
+  </process>
+</definitions>`;
+
+Bpmn.Transformer.transform(processXml, {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+}, (err, def, moddleContext) => {
+  console.log(Bpmn.validation.validateModdleContext(moddleContext));
+});
+```
+
+### `validateOptions(executeOptions)`
+
+Validate [execution options](#executeoptions-callback) to ensure that it is correct. Throws error if invalid.
+
+- `executeOptions`: Execution options object
 
 [1]: https://www.npmjs.com/package/camunda-bpmn-moddle
 [2]: https://www.npmjs.com/package/bpmn-moddle

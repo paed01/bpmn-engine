@@ -322,7 +322,7 @@ lab.experiment('validation', () => {
 
   });
 
-  lab.experiment('options', () => {
+  lab.experiment('execute options', () => {
     lab.test('undefined options is valid', (done) => {
       function fn() {
         validation.validateOptions();
@@ -336,6 +336,14 @@ lab.experiment('validation', () => {
         validation.validateOptions({});
       }
       expect(fn).to.not.throw();
+      done();
+    });
+
+    lab.test('unsupported option throws', (done) => {
+      function fn() {
+        validation.validateOptions({unsupported: true});
+      }
+      expect(fn).to.throw();
       done();
     });
 
