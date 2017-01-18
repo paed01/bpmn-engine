@@ -13,8 +13,11 @@ bpmn-engine
 - [Process modeller](#process-modeller)
 - [Debug](#debug)
 - [Acknowledgments](#acknowledgments)
+
+### Documentation
 - [API](/API.md)
 - [Examples](/docs/Examples.md)
+- [Changelog](/Changelog.md)
 
 # Supported elements
 
