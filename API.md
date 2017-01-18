@@ -461,7 +461,7 @@ const processXml = `
   </process>
 </definitions>`;
 
-Bpmn.Transformer(processXml, {
+Bpmn.Transformer.transform(processXml, {
   camunda: require('camunda-bpmn-moddle/resources/camunda')
 }, (err, def, moddleContext) => {
   const engine = new Bpmn.Engine({
