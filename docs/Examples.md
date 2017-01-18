@@ -37,6 +37,7 @@ const processXml = `
 </definitions>`;
 
 const engine = new Bpmn.Engine({
+  name: 'execution example',
   source: processXml
 });
 
@@ -77,6 +78,7 @@ const processXml = `
 </definitions>`;
 
 const engine = new Bpmn.Engine({
+  name: 'listen example',
   source: processXml
 });
 const listener = new EventEmitter();
@@ -93,7 +95,7 @@ engine.execute({
   if (err) throw err;
 
   instance.once('end', () => {
-    console.log(`User sirname is ${instance.variables.taskInput.inputFromUser.sirname}`);
+    console.log(`User sirname is ${instance.variables.inputFromUser.sirname}`);
   });
 });
 ```
@@ -130,6 +132,7 @@ const processXml = `
 </definitions>`;
 
 const engine = new Bpmn.Engine({
+  name: 'exclusive gateway example',
   source: processXml
 });
 
@@ -187,6 +190,7 @@ const processXml = `
 </definitions>`;
 
 const engine = new Bpmn.Engine({
+  name: 'script task example',
   source: processXml
 });
 
@@ -239,6 +243,7 @@ const processXml = `
 </definitions>`;
 
 const engine = new Bpmn.Engine({
+  name: 'user task example 1',
   source: processXml
 });
 const listener = new EventEmitter();
@@ -281,6 +286,7 @@ const processXml = `
 </definitions>`;
 
 const engine = new Bpmn.Engine({
+  name: 'script task example',
   source: processXml
 });
 
@@ -292,7 +298,9 @@ listener.once('wait-userTask', (child, instance) => {
   });
 });
 
-engine.execute(null, listener, (err, instance) => {
+engine.execute({
+  listener: listener
+}, (err, instance) => {
   if (err) throw err;
 
   instance.once('end', () => {
@@ -318,7 +326,7 @@ A service task will receive the data available on the process instance. The sign
 const Bpmn = require('bpmn-engine');
 const request = require('request');
 
-const services = require('./lib/services');
+const services = require('../test/helpers/testHelpers');
 services.getRequest = (message, callback) => {
   request.get(message.variables.apiPath, {json: true}, (err, resp, body) => {
     if (err) return callback(err);
@@ -348,6 +356,7 @@ const processXml = `
 </definitions>`;
 
 const engine = new Bpmn.Engine({
+  name: 'service task example 1',
   source: processXml
 });
 
@@ -357,7 +366,7 @@ engine.execute({
   },
   services: {
     getRequest: {
-      module: './lib/services',
+      module: './test/helpers/testHelpers',
       fnName: 'getRequest'
     }
   }
@@ -416,6 +425,7 @@ result;
   `;
 
 const engine = new Bpmn.Engine({
+  name: 'service task example 2',
   source: processXml
 });
 engine.execute({
@@ -452,6 +462,7 @@ const processXml = `
 </definitions>`;
 
 const engine = new Bpmn.Engine({
+  name: 'service task example 3',
   source: processXml,
   moddleOptions: {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -503,6 +514,7 @@ const sourceXml = `
 `;
 
 const engine = new Bpmn.Engine({
+  name: 'sequence flow example',
   source: sourceXml
 });
 const listener = new EventEmitter();
@@ -551,6 +563,7 @@ const sourceXml = `
 `;
 
 const engine = new Bpmn.Engine({
+  name: 'task loop example',
   source: sourceXml,
   moddleOptions: {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
