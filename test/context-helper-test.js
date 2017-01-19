@@ -11,7 +11,7 @@ const expect = Code.expect;
 const contextHelper = require('../lib/context-helper');
 
 lab.experiment('context-helper', () => {
-  const transformer = Bpmn.Transformer;
+  const transformer = Bpmn.transformer;
 
   let context;
   lab.beforeEach((done) => {

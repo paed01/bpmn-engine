@@ -20,7 +20,7 @@ const validBpmnDefinition = `
 </definitions>`;
 
 lab.experiment('transformer', () => {
-  const transformer = Bpmn.Transformer;
+  const transformer = Bpmn.transformer;
 
   lab.test('returns Bpmn object and context in callback', (done) => {
     transformer.transform(validBpmnDefinition, {}, done);

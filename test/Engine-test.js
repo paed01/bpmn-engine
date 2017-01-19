@@ -13,8 +13,20 @@ const expect = Code.expect;
 const Bpmn = require('..');
 
 lab.experiment('Engine', () => {
-  lab.test('Bpmn exposes executor module', (done) => {
+  lab.test('Bpmn exposes Engine', (done) => {
     expect(Bpmn).to.include('Engine');
+    done();
+  });
+  lab.test('Bpmn exposes Defintion', (done) => {
+    expect(Bpmn).to.include('Definition');
+    done();
+  });
+  lab.test('Bpmn exposes transformer', (done) => {
+    expect(Bpmn).to.include('transformer');
+    done();
+  });
+  lab.test('Bpmn exposes validation', (done) => {
+    expect(Bpmn).to.include('validation');
     done();
   });
 
