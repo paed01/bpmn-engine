@@ -84,7 +84,7 @@ lab.experiment('Resume task loop', () => {
       `;
 
       testHelpers.loopFn = (executionContext, callback) => {
-        const prevResult = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurring.result[0] : -1;
+        const prevResult = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurring[0] : -1;
         if (prevResult === -1) {
           return callback(null, executionContext.item);
         }
@@ -130,7 +130,7 @@ lab.experiment('Resume task loop', () => {
           if (err) return done(err);
 
           instance.once('end', () => {
-            expect(instance.variables.taskInput.recurring.result[0]).to.equal(13);
+            expect(instance.variables.taskInput.recurring[0]).to.equal(13);
             done();
           });
         });
