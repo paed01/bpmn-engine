@@ -68,25 +68,24 @@ lab.experiment('ServiceTask', () => {
     lab.test('throws if service definition is not found', (done) => {
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
     <serviceTask id="serviceTask" name="Get" />
   </process>
 </definitions>`;
 
-      const engine = new Bpmn.Engine({
-        source: processXml,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
-      });
-
-      engine.getInstance((err, instance) => {
+      bpmnModdle.fromXML(processXml, (err, def, moddleContext) => {
         if (err) return done(err);
-        const task = instance.getChildActivityById('serviceTask');
-        expect(task).to.include(['service']);
+
+        const Context = require('../../lib/Context');
+        function test() {
+          new Context('theProcess', moddleContext); // eslint-disable-line no-new
+        }
+
+        expect(test).to.throw(Error, /No service defined/i);
         done();
       });
+
     });
   });
 

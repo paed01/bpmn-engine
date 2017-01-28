@@ -285,7 +285,36 @@ lab.experiment('context-helper', () => {
     });
   });
 
-  lab.experiment('#getElementServiceName', () => {
+  lab.experiment('getElementService()', () => {
+    lab.test('returns connector', (done) => {
+      const element = {
+        $type: 'bpmn:ServiceTask',
+        id: 'serviceTask',
+        name: 'Post message',
+        extensionElements: {
+          $type: 'bpmn:ExtensionElements',
+          values: [{
+            $type: 'camunda:properties',
+            $children: [{
+              $type: 'camunda:property',
+              name: 'service',
+              value: 'propertyPostMessage'
+            }]
+          }, {
+            $type: 'camunda:Connector',
+            connectorId: 'postMessage'
+          }]
+        }
+      };
+
+      expect(contextHelper.getElementService(element)).to.equal({
+        connector: {
+          $type: 'camunda:Connector',
+          connectorId: 'postMessage'
+        }
+      });
+      done();
+    });
 
     lab.test('returns service name from properties named service', (done) => {
       const element = {
@@ -309,7 +338,24 @@ lab.experiment('context-helper', () => {
         }
       };
 
-      expect(contextHelper.getElementServiceName(element)).to.equal('postMessage');
+      expect(contextHelper.getElementService(element)).to.equal({
+        name: 'postMessage'
+      });
+      done();
+    });
+
+    lab.test('no extensionElements no service', (done) => {
+      const element = {
+        $type: 'bpmn:ServiceTask',
+        id: 'serviceTask',
+        name: 'Post message',
+        extensionElements: {
+          $type: 'bpmn:ExtensionElements',
+          values: []
+        }
+      };
+
+      expect(contextHelper.getElementService(element)).to.be.undefined();
       done();
     });
 
@@ -331,38 +377,187 @@ lab.experiment('context-helper', () => {
         }
       };
 
-      expect(contextHelper.getElementServiceName(element)).to.not.exist();
+      expect(contextHelper.getElementService(element)).to.not.exist();
       done();
     });
 
-    lab.test('returns nothing if without extensionElements', (done) => {
-      const element = {
-        $type: 'bpmn:ServiceTask',
-        id: 'serviceTask',
-        name: 'Post message'
-      };
+    lab.test('returns service from extensionElements property', (done) => {
+      expect(contextHelper.getElementService({
 
-      expect(contextHelper.getElementServiceName(element)).to.not.exist();
+      })).to.be.undefined();
       done();
     });
 
-    lab.test('returns nothing if without extensionElements values', (done) => {
+
+    lab.test('without element returns undefined', (done) => {
+      expect(contextHelper.getElementService()).to.be.undefined();
+      done();
+    });
+
+    lab.test('without element extensionElements returns undefined', (done) => {
+      expect(contextHelper.getElementService({})).to.be.undefined();
+      done();
+    });
+  });
+
+  lab.experiment('getActivityIO()', () => {
+    lab.test('returns normalized io if extensionElements don´t match expected $type', (done) => {
       const element = {
         $type: 'bpmn:ServiceTask',
         id: 'serviceTask',
         name: 'Post message',
         extensionElements: {
           $type: 'bpmn:ExtensionElements',
-          values: []
+          values: [{
+            $type: 'camunda:properties',
+            $children: [{
+              $type: 'camunda:property',
+              name: 'service',
+              value: 'propertyPostMessage'
+            }]
+          }, {
+            $type: 'camunda:inputOutput',
+            $children: [{
+              $type: 'camunda:inputParameter',
+              name: 'result',
+              $body: '1'
+            }]
+          }]
         }
       };
 
-      expect(contextHelper.getElementServiceName(element)).to.not.exist();
+      expect(contextHelper.getActivityIO({
+        elementsById: {
+          serviceTask: element
+        }
+      }, 'serviceTask')).to.equal({
+        $type: 'camunda:inputOutput',
+        inputParameters: [{
+          $type: 'camunda:inputParameter',
+          name: 'result',
+          value: '1'
+        }],
+        outputParameters: []
+      });
       done();
     });
 
-    lab.test('no element no service', (done) => {
-      expect(contextHelper.getElementServiceName(null)).to.not.exist();
+    lab.test('normalizes io parameter $children to definition', (done) => {
+      const element = {
+        $type: 'bpmn:ServiceTask',
+        id: 'serviceTask',
+        name: 'Post message',
+        extensionElements: {
+          $type: 'bpmn:ExtensionElements',
+          values: [{
+            $type: 'camunda:properties',
+            $children: [{
+              $type: 'camunda:property',
+              name: 'service',
+              value: 'propertyPostMessage'
+            }]
+          }, {
+            $type: 'camunda:inputOutput',
+            $children: [{
+              $type: 'camunda:inputParameter',
+              name: 'result',
+              $children: [{
+                $type: 'camunda:map'
+              }]
+            }, {
+              $type: 'camunda:outputParameter',
+              name: 'result'
+            }, {
+              $type: 'camunda:madeUpParameter',
+              name: 'ignored-result'
+            }]
+          }]
+        }
+      };
+
+      expect(contextHelper.getActivityIO({
+        elementsById: {
+          serviceTask: element
+        }
+      }, 'serviceTask')).to.equal({
+        $type: 'camunda:inputOutput',
+        inputParameters: [{
+          $type: 'camunda:inputParameter',
+          name: 'result',
+          definition: {
+            $type: 'camunda:map'
+          }
+        }],
+        outputParameters: [{
+          $type: 'camunda:outputParameter',
+          name: 'result'
+        }]
+      });
+      done();
+    });
+
+    lab.test('returns empty io if io extensionElement children is empty', (done) => {
+      const element = {
+        $type: 'bpmn:ServiceTask',
+        id: 'serviceTask',
+        name: 'Post message',
+        extensionElements: {
+          $type: 'bpmn:ExtensionElements',
+          values: [{
+            $type: 'camunda:properties',
+            $children: [{
+              $type: 'camunda:property',
+              name: 'service',
+              value: 'propertyPostMessage'
+            }]
+          }, {
+            $type: 'camunda:inputOutput',
+            $children: []
+          }]
+        }
+      };
+
+      expect(contextHelper.getActivityIO({
+        elementsById: {
+          serviceTask: element
+        }
+      }, 'serviceTask')).to.equal({
+        $type: 'camunda:inputOutput',
+        inputParameters: [],
+        outputParameters: []
+      });
+      done();
+    });
+
+    lab.test('returns empty io if io extensionElement have no children', (done) => {
+      const element = {
+        $type: 'bpmn:ServiceTask',
+        id: 'serviceTask',
+        name: 'Post message',
+        extensionElements: {
+          $type: 'bpmn:ExtensionElements',
+          values: [{
+            $type: 'camunda:properties',
+            $children: [{
+              $type: 'camunda:property',
+              name: 'service',
+              value: 'propertyPostMessage'
+            }]
+          }, {
+            $type: 'camunda:inputOutput'
+          }]
+        }
+      };
+
+      expect(contextHelper.getActivityIO({
+        elementsById: {
+          serviceTask: element
+        }
+      }, 'serviceTask')).to.equal({
+        $type: 'camunda:inputOutput',
+        inputParameters: [],
+        outputParameters: []
+      });
       done();
     });
   });
