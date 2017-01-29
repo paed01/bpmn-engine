@@ -20,30 +20,30 @@ lab.experiment('input/output', () => {
   });
 
   lab.describe('service task', () => {
-    lab.describe('getInputArguments()', () => {
+    // lab.describe('getInputArguments()', () => {
 
-      lab.test('return list with arguments', (done) => {
-        context.variables = {
-          apiPath: 'http://example.com',
-          input: 1,
-          path: '/api/v2'
-        };
+    //   lab.test('return list with arguments', (done) => {
+    //     context.variables = {
+    //       apiPath: 'http://example.com',
+    //       input: 1,
+    //       path: '/api/v2'
+    //     };
 
-        const task = context.getChildActivityById('serviceTask');
-        expect(task).to.include(['io']);
-        expect(task.io).to.exist();
+    //     const task = context.getChildActivityById('serviceTask');
+    //     expect(task).to.include(['io']);
+    //     expect(task.io).to.exist();
 
-        const args = task.io.getInputArguments();
-        expect(args.length).to.equal(5);
+    //     const args = task.io.getInputArguments();
+    //     expect(args.length).to.equal(5);
 
-        expect(args).to.equal([{
-          uri: 'http://example.com'
-        }, 1, 'hard coded value', [1, '2'], '/api/v2']);
+    //     expect(args).to.equal([{
+    //       uri: 'http://example.com'
+    //     }, 1, 'hard coded value', [1, '2'], '/api/v2']);
 
-        done();
-      });
+    //     done();
+    //   });
 
-    });
+    // });
 
     lab.describe('getInput()', () => {
 

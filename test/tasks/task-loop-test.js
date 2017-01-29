@@ -376,7 +376,7 @@ lab.experiment('task loop', () => {
           listener: listener,
           services: {
             loop: (executionContext, callback) => {
-              const prevResult = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurring.sum : 0;
+              const prevResult = executionContext.variables.sum ? executionContext.variables.sum : 0;
               callback(null, prevResult + executionContext.item);
             }
           },
@@ -388,7 +388,7 @@ lab.experiment('task loop', () => {
 
           instance.once('end', () => {
             expect(startCount).to.equal(4);
-            expect(instance.variables.taskInput.recurring.sum).to.equal(13);
+            expect(instance.variables.sum).to.equal(13);
             testHelpers.expectNoLingeringListeners(instance);
             done();
           });

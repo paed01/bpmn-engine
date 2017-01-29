@@ -45,7 +45,7 @@ lab.experiment('Activity InputOutput', () => {
     });
   });
 
-  lab.describe('#getInput', () => {
+  lab.describe('getInput()', () => {
 
     lab.test('returns static values', (done) => {
       const io = new mapper.ActivityIO({
@@ -156,8 +156,33 @@ lab.experiment('Activity InputOutput', () => {
     });
   });
 
+  // lab.describe('getInputArguments()', () => {
 
-  lab.describe('#getOutput', () => {
+  //   lab.test('returns list of arguments in correct order', (done) => {
+  //     const io = new mapper.ActivityIO({
+  //       $type: 'camunda:InputOutput',
+  //       inputParameters: [{
+  //         $type: 'camunda:inputParameter',
+  //         name: 'taskinput',
+  //         value: 'Empty'
+  //       }, {
+  //         $type: 'camunda:outputParameter',
+  //         name: 'aaaaaa',
+  //         value: 'I\'m done'
+  //       }],
+  //       outputParameters: [{
+  //         $type: 'camunda:outputParameter',
+  //         name: 'arbval',
+  //         value: '1'
+  //       }]
+  //     });
+
+  //     expect(io.getInputArguments()).to.equal(['Empty', 'I\'m done']);
+  //     done();
+  //   });
+  // });
+
+  lab.describe('getOutput()', () => {
 
     lab.test('returns static values', (done) => {
       const io = new mapper.ActivityIO({

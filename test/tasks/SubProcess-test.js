@@ -52,7 +52,7 @@ lab.experiment('SubProcess', () => {
 
   });
 
-  lab.describe('#run', () => {
+  lab.describe('run()', () => {
 
     lab.test('completes parent process', (done) => {
       const listener = new EventEmitter();
@@ -86,7 +86,7 @@ lab.experiment('SubProcess', () => {
     });
   });
 
-  lab.describe('#cancel', () => {
+  lab.describe('cancel()', () => {
     lab.test('takes all outbound and completes parent process', (done) => {
       const listener = new EventEmitter();
       listener.on('wait-subUserTask', (task, subProcessInstance) => {
@@ -149,4 +149,65 @@ lab.experiment('SubProcess', () => {
       });
     });
   });
+
+  lab.describe('input/output', () => {
+
+    lab.test('transfers input to context variables', (done) => {
+      const ioXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions id="Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+      targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="mainProcess" isExecutable="true">
+    <bpmn:subProcess id="subProcess" name="Wrapped">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="api">\${variables.apiPath}</camunda:inputParameter>
+          <camunda:outputParameter name="result"></camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:serviceTask id="subServiceTask" name="Put" camunda:expression="\${services.put()}">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="uri">\${variables.api}</camunda:inputParameter>
+            <camunda:outputParameter name="result">\${result[0]}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>
+      `;
+
+      const engine = new Bpmn.Engine({
+        source: ioXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+      engine.execute({
+        services: {
+          put: () => {
+            return (uri, next) => {
+              next(null, 1);
+            };
+          }
+        },
+        variables: {
+          apiPath: 'https://api.example.com/v1'
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+
+        instance.once('end', () => {
+          expect(instance.variables).to.equal({
+            apiPath: 'https://api.example.com/v1',
+            result: 1
+          });
+          done();
+        });
+      });
+    });
+  });
+
 });

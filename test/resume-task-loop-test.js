@@ -84,11 +84,11 @@ lab.experiment('Resume task loop', () => {
       `;
 
       testHelpers.loopFn = (executionContext, callback) => {
+
         const prevResult = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurring[0] : -1;
         if (prevResult === -1) {
           return callback(null, executionContext.item);
         }
-
         callback(null, prevResult + executionContext.item);
       };
 

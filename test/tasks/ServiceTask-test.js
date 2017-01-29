@@ -199,7 +199,7 @@ lab.experiment('ServiceTask', () => {
       });
     });
 
-    lab.test('uses input parameters and returns defined output', (done) => {
+    lab.test('uses input parameters and saves defined output to variables', (done) => {
       nock('http://example.com')
         .defaultReplyHeaders({
           'Content-Type': 'application/json'
@@ -228,9 +228,9 @@ lab.experiment('ServiceTask', () => {
       }, (err, instance) => {
         if (err) return done(err);
         instance.once('end', () => {
-          expect(instance.variables.taskInput.serviceTask).to.include(['statusCode', 'body']);
-          expect(instance.variables.taskInput.serviceTask.statusCode).to.equal(200);
-          expect(instance.variables.taskInput.serviceTask.body).to.equal('{\"data\":4}');
+          expect(instance.variables).to.include(['statusCode', 'body']);
+          expect(instance.variables.statusCode).to.equal(200);
+          expect(instance.variables.body).to.equal('{\"data\":4}');
           done();
         });
       });
@@ -256,7 +256,7 @@ lab.experiment('ServiceTask', () => {
         services: {
           getService: () => {
             return (executionContext, callback) => {
-              callback(null, executionContext.variables.input);
+              callback(null, executionContext.variables.input, 'success');
             };
           }
         },
@@ -268,6 +268,7 @@ lab.experiment('ServiceTask', () => {
         instance.once('end', () => {
           expect(instance.variables.taskInput.serviceTask).to.include(['output']);
           expect(instance.variables.taskInput.serviceTask.output[0]).to.equal(1);
+          expect(instance.variables.taskInput.serviceTask.output[1]).to.equal('success');
           done();
         });
       });
@@ -470,20 +471,6 @@ lab.experiment('ServiceTask', () => {
       done();
     });
 
-    lab.test('io returns input arguments from message', (done) => {
-      const task = new ServiceTask(moddleContext.elementsById.sendEmail_1, context);
-      expect(task.io.getInputArguments({
-        emailAddress: 'testio@example.com'
-      })).to.equal(['testio@example.com']);
-      done();
-    });
-
-    lab.test('io returns input arguments from context variables', (done) => {
-      const task = new ServiceTask(moddleContext.elementsById.sendEmail_1, context);
-      expect(task.io.getInputArguments()).to.equal(['lisa@example.com']);
-      done();
-    });
-
     lab.test('executes connector-id service', (done) => {
       const engine = new Bpmn.Engine({
         source: factory.resource('issue-4.bpmn'),
@@ -557,7 +544,7 @@ lab.experiment('ServiceTask', () => {
       }, (err, instance) => {
         if (err) return done(err);
         instance.once('end', () => {
-          expect(instance.variables.taskInput.sendEmail_1).to.include({messageId: 10});
+          expect(instance.variables).to.include({messageId: 10});
           done();
         });
       });
