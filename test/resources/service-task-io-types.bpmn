@@ -29,7 +29,7 @@
         </camunda:inputOutput>
         <camunda:connector>
           <camunda:connectorId>get</camunda:connectorId>
-				</camunda:connector>
+        </camunda:connector>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0jnd1g6</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1jgxkq2</bpmn:outgoing>
