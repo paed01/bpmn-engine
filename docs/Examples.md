@@ -355,6 +355,7 @@ const processXml = `
   </process>
 </definitions>`;
 
+
 const engine = new Bpmn.Engine({
   name: 'service task example 1',
   source: processXml
@@ -374,7 +375,7 @@ engine.execute({
   if (err) throw err;
 
   execution.once('end', () => {
-    console.log('Service task output:', execution.variables.taskInput.serviceTask.result);
+    console.log('Service task output:', execution.variables.taskInput.serviceTask);
   });
 });
 ```
@@ -399,8 +400,8 @@ const processXml = `
       <serviceTask id="serviceTask" name="Get">
         <extensionElements>
           <camunda:inputOutput>
-            <camunda:inputParameter name="arguments">
-              <camunda:script scriptFormat="JavaScript">[variables.apiPath]</camunda:script>
+            <camunda:inputParameter name="uri">
+              <camunda:script scriptFormat="JavaScript">variables.apiPath</camunda:script>
             </camunda:inputParameter>
             <camunda:outputParameter name="result">
               <camunda:script scriptFormat="JavaScript"><![CDATA[
@@ -425,7 +426,6 @@ result;
   `;
 
 const engine = new Bpmn.Engine({
-  name: 'service task example 2',
   source: processXml
 });
 engine.execute({
@@ -441,12 +441,13 @@ engine.execute({
 }, (err, execution) => {
   if (err) throw err;
   execution.once('end', () => {
-    console.log('Script task output:', execution.variables.taskInput.serviceTask.result);
+    console.log(execution.variables)
+    console.log('Script task output:', execution.variables.result);
   });
 });
 ```
 
-In the above example `request.get` will be called with `variables.apiPath`. The result is passed through `outputParameter` `result`.
+In the above example `request.get` will be called with `variables.apiPath`. The result is saved on `variables.result`.
 
 Expressions can also be used if camunda extension `moddleOptions` are passed to engine.
 
@@ -552,8 +553,16 @@ const sourceXml = `
 <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
   <process id="Process_1" isExecutable="true">
-    <serviceTask id="recurring" name="Each item" camunda:expression="\${services.loop}">
+    <serviceTask id="recurring" name="Each item">
       <multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.input}" />
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="sum">\${result[0]}</camunda:outputParameter>
+        </camunda:inputOutput>
+        <camunda:connector>
+          <camunda:connectorId>loop</camunda:connectorId>
+        </camunda:connector>
+      </extensionElements>
     </serviceTask>
     <boundaryEvent id="errorEvent" attachedToRef="recurring">
       <errorEventDefinition />
@@ -563,7 +572,6 @@ const sourceXml = `
 `;
 
 const engine = new Bpmn.Engine({
-  name: 'task loop example',
   source: sourceXml,
   moddleOptions: {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -573,7 +581,7 @@ const engine = new Bpmn.Engine({
 engine.execute({
   services: {
     loop: (executionContext, callback) => {
-      const prevResult = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurring.result[0] : 0;
+      const prevResult = executionContext.variables.sum ? executionContext.variables.sum : 0;
       const result = prevResult + executionContext.item;
       callback(null, result);
     }
@@ -582,9 +590,9 @@ engine.execute({
     input: [1, 2, 3, 7]
   }
 }, (err, instance) => {
-  if (err) throw err;
+  if (err) return console.log(err);
   instance.once('end', () => {
-    console.log(instance.variables.taskInput.recurring.result[0], 'aught to be 13 blazing fast');
+    console.log(instance.variables.sum, 'aught to be 13 blazing fast');
   });
 });
 ```

@@ -1,5 +1,5 @@
 <!-- version -->
-# 2.0.0 API Reference
+# 3.0.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -111,7 +111,7 @@ engine.execute((err, definition) => {
 
 #### Execution `variables`
 
-Execution variables are passed as the first argument to `#execute`. To be able to distinguish between variables and services the safest way is to pass the variables as any other name than `services`.
+Execution variables are passed as the first argument to `#execute`.
 
 ```javascript
 'use strict';
@@ -336,7 +336,7 @@ engine.execute({
 });
 ```
 
-### `resume(state, [options], [callback])`
+### `resume(state, [options, [callback]])`
 
 Execute engine `#resume` function with previously saved state.
 
@@ -347,12 +347,10 @@ const Bpmn = require('bpmn-engine');
 const EventEmitter = require('events').EventEmitter;
 
 // Retrieve saved state
-const state = db.getSavedState('some-random-id', (err, state) => {
+const state = db.getState('some-random-id', (err, state) => {
   if (err) return console.log(err.message);
 
-  const engine = new Bpmn.Engine({
-    context: state.context
-  });
+  const engine = new Bpmn.Engine();
 
   engine.on('end', () => {
     console.log('resumed instance completed');
