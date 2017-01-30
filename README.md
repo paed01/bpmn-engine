@@ -6,18 +6,20 @@ bpmn-engine
 [![Build Status](https://travis-ci.org/paed01/bpmn-engine.svg?branch=master)](https://travis-ci.org/paed01/bpmn-engine)[![Build status](https://ci.appveyor.com/api/projects/status/670n39fivq1g3nu5/branch/master?svg=true)](https://ci.appveyor.com/project/paed01/bpmn-engine/branch/master)[![Coverage Status](https://coveralls.io/repos/github/paed01/bpmn-engine/badge.svg?branch=master)](https://coveralls.io/github/paed01/bpmn-engine?branch=master)
 
 ## Introduction
-**bpmn-engine** is an serverside BPMN 2.0 processengine.
+**bpmn-engine** is an serverside BPMN 2.0 process engine.
+
+A workflow engine built with javascript.
 
 ## Table of Contents
 - [Supported elements](#supported-elements)
 - [Process modeller](#process-modeller)
 - [Debug](#debug)
 - [Acknowledgments](#acknowledgments)
+- [Changelog](/Changelog.md)
 
 ### Documentation
 - [API](/API.md)
 - [Examples](/docs/Examples.md)
-- [Changelog](/Changelog.md)
 
 # Supported elements
 
@@ -50,7 +52,7 @@ The following elements are tested and supported.
   - Script: javascript only
   - Task: completes immediately
   - User: needs signal
-  - Service: declared when starting instance
+  - Service
 - Gateways
   - Exclusive
   - Inclusive

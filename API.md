@@ -142,7 +142,7 @@ engine.execute({
 A service is a module used by e.g. a script tasks or a condition where:
 
 ```javascript
-const executeOptions = {
+const options = {
   services: {
     get: {
       module: 'request',
@@ -153,7 +153,7 @@ const executeOptions = {
       return message.variables.statusCode === 200;
     }
   }
-}
+};
 ```
 
 - `name`: Exposed name in the engine
@@ -205,6 +205,10 @@ const services = {
   request: {
     module: 'request'
   },
+  put: {
+    module: 'request',
+    fnName: 'put'
+  },
   require: {
     module: 'require',
     type: 'global'
@@ -255,6 +259,7 @@ The saved state will include the following content:
 
 const Bpmn = require('bpmn-engine');
 const EventEmitter = require('events').EventEmitter;
+const fs = require('fs');
 
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -277,6 +282,7 @@ const listener = new EventEmitter();
 let state;
 listener.once('wait-userTask', (activity) => {
   state = engine.getState();
+  fs.writeFileSync('./tmp/some-random-id.json', JSON.stringify(state, null, 2));
   console.log(JSON.stringify(state, null, 2));
 });
 
@@ -341,16 +347,20 @@ const Bpmn = require('bpmn-engine');
 const EventEmitter = require('events').EventEmitter;
 
 // Retrieve saved state
-const state = db.getState('some-random-id');
+const state = db.getSavedState('some-random-id', (err, state) => {
+  if (err) return console.log(err.message);
 
-const engine = new Bpmn.Engine();
+  const engine = new Bpmn.Engine({
+    context: state.context
+  });
 
-engine.on('end', () => {
-  console.log('resumed instance completed');
-});
+  engine.on('end', () => {
+    console.log('resumed instance completed');
+  });
 
-engine.resume(state, (err, instance) => {
-  if (err) throw err;
+  engine.resume(state, (err, instance) => {
+    if (err) throw err;
+  });
 });
 ```
 
@@ -496,6 +506,7 @@ Validate moddle context to ensure that it is executable. Returns list of error i
 
 ```javascript
 const Bpmn = require('bpmn-engine');
+const EventEmitter = require('events').EventEmitter;
 
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>

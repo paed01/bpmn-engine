@@ -428,6 +428,53 @@ lab.experiment('ScriptTask', () => {
         });
       });
     });
+
+    lab.test('with output parameters returns formatted output', (done) => {
+      const processXml = `
+<definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.6.0">
+  <process id="Process_1" isExecutable="true">
+    <scriptTask id="scriptTask" name="Execute" scriptFormat="JavaScript">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="input">\${variables.input}</camunda:inputParameter>
+          <camunda:inputParameter name="path">/api/v8</camunda:inputParameter>
+          <camunda:outputParameter name="calledApi">\${api}</camunda:outputParameter>
+          <camunda:outputParameter name="result"></camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <incoming>SequenceFlow_1jgxkq2</incoming>
+      <outgoing>SequenceFlow_040np9m</outgoing>
+      <script><![CDATA[
+      next(null, {
+        api: variables.apiPath + path,
+        result: input
+      })]]></script>
+    </scriptTask>
+  </process>
+</definitions>
+        `;
+      testHelpers.getContext(processXml, (err, localContext) => {
+        if (err) return done(err);
+
+        localContext.variables = {
+          apiPath: 'http://example-2.com',
+          input: 8
+        };
+
+        const task = localContext.getChildActivityById('scriptTask');
+
+        task.once('end', (activity, output) => {
+          expect(output).to.equal({
+            calledApi: 'http://example-2.com/api/v8',
+            result: 8
+          });
+          done();
+        });
+
+        task.enter();
+        task.execute();
+      });
+    });
   });
 
 });

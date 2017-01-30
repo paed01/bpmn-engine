@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.6.0">
+  <bpmn:process id="Send_Mail_Process" isExecutable="true">
+    <bpmn:startEvent id="startEvent">
+      <bpmn:outgoing>SequenceFlow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1" sourceRef="startEvent" targetRef="sendEmail_1" />
+    <bpmn:endEvent id="endEvent">
+      <bpmn:incoming>SequenceFlow_1sxkbig</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_2" sourceRef="sendEmail_1" targetRef="anotherTasks" />
+    <bpmn:serviceTask id="sendEmail_1" name="send mail" camunda:asyncBefore="true">
+      <bpmn:extensionElements>
+        <camunda:connector>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="emailAddress" />
+            <camunda:outputParameter name="messageId" />
+          </camunda:inputOutput>
+          <camunda:connectorId>send-email</camunda:connectorId>
+        </camunda:connector>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="emailAddress" />
+          <camunda:outputParameter name="messageId" />
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_1</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:task id="anotherTasks" name="Another tasks">
+      <bpmn:incoming>SequenceFlow_2</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1sxkbig</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="SequenceFlow_1sxkbig" sourceRef="anotherTasks" targetRef="endEvent" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Send_Mail_Process">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="startEvent">
+        <dc:Bounds x="173" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_16m9goq_di" bpmnElement="SequenceFlow_1">
+        <di:waypoint xsi:type="dc:Point" x="209" y="120" />
+        <di:waypoint xsi:type="dc:Point" x="306" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="258" y="105" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_05uol1y_di" bpmnElement="endEvent">
+        <dc:Bounds x="727" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="745" y="138" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_17uu38n_di" bpmnElement="SequenceFlow_2">
+        <di:waypoint xsi:type="dc:Point" x="406" y="120" />
+        <di:waypoint xsi:type="dc:Point" x="501" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="454" y="105" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_17vog4b_di" bpmnElement="sendEmail_1">
+        <dc:Bounds x="306" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_1fe5nu0_di" bpmnElement="anotherTasks">
+        <dc:Bounds x="500.7078109932497" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1sxkbig_di" bpmnElement="SequenceFlow_1sxkbig">
+        <di:waypoint xsi:type="dc:Point" x="601" y="120" />
+        <di:waypoint xsi:type="dc:Point" x="727" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="664" y="95" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

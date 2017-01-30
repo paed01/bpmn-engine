@@ -1,8 +1,10 @@
 'use strict';
 
+const BpmnModdle = require('bpmn-moddle');
 const Code = require('code');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
+const mapper = require('../../lib/mapper');
 const nock = require('nock');
 const testHelpers = require('../helpers/testHelpers');
 
@@ -11,6 +13,10 @@ const expect = Code.expect;
 
 const Bpmn = require('../..');
 const BaseProcess = require('../../lib/mapper').Process;
+const bpmnModdle = new BpmnModdle({
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+});
+const ServiceTask = mapper('bpmn:ServiceTask');
 
 const bupServiceFn = testHelpers.serviceFn;
 
@@ -32,7 +38,7 @@ lab.experiment('ServiceTask', () => {
       });
     });
 
-    lab.test('stores expression', (done) => {
+    lab.test('stores expression service', (done) => {
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -50,6 +56,29 @@ lab.experiment('ServiceTask', () => {
         expect(task).to.include(['service']);
         done();
       });
+    });
+
+    lab.test('throws if service definition is not found', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="serviceTask" name="Get" />
+  </process>
+</definitions>`;
+
+      bpmnModdle.fromXML(processXml, (err, def, moddleContext) => {
+        if (err) return done(err);
+
+        const Context = require('../../lib/Context');
+        function test() {
+          new Context('theProcess', moddleContext); // eslint-disable-line no-new
+        }
+
+        expect(test).to.throw(Error, /No service defined/i);
+        done();
+      });
+
     });
   });
 
@@ -163,7 +192,7 @@ lab.experiment('ServiceTask', () => {
       });
     });
 
-    lab.test('uses message arguments', (done) => {
+    lab.test('uses input parameters and saves defined output to variables', (done) => {
       nock('http://example.com')
         .defaultReplyHeaders({
           'Content-Type': 'application/json'
@@ -192,7 +221,9 @@ lab.experiment('ServiceTask', () => {
       }, (err, instance) => {
         if (err) return done(err);
         instance.once('end', () => {
-          expect(instance.variables.taskInput.serviceTask.result).to.include(['statusCode', 'body']);
+          expect(instance.variables).to.include(['statusCode', 'body']);
+          expect(instance.variables.statusCode).to.equal(200);
+          expect(instance.variables.body).to.equal('{\"data\":4}');
           done();
         });
       });
@@ -218,7 +249,7 @@ lab.experiment('ServiceTask', () => {
         services: {
           getService: () => {
             return (executionContext, callback) => {
-              callback(null, executionContext.variables.input);
+              callback(null, executionContext.variables.input, 'success');
             };
           }
         },
@@ -230,6 +261,7 @@ lab.experiment('ServiceTask', () => {
         instance.once('end', () => {
           expect(instance.variables.taskInput.serviceTask).to.include(['output']);
           expect(instance.variables.taskInput.serviceTask.output[0]).to.equal(1);
+          expect(instance.variables.taskInput.serviceTask.output[1]).to.equal('success');
           done();
         });
       });
@@ -338,6 +370,174 @@ lab.experiment('ServiceTask', () => {
         if (err) return done(err);
         instance.once('end', () => {
           expect(instance.variables.taskInput.serviceTask).to.include(['output']);
+          done();
+        });
+      });
+    });
+  });
+
+  lab.describe('io', () => {
+    let context;
+    lab.beforeEach((done) => {
+      const processXml = factory.resource('service-task-io-types.bpmn').toString();
+      testHelpers.getContext(processXml, (err, result) => {
+        if (err) return done(err);
+        context = result;
+        done();
+      });
+    });
+
+    lab.test('returns mapped output', (done) => {
+      context.variables = {
+        apiPath: 'http://example-2.com',
+        input: 2,
+      };
+      context.services = {
+        get: (arg, next) => {
+          next(null, {
+            statusCode: 200,
+            pathname: '/ignore'
+          }, {
+            data: arg.input
+          });
+        }
+      };
+
+      const task = context.getChildActivityById('serviceTask');
+      task.once('end', (activity, output) => {
+        expect(output).to.equal({
+          statusCode: 200,
+          body: {
+            data: 2
+          }
+        });
+        done();
+      });
+
+      task.enter();
+      task.execute();
+    });
+
+  });
+
+  lab.describe('Camunda connector is defined with input/output', () => {
+    let moddleContext, context;
+    lab.before((done) => {
+      bpmnModdle.fromXML(factory.resource('issue-4.bpmn').toString(), (err, def, result) => {
+        if (err) return done(err);
+
+        moddleContext = result;
+        const Context = require('../../lib/Context');
+        context = new Context('Send_Mail_Process', moddleContext, {
+          services: {
+            'send-email': (emailAddress, callback) => {
+              callback(null, 'success');
+            }
+          },
+          variables: {
+            emailAddress: 'lisa@example.com'
+          }
+        });
+        done();
+      });
+    });
+
+    lab.test('service task has io', (done) => {
+      const task = new ServiceTask(moddleContext.elementsById.sendEmail_1, context);
+      expect(task.io, 'task IO').to.exist();
+      expect(task.io.input).to.exist();
+      expect(task.io.output).to.exist();
+      done();
+    });
+
+    lab.test('io returns input values from message', (done) => {
+      const task = new ServiceTask(moddleContext.elementsById.sendEmail_1, context);
+      expect(task.io.getInput({
+        emailAddress: 'testio@example.com'
+      })).to.equal({emailAddress: 'testio@example.com'});
+      done();
+    });
+
+    lab.test('io returns input values from context variables', (done) => {
+      const task = new ServiceTask(moddleContext.elementsById.sendEmail_1, context);
+      expect(task.io.getInput()).to.equal({emailAddress: 'lisa@example.com'});
+      done();
+    });
+
+    lab.test('executes connector-id service', (done) => {
+      const engine = new Bpmn.Engine({
+        source: factory.resource('issue-4.bpmn'),
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.execute({
+        services: {
+          'send-email': (emailAddress, callback) => {
+            callback(null, 'success');
+          }
+        },
+        variables: {
+          emailAddress: 'lisa@example.com'
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          done();
+        });
+      });
+    });
+
+    lab.test('executes service using defined input', (done) => {
+      const engine = new Bpmn.Engine({
+        source: factory.resource('issue-4.bpmn'),
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      let inputArg;
+      engine.execute({
+        services: {
+          'send-email': (emailAddress, callback) => {
+            inputArg = emailAddress;
+            callback(null, 'success');
+          }
+        },
+        variables: {
+          emailAddress: 'lisa@example.com'
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          expect(inputArg).to.equal('lisa@example.com');
+          done();
+        });
+      });
+    });
+
+    lab.test('returns defined output', (done) => {
+      const engine = new Bpmn.Engine({
+        source: factory.resource('issue-4.bpmn'),
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.execute({
+        services: {
+          'send-email': (emailAddress, callback) => {
+            callback(null, 10);
+          }
+        },
+        variables: {
+          emailAddress: 'lisa@example.com'
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          expect(instance.variables).to.include({messageId: 10});
           done();
         });
       });

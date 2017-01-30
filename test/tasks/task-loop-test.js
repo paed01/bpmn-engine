@@ -263,7 +263,7 @@ lab.experiment('task loop', () => {
           listener: listener,
           services: {
             sum: (executionContext, callback) => {
-              const sum = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurringChild.result[0] : 0;
+              const sum = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurringChild[0] : 0;
               callback(null, sum + executionContext.variables.index);
             }
           }
@@ -272,7 +272,7 @@ lab.experiment('task loop', () => {
 
           instance.once('end', () => {
             expect(startCount).to.equal(5);
-            expect(instance.variables.taskInput.recurring.taskInput.recurringChild.result[0]).to.equal(10);
+            expect(instance.variables.taskInput.recurring.taskInput.recurringChild[0]).to.equal(10);
             testHelpers.expectNoLingeringListenersOnDefinition(instance);
             done();
           });
@@ -348,6 +348,11 @@ lab.experiment('task loop', () => {
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:process id="Process_1" isExecutable="true">
     <bpmn:serviceTask id="recurring" name="Each item" camunda:expression="\${services.loop}">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="sum">\${result[0]}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
       <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.input}" />
     </bpmn:serviceTask>
   </bpmn:process>
@@ -371,7 +376,7 @@ lab.experiment('task loop', () => {
           listener: listener,
           services: {
             loop: (executionContext, callback) => {
-              const prevResult = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurring.result[0] : 0;
+              const prevResult = executionContext.variables.sum ? executionContext.variables.sum : 0;
               callback(null, prevResult + executionContext.item);
             }
           },
@@ -383,7 +388,7 @@ lab.experiment('task loop', () => {
 
           instance.once('end', () => {
             expect(startCount).to.equal(4);
-            expect(instance.variables.taskInput.recurring.result).to.equal([13]);
+            expect(instance.variables.sum).to.equal(13);
             testHelpers.expectNoLingeringListenersOnDefinition(instance);
             done();
           });
@@ -422,7 +427,7 @@ lab.experiment('task loop', () => {
           listener: listener,
           services: {
             loop: (executionContext, callback) => {
-              const prevResult = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurring.result[0] : 0;
+              const prevResult = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurring[0] : 0;
 
               const result = prevResult + executionContext.item;
 

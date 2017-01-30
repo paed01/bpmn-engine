@@ -146,4 +146,24 @@ lab.experiment('Activity', () => {
       instance.run();
     });
   });
+
+  lab.describe('getInput()', () => {
+    lab.test('returns message if no io', (done) => {
+      const start = instance.getChildActivityById('start');
+
+      expect(start.getInput(1)).to.equal(1);
+
+      done();
+    });
+  });
+
+  lab.describe('getOutput()', () => {
+    lab.test('returns message if no io', (done) => {
+      const start = instance.getChildActivityById('start');
+
+      expect(start.getOutput(1)).to.equal(1);
+
+      done();
+    });
+  });
 });

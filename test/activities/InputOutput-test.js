@@ -10,20 +10,19 @@ const expect = Code.expect;
 const mapper = require('../../lib/mapper');
 
 lab.experiment('Activity InputOutput', () => {
-
   lab.describe('ctor', () => {
     lab.test('script parameter throws if type is not JavaScript', (done) => {
       function test() {
         new mapper.ActivityIO({ // eslint-disable-line no-new
-          $type: 'camunda:inputOutput',
-          $children: [{
+          $type: 'camunda:InputOutput',
+          inputParameters: [{
             $type: 'camunda:inputParameter',
             name: 'message',
-            $children: [{
+            definition: {
               $type: 'camunda:script',
               scriptFormat: 'CoffeeScript',
-              $body: 'i in loop'
-            }]
+              value: 'i in loop'
+            }
           }]
         });
       }
@@ -34,8 +33,9 @@ lab.experiment('Activity InputOutput', () => {
 
     lab.test('no children is ignored', (done) => {
       const io = new mapper.ActivityIO({ // eslint-disable-line no-new
-        $type: 'camunda:inputOutput',
-        $children: []
+        $type: 'camunda:InputOutput',
+        inputParameters: [],
+        outputParameters: []
       });
 
       expect(io.input).to.be.empty();
@@ -45,23 +45,24 @@ lab.experiment('Activity InputOutput', () => {
     });
   });
 
-  lab.describe('#getInput', () => {
+  lab.describe('getInput()', () => {
 
     lab.test('returns static values', (done) => {
       const io = new mapper.ActivityIO({
-        $type: 'camunda:inputOutput',
-        $children: [{
+        $type: 'camunda:InputOutput',
+        inputParameters: [{
           $type: 'camunda:inputParameter',
           name: 'taskinput',
-          $body: 'Empty'
-        }, {
+          value: 'Empty'
+        }],
+        outputParameters: [{
           $type: 'camunda:outputParameter',
           name: 'message',
-          $body: 'I\'m done'
+          value: 'I\'m done'
         }, {
           $type: 'camunda:outputParameter',
           name: 'arbval',
-          $body: '1'
+          value: '1'
         }]
       });
 
@@ -74,18 +75,19 @@ lab.experiment('Activity InputOutput', () => {
     lab.test('returns script values', (done) => {
       const io = new mapper.ActivityIO({
         $type: 'camunda:inputOutput',
-        $children: [{
+        inputParameters: [{
           $type: 'camunda:inputParameter',
           name: 'message',
-          $children: [{
+          definition: {
             $type: 'camunda:script',
             scriptFormat: 'JavaScript',
-            $body: '"Empty"'
-          }],
-        }, {
+            value: '"Empty"'
+          },
+        }],
+        outputParameters: [{
           $type: 'camunda:outputParameter',
           name: 'arbval',
-          $body: '1'
+          value: '1'
         }]
       });
       expect(io.getInput()).to.only.include({
@@ -97,18 +99,19 @@ lab.experiment('Activity InputOutput', () => {
     lab.test('returns script values that address variable', (done) => {
       const io = new mapper.ActivityIO({
         $type: 'camunda:inputOutput',
-        $children: [{
+        inputParameters: [{
           $type: 'camunda:inputParameter',
           name: 'message',
-          $children: [{
+          definition: {
             $type: 'camunda:script',
             scriptFormat: 'JavaScript',
-            $body: '`Me too ${variables.arbval}`;'
-          }],
-        }, {
+            value: '`Me too ${variables.arbval}`;'
+          }
+        }],
+        outputParameters: [{
           $type: 'camunda:outputParameter',
           name: 'arbval',
-          $body: '1'
+          value: '1'
         }]
       });
       expect(io.getInput({
@@ -153,24 +156,50 @@ lab.experiment('Activity InputOutput', () => {
     });
   });
 
+  // lab.describe('getInputArguments()', () => {
 
-  lab.describe('#getOutput', () => {
+  //   lab.test('returns list of arguments in correct order', (done) => {
+  //     const io = new mapper.ActivityIO({
+  //       $type: 'camunda:InputOutput',
+  //       inputParameters: [{
+  //         $type: 'camunda:inputParameter',
+  //         name: 'taskinput',
+  //         value: 'Empty'
+  //       }, {
+  //         $type: 'camunda:outputParameter',
+  //         name: 'aaaaaa',
+  //         value: 'I\'m done'
+  //       }],
+  //       outputParameters: [{
+  //         $type: 'camunda:outputParameter',
+  //         name: 'arbval',
+  //         value: '1'
+  //       }]
+  //     });
+
+  //     expect(io.getInputArguments()).to.equal(['Empty', 'I\'m done']);
+  //     done();
+  //   });
+  // });
+
+  lab.describe('getOutput()', () => {
 
     lab.test('returns static values', (done) => {
       const io = new mapper.ActivityIO({
         $type: 'camunda:inputOutput',
-        $children: [{
+        inputParameters: [{
           $type: 'camunda:inputParameter',
           name: 'taskinput',
-          $body: 'Empty'
-        }, {
+          value: 'Empty'
+        }],
+        outputParameters: [{
           $type: 'camunda:outputParameter',
           name: 'message',
-          $body: 'I\'m done'
+          value: 'I\'m done'
         }, {
           $type: 'camunda:outputParameter',
           name: 'arbval',
-          $body: '1'
+          value: '1'
         }]
       });
 
@@ -184,18 +213,18 @@ lab.experiment('Activity InputOutput', () => {
     lab.test('returns script values', (done) => {
       const io = new mapper.ActivityIO({
         $type: 'camunda:inputOutput',
-        $children: [{
+        outputParameters: [{
           $type: 'camunda:outputParameter',
           name: 'message',
-          $children: [{
+          definition: {
             $type: 'camunda:script',
             scriptFormat: 'JavaScript',
-            $body: '"Me too"'
-          }],
+            value: '"Me too"'
+          }
         }, {
           $type: 'camunda:outputParameter',
           name: 'arbval',
-          $body: '1'
+          value: '1'
         }]
       });
       expect(io.getOutput()).to.only.include({
@@ -208,18 +237,18 @@ lab.experiment('Activity InputOutput', () => {
     lab.test('returns script values that address variable', (done) => {
       const io = new mapper.ActivityIO({
         $type: 'camunda:inputOutput',
-        $children: [{
+        outputParameters: [{
           $type: 'camunda:outputParameter',
           name: 'message',
-          $children: [{
+          definition: {
             $type: 'camunda:script',
             scriptFormat: 'JavaScript',
-            $body: '`Me too ${arbval}`;'
-          }],
+            value: '`Me too ${arbval}`;'
+          }
         }, {
           $type: 'camunda:outputParameter',
           name: 'arbval',
-          $body: '1'
+          value: '1'
         }]
       });
       expect(io.getOutput({
@@ -231,14 +260,13 @@ lab.experiment('Activity InputOutput', () => {
       done();
     });
 
-
-    lab.test('empty parameter children return undefined', (done) => {
+    lab.test('empty parameter definition return undefined', (done) => {
       const io = new mapper.ActivityIO({ // eslint-disable-line no-new
         $type: 'camunda:inputOutput',
-        $children: [{
+        outputParameters: [{
           $type: 'camunda:outputParameter',
           name: 'message',
-          $children: []
+          definition: {}
         }]
       });
 
@@ -251,10 +279,10 @@ lab.experiment('Activity InputOutput', () => {
       done();
     });
 
-    lab.test('no parameter children return undefined', (done) => {
+    lab.test('no parameter definition return undefined', (done) => {
       const io = new mapper.ActivityIO({ // eslint-disable-line no-new
         $type: 'camunda:inputOutput',
-        $children: [{
+        outputParameters: [{
           $type: 'camunda:outputParameter',
           name: 'message'
         }]
@@ -269,17 +297,17 @@ lab.experiment('Activity InputOutput', () => {
       done();
     });
 
-    lab.test('unknown parameter child return undefined', (done) => {
+    lab.test('unknown definition type returns undefined', (done) => {
       const io = new mapper.ActivityIO({ // eslint-disable-line no-new
         $type: 'camunda:inputOutput',
-        $children: [{
+        outputParameters: [{
           $type: 'camunda:outputParameter',
           name: 'message',
-          $children: [{
+          definition: {
             $type: 'madeup:script',
             scriptFormat: 'JavaScript',
-            $body: '`Me too ${variables.arbval}`;'
-          }]
+            value: '`Me too ${variables.arbval}`;'
+          }
         }]
       });
 
