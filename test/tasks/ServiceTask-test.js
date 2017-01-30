@@ -550,4 +550,58 @@ lab.experiment('ServiceTask', () => {
       });
     });
   });
+
+  lab.describe('issue #5', () => {
+
+    lab.test('issue #5', (done) => {
+      const processXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <process id="theProcess" isExecutable="true">
+      <serviceTask id="Task_15g4wm5" name="Dummy Task">
+        <extensionElements>
+          <camunda:properties>
+            <camunda:property name="service" value="dummy" />
+          </camunda:properties>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="templateId">template_1234</camunda:inputParameter>
+            <camunda:inputParameter name="templateArgs">
+              <camunda:map>
+                <camunda:entry key="url"><![CDATA[\${services.getUrl('task1')}]]></camunda:entry>
+              </camunda:map>
+            </camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+    </process>
+  </definitions>
+      `;
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.execute({
+        services: {
+          dummy: (executionContext, serviceCallback) => {
+            serviceCallback(null, ['dummy']);
+          },
+          getUrl: (path) => {
+            return `http://example.com/${path}`;
+          }
+        },
+        variables: {
+          emailAddress: 'lisa@example.com'
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          expect(instance.variables.taskInput.Task_15g4wm5).to.include([ [ 'dummy' ] ]);
+          done();
+        });
+      });
+    });
+  });
 });
