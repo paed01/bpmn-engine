@@ -45,11 +45,16 @@ function checkListeners(child, names, scope) {
   });
 }
 
-pub.getContext = function(processXml, callback) {
+pub.getContext = function(processXml, optionsOrCallback, callback) {
+  let options = {};
+  if (typeof optionsOrCallback === 'function') {
+    callback = optionsOrCallback;
+  } else {
+    options = optionsOrCallback;
+  }
+
   const Context = require('../../lib/Context');
-  transformer.transform(processXml, {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
-  }, (err, definitions, moddleContext) => {
+  transformer.transform(processXml, options, (err, definitions, moddleContext) => {
     if (err) return callback(err);
     const context = new Context(contextHelper.getExecutableProcessId(moddleContext), moddleContext, {});
     return callback(null, context);

@@ -12,14 +12,16 @@ lab.experiment('input/output', () => {
   let context;
   lab.beforeEach((done) => {
     const processXml = factory.resource('service-task-io-types.bpmn').toString();
-    testHelpers.getContext(processXml, (err, result) => {
+    testHelpers.getContext(processXml, {
+      camunda: require('camunda-bpmn-moddle/resources/camunda')
+    }, (err, result) => {
       if (err) return done(err);
       context = result;
       done();
     });
   });
 
-  lab.describe('service task', () => {
+  lab.describe('service task with camunda input/output', () => {
     lab.describe('getInput()', () => {
 
       lab.test('return object with named input arguments', (done) => {

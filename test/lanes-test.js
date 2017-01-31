@@ -15,7 +15,10 @@ lab.experiment('Lanes', () => {
 
   lab.test('main process stores outbound messageFlows', (done) => {
     const engine = new Bpmn.Engine({
-      source: processXml
+      source: processXml,
+      moddleOptions: {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }
     });
     engine.getInstance((err, mainInstance) => {
       if (err) return done(err);
@@ -29,7 +32,10 @@ lab.experiment('Lanes', () => {
   lab.test('completes process', (done) => {
     const listener = new EventEmitter();
     const engine = new Bpmn.Engine({
-      source: processXml
+      source: processXml,
+      moddleOptions: {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }
     });
 
     engine.once('end', () => {
@@ -50,7 +56,10 @@ lab.experiment('Lanes', () => {
   lab.test('participant startEvent receives and stores message on process context', (done) => {
     const listener = new EventEmitter();
     const engine = new Bpmn.Engine({
-      source: processXml
+      source: processXml,
+      moddleOptions: {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }
     });
 
     listener.once('start-messageStartEvent', (event) => {

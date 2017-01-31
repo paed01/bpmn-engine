@@ -212,7 +212,10 @@ lab.experiment('ServiceTask', () => {
       const processXml = factory.resource('service-task-io.bpmn');
 
       const engine = new Bpmn.Engine({
-        source: processXml
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
       });
 
       engine.execute({
@@ -387,7 +390,9 @@ lab.experiment('ServiceTask', () => {
     let context;
     lab.beforeEach((done) => {
       const processXml = factory.resource('service-task-io-types.bpmn').toString();
-      testHelpers.getContext(processXml, (err, result) => {
+      testHelpers.getContext(processXml, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, result) => {
         if (err) return done(err);
         context = result;
         done();
@@ -551,7 +556,7 @@ lab.experiment('ServiceTask', () => {
     });
   });
 
-  lab.describe('issue #5', () => {
+  lab.describe('issues', () => {
 
     lab.test('issue #5', (done) => {
       const processXml = `
@@ -599,6 +604,30 @@ lab.experiment('ServiceTask', () => {
         if (err) return done(err);
         instance.once('end', () => {
           expect(instance.variables.taskInput.Task_15g4wm5).to.include([ [ 'dummy' ] ]);
+          done();
+        });
+      });
+    });
+
+    lab.test('issue #7', (done) => {
+      const processXml = factory.resource('issue-7.bpmn');
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.execute({
+        services: {
+          myCustomService: (executionContext, serviceCallback) => {
+            serviceCallback(null, 'success');
+          }
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          expect(instance.variables.taskInput.Task_0kxsx8j).to.include(['success']);
           done();
         });
       });
