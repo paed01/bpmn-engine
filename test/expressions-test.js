@@ -178,6 +178,16 @@ lab.experiment('expressions', () => {
       done();
     });
 
+    lab.test('expression \${true} return true', (done) => {
+      expect(expressions('${true}')).to.be.true();
+      done();
+    });
+
+    lab.test('expression \${false} return false', (done) => {
+      expect(expressions('${false}')).to.be.false();
+      done();
+    });
+
   });
 
   lab.describe('isExpression(text)', () => {
@@ -207,6 +217,37 @@ lab.experiment('expressions', () => {
 
     lab.test('returns false if no argument is passed', (done) => {
       expect(expressions.isExpression()).to.be.false();
+      done();
+    });
+  });
+
+  lab.describe('hasExpression(text)', () => {
+    lab.test('returns true if expression', (done) => {
+      expect(expressions.hasExpression('${input}')).to.be.true();
+      expect(expressions.hasExpression('${variables.input[#complexName].list[0]}')).to.be.true();
+      expect(expressions.hasExpression('${services.get()}')).to.be.true();
+      done();
+    });
+
+    lab.test('returns true if the string is not an explicit expression', (done) => {
+      expect(expressions.hasExpression('return `${input}`;')).to.be.true();
+      expect(expressions.hasExpression('`${input}`;')).to.be.true();
+      expect(expressions.hasExpression('`${input}`')).to.be.true();
+      done();
+    });
+
+    lab.test('returns false if not expression', (done) => {
+      expect(expressions.hasExpression('{input}')).to.be.false();
+      done();
+    });
+
+    lab.test('returns false if empty expression', (done) => {
+      expect(expressions.hasExpression('${}')).to.be.false();
+      done();
+    });
+
+    lab.test('returns false if no argument is passed', (done) => {
+      expect(expressions.hasExpression()).to.be.false();
       done();
     });
   });
