@@ -453,7 +453,9 @@ lab.experiment('ScriptTask', () => {
   </process>
 </definitions>
         `;
-      testHelpers.getContext(processXml, (err, localContext) => {
+      testHelpers.getContext(processXml, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, localContext) => {
         if (err) return done(err);
 
         localContext.variables = {

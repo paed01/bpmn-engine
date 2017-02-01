@@ -12,39 +12,16 @@ lab.experiment('input/output', () => {
   let context;
   lab.beforeEach((done) => {
     const processXml = factory.resource('service-task-io-types.bpmn').toString();
-    testHelpers.getContext(processXml, (err, result) => {
+    testHelpers.getContext(processXml, {
+      camunda: require('camunda-bpmn-moddle/resources/camunda')
+    }, (err, result) => {
       if (err) return done(err);
       context = result;
       done();
     });
   });
 
-  lab.describe('service task', () => {
-    // lab.describe('getInputArguments()', () => {
-
-    //   lab.test('return list with arguments', (done) => {
-    //     context.variables = {
-    //       apiPath: 'http://example.com',
-    //       input: 1,
-    //       path: '/api/v2'
-    //     };
-
-    //     const task = context.getChildActivityById('serviceTask');
-    //     expect(task).to.include(['io']);
-    //     expect(task.io).to.exist();
-
-    //     const args = task.io.getInputArguments();
-    //     expect(args.length).to.equal(5);
-
-    //     expect(args).to.equal([{
-    //       uri: 'http://example.com'
-    //     }, 1, 'hard coded value', [1, '2'], '/api/v2']);
-
-    //     done();
-    //   });
-
-    // });
-
+  lab.describe('service task with camunda input/output', () => {
     lab.describe('getInput()', () => {
 
       lab.test('return object with named input arguments', (done) => {

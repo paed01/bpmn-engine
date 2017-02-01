@@ -71,6 +71,7 @@ lab.experiment('ServiceTask', () => {
         if (err) return done(err);
 
         const Context = require('../../lib/Context');
+
         function test() {
           new Context('theProcess', moddleContext); // eslint-disable-line no-new
         }
@@ -205,7 +206,10 @@ lab.experiment('ServiceTask', () => {
       const processXml = factory.resource('service-task-io.bpmn');
 
       const engine = new Bpmn.Engine({
-        source: processXml
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
       });
 
       engine.execute({
@@ -380,7 +384,9 @@ lab.experiment('ServiceTask', () => {
     let context;
     lab.beforeEach((done) => {
       const processXml = factory.resource('service-task-io-types.bpmn').toString();
-      testHelpers.getContext(processXml, (err, result) => {
+      testHelpers.getContext(processXml, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, result) => {
         if (err) return done(err);
         context = result;
         done();
@@ -454,13 +460,17 @@ lab.experiment('ServiceTask', () => {
       const task = new ServiceTask(moddleContext.elementsById.sendEmail_1, context);
       expect(task.io.getInput({
         emailAddress: 'testio@example.com'
-      })).to.equal({emailAddress: 'testio@example.com'});
+      })).to.equal({
+        emailAddress: 'testio@example.com'
+      });
       done();
     });
 
     lab.test('io returns input values from context variables', (done) => {
       const task = new ServiceTask(moddleContext.elementsById.sendEmail_1, context);
-      expect(task.io.getInput()).to.equal({emailAddress: 'lisa@example.com'});
+      expect(task.io.getInput()).to.equal({
+        emailAddress: 'lisa@example.com'
+      });
       done();
     });
 
@@ -537,7 +547,218 @@ lab.experiment('ServiceTask', () => {
       }, (err, instance) => {
         if (err) return done(err);
         instance.once('end', () => {
-          expect(instance.variables).to.include({messageId: 10});
+          expect(instance.variables).to.include({
+            messageId: 10
+          });
+          done();
+        });
+      });
+    });
+  });
+
+  lab.describe('Input/output to camunda connector', () => {
+    lab.test('service expects input options', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="serviceTask" name="Call api">
+      <extensionElements>
+        <camunda:connector>
+          <camunda:connectorId>get</camunda:connectorId>
+        </camunda:connector>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="uri">\${variables.api}/v1/data</camunda:inputParameter>
+          <camunda:inputParameter name="json">\${true}</camunda:inputParameter>
+          <camunda:inputParameter name="headers">
+            <camunda:map>
+              <camunda:entry key="User-Agent">curl</camunda:entry>
+              <camunda:entry key="Accept">application/json</camunda:entry>
+            </camunda:map>
+          </camunda:inputParameter>
+          <camunda:outputParameter name="statusCode">\${result[0].statusCode}</camunda:outputParameter>
+          <camunda:outputParameter name="body">\${result[1]}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+  </process>
+</definitions>
+      `;
+
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      nock('http://example.com', {
+        reqheaders: {
+          'User-Agent': 'curl',
+          Accept: 'application/json'
+        }
+      })
+        .defaultReplyHeaders({
+          'Content-Type': 'application/json'
+        })
+        .get('/v1/data')
+        .reply(200, {
+          data: 4
+        });
+
+      engine.execute({
+        services: {
+          get: {
+            module: 'request',
+            fnName: 'get'
+          }
+        },
+        variables: {
+          api: 'http://example.com'
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          expect(instance.variables).to.include({
+            statusCode: 200
+          });
+          expect(instance.variables).to.include({
+            body: {
+              data: 4
+            }
+          });
+          done();
+        });
+      });
+    });
+
+    lab.test('service expects input other services', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="serviceTask" name="Call api">
+      <extensionElements>
+        <camunda:connector>
+          <camunda:connectorId>myFunc</camunda:connectorId>
+        </camunda:connector>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="variables">\${variables}</camunda:inputParameter>
+          <camunda:inputParameter name="services">\${services}</camunda:inputParameter>
+          <camunda:outputParameter name="message">\${result[0]}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+  </process>
+</definitions>
+      `;
+
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.execute({
+        services: {
+          appendPath: (uri) => {
+            return `${uri}/v3/data`;
+          },
+          myFunc: (context, callback) => {
+            const apiWithPath = context.services.appendPath(context.variables.api);
+            callback(null, `successfully executed with ${apiWithPath}`);
+          }
+        },
+        variables: {
+          api: 'http://example.com'
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          expect(instance.variables).to.include({
+            message: 'successfully executed with http://example.com/v3/data'
+          });
+          done();
+        });
+      });
+    });
+  });
+
+  lab.describe('issues', () => {
+
+    lab.test('issue #5', (done) => {
+      const processXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <process id="theProcess" isExecutable="true">
+      <serviceTask id="Task_15g4wm5" name="Dummy Task">
+        <extensionElements>
+          <camunda:properties>
+            <camunda:property name="service" value="dummy" />
+          </camunda:properties>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="templateId">template_1234</camunda:inputParameter>
+            <camunda:inputParameter name="templateArgs">
+              <camunda:map>
+                <camunda:entry key="url"><![CDATA[\${services.getUrl('task1')}]]></camunda:entry>
+              </camunda:map>
+            </camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+    </process>
+  </definitions>
+      `;
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.execute({
+        services: {
+          dummy: (executionContext, serviceCallback) => {
+            serviceCallback(null, ['dummy']);
+          },
+          getUrl: (path) => {
+            return `http://example.com/${path}`;
+          }
+        },
+        variables: {
+          emailAddress: 'lisa@example.com'
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          expect(instance.variables.taskInput.Task_15g4wm5).to.include([
+            ['dummy']
+          ]);
+          done();
+        });
+      });
+    });
+
+    lab.test('issue #7', (done) => {
+      const processXml = factory.resource('issue-7.bpmn');
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.execute({
+        services: {
+          myCustomService: (executionContext, serviceCallback) => {
+            serviceCallback(null, 'success');
+          }
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          expect(instance.variables.taskInput.Task_0kxsx8j).to.include(['success']);
           done();
         });
       });

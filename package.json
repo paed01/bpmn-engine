@@ -32,7 +32,7 @@
     "bpmn 2"
   ],
   "devDependencies": {
-    "camunda-bpmn-moddle": "^0.9.1",
+    "camunda-bpmn-moddle": "^0.10.0",
     "code": "^4.0.0",
     "coveralls": "^2.11.15",
     "lab": "^12.1.0",
@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "async": "^2.1.4",
-    "bpmn-moddle": "^0.13.0",
+    "bpmn-moddle": "^0.14.0",
     "debug": "^2.6.0",
     "iso8601-duration": "^1.0.6"
   },
