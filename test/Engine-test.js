@@ -136,6 +136,17 @@ lab.experiment('engine', () => {
   });
 
   lab.describe('execute()', () => {
+    lab.test('without arguments runs process', (done) => {
+      const engine = new Bpmn.Engine({
+        source: factory.valid()
+      });
+      engine.once('end', () => {
+        done();
+      });
+
+      engine.execute();
+    });
+
     lab.test('sets entry point id to executable process', (done) => {
       const engine = new Bpmn.Engine({
         source: factory.valid()
@@ -165,6 +176,18 @@ lab.experiment('engine', () => {
         expect(err).to.exist();
         done();
       });
+    });
+
+    lab.test('emits error if not well formatted xml', (done) => {
+      const engine = new Bpmn.Engine({
+        source: 'jdalsk'
+      });
+      engine.once('error', (err) => {
+        expect(err).to.be.an.error();
+        done();
+      });
+
+      engine.execute();
     });
 
     lab.test('returns error in callback if no executable process', (done) => {
