@@ -334,4 +334,28 @@ lab.experiment('Context', () => {
     });
 
   });
+
+  lab.describe('getActivityForm()', () => {
+    lab.test('returns form instance', (done) => {
+      testHelpers.getContext(factory.resource('forms.bpmn').toString(), {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, context) => {
+        if (err) return done(err);
+
+        const activity = context.getChildActivityById('start').activity;
+        expect(context.getActivityForm(activity)).to.exist();
+        done();
+      });
+    });
+
+    lab.test('returns undefined if no activity', (done) => {
+      testHelpers.getContext(factory.resource('forms.bpmn').toString(), {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, context) => {
+        if (err) return done(err);
+        expect(context.getActivityForm()).to.be.undefined();
+        done();
+      });
+    });
+  });
 });

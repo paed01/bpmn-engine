@@ -1,5 +1,5 @@
 <!-- version -->
-# 3.0.0 API Reference
+# 3.0.0-rc1 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -12,7 +12,7 @@
     - [Execution `listener`](#execution-listener)
   - [`getState()`](#getstate)
   - [`stop()`](#stop)
-  - [`resume(state, [options], [callback])`](#resumestate-options-callback)
+  - [`resume(state, [options, [callback]])`](#resumestate-options-callback)
   - [`getDefinitions(callback)`](#getdefinitionscallback)
   - [`getDefinition(callback)`](#getdefinitioncallback)
   - [Engine events](#engine-events)

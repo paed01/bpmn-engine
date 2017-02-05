@@ -32,7 +32,7 @@ The following elements are tested and supported.
   - Sequence: javascript- and expression conditions
   - Message
 - Events
-  - Start
+  - [Start](/docs/StartEvent.md)
   - End
   - Error
     - Boundary

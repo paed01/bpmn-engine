@@ -1,7 +1,7 @@
 Changelog
 =========
 
-# 3.0.0
+# 3.0.0-rc1
 
 ## Breaking changes
 - The `Engine` now handles definitions instead of processes, hence:
@@ -13,6 +13,7 @@ Changelog
 ## Changes
 - `Definition` is exposed and can be executed with moddle context and options, see [documentation](/docs/Definition.md)
 - `validation` is exposed and harbours functions for validating moddle context and execute options
+- Support camunda input forms for user task and start event
 
 # 2.0.0
 

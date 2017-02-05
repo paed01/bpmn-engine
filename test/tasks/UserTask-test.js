@@ -152,7 +152,7 @@ lab.experiment('UserTask', () => {
     });
   });
 
-  lab.experiment('#signal', () => {
+  lab.experiment('signal()', () => {
     lab.test('user input is stored with process', (done) => {
 
       const engine = new Bpmn.Engine({
