@@ -1,7 +1,7 @@
 Changelog
 =========
 
-# 3.0.0-rc1
+# 3.0.0-rc.1
 
 ## Breaking changes
 - The `Engine` now handles definitions instead of processes, hence:
