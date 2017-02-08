@@ -17,8 +17,7 @@
   - [`getDefinition(callback)`](#getdefinitioncallback)
   - [Engine events](#engine-events)
   - [Activity events](#activity-events)
-    - [Element events](#element-events)
-    - [Sequence flow events](#sequence-flow-events)
+  - [Sequence flow events](#sequence-flow-events)
   - [Expressions](#expressions)
   - [Task loop](#task-loop)
     - [Cardinality loop](#cardinality-loop)
@@ -233,10 +232,27 @@ engine.execute({
 
 An `EventEmitter` object with listeners. [Event names](#activity-events) are composed by activity event name and activity id, e.g. `wait-userTask`.
 
+```js
+listener.on('wait-userTask', (task, instance) => {
+  console.log(`${task.type} <${task.id}> of ${instance.id} is waiting for input`);
+  task.signal('don´t wait for me');
+});
+```
+
+A generic event is also emitted, i.e. only the [event](#activity-events) is emitted.
+
+```js
+listener.on('entered', (task, instance) => {
+  console.log(`${task.type} <${task.id}> of ${instance.id} is entered`);
+});
+```
+
 Event arguments are:
 
-- `activity`: The activity instance
+- `activity`: The activity
 - `instance`: The running process instance
+
+> NB! An `error` event is NOT emitted through the listener, it should be picked up by an intermediate catch event if handled.
 
 ### `getState()`
 
@@ -366,9 +382,17 @@ const state = db.getState('some-random-id', (err, state) => {
 
 Get definitions. Loads definitions from sources or passed moddle contexts.
 
+- `callback(err, definitions)`:
+  - `err`: Occassional Error if definitions failed to load
+  - `definition`: List of added definitions
+
 ### `getDefinition(callback)`
 
 Utility function to get first definition.
+
+- `callback(err, firstDefinition)`:
+  - `err`: Occassional Error if definitions failed to load
+  - `firstDefinition`: First found definition
 
 ### Engine events
 
@@ -380,17 +404,15 @@ Engine emits the following events:
 
 Each activity and flow emits events when changing state.
 
-#### Element events
-
-- `enter`: An element is entered
-- `start`: An element is started
-- `wait`: An user task waits for signal
+- `enter`: An activity is entered
+- `start`: An activity is started
+- `wait`: A start event or user task waits for signal
 - `end`: A task has ended successfully
-- `cancel`: An element execution was canceled
-- `leave`: The execution left the element
+- `cancel`: An actvitity execution was canceled
+- `leave`: The execution left the actvitity
 - `error`: An error was emitted (unless a bound error event is in place)
 
-#### Sequence flow events
+### Sequence flow events
 
 - `taken`: The sequence flow was taken
 - `discarded`: The sequence flow was discarded
