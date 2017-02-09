@@ -7,9 +7,9 @@
 - [Engine](#engine)
   - [`new Engine([options])`](#new-engineoptions)
   - [`execute([options[, callback]])`](#executeoptions-callback)
+    - [Execution `listener`](#execution-listener)
     - [Execution `variables`](#execution-variables)
     - [Execution `services`](#execution-services)
-    - [Execution `listener`](#execution-listener)
   - [`getState()`](#getstate)
   - [`stop()`](#stop)
   - [`resume(state, [options, [callback]])`](#resumestate-options-callback)
@@ -18,22 +18,24 @@
   - [Engine events](#engine-events)
   - [Activity events](#activity-events)
   - [Sequence flow events](#sequence-flow-events)
-  - [Expressions](#expressions)
-  - [Task loop](#task-loop)
-    - [Cardinality loop](#cardinality-loop)
-    - [Conditional loop](#conditional-loop)
-    - [Collection loop](#collection-loop)
 - [Transformer](#transformer)
   - [`transform(sourceXml, options, callback)`](#transformsourcexml-options-callback)
 - [Validation](#validation)
   - [`validateModdleContext(moddleContext)`](#validatemoddlecontextmoddlecontext)
   - [`validateOptions(executeOptions)`](#validateoptionsexecuteoptions)
+- [Loops](#loops)
+  - [Cardinality loop](#cardinality-loop)
+  - [Conditional loop](#conditional-loop)
+  - [Collection loop](#collection-loop)
+- [Expressions](#expressions)
 
 <!-- tocstop -->
 
-## Engine
+# Engine
 
-### `new Engine([options])`
+The engine. Executes passed BPMN definitions.
+
+## `new Engine([options])`
 
 Creates a new Engine object where:
 
@@ -45,7 +47,7 @@ Creates a new Engine object where:
 
 Options `source` and `context` are mutually exclusive.
 
-Moddle options can be used if an extension is required when parsing BPMN-source. The object will be passed on to the constructor of `bpmn-moddle`. See [camunda-bpmn-moddle][1] for example.
+Moddle options must be used if an extension is required when parsing BPMN-source. The object will be passed on to the constructor of `bpmn-moddle`. See [camunda-bpmn-moddle][1] for example.
 
 ```javascript
 const Bpmn = require('bpmn-engine');
@@ -59,7 +61,7 @@ const engine = new Bpmn.Engine({
 });
 ```
 
-### `execute([options[, callback]])`
+## `execute([options[, callback]])`
 
 Execute definition with:
 
@@ -108,7 +110,41 @@ engine.execute((err, definition) => {
 });
 ```
 
-#### Execution `variables`
+### Execution `listener`
+
+An `EventEmitter` object with listeners. [Event names](#activity-events) are composed by activity event name and activity id, e.g. `wait-userTask`.
+
+```js
+const EventEmitter = require('events').EventEmitter;
+
+const listener = new EventEmitter();
+
+listener.on('wait-userTask', (task, instance) => {
+  console.log(`${task.type} <${task.id}> of ${instance.id} is waiting for input`);
+  task.signal('don´t wait for me');
+});
+
+engine.execute({
+  listener: listener
+})
+```
+
+A generic event is also emitted, i.e. only the [event](#activity-events) is emitted.
+
+```js
+listener.on('entered', (task, instance) => {
+  console.log(`${task.type} <${task.id}> of ${instance.id} is entered`);
+});
+```
+
+Event arguments are:
+
+- `activity`: The activity
+- `instance`: The running process instance
+
+> NB! `error` events are NOT emitted through the listener. Errors can be caught by an bpmn error event if they are to be handled.
+
+### Execution `variables`
 
 Execution variables are passed as the first argument to `#execute`.
 
@@ -136,7 +172,7 @@ engine.execute({
 });
 ```
 
-#### Execution `services`
+### Execution `services`
 
 A service is a module used by e.g. a script tasks or a condition where:
 
@@ -228,33 +264,7 @@ engine.execute({
 });
 ```
 
-#### Execution `listener`
-
-An `EventEmitter` object with listeners. [Event names](#activity-events) are composed by activity event name and activity id, e.g. `wait-userTask`.
-
-```js
-listener.on('wait-userTask', (task, instance) => {
-  console.log(`${task.type} <${task.id}> of ${instance.id} is waiting for input`);
-  task.signal('don´t wait for me');
-});
-```
-
-A generic event is also emitted, i.e. only the [event](#activity-events) is emitted.
-
-```js
-listener.on('entered', (task, instance) => {
-  console.log(`${task.type} <${task.id}> of ${instance.id} is entered`);
-});
-```
-
-Event arguments are:
-
-- `activity`: The activity
-- `instance`: The running process instance
-
-> NB! An `error` event is NOT emitted through the listener, it should be picked up by an intermediate catch event if handled.
-
-### `getState()`
+## `getState()`
 
 Get state of a running execution.
 
@@ -309,7 +319,7 @@ engine.execute({
 });
 ```
 
-### `stop()`
+## `stop()`
 
 Stop execution. The instance is terminated.
 
@@ -352,7 +362,7 @@ engine.execute({
 });
 ```
 
-### `resume(state, [options, [callback]])`
+## `resume(state, [options, [callback]])`
 
 Execute engine `#resume` function with previously saved state.
 
@@ -378,7 +388,7 @@ const state = db.getState('some-random-id', (err, state) => {
 });
 ```
 
-### `getDefinitions(callback)`
+## `getDefinitions(callback)`
 
 Get definitions. Loads definitions from sources or passed moddle contexts.
 
@@ -386,7 +396,35 @@ Get definitions. Loads definitions from sources or passed moddle contexts.
   - `err`: Occassional Error if definitions failed to load
   - `definition`: List of added definitions
 
-### `getDefinition(callback)`
+```javascript
+const Bpmn = require('bpmn-engine');
+
+const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="Definition_42" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <userTask id="userTask" />
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+  </process>
+</definitions>`;
+
+const engine = new Bpmn.Engine({
+  source: processXml
+});
+
+engine.getDefinitions((err, definitions) => {
+  if (err) throw err;
+
+  console.log('Loaded', definitions[0].id);
+
+  console.log('The definition comes with process', definitions[0].getProcesses()[0].id);
+});
+```
+
+## `getDefinition(callback)`
 
 Utility function to get first definition.
 
@@ -394,13 +432,13 @@ Utility function to get first definition.
   - `err`: Occassional Error if definitions failed to load
   - `firstDefinition`: First found definition
 
-### Engine events
+## Engine events
 
 Engine emits the following events:
 
 - `end`: Execution has completed or was stopped.
 
-### Activity events
+## Activity events
 
 Each activity and flow emits events when changing state.
 
@@ -408,81 +446,27 @@ Each activity and flow emits events when changing state.
 - `start`: An activity is started
 - `wait`: A start event or user task waits for signal
 - `end`: A task has ended successfully
-- `cancel`: An actvitity execution was canceled
-- `leave`: The execution left the actvitity
+- `cancel`: An activity execution was canceled
+- `leave`: The execution left the activity
 - `error`: An error was emitted (unless a bound error event is in place)
 
-### Sequence flow events
+## Sequence flow events
 
 - `taken`: The sequence flow was taken
 - `discarded`: The sequence flow was discarded
 
-### Expressions
-
-Expressions come in the form of `${<variables or services>.<property name>}`.
-
-The following expressions are supported:
-
-- `${variables.input}` - resolves to the variable input
-- `${variables.input[0]}` - resolves to first item of the variable input array
-- `${variables.input[spaced name]}` - resolves to the variable input object property `spaced name`
-
-- `${services.getInput}` - return the service function `getInput`
-- `${services.getInput()}` - executes the service function `getInput` with the argument `{services, variables}`
-- `${services.isBelow(variables.input,2)}` - executes the service function `isBelow` with result of `variable.input` value and 2
-
-Expressions are supported in the following elements:
-- MultiInstanceLoopCharacteristics
-  - `camunda:collection`: variable collection, e.g. `${variables.list}`
-- ServiceTask
-  - `camunda:expression` element value. moddleOptions [`require('camunda-bpmn-moddle/resources/camunda')`][1] must be used.
-- SequenceFlow
-  - `conditionExpression` element value
-- TimerEvent
-  - `timeDuration` element value
-
-### Task loop
-
-Task loops can made based conditions, cardinality, or a collection.
-
-#### Cardinality loop
-
-Loop a fixed number of times or until number of iterations match cardinality. The condition body can be a script or an expression.
-
-```xml
-<bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">${variables.list.length}</bpmn:loopCardinality>
-```
-
-#### Conditional loop
-
-Loop until condition is met. The condition body can be a script or an expression.
-
-```xml
-<completionCondition xsi:type="tFormalExpression">\${services.condition(variables.input)}</completionCondition>
-```
-
-#### Collection loop
-
-Loop all items in a list.
-
-```xml
-<bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.list}" />
-```
-
-For `bpmn-moddle` to read the `camunda:collection` namespaced attribute, the engine must be instantiated with moddle options referring [`camunda-bpmn-moddle/resources/camunda`][1].
-
-## Transformer
+# Transformer
 
 Basically a wrapper around [`bpmn-moddle.fromXml`][2].
 
-### `transform(sourceXml, options, callback)`
+## `transform(sourceXml, options, callback)`
 
 - `sourceXml`: String with bpmn definition source
 - `options`: Options to pass to [`bpmn-moddle`][2]
 - `callback`: callback
   - `err`: Occasional error
   - `definition`: Bpmn definition
-  - `context`: Bpmn moddle context
+  - `moddleContext`: Bpmn moddle context
 
 ```javascript
 const Bpmn = require('bpmn-engine');
@@ -514,11 +498,11 @@ Bpmn.transformer.transform(processXml, {
 });
 ```
 
-## Validation
+# Validation
 
 Bpmn engine exposes validation functions.
 
-### `validateModdleContext(moddleContext)`
+## `validateModdleContext(moddleContext)`
 
 Validate moddle context to ensure that it is executable. Returns list of error instances, if any.
 
@@ -550,11 +534,71 @@ Bpmn.transformer.transform(processXml, {
 });
 ```
 
-### `validateOptions(executeOptions)`
+## `validateOptions(executeOptions)`
 
 Validate [execution options](#executeoptions-callback) to ensure that it is correct. Throws error if invalid.
 
 - `executeOptions`: Execution options object
+
+
+# Loops
+
+Task loops can made based conditions, cardinality, or a collection.
+
+## Cardinality loop
+
+Loop a fixed number of times or until number of iterations match cardinality. The cardinality body an integer or an expression.
+
+```xml
+<bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">${variables.list.length}</bpmn:loopCardinality>
+```
+
+## Conditional loop
+
+Loop until condition is met. The condition body can be a script or an expression.
+
+```xml
+<completionCondition xsi:type="tFormalExpression">\${services.condition(variables.input)}</completionCondition>
+```
+
+## Collection loop
+
+Loop all items in a list.
+
+```xml
+<bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.list}" />
+```
+
+For `bpmn-moddle` to read the `camunda:collection` namespaced attribute, the engine must be instantiated with moddle options referring [`camunda-bpmn-moddle/resources/camunda`][1].
+
+# Expressions
+
+Expressions come in the form of `${<variables or services>.<property name>}`.
+
+The following expressions are supported:
+
+- `${variables.input}` - resolves to the variable input
+- `${variables.input[0]}` - resolves to first item of the variable input array
+- `${variables.input[spaced name]}` - resolves to the variable input object property `spaced name`
+
+- `${services.getInput}` - return the service function `getInput`
+- `${services.getInput()}` - executes the service function `getInput` with the argument `{services, variables}`
+- `${services.isBelow(variables.input,2)}` - executes the service function `isBelow` with result of `variable.input` value and 2
+
+and, as utility:
+
+- `${true}` - return Boolean value `true`
+- `${false}` - return Boolean value `false`
+
+Expressions are supported by many elements, e.g.:
+- MultiInstanceLoopCharacteristics
+  - `camunda:collection`: variable collection, e.g. `${variables.list}`
+- ServiceTask
+  - `camunda:expression` element value. moddleOptions [`require('camunda-bpmn-moddle/resources/camunda')`][1] must be used.
+- SequenceFlow
+  - `conditionExpression` element value
+- TimerEvent
+  - `timeDuration` element value
 
 [1]: https://www.npmjs.com/package/camunda-bpmn-moddle
 [2]: https://www.npmjs.com/package/bpmn-moddle

@@ -95,7 +95,7 @@ Emitted events.
 
 ## `start`
 
-Definition has executed but not yet started any processes.
+Definition started execution but not yet any processes.
 
 ## `end`
 

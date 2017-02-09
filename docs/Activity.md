@@ -22,6 +22,9 @@ Base of almost all bpmn activity types.
 
 ## `execute([message])`
 ## `signal([output])`
+
+
+
 ## `cancel()`
 
 Cancels execution and takes all outbound sequence flows.

@@ -89,6 +89,10 @@ listener.once('wait-userTask', (task) => {
   });
 });
 
+listener.on('taken', (flow) => {
+  console.log(`flow <${flow.id}> was taken`);
+});
+
 engine.execute({
   listener: listener
 }, (err, instance) => {
