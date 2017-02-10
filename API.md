@@ -66,7 +66,7 @@ const engine = new Bpmn.Engine({
 Execute definition with:
 
 - `options`: Optional object
-  - [`listener`](#execution-listener): an `EventEmitter` object
+  - [`listener`](#execution-listener): Listen for [activity events](#activity-events), an `EventEmitter` object
   - [`variables`](#execution-variables): Optional object with instance variables
   - [`services`](#execution-services): Optional object with service definitions
 - `callback`: optional callback
@@ -436,7 +436,8 @@ Utility function to get first definition.
 
 Engine emits the following events:
 
-- `end`: Execution has completed or was stopped.
+- `error`: An non-recoverable error has occurred
+- `end`: Execution has completed or was stopped
 
 ## Activity events
 
@@ -448,7 +449,8 @@ Each activity and flow emits events when changing state.
 - `end`: A task has ended successfully
 - `cancel`: An activity execution was canceled
 - `leave`: The execution left the activity
-- `error`: An error was emitted (unless a bound error event is in place)
+- `error`: An non-recoverable error has occurred
+  The error event will not be emitted if an `bpmn:errorEvent` is attached
 
 ## Sequence flow events
 
