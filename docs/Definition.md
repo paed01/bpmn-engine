@@ -8,6 +8,7 @@ Executable BPMN 2 definition. Pass moddle context and execute.
 - [API](#api)
   - [`new Definition(moddleContext[, options])`](#new-definitionmoddlecontext-options)
   - [`execute([options[, callback]])`](#executeoptions-callback)
+  - [`signal(activityId[, message])`](#signalactivityid-message)
   - [`stop()`](#stop)
   - [`getState()`](#getstate)
   - [`resume(definitionState[, options[, callback]])`](#resumedefinitionstate-options-callback)
@@ -42,6 +43,15 @@ Definition constructor.
   - `err`: Occasional error
   - `mainProcess`: Executing process
   - `processes`: All processes including executable process
+
+## `signal(activityId[, message])`
+
+Signal an activity that is waiting.
+
+- `activityId`: Activity Id
+- `message`: Activity input message
+
+Returns boolean, `true` if signal was approved and `false` otherwise.
 
 ## `stop()`
 

@@ -524,7 +524,7 @@ lab.experiment('Definition', () => {
         done();
       });
     });
-    lab.beforeEach((done)=> {
+    lab.beforeEach((done) => {
       const listener = new EventEmitter();
       const definition = new Definition(moddleContext);
       listener.on('wait-userTask', () => {
@@ -621,7 +621,7 @@ lab.experiment('Definition', () => {
     });
   });
 
-  lab.describe('getChildActivityById', () => {
+  lab.describe('getChildActivityById()', () => {
     let moddleContext;
     lab.before((done) => {
       const processXml = factory.resource('lanes.bpmn');
@@ -648,6 +648,49 @@ lab.experiment('Definition', () => {
       const definition = new Definition(moddleContext);
       expect(definition.getChildActivityById('whoAmITask')).to.not.exist();
       done();
+    });
+  });
+
+  lab.describe('signal()', () => {
+    let moddleContext;
+    lab.before((done) => {
+      testHelpers.getModdleContext(factory.userTask('userTask1'), (err, result) => {
+        if (err) return done(err);
+        moddleContext = result;
+        done();
+      });
+    });
+
+    lab.test('signals child activity', (done) => {
+      const definition = new Definition(moddleContext);
+      const listener = new EventEmitter();
+
+      listener.once('wait', (task) => {
+        expect(definition.signal(task.id, 'it´s me')).to.be.true();
+      });
+
+      definition.once('end', () => {
+        expect(definition.variables.inputFromUser).to.equal('it´s me');
+        done();
+      });
+
+      definition.execute({
+        listener: listener
+      });
+    });
+
+    lab.test('ignored if activity is not found by id', (done) => {
+      const definition = new Definition(moddleContext);
+      const listener = new EventEmitter();
+
+      listener.once('wait', () => {
+        expect(definition.signal('madeUpId', 'who am I')).to.be.false();
+        done();
+      });
+
+      definition.execute({
+        listener: listener
+      });
     });
   });
 });
