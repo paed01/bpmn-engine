@@ -602,5 +602,7 @@ Expressions are supported by many elements, e.g.:
 - TimerEvent
   - `timeDuration` element value
 
+Expressions in expressions is **not** supported.
+
 [1]: https://www.npmjs.com/package/camunda-bpmn-moddle
 [2]: https://www.npmjs.com/package/bpmn-moddle
