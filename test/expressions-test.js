@@ -89,13 +89,23 @@ lab.experiment('expressions', () => {
         done();
       });
 
-      lab.test('expression in expression is not supported', (done) => {
+      lab.test('expression in expression is not supported and returns weird value', (done) => {
         expect(expressions('PT${variables[${variables.property}]}S', {
           variables: {
             input: 0.1,
             property: 'input'
           }
-        })).to.equal('PTS');
+        })).to.equal('PTinput]}S');
+        done();
+      });
+
+      lab.test('combined', (done) => {
+        expect(expressions('http://${variables.host}${variables.pathname}', {
+          variables: {
+            host: 'example.com',
+            pathname: '/api/v1'
+          }
+        })).to.equal('http://example.com/api/v1');
         done();
       });
     });

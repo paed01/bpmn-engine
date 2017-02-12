@@ -417,6 +417,8 @@ Expressions are supported in the following elements:
 - TimerEvent
   - `timeDuration` element value
 
+Expressions in expressions is **not** supported.
+
 ### Task loop
 
 Task loops can made based conditions, cardinality, or a collection.
