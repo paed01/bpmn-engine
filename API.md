@@ -436,7 +436,9 @@ Utility function to get first definition.
 
 Engine emits the following events:
 
-- `error`: An non-recoverable error has occurred
+- `error`: An non-recoverable error has occurred, with arguments
+  - `err`: The error
+  - `eventSource`: The source instance that emitted error, e.g. a task or other activitiy
 - `end`: Execution has completed or was stopped
 
 ## Activity events

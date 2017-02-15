@@ -248,6 +248,37 @@ lab.experiment('Engine', () => {
       });
     });
 
+    lab.test('emits error if execution fails', (done) => {
+      const engine = new Bpmn.Engine({
+        name: 'end test',
+        source: `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" />
+  </process>
+</definitions>`,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+      engine.once('error', (err) => {
+        expect(err).to.be.an.error('Inner error');
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
+      });
+
+      engine.execute({
+        services: {
+          get: (context, next) => {
+            next(new Error('Inner error'));
+          }
+        }
+      }, (err) => {
+        if (err) return done(err);
+      });
+    });
+
     lab.test('runs process with deserialized context', (done) => {
       const moddle = new BpmnModdle();
       moddle.fromXML(factory.resource('lanes.bpmn').toString(), (moddleErr, definition, context) => {

@@ -206,15 +206,18 @@ lab.experiment('InclusiveGateway', () => {
     const engine = new Bpmn.Engine({
       source: definitionXml
     });
+    engine.once('error', (err, gateway) => {
+      expect(err).to.be.an.error(/no conditional flow/i);
+      expect(gateway).to.include({id: 'decision'});
+      done();
+    });
+
     engine.execute({
       variables: {
         input: 61
       }
-    }, (err, execution) => {
+    }, (err) => {
       if (err) return done(err);
-      execution.once('error', () => {
-        done();
-      });
     });
   });
 });

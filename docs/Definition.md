@@ -114,3 +114,8 @@ All processes have completed.
 ## `error`
 
 A non-recoverable error has ocurred.
+
+Arguments:
+- `err`: The error
+- `eventSource`: The source instance that emitted error, e.g. a task or other activitiy
+

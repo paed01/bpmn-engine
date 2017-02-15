@@ -246,15 +246,18 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     const engine = new Bpmn.Engine({
       source: processXml
     });
+    engine.once('error', (err, gateway) => {
+      expect(err).to.be.an.error(/no conditional flow/i);
+      expect(gateway).to.include({id: 'decision'});
+      done();
+    });
+
     engine.execute({
       variables: {
         input: 61
       }
-    }, (err, execution) => {
+    }, (err) => {
       if (err) return done(err);
-      execution.once('error', () => {
-        done();
-      });
     });
   });
 });

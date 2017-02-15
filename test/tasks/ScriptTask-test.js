@@ -161,9 +161,10 @@ lab.experiment('ScriptTask', () => {
         const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
         const task = process.getChildActivityById('scriptTask');
 
-        task.once('error', (e) => {
+        task.once('error', (e, tsk) => {
           expect(e).to.exist();
           expect(e).to.be.an.error(Error, 'Inside');
+          expect(tsk).to.include({id: 'scriptTask'});
           done();
         });
 
