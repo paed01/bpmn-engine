@@ -264,6 +264,7 @@ lab.experiment('Engine', () => {
       });
       engine.once('error', (err) => {
         expect(err).to.be.an.error('Inner error');
+        expect(engine.started).to.be.false();
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -414,12 +415,14 @@ lab.experiment('Engine', () => {
 
     lab.test('returns state of running definitions', (done) => {
       const engine = new Bpmn.Engine({
+        name: 'running',
         source: processXml
       });
       const listener = new EventEmitter();
 
       listener.on('wait-userTask', () => {
         const state = engine.getState();
+        expect(state.name).to.equal('running');
         expect(state.definitions).to.have.length(1);
         expect(state.definitions[0]).to.be.an.object();
         expect(state.definitions[0].processes).to.be.an.object();
@@ -437,15 +440,92 @@ lab.experiment('Engine', () => {
     });
   });
 
-  lab.describe('resume()', () => {
-    lab.test('with invalid state returns error in callback', (done) => {
-      const engine = new Bpmn.Engine();
-      engine.resume({
-        definitions: 'invalid array'
-      }, (err) => {
-        expect(err).to.be.an.error(/must be an array/);
-        done();
+  lab.describe('Engine.resume()', () => {
+    let engineState;
+    lab.before((done) => {
+      const engine = new Bpmn.Engine({
+        name: 'test resume',
+        source: factory.userTask()
       });
+      const listener = new EventEmitter();
+
+      listener.on('wait-userTask', () => {
+        engineState = engine.getState();
+        engine.stop();
+      });
+
+      engine.execute({
+        listener: listener,
+        variables: {
+          input: null
+        }
+      });
+      engine.once('end', done.bind(null, null));
+    });
+
+    lab.test('resumes execution and returns definition in callback', (done) => {
+      const resumeListener = new EventEmitter();
+      const resumedEngine = Bpmn.Engine.resume(testHelpers.readFromDb(engineState), {
+        listener: resumeListener
+      }, (resumeErr, instance) => {
+        if (resumeErr) return done(resumeErr);
+        instance.signal('userTask');
+      });
+
+      resumedEngine.once('end', done.bind(null, null));
+    });
+
+    lab.test('resumes without callback', (done) => {
+      const resumeListener = new EventEmitter();
+      resumeListener.once('wait', (task) => {
+        task.signal();
+      });
+
+      const resumedEngine = Bpmn.Engine.resume(testHelpers.readFromDb(engineState), {
+        listener: resumeListener
+      });
+
+      resumedEngine.once('end', done.bind(null, null));
+    });
+
+    lab.test('resume failure emits error if no callback', (done) => {
+      testHelpers.getModdleContext(factory.invalid(), {}, (merr, moddleContext) => {
+        const engine = Bpmn.Engine.resume({
+          name: 'Invalid state',
+          definitions: [{
+            id: 'who',
+            moddleContext: moddleContext
+          }],
+        });
+        engine.once('error', () => {
+          done();
+        });
+      });
+    });
+
+    lab.test('resume failure returns error in callback', (done) => {
+      testHelpers.getModdleContext(factory.invalid(), {}, (merr, moddleContext) => {
+        Bpmn.Engine.resume({
+          name: 'Invalid state',
+          definitions: [{
+            id: 'who',
+            moddleContext: moddleContext
+          }],
+        }, (err) => {
+          expect(err).to.be.an.error();
+          done();
+        });
+      });
+    });
+
+    lab.test('with invalid engine state throws', (done) => {
+      function fn() {
+        Bpmn.Engine.resume({
+          definitions: 'invalid array'
+        });
+      }
+      expect(fn).to.throw(/must be an array/);
+      done();
     });
   });
 
@@ -518,6 +598,22 @@ lab.experiment('Engine', () => {
         if (err) return done(err);
         expect(engine.definitions.length).to.equal(1);
         done();
+      });
+    });
+
+    lab.test('adds definition once, identified by id', (done) => {
+      const engine = new Bpmn.Engine();
+      const source = factory.valid('def1');
+
+      engine.addDefinitionBySource(source, (err1) => {
+        if (err1) return done(err1);
+        expect(engine.definitions.length).to.equal(1);
+
+        engine.addDefinitionBySource(source, (err2) => {
+          if (err2) return done(err2);
+          expect(engine.definitions.length).to.equal(1);
+          done();
+        });
       });
     });
 

@@ -362,9 +362,9 @@ engine.execute({
 });
 ```
 
-## `resume(state, [options, [callback]])`
+## `Engine.resume(state, [options, [callback]])`
 
-Execute engine `#resume` function with previously saved state.
+Resume execution function with previously saved engine state.
 
 ```javascript
 'use strict';
@@ -376,14 +376,9 @@ const EventEmitter = require('events').EventEmitter;
 const state = db.getState('some-random-id', (err, state) => {
   if (err) return console.log(err.message);
 
-  const engine = new Bpmn.Engine();
-
+  const engine = Bpmn.Engine.resume(state);
   engine.on('end', () => {
     console.log('resumed instance completed');
-  });
-
-  engine.resume(state, (err, instance) => {
-    if (err) throw err;
   });
 });
 ```

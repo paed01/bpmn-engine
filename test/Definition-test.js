@@ -514,8 +514,8 @@ lab.experiment('Definition', () => {
     });
   });
 
-  lab.describe('resume()', () => {
-    const processXml = factory.userTask();
+  lab.describe('Definition.resume()', () => {
+    const processXml = factory.userTask(null, 'resumeDef');
     let moddleContext, state;
     lab.before((done) => {
       testHelpers.getModdleContext(processXml, (err, result) => {
@@ -555,16 +555,15 @@ lab.experiment('Definition', () => {
         task.signal('Continue');
       });
 
-      const definition2 = new Definition(state.moddleContext, {
+      const definition2 = Definition.resume(testHelpers.readFromDb(state), {
         listener: listener2
+      }, (err) => {
+        if (err) return done(err);
       });
+
       definition2.once('end', () => {
         testHelpers.expectNoLingeringListenersOnDefinition(definition2);
         done();
-      });
-
-      definition2.resume(testHelpers.readFromDb(state), (err) => {
-        if (err) return done(err);
       });
     });
 
@@ -575,15 +574,13 @@ lab.experiment('Definition', () => {
         task.signal('Continue');
       });
 
-      const definition2 = new Definition(state.moddleContext, {
+      const definition2 = Definition.resume(testHelpers.readFromDb(state), {
         listener: listener2
       });
       definition2.once('end', () => {
         testHelpers.expectNoLingeringListenersOnDefinition(definition2);
         done();
       });
-
-      definition2.resume(testHelpers.readFromDb(state));
     });
 
     lab.test('takes options', (done) => {
@@ -593,16 +590,15 @@ lab.experiment('Definition', () => {
         task.signal('Continue');
       });
 
-      const definition2 = new Definition(state.moddleContext);
-      definition2.once('end', () => {
-        testHelpers.expectNoLingeringListenersOnDefinition(definition2);
-        done();
-      });
-
-      definition2.resume(testHelpers.readFromDb(state), {
+      const definition2 = Definition.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err) => {
         if (err) return done(err);
+      });
+
+      definition2.once('end', () => {
+        testHelpers.expectNoLingeringListenersOnDefinition(definition2);
+        done();
       });
     });
 
@@ -612,13 +608,55 @@ lab.experiment('Definition', () => {
           moddleContext: invalidContext
         });
 
-        const definition2 = new Definition(state.moddleContext);
-        definition2.resume(invalidState, (err) => {
+        Definition.resume(invalidState, (err) => {
           expect(err).to.be.an.error();
           done();
         });
       });
     });
+
+    lab.test('options is optional', (done) => {
+      testHelpers.getModdleContext(factory.valid('immediateStop'), {}, (err, validModdleContext) => {
+        if (err) return done(err);
+
+        const listener1 = new EventEmitter();
+
+        let startState;
+        const definition1 = new Definition(validModdleContext);
+        listener1.once('enter-theStart', () => {
+          startState = definition1.getState();
+          definition1.stop();
+        });
+
+        definition1.once('end', () => {
+
+          testHelpers.expectNoLingeringListenersOnDefinition(definition1);
+
+          const definition2 = Definition.resume(startState);
+          definition2.once('end', () => {
+            testHelpers.expectNoLingeringListenersOnDefinition(definition2);
+            done();
+          });
+        });
+
+        definition1.execute({
+          listener: listener1
+        });
+      });
+    });
+
+    lab.test('resume failure emits error if no callback', (done) => {
+      testHelpers.getModdleContext(factory.invalid(), {}, (merr, result) => {
+        const definitionf = Definition.resume({
+          id: 'who',
+          moddleContext: result
+        });
+        definitionf.once('error', () => {
+          done();
+        });
+      });
+    });
+
   });
 
   lab.describe('getChildActivityById()', () => {

@@ -362,7 +362,10 @@ const processXml = `
 
 const engine = new Bpmn.Engine({
   name: 'service task example 1',
-  source: processXml
+  source: processXml,
+  moddleOptions: {
+    camunda: require('camunda-bpmn-moddle/resources/camunda')
+  }
 });
 
 engine.execute({
@@ -430,8 +433,12 @@ result;
   `;
 
 const engine = new Bpmn.Engine({
-  source: processXml
+  source: processXml,
+  moddleOptions: {
+    camunda: require('camunda-bpmn-moddle/resources/camunda')
+  }
 });
+
 engine.execute({
   variables: {
     apiPath: 'http://example.com/test'

@@ -447,11 +447,7 @@ lab.experiment('TimerEvent', () => {
         listener2.once('wait-takeMeFirst', (task) => {
           task.signal('Continue');
         });
-        const engine2 = new Bpmn.Engine({
-          source: state.source,
-          name: 'resumeMe'
-        });
-        engine2.resume(state, {
+        Bpmn.Engine.resume(state, {
           listener: listener2
         }, (err, resumedInstance) => {
           if (err) return done(err);

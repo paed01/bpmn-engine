@@ -11,9 +11,9 @@ Executable BPMN 2 definition. Pass moddle context and execute.
   - [`signal(activityId[, message])`](#signalactivityid-message)
   - [`stop()`](#stop)
   - [`getState()`](#getstate)
-  - [`resume(definitionState[, options[, callback]])`](#resumedefinitionstate-options-callback)
   - [`getProcesses([options[, callback]])`](#getprocessesoptions-callback)
   - [`getChildActivityById(id)`](#getchildactivitybyidid)
+  - [`Definition.resume(definitionState[, options[, callback]])`](#definitionresumedefinitionstate-options-callback)
 - [Events](#events)
   - [`start`](#start)
   - [`end`](#end)
@@ -69,17 +69,6 @@ Get definition state.
   - `children`: List of child states
     - `entered`: Boolean indicating if the child is currently executing
 
-## `resume(definitionState[, options[, callback]])`
-
-Resume execution. Resumed with data from [`getState()`](#getstate).
-
-- `options`: Optional execute options, defaults to constructor options
-  - `listener`
-- `callback`: Optional callback
-  - `err`: Occasional error
-  - `mainProcess`: Executing process
-  - `processes`: All processes including executable process
-
 ## `getProcesses([options[, callback]])`
 
 Returns list of definiton processes with options. If the definition is running the running processes are returned.
@@ -98,6 +87,19 @@ The function is synchronous but can be passed a callback to get the first execut
 ## `getChildActivityById(id)`
 
 Get process activity by id. Loops processes to return first child activity that match id.
+
+## `Definition.resume(definitionState[, options[, callback]])`
+
+Resume execution. Resumed with data from [`getState()`](#getstate).
+
+Returns resumed definition.
+
+- `options`: Optional execute options, defaults to constructor options
+  - `listener`
+- `callback`: Optional callback
+  - `err`: Occasional error
+  - `mainProcess`: Executing process
+  - `processes`: All processes including executable process
 
 # Events
 

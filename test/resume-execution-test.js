@@ -10,12 +10,13 @@ const testHelpers = require('./helpers/testHelpers');
 const expect = Code.expect;
 const lab = exports.lab = Lab.script();
 const Bpmn = require('../');
+const Engine = Bpmn.Engine;
 
 lab.experiment('Resume execution', () => {
 
   lab.test('starts with stopped task', (done) => {
     const processXml = factory.userTask();
-    const engine = new Bpmn.Engine({
+    const engine = new Engine({
       source: processXml,
       name: 'new'
     });
@@ -42,14 +43,14 @@ lab.experiment('Resume execution', () => {
         task.signal('Continue');
       });
 
-      engine.once('end', () => {
-        done();
-      });
-
-      engine.resume(testHelpers.readFromDb(state), {
+      const resumedEngine = Engine.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err) => {
         if (err) return done(err);
+      });
+
+      resumedEngine.once('end', () => {
+        done();
       });
     });
 
@@ -57,57 +58,6 @@ lab.experiment('Resume execution', () => {
       listener: listener1,
       variables: {
         input: 'start'
-      }
-    }, (err) => {
-      if (err) return done(err);
-    });
-  });
-
-  lab.test('resumes stopped process even if engine is loaded with different process/version', (done) => {
-    const processXml = factory.userTask();
-    const engine1 = new Bpmn.Engine({
-      source: processXml,
-      name: 'stopMe'
-    });
-    const listener1 = new EventEmitter();
-
-    let state;
-    listener1.once('wait-userTask', () => {
-      state = engine1.getState();
-      engine1.stop();
-    });
-
-    engine1.once('end', () => {
-      testHelpers.expectNoLingeringListenersOnEngine(engine1);
-
-      const listener2 = new EventEmitter();
-      const engine2 = new Bpmn.Engine({
-        source: factory.valid(),
-        name: 'resumeMe'
-      });
-      listener2.once('start-theStart', (activity) => {
-        Code.fail(`<${activity.id}> should not have been started`);
-      });
-
-      listener2.once('wait-userTask', (task) => {
-        task.signal('Continue');
-      });
-
-      engine2.once('end', () => {
-        done();
-      });
-
-      engine2.resume(testHelpers.readFromDb(state), {
-        listener: listener2
-      }, (err) => {
-        if (err) return done(err);
-      });
-    });
-
-    engine1.execute({
-      listener: listener1,
-      variables: {
-        input: null
       }
     }, (err) => {
       if (err) return done(err);
@@ -152,11 +102,7 @@ lab.experiment('Resume execution', () => {
         task.signal('Continue');
       });
 
-      const engine2 = new Bpmn.Engine({
-        source: state.source,
-        name: 'resumeMe'
-      });
-      engine2.resume(testHelpers.readFromDb(state), {
+      Engine.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err, resumedInstance) => {
         if (err) return done(err);
@@ -217,11 +163,7 @@ lab.experiment('Resume execution', () => {
       const timeout = state.definitions[0].processes.interruptedProcess.children.find(c => c.id === 'timeoutEvent').timeout;
       expect(timeout).to.be.between(0, 99);
 
-      const engine2 = new Bpmn.Engine({
-        source: state.source,
-        name: 'resumeMe'
-      });
-      engine2.resume(testHelpers.readFromDb(state), (err, resumedInstance) => {
+      Engine.resume(testHelpers.readFromDb(state), (err, resumedInstance) => {
         const startedAt = new Date();
         if (err) return done(err);
 
@@ -292,11 +234,6 @@ if (!variables.input) {
 
       delete state.definitions[0].processes.interruptedProcess.variables.input;
 
-      const engine2 = new Bpmn.Engine({
-        source: state.source,
-        name: 'resumeMe'
-      });
-
       const listener2 = new EventEmitter();
 
       listener2.on('end-scriptTask', (activity) => {
@@ -306,7 +243,7 @@ if (!variables.input) {
         Code.fail(`<${activity.id}> should not have been taken`);
       });
 
-      engine2.resume(testHelpers.readFromDb(state), {
+      Engine.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err, resumedInstance) => {
         if (err) return done(err);
@@ -382,14 +319,11 @@ if (!variables.input) {
     engine1.once('end', () => {
       testHelpers.expectNoLingeringListenersOnEngine(engine1);
 
-      const engine2 = new Bpmn.Engine({
-        source: state.source
-      });
       const listener2 = new EventEmitter();
       listener2.once('wait-userTask', (task) => {
         task.signal();
       });
-      engine2.resume(testHelpers.readFromDb(state), {
+      Engine.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err, instance) => {
         if (err) return done(err);
@@ -467,14 +401,11 @@ if (!variables.input) {
     engine1.once('end', () => {
       testHelpers.expectNoLingeringListenersOnEngine(engine1);
 
-      const engine2 = new Bpmn.Engine({
-        source: state.source
-      });
       const listener2 = new EventEmitter();
       listener2.once('wait-userTask', (task) => {
         task.signal();
       });
-      engine2.resume(testHelpers.readFromDb(state), {
+      Engine.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err, instance) => {
         if (err) return done(err);
@@ -537,15 +468,12 @@ if (!variables.input) {
     engine1.once('end', () => {
       testHelpers.expectNoLingeringListenersOnEngine(engine1);
 
-      const engine2 = new Bpmn.Engine({
-        source: state.source
-      });
       const listener2 = new EventEmitter();
       listener2.once('wait-userTask', (task) => {
         task.signal();
       });
 
-      engine2.resume(testHelpers.readFromDb(state), {
+      Engine.resume(testHelpers.readFromDb(state), {
         listener: listener2
       }, (err, instance) => {
         if (err) return done(err);

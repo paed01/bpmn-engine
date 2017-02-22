@@ -1,7 +1,7 @@
 Changelog
 =========
 
-# 3.0.0-rc.1
+# 3.0.0-rc
 
 ## Breaking changes
 - The `Engine` now handles definitions instead of processes, hence:
@@ -9,6 +9,7 @@ Changelog
   - `getState()` returns executing definition instead of processes
 - Engine `getState()` and `resume(state)` does no longer return or need the actual definition source. They work with moddle contexts.
 - `Transformer` is now called `transformer` since it is not called with `new`
+- Engine instance `resume()` is now a "static" function on engine, i.e. `Engine.resume`
 
 ## Changes
 - `Definition` is exposed and can be executed with moddle context and options, see [documentation](/docs/Definition.md)

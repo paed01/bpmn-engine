@@ -50,17 +50,15 @@ lab.experiment('Resume task loop', () => {
     engine1.once('end', () => {
       testHelpers.expectNoLingeringListenersOnEngine(engine1);
 
-      const engine2 = new Bpmn.Engine({
-        source: state.source
+      const engine2 = Bpmn.Engine.resume(testHelpers.readFromDb(state), {listener: listener}, (err) => {
+        if (err) return done(err);
       });
 
-      engine2.resume(testHelpers.readFromDb(state), {listener: listener}, (err, instance) => {
-        if (err) return done(err);
+      engine2.once('end', () => {
+        testHelpers.expectNoLingeringListenersOnEngine(engine2);
 
-        instance.once('end', () => {
-          expect(startCount).to.equal(5);
-          done();
-        });
+        expect(startCount).to.equal(5);
+        done();
       });
     });
 
@@ -73,7 +71,7 @@ lab.experiment('Resume task loop', () => {
 
     lab.test('resumes task in collection loop', (done) => {
       const processXml = `
-  <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  <bpmn:definitions id= "Definitions_2" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
     <bpmn:process id="Process_1" isExecutable="true">
       <bpmn:serviceTask id="recurring" name="Each item" camunda:expression="\${services.loop}">
@@ -122,18 +120,15 @@ lab.experiment('Resume task loop', () => {
       engine1.once('end', () => {
         testHelpers.expectNoLingeringListenersOnEngine(engine1);
 
-        const engine2 = new Bpmn.Engine({
-          source: state.source
-        });
-
-        engine2.resume(testHelpers.readFromDb(state), {}, (err, instance) => {
+        const engine2 = Bpmn.Engine.resume(testHelpers.readFromDb(state), (err) => {
           if (err) return done(err);
-
-          instance.once('end', () => {
-            expect(instance.processes[0].variables.taskInput.recurring[0]).to.equal(13);
-            done();
-          });
         });
+
+        engine2.once('end', (engn, def) => {
+          expect(def.processes[0].variables.taskInput.recurring[0]).to.equal(13);
+          done();
+        });
+
       });
 
       engine1.execute(options, (err) => {
