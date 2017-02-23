@@ -108,6 +108,16 @@ lab.experiment('expressions', () => {
         })).to.equal('http://example.com/api/v1');
         done();
       });
+
+      lab.test('inserts nothing if variable is found but undefined', (done) => {
+        expect(expressions('http://${variables.host}${variables.pathname}', {
+          variables: {
+            host: 'example.com',
+            pathname: undefined
+          }
+        })).to.equal('http://example.com');
+        done();
+      });
     });
   });
 
