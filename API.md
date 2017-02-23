@@ -1,5 +1,5 @@
 <!-- version -->
-# 3.0.0-rc.4 API Reference
+# 3.0.0-rc.5 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -12,7 +12,7 @@
     - [Execution `services`](#execution-services)
   - [`getState()`](#getstate)
   - [`stop()`](#stop)
-  - [`resume(state, [options, [callback]])`](#resumestate-options-callback)
+  - [`Engine.resume(state, [options, [callback]])`](#engineresumestate-options-callback)
   - [`getDefinitions(callback)`](#getdefinitionscallback)
   - [`getDefinition(callback)`](#getdefinitioncallback)
   - [Engine events](#engine-events)
