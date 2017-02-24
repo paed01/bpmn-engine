@@ -7,12 +7,12 @@ Executable BPMN 2 definition. Pass moddle context and execute.
 
 - [API](#api)
   - [`new Definition(moddleContext[, options])`](#new-definitionmoddlecontext-options)
-  - [`execute([options[, callback]])`](#executeoptions-callback)
-  - [`signal(activityId[, message])`](#signalactivityid-message)
-  - [`stop()`](#stop)
-  - [`getState()`](#getstate)
-  - [`getProcesses([options[, callback]])`](#getprocessesoptions-callback)
-  - [`getChildActivityById(id)`](#getchildactivitybyidid)
+    - [`execute([options[, callback]])`](#executeoptions-callback)
+    - [`signal(activityId[, message])`](#signalactivityid-message)
+    - [`stop()`](#stop)
+    - [`getState()`](#getstate)
+    - [`getProcesses([options[, callback]])`](#getprocessesoptions-callback)
+    - [`getChildActivityById(id)`](#getchildactivitybyidid)
   - [`Definition.resume(definitionState[, options[, callback]])`](#definitionresumedefinitionstate-options-callback)
 - [Events](#events)
   - [`start`](#start)
@@ -27,24 +27,24 @@ Executable BPMN 2 definition. Pass moddle context and execute.
 
 Definition constructor.
 
-- `moddleContext`: Moddle context
+- `moddleContext`: Moddle context from [bpmn-moddle][2]
 - `options`: Optional execute options
   - `variables`
   - `services`
-  - `listener`
+  - [`listener`](/API.md#execution-listener)
 
-## `execute([options[, callback]])`
+### `execute([options[, callback]])`
 
 - `options`: Optional execute options, defaults to constructor options
   - `variables`
   - `services`
-  - `listener`
+  - [`listener`](/API.md#execution-listener)
 - `callback`: Optional callback
   - `err`: Occasional error
   - `mainProcess`: Executing process
   - `processes`: All processes including executable process
 
-## `signal(activityId[, message])`
+### `signal(activityId[, message])`
 
 Signal an activity that is waiting.
 
@@ -53,11 +53,11 @@ Signal an activity that is waiting.
 
 Returns boolean, `true` if signal was approved and `false` otherwise.
 
-## `stop()`
+### `stop()`
 
 Stop execution.
 
-## `getState()`
+### `getState()`
 
 Get definition state.
 
@@ -69,13 +69,13 @@ Get definition state.
   - `children`: List of child states
     - `entered`: Boolean indicating if the child is currently executing
 
-## `getProcesses([options[, callback]])`
+### `getProcesses([options[, callback]])`
 
 Returns list of definiton processes with options. If the definition is running the running processes are returned.
 
 The function is synchronous but can be passed a callback to get the first executable process.
 
-- `options`: Optional execute options, defaults to constructor options
+- `options`: Optional execute options, defaults to constructor options if processes arn't started
   - `variables`
   - `services`
   - `listener`
@@ -84,7 +84,7 @@ The function is synchronous but can be passed a callback to get the first execut
   - `mainProcess`: First executable process
   - `processes`: All processes including executable process
 
-## `getChildActivityById(id)`
+### `getChildActivityById(id)`
 
 Get process activity by id. Loops processes to return first child activity that match id.
 
@@ -94,8 +94,9 @@ Resume execution. Resumed with data from [`getState()`](#getstate).
 
 Returns resumed definition.
 
-- `options`: Optional execute options, defaults to constructor options
-  - `listener`
+- `definitionState`: Required definition state from [`getState()`](#getstate)
+- `options`: Optional execute options
+  - `listener`: [Execution listener](/API.md#execution-listener)
 - `callback`: Optional callback
   - `err`: Occasional error
   - `mainProcess`: Executing process
@@ -121,3 +122,4 @@ Arguments:
 - `err`: The error
 - `eventSource`: The source instance that emitted error, e.g. a task or other activitiy
 
+[2]: https://www.npmjs.com/package/bpmn-moddle

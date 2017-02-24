@@ -11,7 +11,7 @@ const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 
 lab.experiment('Definition', () => {
-  lab.experiment('ctor', () => {
+  lab.experiment('new Definition()', () => {
     let moddleContext;
     lab.before((done) => {
       testHelpers.getModdleContext(factory.valid('testingCtor'), (err, result) => {
@@ -514,6 +514,115 @@ lab.experiment('Definition', () => {
     });
   });
 
+  lab.describe('getChildActivityById()', () => {
+    let moddleContext;
+    lab.before((done) => {
+      const processXml = factory.resource('lanes.bpmn');
+      testHelpers.getModdleContext(processXml, (err, result) => {
+        if (err) return done(err);
+        moddleContext = result;
+        done();
+      });
+    });
+
+    lab.test('returns child activity', (done) => {
+      const definition = new Definition(moddleContext);
+      expect(definition.getChildActivityById('task1')).to.exist();
+      done();
+    });
+
+    lab.test('returns child activity from participant process', (done) => {
+      const definition = new Definition(moddleContext);
+      expect(definition.getChildActivityById('meTooTask')).to.exist();
+      done();
+    });
+
+    lab.test('throws if activity is not found', (done) => {
+      const definition = new Definition(moddleContext);
+      expect(definition.getChildActivityById('whoAmITask')).to.not.exist();
+      done();
+    });
+  });
+
+  lab.describe('signal()', () => {
+    let moddleContext;
+    lab.before((done) => {
+      testHelpers.getModdleContext(factory.userTask('userTask1'), (err, result) => {
+        if (err) return done(err);
+        moddleContext = result;
+        done();
+      });
+    });
+
+    lab.test('signals child activity', (done) => {
+      const definition = new Definition(moddleContext);
+      const listener = new EventEmitter();
+
+      listener.once('wait', (task) => {
+        expect(definition.signal(task.id, 'it´s me')).to.be.true();
+      });
+
+      definition.once('end', () => {
+        expect(definition.variables.inputFromUser).to.equal('it´s me');
+        done();
+      });
+
+      definition.execute({
+        listener: listener
+      });
+    });
+
+    lab.test('ignored if activity is not found by id', (done) => {
+      const definition = new Definition(moddleContext);
+      const listener = new EventEmitter();
+
+      listener.once('wait', () => {
+        expect(definition.signal('madeUpId', 'who am I')).to.be.false();
+        done();
+      });
+
+      definition.execute({
+        listener: listener
+      });
+    });
+  });
+
+  lab.describe('events', () => {
+    lab.describe('child error', () => {
+      lab.test('event callback returns error, child, process, and definition', (done) => {
+        const defXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="testError" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" />
+  </process>
+</definitions>`
+        ;
+
+        testHelpers.getModdleContext(defXml, {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }, (err, moddleContext) => {
+          if (err) return done(err);
+
+          const definition = new Definition(moddleContext);
+          definition.once('error', (childErr, child, processInstance, currentDef) => {
+            testHelpers.expectNoLingeringListenersOnDefinition(definition);
+            expect(childErr).to.be.an.error();
+            expect(child).to.exist();
+            expect(child.type).to.equal('bpmn:ServiceTask');
+            expect(processInstance).to.exist();
+            expect(processInstance.type).to.equal('bpmn:Process');
+            expect(currentDef).to.shallow.equal(definition);
+            done();
+          });
+
+          definition.execute();
+        });
+
+      });
+    });
+  });
+
   lab.describe('Definition.resume()', () => {
     const processXml = factory.userTask(null, 'resumeDef');
     let moddleContext, state;
@@ -654,80 +763,6 @@ lab.experiment('Definition', () => {
         definitionf.once('error', () => {
           done();
         });
-      });
-    });
-
-  });
-
-  lab.describe('getChildActivityById()', () => {
-    let moddleContext;
-    lab.before((done) => {
-      const processXml = factory.resource('lanes.bpmn');
-      testHelpers.getModdleContext(processXml, (err, result) => {
-        if (err) return done(err);
-        moddleContext = result;
-        done();
-      });
-    });
-
-    lab.test('returns child activity', (done) => {
-      const definition = new Definition(moddleContext);
-      expect(definition.getChildActivityById('task1')).to.exist();
-      done();
-    });
-
-    lab.test('returns child activity from participant process', (done) => {
-      const definition = new Definition(moddleContext);
-      expect(definition.getChildActivityById('meTooTask')).to.exist();
-      done();
-    });
-
-    lab.test('throws if activity is not found', (done) => {
-      const definition = new Definition(moddleContext);
-      expect(definition.getChildActivityById('whoAmITask')).to.not.exist();
-      done();
-    });
-  });
-
-  lab.describe('signal()', () => {
-    let moddleContext;
-    lab.before((done) => {
-      testHelpers.getModdleContext(factory.userTask('userTask1'), (err, result) => {
-        if (err) return done(err);
-        moddleContext = result;
-        done();
-      });
-    });
-
-    lab.test('signals child activity', (done) => {
-      const definition = new Definition(moddleContext);
-      const listener = new EventEmitter();
-
-      listener.once('wait', (task) => {
-        expect(definition.signal(task.id, 'it´s me')).to.be.true();
-      });
-
-      definition.once('end', () => {
-        expect(definition.variables.inputFromUser).to.equal('it´s me');
-        done();
-      });
-
-      definition.execute({
-        listener: listener
-      });
-    });
-
-    lab.test('ignored if activity is not found by id', (done) => {
-      const definition = new Definition(moddleContext);
-      const listener = new EventEmitter();
-
-      listener.once('wait', () => {
-        expect(definition.signal('madeUpId', 'who am I')).to.be.false();
-        done();
-      });
-
-      definition.execute({
-        listener: listener
       });
     });
   });
