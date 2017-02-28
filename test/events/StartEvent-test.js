@@ -33,8 +33,7 @@ lab.experiment('StartEvent', () => {
   });
 
   lab.describe('with form', () => {
-    lab.test('requires signal to start', (done) => {
-      const processXml = `
+    const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -52,10 +51,11 @@ lab.experiment('StartEvent', () => {
   </process>
 </definitions>`;
 
-
+    lab.test('requires signal to start', (done) => {
       const listener = new EventEmitter();
 
       listener.once('wait-start', (task) => {
+        expect(task.waiting).to.be.true();
         task.signal({
           formfield1: 1,
           formfield2: 2
@@ -78,6 +78,49 @@ lab.experiment('StartEvent', () => {
       });
     });
 
+    lab.test('getState() returns waiting true', (done) => {
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      listener.once('wait-start', (event) => {
+        engine.stop();
+        expect(event.getState()).to.include({ waiting: true });
+        done();
+      });
+
+
+      engine.execute({
+        listener: listener
+      });
+    });
+
+    lab.test('getState() returns form state', (done) => {
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      listener.once('wait-start', (event) => {
+        engine.stop();
+        const state = event.getState();
+        expect(state).to.include(['form']);
+        expect(state.form).to.include(['fields']);
+        done();
+      });
+
+
+      engine.execute({
+        listener: listener
+      });
+    });
   });
 
   lab.describe('signal()', () => {
@@ -86,6 +129,7 @@ lab.experiment('StartEvent', () => {
         if (cerr) return done(cerr);
 
         const event = context.getChildActivityById('theStart');
+        expect(event.waiting).to.be.undefined();
         expect(event.signal.bind(event)).to.throw(Error);
         done();
       });
