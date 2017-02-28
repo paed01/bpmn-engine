@@ -116,7 +116,6 @@ lab.experiment('StartEvent', () => {
         done();
       });
 
-
       engine.execute({
         listener: listener
       });

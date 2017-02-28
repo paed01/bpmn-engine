@@ -13,10 +13,9 @@ const expect = Code.expect;
 const Bpmn = require('../..');
 
 lab.experiment('UserTask', () => {
-  const processXml = factory.userTask();
 
   lab.test('should have inbound and outbound sequence flows', (done) => {
-    testHelpers.getModdleContext(processXml, (cerr, moddleContext) => {
+    testHelpers.getModdleContext(factory.userTask(), (cerr, moddleContext) => {
       if (cerr) return done(cerr);
       const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
       const task = process.getChildActivityById('userTask');
@@ -56,7 +55,7 @@ lab.experiment('UserTask', () => {
 </definitions>`;
 
     lab.test('process emits wait when entering user task', (done) => {
-      testHelpers.getModdleContext(processXml, (cerr, moddleContext) => {
+      testHelpers.getModdleContext(factory.userTask(), (cerr, moddleContext) => {
         if (cerr) return done(cerr);
 
         const listener = new EventEmitter();
@@ -156,7 +155,7 @@ lab.experiment('UserTask', () => {
     lab.test('user input is stored with process', (done) => {
 
       const engine = new Bpmn.Engine({
-        source: processXml
+        source: factory.userTask()
       });
       const listener = new EventEmitter();
 
@@ -182,7 +181,7 @@ lab.experiment('UserTask', () => {
 
     lab.test('but not if signal is called without input', (done) => {
       const engine = new Bpmn.Engine({
-        source: processXml
+        source: factory.userTask()
       });
       const listener = new EventEmitter();
 
@@ -203,7 +202,7 @@ lab.experiment('UserTask', () => {
     });
 
     lab.test('throws if not waiting for input', (done) => {
-      testHelpers.getModdleContext(processXml, (cerr, moddleContext) => {
+      testHelpers.getModdleContext(factory.userTask(), (cerr, moddleContext) => {
         if (cerr) return done(cerr);
 
         const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
@@ -284,4 +283,98 @@ lab.experiment('UserTask', () => {
       });
     });
   });
+
+  lab.describe('with form', () => {
+    const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="start" />
+    <userTask id="task">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="formfield1" label="FormField1" type="string" />
+          <camunda:formField id="formfield2" type="long" />
+        </camunda:formData>
+      </extensionElements>
+      </userTask>
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+    <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
+  </process>
+</definitions>`;
+
+    lab.test('requires signal to complete', (done) => {
+      const listener = new EventEmitter();
+
+      listener.once('wait-task', (task) => {
+        expect(task.waiting).to.be.true();
+        task.signal({
+          formfield1: 1,
+          formfield2: 2
+        });
+      });
+
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.once('end', () => {
+        done();
+      });
+
+      engine.execute({
+        listener: listener
+      });
+    });
+
+    lab.test('getState() returns waiting true', (done) => {
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      listener.once('wait-task', (event) => {
+        engine.stop();
+        expect(event.getState()).to.include({ waiting: true });
+        done();
+      });
+
+
+      engine.execute({
+        listener: listener
+      });
+    });
+
+    lab.test('getState() returns form state', (done) => {
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      listener.once('wait-task', (event) => {
+        engine.stop();
+        const state = event.getState();
+        expect(state).to.include(['form']);
+        expect(state.form).to.include(['fields']);
+        done();
+      });
+
+
+      engine.execute({
+        listener: listener
+      });
+    });
+  });
+
 });
