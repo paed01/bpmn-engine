@@ -23,7 +23,9 @@ Base of almost all bpmn activity types.
 ## `execute([message])`
 ## `signal([output])`
 
+Signal activity to continue.
 
+- `output`: Optional activity output object
 
 ## `cancel()`
 
@@ -53,4 +55,9 @@ Cancels execution and discards all outbound sequence flows.
 Inherits `require('events').EventEmitter`.
 
 ## `enter`
+
+Execution has entered activity.
+
 ## `leave`
+
+Execution has left activity.
