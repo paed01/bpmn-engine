@@ -489,4 +489,68 @@ if (!variables.input) {
       if (err) return done(err);
     });
   });
+
+  lab.describe('with form', () => {
+    const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="start">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="formfield1" label="FormField1" type="string" />
+          <camunda:formField id="formfield2" type="long" />
+        </camunda:formData>
+      </extensionElements>
+      </startEvent>
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
+  </process>
+</definitions>`;
+
+    let state;
+    lab.test('given a StartEvent with form and a saved state', (done) => {
+      const listener = new EventEmitter();
+
+      listener.once('wait', () => {
+        state = engine.getState();
+        engine.stop();
+      });
+
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.once('end', () => {
+        done();
+      });
+
+      engine.execute({
+        listener: listener
+      });
+    });
+
+    lab.test('completes when resumed and signaled', (done) => {
+      const listener = new EventEmitter();
+
+      listener.once('wait', (event) => {
+        event.signal({
+          formfield1: 'a',
+          formfield2: 1
+        });
+      });
+
+      const engine = Bpmn.Engine.resume(state, {
+        listener: listener
+      });
+
+      engine.once('end', () => {
+        done();
+      });
+    });
+  });
 });

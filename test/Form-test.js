@@ -123,13 +123,54 @@ lab.experiment('Forms', () => {
           <camunda:formField id="formfield2" type="long" />
         </camunda:formData>
       </extensionElements>
-      </startEvent>
+    </startEvent>
+    <userTask id="task">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="surname" label="Surname" type="string" />
+          <camunda:formField id="givenName" label="Given name" type="string" />
+        </camunda:formData>
+      </extensionElements>
+      </userTask>
     <endEvent id="end" />
     <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
+    <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
   </process>
 </definitions>`;
 
-    lab.test('returns form fields', (done) => {
+    lab.test('before init returns form fields', (done) => {
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      listener.once('wait-start', (event, instance) => {
+        engine.stop();
+        const task = instance.getChildActivityById('task');
+
+        const state = task.form.getState();
+        expect(state).to.include(['fields']);
+        expect(state.fields).to.have.length(2);
+        expect(state.fields[0]).to.only.include(['id', 'label', 'type']);
+        expect(state.fields[1]).to.only.include(['id', 'label', 'type']);
+
+        expect(state.fields[0]).to.equal({
+          id: 'surname',
+          label: 'Surname',
+          type: 'string'
+        });
+        done();
+      });
+
+      engine.execute({
+        listener: listener
+      });
+    });
+
+    lab.test('after init returns form fields', (done) => {
       const engine = new Bpmn.Engine({
         source: processXml,
         moddleOptions: {
