@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine",
-  "version": "3.0.0-rc.6",
+  "version": "3.0.0-rc.7",
   "author": "Pål Edman <pal.edman@gmail.com> (https://github.com/paed01)",
   "main": "index.js",
   "repository": {
@@ -37,11 +37,11 @@
     "coveralls": "^2.11.16",
     "lab": "^12.1.0",
     "markdown-toc": "^1.1.0",
-    "nock": "^9.0.6",
+    "nock": "^9.0.9",
     "request": "~2.79.0"
   },
   "dependencies": {
-    "async": "^2.1.4",
+    "async": "^2.1.5",
     "bpmn-moddle": "^0.14.0",
     "debug": "^2.6.1",
     "iso8601-duration": "^1.0.6"
