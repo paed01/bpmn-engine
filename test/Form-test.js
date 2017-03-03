@@ -131,7 +131,7 @@ lab.experiment('Forms', () => {
           <camunda:formField id="givenName" label="Given name" type="string" />
         </camunda:formData>
       </extensionElements>
-      </userTask>
+    </userTask>
     <endEvent id="end" />
     <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
     <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />

@@ -1,20 +1,22 @@
 <!-- version -->
-# 3.0.0-rc.6 API Reference
+# 3.0.0-rc.7 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
 
 - [Engine](#engine)
   - [`new Engine([options])`](#new-engineoptions)
-  - [`execute([options[, callback]])`](#executeoptions-callback)
-    - [Execution `listener`](#execution-listener)
-    - [Execution `variables`](#execution-variables)
-    - [Execution `services`](#execution-services)
-  - [`getState()`](#getstate)
-  - [`stop()`](#stop)
+    - [`execute([options[, callback]])`](#executeoptions-callback)
+      - [Execution `listener`](#execution-listener)
+      - [Execution `variables`](#execution-variables)
+      - [Execution `services`](#execution-services)
+    - [`getDefinition(callback)`](#getdefinitioncallback)
+    - [`getDefinitions(callback)`](#getdefinitionscallback)
+    - [`getPendingActivities()`](#getpendingactivities)
+    - [`getState()`](#getstate)
+    - [`signal(activityId[, message])`](#signalactivityid-message)
+    - [`stop()`](#stop)
   - [`Engine.resume(state, [options, [callback]])`](#engineresumestate-options-callback)
-  - [`getDefinitions(callback)`](#getdefinitionscallback)
-  - [`getDefinition(callback)`](#getdefinitioncallback)
   - [Engine events](#engine-events)
   - [Activity events](#activity-events)
   - [Sequence flow events](#sequence-flow-events)
@@ -61,7 +63,7 @@ const engine = new Bpmn.Engine({
 });
 ```
 
-## `execute([options[, callback]])`
+### `execute([options[, callback]])`
 
 Execute definition with:
 
@@ -110,7 +112,7 @@ engine.execute((err, definition) => {
 });
 ```
 
-### Execution `listener`
+#### Execution `listener`
 
 An `EventEmitter` object with listeners. [Event names](#activity-events) are composed by activity event name and activity id, e.g. `wait-userTask`.
 
@@ -144,7 +146,7 @@ Event arguments are:
 
 > NB! `error` events are NOT emitted through the listener. Errors can be caught by an bpmn error event if they are to be handled.
 
-### Execution `variables`
+#### Execution `variables`
 
 Execution variables are passed as the first argument to `#execute`.
 
@@ -172,7 +174,7 @@ engine.execute({
 });
 ```
 
-### Execution `services`
+#### Execution `services`
 
 A service is a module used by e.g. a script tasks or a condition where:
 
@@ -264,7 +266,126 @@ engine.execute({
 });
 ```
 
-## `getState()`
+### `getDefinition(callback)`
+
+Utility function to get first definition.
+
+- `callback(err, firstDefinition)`:
+  - `err`: Occassional Error if definitions failed to load
+  - `firstDefinition`: First found definition
+
+### `getDefinitions(callback)`
+
+Get definitions. Loads definitions from sources or passed moddle contexts.
+
+- `callback(err, definitions)`:
+  - `err`: Occassional Error if definitions failed to load
+  - `definition`: List of added definitions
+
+```javascript
+const Bpmn = require('bpmn-engine');
+
+const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="Definition_42" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <userTask id="userTask" />
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+  </process>
+</definitions>`;
+
+const engine = new Bpmn.Engine({
+  source: processXml
+});
+
+engine.getDefinitions((err, definitions) => {
+  if (err) throw err;
+
+  console.log('Loaded', definitions[0].id);
+
+  console.log('The definition comes with process', definitions[0].getProcesses()[0].id);
+});
+```
+
+### `getPendingActivities()`
+
+Get activities that are in an entered state.
+
+- `state`: State of engine
+- `definitions`: List of definitions
+  - `state`: State of definition
+  - `children`: List of children that are in an entered state
+    - `id`: child id
+    - `entered`: Boolean indicating that the child is currently executing
+    - `waiting`: Boolean indicating if the task is in a waiting state
+
+```javascript
+'use strict';
+
+const Bpmn = require('bpmn-engine');
+const EventEmitter = require('events').EventEmitter;
+
+const definitionSource = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theWaitingGame" isExecutable="true">
+    <startEvent id="start" />
+    <parallelGateway id="fork" />
+    <userTask id="userTask1" />
+    <userTask id="userTask2">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="surname" label="Surname" type="string" />
+          <camunda:formField id="givenName" label="Given name" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <task id="task" />
+    <parallelGateway id="join" />
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="fork" />
+    <sequenceFlow id="flow2" sourceRef="fork" targetRef="userTask1" />
+    <sequenceFlow id="flow3" sourceRef="fork" targetRef="userTask2" />
+    <sequenceFlow id="flow4" sourceRef="fork" targetRef="task" />
+    <sequenceFlow id="flow5" sourceRef="userTask1" targetRef="join" />
+    <sequenceFlow id="flow6" sourceRef="userTask2" targetRef="join" />
+    <sequenceFlow id="flow7" sourceRef="task" targetRef="join" />
+    <sequenceFlow id="flowEnd" sourceRef="join" targetRef="end" />
+  </process>
+</definitions>
+    `;
+
+const engine = new Bpmn.Engine({
+  name: 'Pending game',
+  source: definitionSource,
+  moddleOptions: {
+    camunda: require('camunda-bpmn-moddle/resources/camunda')
+  }
+});
+
+const listener = new EventEmitter();
+
+engine.execute({
+  listener: listener
+}, (err, execution) => {
+  if (err) throw err;
+});
+
+setTimeout(() => {
+  const pending = engine.getPendingActivities();
+  console.log(JSON.stringify(pending, null, 2));
+
+  const task = pending.definitions[0].children.find(c => c.type === 'bpmn:UserTask');
+
+  engine.signal(task.id);
+}, 300);
+```
+
+### `getState()`
 
 Get state of a running execution.
 
@@ -319,7 +440,54 @@ engine.execute({
 });
 ```
 
-## `stop()`
+### `signal(activityId[, message])`
+
+Signal an activity that is waiting.
+
+- `activityId`: Activity Id
+- `message`: Activity input message
+
+Returns boolean, `true` if signal was approved and `false` otherwise.
+
+```javascript
+'use strict';
+
+const Bpmn = require('bpmn-engine');
+const EventEmitter = require('events').EventEmitter;
+
+const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <userTask id="userTask" />
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+  </process>
+</definitions>`;
+
+const engine = new Bpmn.Engine({
+  source: processXml
+});
+const listener = new EventEmitter();
+
+let state;
+listener.once('wait', (activity) => {
+  engine.signal(activity.id);
+});
+
+engine.execute({
+  variables: {
+    executionId: 'some-random-id'
+  },
+  listener: listener
+}, (err, execution) => {
+  if (err) throw err;
+});
+```
+
+### `stop()`
 
 Stop execution. The instance is terminated.
 
@@ -382,50 +550,6 @@ const state = db.getState('some-random-id', (err, state) => {
   });
 });
 ```
-
-## `getDefinitions(callback)`
-
-Get definitions. Loads definitions from sources or passed moddle contexts.
-
-- `callback(err, definitions)`:
-  - `err`: Occassional Error if definitions failed to load
-  - `definition`: List of added definitions
-
-```javascript
-const Bpmn = require('bpmn-engine');
-
-const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions id="Definition_42" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <userTask id="userTask" />
-    <endEvent id="theEnd" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
-    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
-  </process>
-</definitions>`;
-
-const engine = new Bpmn.Engine({
-  source: processXml
-});
-
-engine.getDefinitions((err, definitions) => {
-  if (err) throw err;
-
-  console.log('Loaded', definitions[0].id);
-
-  console.log('The definition comes with process', definitions[0].getProcesses()[0].id);
-});
-```
-
-## `getDefinition(callback)`
-
-Utility function to get first definition.
-
-- `callback(err, firstDefinition)`:
-  - `err`: Occassional Error if definitions failed to load
-  - `firstDefinition`: First found definition
 
 ## Engine events
 

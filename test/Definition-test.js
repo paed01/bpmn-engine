@@ -766,4 +766,16 @@ lab.experiment('Definition', () => {
       });
     });
   });
+
+  lab.describe('getPendingActivities()', () => {
+    lab.test('returns empty children if not loaded', (done) => {
+      testHelpers.getModdleContext(factory.valid(), {}, (err, validModdleContext) => {
+        if (err) return done(err);
+        const definition = new Definition(validModdleContext);
+        expect(definition.getPendingActivities().children).to.have.length(0);
+        done();
+      });
+    });
+
+  });
 });

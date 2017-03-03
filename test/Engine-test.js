@@ -637,4 +637,129 @@ lab.experiment('Engine', () => {
       });
     });
   });
+
+  lab.describe('signal()', () => {
+    lab.test('without definitions is ignored', (done) => {
+      const engine = new Bpmn.Engine();
+      engine.signal();
+      done();
+    });
+
+    lab.test('without waiting task is ignored', (done) => {
+      const definitionSource = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="singleUserTask" isExecutable="true">
+    <task id="task" />
+  </process>
+</definitions>
+      `;
+      const engine = new Bpmn.Engine({
+        source: definitionSource
+      });
+      engine.execute(() => {
+        engine.signal('task');
+        done();
+      });
+    });
+
+    lab.test('with non-existing activity id is ignored', (done) => {
+      const definitionSource = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="singleUserTask" isExecutable="true">
+    <userTask id="userTask" />
+  </process>
+</definitions>
+      `;
+      const engine = new Bpmn.Engine({
+        source: definitionSource
+      });
+      engine.execute(() => {
+        engine.signal('task');
+        done();
+      });
+    });
+  });
+
+  lab.describe('getPendingActivities()', () => {
+    const definitionSource = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theWaitingGame" isExecutable="true">
+    <startEvent id="start" />
+    <parallelGateway id="fork" />
+    <userTask id="userTask1" />
+    <userTask id="userTask2">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="surname" label="Surname" type="string" />
+          <camunda:formField id="givenName" label="Given name" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <task id="task" />
+    <parallelGateway id="join" />
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="fork" />
+    <sequenceFlow id="flow2" sourceRef="fork" targetRef="userTask1" />
+    <sequenceFlow id="flow3" sourceRef="fork" targetRef="userTask2" />
+    <sequenceFlow id="flow4" sourceRef="fork" targetRef="task" />
+    <sequenceFlow id="flow5" sourceRef="userTask1" targetRef="join" />
+    <sequenceFlow id="flow6" sourceRef="userTask2" targetRef="join" />
+    <sequenceFlow id="flow7" sourceRef="task" targetRef="join" />
+    <sequenceFlow id="flowEnd" sourceRef="join" targetRef="end" />
+  </process>
+</definitions>
+    `;
+
+    let engine, pending;
+    lab.test('given an engine', (done) => {
+      engine = new Bpmn.Engine({
+        source: definitionSource,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+      done();
+    });
+
+    lab.test('returns empty definitions if not loaded', (done) => {
+      expect(engine.getPendingActivities().definitions).to.have.length(0);
+      done();
+    });
+
+    lab.test('when executed', (done) => {
+
+      const listener = new EventEmitter();
+      listener.once('enter-join', () => {
+        pending = engine.getPendingActivities();
+        done();
+      });
+
+      engine.execute({
+        listener: listener
+      });
+    });
+
+    lab.test('then all entered activities are returned', (done) => {
+      expect(pending.definitions).to.have.length(1);
+      expect(pending.definitions[0]).to.include(['children']);
+      expect(pending.definitions[0].children).to.have.length(3);
+      expect(pending.definitions[0].children).to.have.length(3);
+      done();
+    });
+
+    lab.test('comples when all user tasks are signaled', (done) => {
+      engine.once('end', done.bind(null, null));
+
+      pending.definitions[0].children.filter(c => c.type === 'bpmn:UserTask').forEach((c) => {
+        engine.signal(c.id);
+      });
+    });
+
+  });
 });
