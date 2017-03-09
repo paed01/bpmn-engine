@@ -6,9 +6,7 @@ bpmn-engine
 [![Build Status](https://travis-ci.org/paed01/bpmn-engine.svg?branch=master)](https://travis-ci.org/paed01/bpmn-engine)[![Build status](https://ci.appveyor.com/api/projects/status/670n39fivq1g3nu5/branch/master?svg=true)](https://ci.appveyor.com/project/paed01/bpmn-engine/branch/master)[![Coverage Status](https://coveralls.io/repos/github/paed01/bpmn-engine/badge.svg?branch=master)](https://coveralls.io/github/paed01/bpmn-engine?branch=master)
 
 ## Introduction
-**bpmn-engine** is an serverside BPMN 2.0 process engine.
-
-A workflow engine built with javascript.
+**bpmn-engine** is an open-source serverside workflow engine built with javascript. Then engine executes automated processes modeled according to the standard Business Process Model and Notation - BPMN 2.0.
 
 ## Table of Contents
 - [Supported elements](#supported-elements)
