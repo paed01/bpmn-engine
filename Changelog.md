@@ -1,7 +1,12 @@
 Changelog
 =========
 
-# 3.0.0-rc
+# 3.1.0
+
+## Changes
+- A start event with form key will also emit wait
+
+# 3.0.0
 
 ## Breaking changes
 - The `Engine` now handles definitions instead of processes, hence:

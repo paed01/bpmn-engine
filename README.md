@@ -55,6 +55,7 @@ The following elements are tested and supported.
   - Exclusive
   - Inclusive
   - Parallel: join and fork
+- [Form](/docs/Form.md)
 
 # Process modeller
 

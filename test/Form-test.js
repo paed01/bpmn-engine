@@ -11,7 +11,7 @@ const Bpmn = require('../');
 
 lab.experiment('Forms', () => {
   lab.describe('with default value', () => {
-    lab.test('from expression', (done) => {
+    lab.test('returns value from expression', (done) => {
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -133,7 +133,7 @@ lab.experiment('Forms', () => {
       </extensionElements>
     </userTask>
     <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
     <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
   </process>
 </definitions>`;
@@ -197,6 +197,121 @@ lab.experiment('Forms', () => {
 
       engine.execute({
         listener: listener
+      });
+    });
+
+    lab.test('sets key value with expression', (done) => {
+      const formKeyProcessXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions id="testFormKey" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <process id="theProcess" isExecutable="true">
+      <userTask id="task" camunda:formKey="\${variables.inputForm}" />
+    </process>
+  </definitions>`;
+
+      const engine = new Bpmn.Engine({
+        source: formKeyProcessXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      listener.once('wait-task', (task) => {
+        engine.stop();
+        const state = task.form.getState();
+        expect(state).to.not.include(['fields']);
+        expect(state.key).to.equal('form2');
+        done();
+      });
+
+      engine.execute({
+        listener: listener,
+        variables: {
+          inputForm: 'form2'
+        }
+      });
+    });
+
+  });
+
+  lab.describe('with formKey', () => {
+    lab.test('start event emits wait', (done) => {
+      const processXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions id="testFormKey" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <process id="theProcess" isExecutable="true">
+      <startEvent id="start" camunda:formKey="form1" />
+    </process>
+  </definitions>`;
+
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      listener.once('wait-start', (task) => {
+        task.signal({ key: task.form.key });
+      });
+
+      engine.once('end', (eng, def) => {
+        expect(def.variables).to.equal({
+          key: 'form1'
+        });
+        done();
+      });
+
+      engine.execute({
+        listener: listener,
+        variables: {}
+      });
+    });
+
+    lab.test('sets key value with expression', (done) => {
+      const processXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions id="testFormKey" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <process id="theProcess" isExecutable="true">
+      <startEvent id="start" camunda:formKey="\${variables.inputForm}" />
+      <userTask id="task" camunda:formKey="\${variables.inputForm}" />
+      <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+    </process>
+  </definitions>`;
+
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      listener.once('wait-start', (event) => {
+        expect(event.form.key).to.equal('form1');
+        event.signal({ inputForm: 'form2' });
+      });
+      listener.once('wait-task', (task) => {
+        task.signal({ key: task.form.key });
+      });
+
+      engine.once('end', (eng, def) => {
+        expect(def.variables.taskInput.task).to.contain({
+          key: 'form2'
+        });
+        done();
+      });
+
+      engine.execute({
+        listener: listener,
+        variables: {
+          inputForm: 'form1'
+        }
       });
     });
   });
