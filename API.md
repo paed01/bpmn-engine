@@ -1,5 +1,5 @@
 <!-- version -->
-# 3.1.0 API Reference
+# 3.1.1 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -559,6 +559,7 @@ Engine emits the following events:
   - `err`: The error
   - `eventSource`: The source instance that emitted error, e.g. a task or other activitiy
 - `end`: Execution has completed or was stopped
+  - `lastReportingDefinition`: Last reporting definition instance
 
 ## Activity events
 

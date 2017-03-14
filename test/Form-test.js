@@ -259,7 +259,7 @@ lab.experiment('Forms', () => {
         task.signal({ key: task.form.key });
       });
 
-      engine.once('end', (eng, def) => {
+      engine.once('end', (def) => {
         expect(def.variables).to.equal({
           key: 'form1'
         });
@@ -300,7 +300,7 @@ lab.experiment('Forms', () => {
         task.signal({ key: task.form.key });
       });
 
-      engine.once('end', (eng, def) => {
+      engine.once('end', (def) => {
         expect(def.variables.taskInput.task).to.contain({
           key: 'form2'
         });

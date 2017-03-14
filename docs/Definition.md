@@ -79,6 +79,7 @@ The function is synchronous but can be passed a callback to get the first execut
 Get definition state.
 
 - `state`: State of definition, `pending`, `running`, or `completed`
+- `stopped`: Boolean indicating that the definition was stopped before state was accuired
 - `moddleContext`: Definition moddle context
 - `processes`: Object with processes with id as key
   - `variables`: Execution variables

@@ -124,7 +124,7 @@ lab.experiment('Resume task loop', () => {
           if (err) return done(err);
         });
 
-        engine2.once('end', (engn, def) => {
+        engine2.once('end', (def) => {
           expect(def.processes[0].variables.taskInput.recurring[0]).to.equal(13);
           done();
         });

@@ -479,6 +479,24 @@ lab.experiment('Definition', () => {
       });
     });
 
+    lab.test('returns stopped flag if stopped', (done) => {
+      const listener = new EventEmitter();
+      const definition = new Definition(moddleContext);
+
+      listener.on('wait-userTask', () => {
+        definition.stop();
+        const state = definition.getState();
+        expect(state.stopped).to.equal(true);
+        done();
+      });
+
+      definition.execute({
+        listener: listener
+      }, (err) => {
+        if (err) return done(err);
+      });
+    });
+
     lab.test('returns processes variables and services', (done) => {
       const listener = new EventEmitter();
       const definition = new Definition(moddleContext);
@@ -621,6 +639,39 @@ lab.experiment('Definition', () => {
 
       });
     });
+  });
+
+  lab.describe('stop()', () => {
+    let moddleContext;
+    lab.before((done) => {
+      testHelpers.getModdleContext(factory.userTask(null, 'stopDef'), (err, result) => {
+        if (err) return done(err);
+        moddleContext = result;
+        done();
+      });
+    });
+
+    lab.test('sets stopped flag', (done) => {
+      const definition = new Definition(moddleContext);
+      const listener = new EventEmitter();
+      listener.on('wait-userTask', () => {
+        definition.stop();
+      });
+      definition.once('end', (def) => {
+        expect(def.stopped).to.equal(true);
+        done();
+      });
+      definition.execute({
+        listener: listener,
+        variables: {
+          input: 'start'
+        }
+      }, (err) => {
+        if (err) return done(err);
+      });
+
+    });
+
   });
 
   lab.describe('Definition.resume()', () => {
