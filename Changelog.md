@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 3.2.0
+
+- Add support for SendTask and ReceiveTask
+
 # 3.1.0
 
 ## Changes

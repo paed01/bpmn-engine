@@ -51,6 +51,8 @@ The following elements are tested and supported.
   - Task: completes immediately
   - User: needs signal
   - Service
+  - Send
+  - Receive
 - Gateways
   - Exclusive
   - Inclusive
