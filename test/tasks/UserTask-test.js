@@ -213,6 +213,23 @@ lab.experiment('UserTask', () => {
       });
     });
 
+    lab.test('emits error if not waiting for input', (done) => {
+      testHelpers.getModdleContext(factory.userTask(), (cerr, moddleContext) => {
+        if (cerr) return done(cerr);
+
+        const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
+        const task = process.getChildActivityById('userTask');
+
+        task.once('error', (err, errTask) => {
+          expect(errTask.id).to.equal('userTask');
+          expect(err).to.be.an.error(/not waiting/);
+          done();
+        });
+
+        task.signal.call(task);
+      });
+    });
+
   });
 
   lab.describe('without data association', () => {
