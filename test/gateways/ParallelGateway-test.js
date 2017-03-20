@@ -343,4 +343,103 @@ lab.experiment('ParallelGateway', () => {
     });
 
   });
+
+  lab.describe('getState()', () => {
+    lab.test('joining returns pending length', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <parallelGateway id="fork" />
+    <userTask id="task1" />
+    <userTask id="task2" />
+    <parallelGateway id="join" />
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
+    <sequenceFlow id="flow2" sourceRef="fork" targetRef="task1" />
+    <sequenceFlow id="flow3" sourceRef="fork" targetRef="task2" />
+    <sequenceFlow id="flow4" sourceRef="task1" targetRef="join" />
+    <sequenceFlow id="flow5" sourceRef="task2" targetRef="join" />
+    <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
+  </process>
+</definitions>`;
+
+
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      const listener = new EventEmitter();
+      listener.once('wait-task1', (task) => {
+        task.signal();
+      });
+
+      listener.once('start-join', (gateway) => {
+        const state = gateway.getState();
+        expect(state.pendingLength).to.equal(1);
+        done();
+      });
+
+      engine.execute({
+        listener: listener
+      });
+    });
+
+  });
+
+  lab.describe('resume()', () => {
+    lab.test('should continue join', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="theStart" />
+    <parallelGateway id="fork" />
+    <userTask id="task1" />
+    <userTask id="task2" />
+    <parallelGateway id="join" />
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
+    <sequenceFlow id="flow2" sourceRef="fork" targetRef="task1" />
+    <sequenceFlow id="flow3" sourceRef="fork" targetRef="task2" />
+    <sequenceFlow id="flow4" sourceRef="task1" targetRef="join" />
+    <sequenceFlow id="flow5" sourceRef="task2" targetRef="join" />
+    <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
+  </process>
+</definitions>`;
+
+      let state;
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      const listener = new EventEmitter();
+      listener.once('wait-task1', (task) => {
+        task.signal();
+      });
+
+      listener.once('start-join', () => {
+        state = engine.getState();
+        engine.stop();
+      });
+
+      engine.once('end', () => {
+        const listener2 = new EventEmitter();
+        listener2.once('wait-task2', (task) => {
+          task.signal();
+        });
+        const engine2 = Bpmn.Engine.resume(state, {
+          listener: listener2
+        });
+        engine2.once('end', () => {
+          done();
+        });
+      });
+
+      engine.execute({
+        listener: listener
+      });
+
+    });
+
+  });
 });
