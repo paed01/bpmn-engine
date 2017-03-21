@@ -441,5 +441,67 @@ lab.experiment('ParallelGateway', () => {
 
     });
 
+
+    lab.test('issue 19', (done) => {
+      const messages = [];
+      testHelpers.serviceLog = (message) => {
+        messages.push(message);
+      };
+      testHelpers.serviceTimeout = (cb, time) => {
+        setTimeout(cb, time);
+      };
+
+      let state;
+      const engine = new Bpmn.Engine({
+        source: factory.resource('issue-19.bpmn')
+      });
+      const listener = new EventEmitter();
+
+      listener.on('start', () => {
+        state = engine.getState();
+      });
+
+      listener.once('start-Task_B', () => {
+        setImmediate(() => {
+          engine.stop();
+          state = engine.getState();
+        });
+      });
+
+      engine.once('end', () => {
+        const listener2 = new EventEmitter();
+        const engine2 = Bpmn.Engine.resume(state, {
+          listener: listener2
+        });
+        engine2.once('end', () => {
+          expect(messages).to.equal([
+            'Waiting Task B for 5 seconds...',
+            'Waiting Task B for 5 seconds...',
+            'Resume Task B!',
+            'Resume Task B!'
+          ]);
+          done();
+        });
+      });
+
+      engine.execute({
+        listener: listener,
+        variables: {
+          timeout: 100
+        },
+        services: {
+          timeout: {
+            module: require.resolve('../helpers/testHelpers'),
+            fnName: 'serviceTimeout'
+          },
+          log: {
+            module: require.resolve('../helpers/testHelpers'),
+            fnName: 'serviceLog'
+          }
+        }
+      });
+
+    });
+
   });
 });
