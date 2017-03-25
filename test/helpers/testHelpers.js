@@ -70,6 +70,11 @@ pub.getContext = function(processXml, optionsOrCallback, callback) {
   });
 };
 
+pub.cloneContext = function(sourceContext) {
+  const Context = require('../../lib/Context');
+  return new Context(contextHelper.getExecutableProcessId(sourceContext.moddleContext), sourceContext.moddleContext, {});
+};
+
 pub.getModdleContext = function(processXml, optionsOrCallback, callback) {
   if (!callback) {
     callback = optionsOrCallback;
