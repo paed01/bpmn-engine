@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 4.0.0
+
+## Breaking changes
+- Parallel gateway `getState()` returns pending inbound and/or pending outbound, so old states are not supported
+
 # 3.2.0
 
 - Add support for SendTask and ReceiveTask
