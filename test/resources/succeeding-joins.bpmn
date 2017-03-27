@@ -13,7 +13,7 @@
     </bpmn:parallelGateway>
     <bpmn:exclusiveGateway id="decision1" default="SequenceFlow_05akcgw">
       <bpmn:incoming>SequenceFlow_1yhsttk</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_0i77zm7</bpmn:outgoing>
+      <bpmn:outgoing>flow-up-join1</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_05akcgw</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_1yhsttk" sourceRef="fork" targetRef="decision1" />
@@ -22,7 +22,7 @@
       <bpmn:incoming>SequenceFlow_1334ker</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_14a3u6g" sourceRef="join1" targetRef="join2" />
-    <bpmn:sequenceFlow id="SequenceFlow_0i77zm7" sourceRef="decision1" targetRef="join1">
+    <bpmn:sequenceFlow id="flow-up-join1" sourceRef="decision1" targetRef="join1">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${variables.takeJoin1}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:exclusiveGateway id="decision2" default="SequenceFlow_01624fc">
@@ -34,7 +34,7 @@
     <bpmn:sequenceFlow id="SequenceFlow_01624fc" sourceRef="decision2" targetRef="join1" />
     <bpmn:parallelGateway id="join1">
       <bpmn:incoming>SequenceFlow_0f0dkku</bpmn:incoming>
-      <bpmn:incoming>SequenceFlow_0i77zm7</bpmn:incoming>
+      <bpmn:incoming>flow-up-join1</bpmn:incoming>
       <bpmn:incoming>SequenceFlow_01624fc</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_14a3u6g</bpmn:outgoing>
     </bpmn:parallelGateway>
@@ -105,7 +105,7 @@
           <dc:Bounds x="495.5" y="237.5" width="0" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="SequenceFlow_0i77zm7_di" bpmnElement="SequenceFlow_0i77zm7">
+      <bpmndi:BPMNEdge id="SequenceFlow_0i77zm7_di" bpmnElement="flow-up-join1">
         <di:waypoint xsi:type="dc:Point" x="423" y="179" />
         <di:waypoint xsi:type="dc:Point" x="423" y="207" />
         <di:waypoint xsi:type="dc:Point" x="423" y="207" />

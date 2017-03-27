@@ -9,8 +9,100 @@ const Bpmn = require('../..');
 
 lab.experiment('ExclusiveGateway', () => {
 
-  lab.test('should have inbound and outbound sequence flows', (done) => {
-    const processXml = `
+  lab.describe('input', () => {
+    lab.test('can be used by conditional flows', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
+  <process id="mainProcess" isExecutable="true">
+    <exclusiveGateway id="decision" default="defaultFlow">
+      <extensionElements>
+        <camunda:InputOutput>
+          <camunda:inputParameter name="takeCondition">\${variables.condition1}</camunda:inputParameter>
+        </camunda:InputOutput>
+      </extensionElements>
+    </exclusiveGateway>
+    <endEvent id="end1" />
+    <endEvent id="end2" />
+    <sequenceFlow id="condFlow" sourceRef="decision" targetRef="end1">
+      <conditionExpression xsi:type="tFormalExpression">\${takeCondition}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="defaultFlow" sourceRef="decision" targetRef="end2" />
+  </process>
+</definitions>
+      `;
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.once('end', (def) => {
+        expect(def.getChildActivityById('end1').taken, 'end1').to.be.true();
+        expect(def.getChildActivityById('end2').taken, 'end2').to.be.false();
+        done();
+      });
+
+      engine.execute({
+        variables: {
+          condition1: true
+        }
+      });
+    });
+
+    lab.test('output is saved to variables', (done) => {
+      const processXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
+  <process id="mainProcess" isExecutable="true">
+    <exclusiveGateway id="decision" default="defaultFlow">
+      <extensionElements>
+        <camunda:InputOutput>
+          <camunda:outputParameter name="enteredDecision">Yes</camunda:outputParameter>
+        </camunda:InputOutput>
+      </extensionElements>
+    </exclusiveGateway>
+    <endEvent id="end1" />
+    <endEvent id="end2" />
+    <sequenceFlow id="condFlow" sourceRef="decision" targetRef="end1">
+      <conditionExpression xsi:type="tFormalExpression">\${takeCondition}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="defaultFlow" sourceRef="decision" targetRef="end2" />
+  </process>
+</definitions>
+      `;
+      const engine = new Bpmn.Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      engine.once('end', (def) => {
+        expect(def.variables).to.include({
+          enteredDecision: 'Yes'
+        });
+        expect(def.getChildActivityById('end1').taken, 'end1').to.be.false();
+        expect(def.getChildActivityById('end2').taken, 'end2').to.be.true();
+        done();
+      });
+
+      engine.execute({
+        variables: {
+          condition1: true
+        }
+      });
+    });
+
+  });
+
+  lab.describe('behavior', () => {
+
+    lab.test('should have inbound and outbound sequence flows', (done) => {
+      const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -22,22 +114,22 @@ lab.experiment('ExclusiveGateway', () => {
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine({
-      source: processXml
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute((err, definition) => {
+        if (err) return done(err);
+        const activity = definition.getChildActivityById('decision');
+        expect(activity).to.include('inbound');
+        expect(activity.inbound).to.have.length(1);
+        expect(activity).to.include('outbound');
+        expect(activity.outbound).to.have.length(1);
+        done();
+      });
     });
-    engine.execute((err, definition) => {
-      if (err) return done(err);
-      const activity = definition.getChildActivityById('decision');
-      expect(activity).to.include('inbound');
-      expect(activity.inbound).to.have.length(1);
-      expect(activity).to.include('outbound');
-      expect(activity.outbound).to.have.length(1);
-      done();
-    });
-  });
 
-  lab.test('should support one diverging flow without a condition', (done) => {
-    const processXml = `
+    lab.test('should support one diverging flow without a condition', (done) => {
+      const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -50,22 +142,22 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine({
-      source: processXml
-    });
-    engine.execute((err, execution) => {
-      if (err) return done(err);
-      execution.once('end', () => {
-        done();
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute((err, execution) => {
+        if (err) return done(err);
+        execution.once('end', () => {
+          done();
+        });
       });
     });
-  });
 
-  lab.test('should support two diverging flows with conditions, case 10', (done) => {
+    lab.test('should support two diverging flows with conditions, case 10', (done) => {
 
-    // case 1: input  = 10 -> the upper sequenceflow is taken
+      // case 1: input  = 10 -> the upper sequenceflow is taken
 
-    const processXml = `
+      const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -87,26 +179,26 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine({
-      source: processXml
-    });
-    engine.execute({
-      variables: {
-        input: 10
-      }
-    }, (err, execution) => {
-      if (err) return done(err);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
+        variables: {
+          input: 10
+        }
+      }, (err, execution) => {
+        if (err) return done(err);
 
-      execution.once('end', () => {
-        expect(execution.getChildActivityById('end1').taken).to.be.true();
-        expect(execution.getChildActivityById('end2').taken, 'end2').to.be.false();
-        done();
+        execution.once('end', () => {
+          expect(execution.getChildActivityById('end1').taken).to.be.true();
+          expect(execution.getChildActivityById('end2').taken, 'end2').to.be.false();
+          done();
+        });
       });
     });
-  });
 
-  lab.test('should support two diverging flows with conditions, case 100', (done) => {
-    const processXml = `
+    lab.test('should support two diverging flows with conditions, case 100', (done) => {
+      const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -128,26 +220,26 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine({
-      source: processXml
-    });
-    engine.execute({
-      variables: {
-        input: 100
-      }
-    }, (err, execution) => {
-      if (err) return done(err);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
+        variables: {
+          input: 100
+        }
+      }, (err, execution) => {
+        if (err) return done(err);
 
-      execution.once('end', () => {
-        expect(execution.getChildActivityById('end1').taken, 'end1').to.be.false();
-        expect(execution.getChildActivityById('end2').taken, 'end2').to.be.true();
-        done();
+        execution.once('end', () => {
+          expect(execution.getChildActivityById('end1').taken, 'end1').to.be.false();
+          expect(execution.getChildActivityById('end2').taken, 'end2').to.be.true();
+          done();
+        });
       });
     });
-  });
 
-  lab.test('should support diverging flows with default, case 1', (done) => {
-    const processXml = `
+    lab.test('should support diverging flows with default, case 1', (done) => {
+      const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -165,26 +257,26 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine({
-      source: processXml
-    });
-    engine.execute({
-      variables: {
-        input: 100
-      }
-    }, (err, execution) => {
-      if (err) return done(err);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
+        variables: {
+          input: 100
+        }
+      }, (err, execution) => {
+        if (err) return done(err);
 
-      execution.once('end', () => {
-        expect(execution.getChildActivityById('end1').taken, 'end1').to.be.true();
-        expect(execution.getChildActivityById('end2').taken, 'end2').to.be.false();
-        done();
+        execution.once('end', () => {
+          expect(execution.getChildActivityById('end1').taken, 'end1').to.be.true();
+          expect(execution.getChildActivityById('end2').taken, 'end2').to.be.false();
+          done();
+        });
       });
     });
-  });
 
-  lab.test('should support diverging flows with default, case 2', (done) => {
-    const processXml = `
+    lab.test('should support diverging flows with default, case 2', (done) => {
+      const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -202,26 +294,26 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine({
-      source: processXml
-    });
-    engine.execute({
-      variables: {
-        input: 50
-      }
-    }, (err, execution) => {
-      if (err) return done(err);
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.execute({
+        variables: {
+          input: 50
+        }
+      }, (err, execution) => {
+        if (err) return done(err);
 
-      execution.once('end', () => {
-        expect(execution.getChildActivityById('end1').taken, 'end1').to.be.false();
-        expect(execution.getChildActivityById('end2').taken, 'end2').to.be.true();
-        done();
+        execution.once('end', () => {
+          expect(execution.getChildActivityById('end1').taken, 'end1').to.be.false();
+          expect(execution.getChildActivityById('end2').taken, 'end2').to.be.true();
+          done();
+        });
       });
     });
-  });
 
-  lab.test('emits error when no conditional flow is taken', (done) => {
-    const processXml = `
+    lab.test('emits error when no conditional flow is taken', (done) => {
+      const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -243,21 +335,24 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   </process>
 </definitions>`;
 
-    const engine = new Bpmn.Engine({
-      source: processXml
-    });
-    engine.once('error', (err, gateway) => {
-      expect(err).to.be.an.error(/no conditional flow/i);
-      expect(gateway).to.include({id: 'decision'});
-      done();
-    });
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.once('error', (err, gateway) => {
+        expect(err).to.be.an.error(/no conditional flow/i);
+        expect(gateway).to.include({
+          id: 'decision'
+        });
+        done();
+      });
 
-    engine.execute({
-      variables: {
-        input: 61
-      }
-    }, (err) => {
-      if (err) return done(err);
+      engine.execute({
+        variables: {
+          input: 61
+        }
+      }, (err) => {
+        if (err) return done(err);
+      });
     });
   });
 });

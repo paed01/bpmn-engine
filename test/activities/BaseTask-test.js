@@ -39,11 +39,9 @@ lab.experiment('BaseTask', () => {
   });
 
   lab.describe('multiple inbounds', () => {
-    const processXml = factory.resource('task-multiple-inbound.bpmn');
-
     lab.test('completes process', (done) => {
       const engine = new Bpmn.Engine({
-        source: processXml
+        source: factory.resource('task-multiple-inbound.bpmn')
       });
       const listener = new EventEmitter();
       listener.on('wait', (activity) => {
@@ -71,6 +69,41 @@ lab.experiment('BaseTask', () => {
         execution.once('end', () => {
           done();
         });
+      });
+
+    });
+
+    lab.test('multiple completes process', (done) => {
+      const engine = new Bpmn.Engine({
+        source: factory.resource('multiple-multiple-inbound.bpmn'),
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      let taskCount = 0;
+      listener.on('start-task', (a) => {
+        taskCount++;
+        if (taskCount > 3) {
+          Code.fail(`Too many runs (${taskCount}) for <${a.id}>`);
+        }
+      });
+
+      engine.once('end', (def) => {
+        expect(taskCount, 'start tasks').to.equal(3);
+        expect(def.variables).to.equal({
+          tookCondition1: true,
+          tookCondition2: true,
+          condition1: true,
+          condition2: true
+        });
+        expect(def.getChildActivityById('end').taken).to.be.true();
+        done();
+      });
+
+      engine.execute({
+        listener: listener
       });
 
     });
