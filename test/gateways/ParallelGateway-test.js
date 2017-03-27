@@ -589,13 +589,6 @@ lab.experiment('ParallelGateway', () => {
         source: definitionXml
       });
 
-      const listener = new EventEmitter();
-      let count = 0;
-      listener.on('start-scriptTask2', (e) => {
-        if (count > 1) Code.fail(`${e.id} should only run once`);
-        count++;
-      });
-
       engine.execute({
         variables: {
           input: 51
@@ -635,6 +628,30 @@ lab.experiment('ParallelGateway', () => {
       });
 
       engine.execute();
+    });
+
+    lab.test('completes process with succeeding joins', (done) => {
+      const engine = new Bpmn.Engine({
+        source: factory.resource('succeeding-joins.bpmn'),
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      listener.on('start', (activity, inst) => {
+        if (activity.type !== 'bpmn:Process') {
+          expect(inst.getState().children.filter(c => c.entered).length, `start ${activity.id}`).to.be.above(0);
+        }
+      });
+
+      engine.once('end', () => {
+        done();
+      });
+
+      engine.execute({
+        listener: listener
+      });
     });
 
     lab.describe('resume()', () => {
