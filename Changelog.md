@@ -6,6 +6,9 @@ Changelog
 ## Breaking changes
 - Parallel gateway `getState()` returns pending inbound and/or pending outbound, so old states are not supported
 
+## Changes
+- Support camunda input/output for exclusive gateways
+
 # 3.2.0
 
 - Add support for SendTask and ReceiveTask

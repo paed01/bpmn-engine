@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine",
-  "version": "4.0.0",
+  "version": "4.0.0-rc1",
   "author": "Pål Edman <pal.edman@gmail.com> (https://github.com/paed01)",
   "main": "index.js",
   "repository": {
@@ -37,7 +37,7 @@
     "coveralls": "^2.12.0",
     "lab": "^13.0.1",
     "markdown-toc": "^1.1.0",
-    "nock": "^9.0.9",
+    "nock": "^9.0.10",
     "request": "^2.81.0"
   },
   "dependencies": {
