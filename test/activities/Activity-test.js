@@ -67,6 +67,19 @@ lab.experiment('Activity', () => {
     });
   });
 
+  lab.describe('onLoopedInbound()', () => {
+    lab.test('leaves if entered', (done) => {
+      const task = instance.getChildActivityById('task');
+      task.once('leave', () => {
+        done();
+      });
+
+      task.activate();
+      task.enter();
+      task.inbound[0].emit('looped');
+    });
+  });
+
   lab.describe('discard()', () => {
 
     lab.test('activity with multiple inbound waits for all to be discarded', (done) => {

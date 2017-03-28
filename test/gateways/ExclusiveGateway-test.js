@@ -8,7 +8,6 @@ const expect = Code.expect;
 const Bpmn = require('../..');
 
 lab.experiment('ExclusiveGateway', () => {
-
   lab.describe('input', () => {
     lab.test('can be used by conditional flows', (done) => {
       const processXml = `

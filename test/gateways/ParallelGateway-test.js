@@ -457,17 +457,17 @@ lab.experiment('ParallelGateway', () => {
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
     <startEvent id="theStart" />
-    <inclusiveGateway id="decision" />
+    <inclusiveGateway id="decisions" />
     <scriptTask id="script" scriptFormat="Javascript">
       <script>next();</script>
     </scriptTask>
     <userTask id="task" />
     <parallelGateway id="join" />
     <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
-    <sequenceFlow id="flow2" sourceRef="decision" targetRef="script" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decisions" />
+    <sequenceFlow id="flow2" sourceRef="decisions" targetRef="script" />
     <sequenceFlow id="flow3" sourceRef="script" targetRef="join" />
-    <sequenceFlow id="flow4" sourceRef="decision" targetRef="task">
+    <sequenceFlow id="flow4" sourceRef="decisions" targetRef="task">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
         this.variables.input <= 50
       ]]></conditionExpression>
@@ -480,18 +480,16 @@ lab.experiment('ParallelGateway', () => {
       const engine = new Bpmn.Engine({
         source: definitionXml
       });
+      engine.once('end', (def) => {
+        expect(def.getChildActivityById('end').taken, 'end').to.be.true();
+        expect(def.getChildActivityById('task').taken, 'task').to.not.be.true();
+        testHelpers.expectNoLingeringListenersOnDefinition(def);
+        done();
+      });
       engine.execute({
         variables: {
           input: 51
         }
-      }, (err, definition) => {
-        if (err) return done(err);
-
-        definition.on('end', () => {
-          expect(definition.getChildActivityById('end').taken, 'end').to.be.true();
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          done();
-        });
       });
     });
 
@@ -704,67 +702,6 @@ lab.experiment('ParallelGateway', () => {
 
         engine.execute({
           listener: listener
-        });
-
-      });
-
-      lab.test('issue 19', (done) => {
-        const messages = [];
-        testHelpers.serviceLog = (message) => {
-          messages.push(message);
-        };
-        testHelpers.serviceTimeout = (cb, time) => {
-          setTimeout(cb, time);
-        };
-
-        let state;
-        const engine = new Bpmn.Engine({
-          source: factory.resource('issue-19.bpmn')
-        });
-        const listener = new EventEmitter();
-
-        listener.on('start', () => {
-          state = engine.getState();
-        });
-
-        listener.once('start-Task_B', () => {
-          setImmediate(() => {
-            engine.stop();
-            state = engine.getState();
-          });
-        });
-
-        engine.once('end', () => {
-          const listener2 = new EventEmitter();
-          const engine2 = Bpmn.Engine.resume(state, {
-            listener: listener2
-          });
-          engine2.once('end', () => {
-            expect(messages).to.equal([
-              'Waiting Task B for 5 seconds...',
-              'Waiting Task B for 5 seconds...',
-              'Resume Task B!',
-              'Resume Task B!'
-            ]);
-            done();
-          });
-        });
-
-        engine.execute({
-          listener: listener,
-          variables: {
-            timeout: 100
-          },
-          services: {
-            timeout: {
-              module: require.resolve('../helpers/testHelpers'),
-              fnName: 'serviceTimeout'
-            },
-            log: {
-              module: require.resolve('../helpers/testHelpers'),
-              fnName: 'serviceLog'
-            }
-          }
         });
 
       });

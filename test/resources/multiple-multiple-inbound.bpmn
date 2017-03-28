@@ -14,7 +14,7 @@
       <bpmn:incoming>SequenceFlow_0q2oaww</bpmn:incoming>
       <bpmn:incoming>default-flow-2</bpmn:incoming>
       <bpmn:incoming>default-flow-1</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_0bujyso</bpmn:outgoing>
+      <bpmn:outgoing>taskflow-1</bpmn:outgoing>
     </bpmn:task>
     <bpmn:sequenceFlow id="SequenceFlow_0q2oaww" sourceRef="StartEvent_1" targetRef="task" />
     <bpmn:exclusiveGateway id="decision-1" default="default-flow-1">
@@ -23,11 +23,11 @@
           <camunda:outputParameter name="condition1">${true}</camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_0bujyso</bpmn:incoming>
+      <bpmn:incoming>taskflow-1</bpmn:incoming>
       <bpmn:outgoing>condflow-1</bpmn:outgoing>
       <bpmn:outgoing>default-flow-1</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_0bujyso" sourceRef="task" targetRef="decision-1" />
+    <bpmn:sequenceFlow id="taskflow-1" sourceRef="task" targetRef="decision-1" />
     <bpmn:exclusiveGateway id="decision-2" default="default-flow-2">
       <bpmn:extensionElements>
         <camunda:inputOutput>
@@ -71,7 +71,7 @@
           <dc:Bounds x="431" y="148" width="0" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SequenceFlow_0bujyso_di" bpmnElement="SequenceFlow_0bujyso">
+      <bpmndi:BPMNEdge id="SequenceFlow_0bujyso_di" bpmnElement="taskflow-1">
         <di:waypoint xsi:type="dc:Point" x="346" y="120" />
         <di:waypoint xsi:type="dc:Point" x="406" y="120" />
         <bpmndi:BPMNLabel>

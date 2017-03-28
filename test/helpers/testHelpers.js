@@ -29,7 +29,7 @@ pub.expectNoLingeringListeners = (instance) => {
   });
   instance.context.sequenceFlows.forEach((flow) => {
     debug(`check listeners of flow <${flow.id}>`);
-    checkListeners(flow, ['taken', 'message', 'discarded'], '');
+    checkListeners(flow, ['taken', 'message', 'discarded', 'looped'], '');
   });
 };
 

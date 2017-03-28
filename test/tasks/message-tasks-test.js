@@ -30,10 +30,10 @@ lab.experiment('message tasks', () => {
     engine.once('end', (def) => {
       expect(def.variables).to.include({
         user: 'a@b.c',
-        to: 'c@d.e',
         receivedFrom: 'a@b.c',
         me: 'c@d.e',
       });
+
       testHelpers.expectNoLingeringListenersOnEngine(engine);
       done();
     });

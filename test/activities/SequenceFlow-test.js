@@ -14,7 +14,7 @@ const expect = Code.expect;
 lab.experiment('SequenceFlow', () => {
   let context;
   lab.before((done) => {
-    testHelper.getContext(factory.resource('loop.bpmn').toString(), (err, newContext) => {
+    testHelper.getContext(factory.resource('multiple-multiple-inbound.bpmn').toString(), (err, newContext) => {
       if (err) return done(err);
       context = newContext;
       expect(context.sequenceFlows.length).to.be.above(0);
@@ -32,15 +32,26 @@ lab.experiment('SequenceFlow', () => {
     });
 
     lab.test('loads conditional flow condition', (done) => {
-      const flow = getFlowById(context, 'flow3');
+      const flow = getFlowById(context, 'condflow-1');
       expect(flow.condition).to.exist();
       done();
     });
 
     lab.test('loads unconditional flow', (done) => {
-      const flow = getFlowById(context, 'flow1');
+      const flow = getFlowById(context, 'default-flow-1');
       expect(flow.condition).to.not.exist();
       done();
+    });
+  });
+
+  lab.describe('discard', () => {
+    lab.test('emit looped if root flow is the same as discard flow', (done) => {
+      const rootFlow = getFlowById(context, 'condflow-1');
+      const flow = getFlowById(context, 'taskflow-1');
+      flow.once('looped', () => {
+        done();
+      });
+      flow.discard(rootFlow);
     });
   });
 
