@@ -438,6 +438,26 @@ lab.experiment('Engine', () => {
         if (err) return done(err);
       });
     });
+
+    lab.test('returns engine package version', (done) => {
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      const listener = new EventEmitter();
+
+      listener.on('wait-userTask', () => {
+        const state = engine.getState();
+        expect(state.engineVersion).to.match(/^\d+\.\d+\.\d+/);
+        done();
+      });
+
+      engine.execute({
+        listener: listener,
+        variables: {
+          input: null
+        }
+      });
+    });
   });
 
   lab.describe('Engine.resume()', () => {
