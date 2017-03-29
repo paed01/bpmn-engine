@@ -399,4 +399,12 @@ lab.experiment('context-helper', () => {
       done();
     });
   });
+
+  lab.describe('getActivityErrorEventDefinition()', () => {
+    lab.test('returns nothing if no activity', (done) => {
+      expect(contextHelper.getActivityErrorEventDefinition()).to.be.undefined();
+      expect(contextHelper.getActivityErrorEventDefinition({})).to.be.undefined();
+      done();
+    });
+  });
 });

@@ -3,6 +3,7 @@
 const Code = require('code');
 const Lab = require('lab');
 const EventEmitter = require('events').EventEmitter;
+const nock = require('nock');
 const testHelpers = require('./helpers/testHelpers');
 const factory = require('./helpers/factory');
 
@@ -71,6 +72,153 @@ lab.experiment('issues', () => {
         }
       });
 
+    });
+
+    lab.test('example completes when returning to request after resume', (done) => {
+      testHelpers.statusCodeOk = (statusCode) => {
+        return statusCode === 200;
+      };
+
+      let state;
+      const engine = new Bpmn.Engine({
+        source: factory.resource('issue-19-2.bpmn'),
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+      const listener = new EventEmitter();
+
+      listener.on('start', () => {
+        state = engine.getState();
+      });
+
+      listener.once('wait-waitForSignalTask', () => {
+        state = engine.getState();
+        engine.stop();
+      });
+
+      engine.once('end', () => {
+        const listener2 = new EventEmitter();
+        listener2.once('wait-waitForSignalTask', (task) => {
+          task.signal();
+        });
+
+        nock('http://example.com')
+          .get('/api')
+          .reply(200, {
+            status: 'OK'
+          });
+
+        const engine2 = Bpmn.Engine.resume(state, {
+          listener: listener2
+        });
+        engine2.once('end', (def) => {
+          expect(def.variables).to.include({
+            statusCode: 200,
+            body: {
+              status: 'OK'
+            }
+          });
+          done();
+        });
+      });
+
+      nock('http://example.com')
+        .get('/api')
+        .reply(502);
+
+      engine.execute({
+        listener: listener,
+        variables: {
+          apiUrl: 'http://example.com/api',
+          timeout: 'PT0.1S'
+        },
+        services: {
+          get: {
+            module: 'request',
+            fnName: 'get'
+          },
+          statusCodeOk: {
+            module: require.resolve('./helpers/testHelpers'),
+            fnName: 'statusCodeOk'
+          }
+        }
+      });
+
+    });
+
+    lab.test('example completes when returning to request after resume', (done) => {
+      testHelpers.statusCodeOk = (statusCode) => {
+        return statusCode === 200;
+      };
+
+      let state;
+      const engine = new Bpmn.Engine({
+        source: factory.resource('issue-19-2.bpmn'),
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+      const listener = new EventEmitter();
+
+      listener.on('start', () => {
+        state = engine.getState();
+      });
+
+      listener.once('wait-waitForSignalTask', () => {
+        state = engine.getState();
+        engine.stop();
+      });
+
+      engine.once('end', () => {
+        const listener2 = new EventEmitter();
+        listener2.once('wait-waitForSignalTask', (task) => {
+          task.signal();
+        });
+
+        nock('http://example.com')
+          .get('/api')
+          .reply(200, {
+            status: 'OK'
+          });
+
+        const engine2 = Bpmn.Engine.resume(state, {
+          listener: listener2
+        });
+        engine2.once('end', (def) => {
+          expect(def.variables).to.include({
+            statusCode: 200,
+            body: {
+              status: 'OK'
+            }
+          });
+          expect(def.getChildActivityById('terminateEvent').taken).to.be.false();
+          expect(def.getChildActivityById('end').taken).to.be.true();
+          done();
+        });
+      });
+
+      nock('http://example.com')
+        .get('/api')
+        .reply(502);
+
+      engine.execute({
+        listener: listener,
+        variables: {
+          apiUrl: 'http://example.com/api',
+          timeout: 'PT0.1S'
+        },
+        services: {
+          get: {
+            module: 'request',
+            fnName: 'get'
+          },
+          statusCodeOk: {
+            module: require.resolve('./helpers/testHelpers'),
+            fnName: 'statusCodeOk'
+          }
+        }
+      });
     });
   });
 
