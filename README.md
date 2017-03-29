@@ -42,15 +42,16 @@ The following elements are tested and supported.
     - Boundary Interupting
     - Boundary Non-interupting
 - Tasks
+  - Manual: needs signal
   - Sequential loop
     - Cardinality, integer or expression
     - Condition, script or expression
     - Collection (camunda expression)
+  - Service
   - SubProcess
   - Script: javascript only
   - Task: completes immediately
   - User: needs signal
-  - Service
   - Send
   - Receive
 - [Gateways](/docs/Gateways.md)
