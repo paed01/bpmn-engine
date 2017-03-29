@@ -203,6 +203,54 @@ lab.experiment('SequenceFlow', () => {
       });
     });
   });
+  lab.describe('engine', () => {
+    lab.test('stops on infinite loop detection', (done) => {
+      const sourceXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions id="testProcess" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess1" isExecutable="true">
+    <startEvent id="theStart" />
+    <exclusiveGateway id="decision" default="flow2" />
+    <task id="task" />
+    <endEvent id="end1" />
+    <endEvent id="end2" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1" />
+    <sequenceFlow id="flow3withExpression" sourceRef="decision" targetRef="end2">
+      <conditionExpression>\${services.isBelow(variables.input,2)}</conditionExpression>
+    </sequenceFlow>
+  </process>
+</definitions>
+    `;
+
+      const engine = new Bpmn.Engine({
+        source: sourceXml
+      });
+      const listener = new EventEmitter();
+
+      listener.on('taken-flow3withExpression', (flow) => {
+        Code.fail(`<${flow.id}> should not have been taken`);
+      });
+
+      engine.execute({
+        listener: listener,
+        services: {
+          isBelow: (input, test) => {
+            return input < Number(test);
+          }
+        },
+        variables: {
+          input: 2
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+        instance.once('end', () => {
+          done();
+        });
+      });
+    });
+
+  });
 });
 
 function getFlowById(context, id) {

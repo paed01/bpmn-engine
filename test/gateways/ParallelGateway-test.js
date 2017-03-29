@@ -110,6 +110,23 @@ lab.experiment('ParallelGateway', () => {
 
         gateway.inbound[0].take();
       });
+
+      lab.test('discarded inbound is returned in discardedInbound', (done) => {
+        const gateway = context.getChildActivityById('join');
+        gateway.activate();
+        gateway.run();
+
+        gateway.once('start', () => {
+          const state = gateway.getState();
+          expect(state).to.include({
+            pendingInbound: ['flow3'],
+            discardedInbound: ['flow2']
+          });
+          done();
+        });
+
+        gateway.inbound[0].discard();
+      });
     });
 
     lab.describe('resume()', () => {
@@ -166,7 +183,7 @@ lab.experiment('ParallelGateway', () => {
         gateway.inbound[0].take();
       });
 
-      lab.test('completes when one inbound flow is discarded', (done) => {
+      lab.test('completes if one inbound flow is discarded', (done) => {
         const gateway = context.getChildActivityById('join');
 
         gateway.on('start', () => {
@@ -188,6 +205,38 @@ lab.experiment('ParallelGateway', () => {
           resumedGateway.activate();
           resumedGateway.resume(state);
           resumedGateway.pendingInbound[0].take();
+        });
+
+        gateway.activate();
+        gateway.run();
+        gateway.inbound[0].discard();
+      });
+
+      lab.test('discards outbound if all inbound was discarded', (done) => {
+        const gateway = context.getChildActivityById('join');
+
+        gateway.on('start', () => {
+          const state = gateway.getState();
+
+          expect(state).to.include({
+            pendingInbound: ['flow3']
+          });
+
+          const clonedContext = testHelpers.cloneContext(context);
+          const resumedGateway = clonedContext.getChildActivityById('join');
+
+          resumedGateway.id += '-resumed';
+
+          resumedGateway.outbound[0].once('discarded', () => {
+            done();
+          });
+          resumedGateway.outbound[0].once('taken', () => {
+            Code.fail('Should not be taken');
+          });
+
+          resumedGateway.activate();
+          resumedGateway.resume(state);
+          resumedGateway.pendingInbound[0].discard();
         });
 
         gateway.activate();
@@ -264,7 +313,7 @@ lab.experiment('ParallelGateway', () => {
       });
 
       gateway.on('leave', () => {
-        expect(discardedFlows).to.equal(['flow2', 'flow3']);
+        expect(discardedFlows, 'discarded flows').to.equal(['flow2', 'flow3']);
         done();
       });
 
@@ -282,6 +331,33 @@ lab.experiment('ParallelGateway', () => {
           expect(state).to.include({
             pendingOutbound: ['flow3']
           });
+          done();
+        });
+
+        gateway.activate();
+        gateway.run();
+      });
+    });
+
+    lab.test('start with fork emits start', (done) => {
+      const startProcessXml = `
+<?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <parallelGateway id="fork" />
+    <parallelGateway id="join" />
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="fork" targetRef="join" />
+    <sequenceFlow id="flow2" sourceRef="fork" targetRef="join" />
+    <sequenceFlow id="flow3" sourceRef="join" targetRef="end" />
+  </process>
+</definitions>`;
+
+      testHelpers.getContext(startProcessXml, (err, ctx) => {
+        if (err) return done(err);
+        const gateway = ctx.getChildActivityById('fork');
+
+        gateway.on('start', () => {
           done();
         });
 
