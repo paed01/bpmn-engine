@@ -12,7 +12,8 @@ const expect = Code.expect;
 const Bpmn = require('../');
 
 lab.experiment('issues', () => {
-  lab.describe('issue 19', () => {
+  lab.describe('issue 19 - save state', () => {
+
     lab.test('make sure there is something to save on listener start events', (done) => {
       const messages = [];
       testHelpers.serviceLog = (message) => {
@@ -73,8 +74,39 @@ lab.experiment('issues', () => {
       });
 
     });
+  });
 
-    lab.test('example completes when returning to request after resume', (done) => {
+  lab.describe('issue-19 - on error', () => {
+    let services;
+    lab.before((done) => {
+      testHelpers.statusCodeOk = (statusCode) => {
+        return statusCode === 200;
+      };
+      testHelpers.extractErrorCode = (errorMessage) => {
+        if (!errorMessage) return;
+        const codeMatch = errorMessage.match(/^([A-Z_]+):.+/);
+        if (codeMatch) return codeMatch[1];
+      };
+
+      services = {
+        get: {
+          module: 'request',
+          fnName: 'get'
+        },
+        statusCodeOk: {
+          module: require.resolve('./helpers/testHelpers'),
+          fnName: 'statusCodeOk'
+        },
+        extractErrorCode: {
+          module: require.resolve('./helpers/testHelpers'),
+          fnName: 'extractErrorCode'
+        }
+      };
+
+      done();
+    });
+
+    lab.test('completes when returning to request after resume', (done) => {
       testHelpers.statusCodeOk = (statusCode) => {
         return statusCode === 200;
       };
@@ -133,25 +165,12 @@ lab.experiment('issues', () => {
           apiUrl: 'http://example.com/api',
           timeout: 'PT0.1S'
         },
-        services: {
-          get: {
-            module: 'request',
-            fnName: 'get'
-          },
-          statusCodeOk: {
-            module: require.resolve('./helpers/testHelpers'),
-            fnName: 'statusCodeOk'
-          }
-        }
+        services: services
       });
 
     });
 
-    lab.test('example completes when returning to request after resume', (done) => {
-      testHelpers.statusCodeOk = (statusCode) => {
-        return statusCode === 200;
-      };
-
+    lab.test('caught error is saved to variables', (done) => {
       let state;
       const engine = new Bpmn.Engine({
         source: factory.resource('issue-19-2.bpmn'),
@@ -187,6 +206,9 @@ lab.experiment('issues', () => {
         });
         engine2.once('end', (def) => {
           expect(def.variables).to.include({
+            retry: true,
+            errorCode: 'REQ_FAIL',
+            requestErrorMessage: 'REQ_FAIL: Error message',
             statusCode: 200,
             body: {
               status: 'OK'
@@ -200,7 +222,7 @@ lab.experiment('issues', () => {
 
       nock('http://example.com')
         .get('/api')
-        .reply(502);
+        .replyWithError(new Error('REQ_FAIL: Error message'));
 
       engine.execute({
         listener: listener,
@@ -208,16 +230,65 @@ lab.experiment('issues', () => {
           apiUrl: 'http://example.com/api',
           timeout: 'PT0.1S'
         },
-        services: {
-          get: {
-            module: 'request',
-            fnName: 'get'
-          },
-          statusCodeOk: {
-            module: require.resolve('./helpers/testHelpers'),
-            fnName: 'statusCodeOk'
-          }
+        services: services
+      });
+    });
+
+    lab.test('takes decision based on error', (done) => {
+      let state;
+      const engine = new Bpmn.Engine({
+        source: factory.resource('issue-19-2.bpmn'),
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
+      });
+      const listener = new EventEmitter();
+
+      listener.on('start', () => {
+        state = engine.getState();
+      });
+
+      listener.once('wait-waitForSignalTask', () => {
+        state = engine.getState();
+        engine.stop();
+      });
+
+      engine.once('end', () => {
+        const listener2 = new EventEmitter();
+        listener2.once('wait-waitForSignalTask', (task) => {
+          task.signal();
+        });
+
+        nock('http://example.com')
+          .get('/api')
+          .replyWithError(new Error('RETRY_FAIL: Error message'));
+
+        const engine2 = Bpmn.Engine.resume(state, {
+          listener: listener2
+        });
+        engine2.once('end', (def) => {
+          expect(def.variables).to.include({
+            retry: true,
+            errorCode: 'RETRY_FAIL',
+            requestErrorMessage: 'RETRY_FAIL: Error message'
+          });
+          expect(def.getChildActivityById('terminateEvent').taken).to.be.true();
+          expect(def.getChildActivityById('end').taken).to.be.false();
+          done();
+        });
+      });
+
+      nock('http://example.com')
+        .get('/api')
+        .replyWithError(new Error('REQ_FAIL: Error message'));
+
+      engine.execute({
+        listener: listener,
+        variables: {
+          apiUrl: 'http://example.com/api',
+          timeout: 'PT0.1S'
+        },
+        services: services
       });
     });
   });

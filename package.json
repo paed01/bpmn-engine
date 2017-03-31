@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine",
-  "version": "4.0.0-rc2",
+  "version": "4.0.0-rc3",
   "author": "Pål Edman <pal.edman@gmail.com> (https://github.com/paed01)",
   "main": "index.js",
   "repository": {
@@ -34,10 +34,10 @@
   "devDependencies": {
     "camunda-bpmn-moddle": "^0.11.0",
     "code": "^4.0.0",
-    "coveralls": "^2.12.0",
+    "coveralls": "^2.13.0",
     "lab": "^13.0.1",
     "markdown-toc": "^1.1.0",
-    "nock": "^9.0.10",
+    "nock": "^9.0.11",
     "request": "^2.81.0"
   },
   "dependencies": {

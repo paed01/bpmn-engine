@@ -1,34 +1,46 @@
 'use strict';
 
 const Code = require('code');
-const factory = require('../helpers/factory');
 const expect = Code.expect;
 const Lab = require('lab');
-const nock = require('nock');
+const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const Bpmn = require('../..');
-const EventEmitter = require('events').EventEmitter;
-const testHelper = require('../helpers/testHelpers');
 
 lab.experiment('ErrorEvent', () => {
   lab.describe('as BoundaryEvent', () => {
-    const processXml = factory.resource('bound-error.bpmn');
+    const processXml = `
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="service" camunda:expression="\${services.test}" />
+    <boundaryEvent id="errorEvent" attachedToRef="service">
+      <errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="code" camunda:errorMessageVariable="message" />
+    </boundaryEvent>
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="service" targetRef="end" />
+    <sequenceFlow id="flow2" sourceRef="errorEvent" targetRef="end" />
+  </process>
+  <error id="Error_0w1hljb" name="requestError" errorCode="404" />
+</definitions>
+    `;
+
+    let context;
+    lab.beforeEach((done) => {
+      testHelpers.getContext(processXml, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, c) => {
+        if (err) return done(err);
+        context = c;
+        context.services = {
+          test: () => {}
+        };
+        done();
+      });
+    });
 
     lab.describe('ctor', () => {
-      let event;
-      lab.before((done) => {
-        const engine = new Bpmn.Engine({
-          source: processXml
-        });
-        engine.getDefinition((err, definition) => {
-          if (err) return done(err);
-          event = definition.getChildActivityById('errorEvent');
-          done();
-        });
-      });
-
       lab.test('has property cancelActivity true', (done) => {
+        const event = context.getChildActivityById('errorEvent');
         expect(event).to.include({
           cancelActivity: true
         });
@@ -36,134 +48,97 @@ lab.experiment('ErrorEvent', () => {
       });
     });
 
-    lab.describe('behavior', () => {
+    lab.describe('output', () => {
       lab.test('sets error code and message on end', (done) => {
-        const engine = new Bpmn.Engine({
-          source: factory.resource('issue-19-2.bpmn'),
-          moddleOptions: {
-            camunda: require('camunda-bpmn-moddle/resources/camunda')
-          }
-        });
+        const event = context.getChildActivityById('errorEvent');
+        event.activate();
+        event.enter();
 
-        nock('http://example.com')
-          .get('/api')
-          .replyWithError(new Error('REQ_ERROR: failed request'));
-
-        nock('http://example.com')
-          .get('/api')
-          .replyWithError(new Error('RETRY_ERROR: failed retry'));
-
-        const listener = new EventEmitter();
-        listener.once('wait-waitForSignalTask', (task) => {
-          task.signal();
-        });
-
-        engine.once('end', (def) => {
-          expect(def.variables).to.include({
-            requestErrorCode: 'RETRY_ERROR',
-            requestErrorMessage: 'RETRY_ERROR: failed retry'
+        event.once('end', (e, output) => {
+          expect(e.saveToVariables).to.be.true();
+          expect(output).to.equal({
+            code: 404,
+            message: 'failed'
           });
-
-          expect(def.getChildActivityById('terminateEvent').taken).to.be.true();
-          expect(def.getChildActivityById('end').taken).to.be.false();
-
           done();
         });
 
-        engine.execute({
-          listener: listener,
-          variables: {
-            apiUrl: 'http://example.com/api',
-            timeout: 'PT0.1S'
-          },
-          services: {
-            get: {
-              module: 'request',
-              fnName: 'get'
-            },
-            statusCodeOk: (statusCode) => {
-              return statusCode === 200;
-            }
-          }
+        const error = new Error('failed');
+        error.code = 404;
+        event.attachedTo.emit('error', error, event.attachedTo);
+      });
+
+      lab.test('sets nothing if missing error code and message', (done) => {
+        const event = context.getChildActivityById('errorEvent');
+        event.activate();
+        event.enter();
+
+        event.once('end', (e, output) => {
+          expect(e.saveToVariables).to.be.false();
+          expect(output).to.not.exist();
+          done();
         });
+
+        const error = new Error();
+        event.attachedTo.emit('error', error, event.attachedTo);
+      });
+
+      lab.test('sets nothing message if missing error code', (done) => {
+        const event = context.getChildActivityById('errorEvent');
+        event.activate();
+        event.enter();
+
+        event.once('end', (e, output) => {
+          expect(e.saveToVariables).to.be.true();
+          expect(output).to.equal({
+            message: 'failed'
+          });
+          done();
+        });
+
+        const error = new Error('failed');
+        event.attachedTo.emit('error', error, event.attachedTo);
       });
     });
 
     lab.describe('interrupting', () => {
+      lab.test('cancels task if error is emitted', (done) => {
+        const event = context.getChildActivityById('errorEvent');
+        event.activate();
+        event.enter();
 
-      lab.test('is discarded if task completes', (done) => {
-        const engine = new Bpmn.Engine({
-          source: processXml
-        });
-        const listener = new EventEmitter();
-        listener.once('start-scriptTask', (task) => {
-          task.signal();
-        });
-        listener.once('end-errorEvent', (e) => {
-          Code.fail(`<${e.id}> should have been discarded`);
+        event.attachedTo.outbound[0].once('discarded', () => {
+          done();
         });
 
-        engine.execute({
-          listener: listener,
-          variables: {
-            input: 1
-          }
-        }, (err, inst) => {
-          if (err) return done(err);
+        event.attachedTo.activate();
+        event.attachedTo.enter();
+        event.attachedTo.emit('error', new Error('failed'));
+      });
 
-          inst.once('end', () => {
-            testHelper.expectNoLingeringListenersOnDefinition(inst);
-            done();
-          });
+      lab.test('discards error event outbound if task completes', (done) => {
+        const event = context.getChildActivityById('errorEvent');
+        event.activate();
+        event.enter();
+
+        event.outbound[0].once('discarded', () => {
+          done();
         });
+
+        event.attachedTo.emit('end', event.attachedTo);
       });
 
       lab.test('is discarded if task is canceled', (done) => {
-        const engine = new Bpmn.Engine({
-          source: processXml
-        });
-        const listener = new EventEmitter();
-        listener.once('enter-scriptTask', (task) => {
-          task.cancel();
-        });
-        listener.once('end-errorEvent', (e) => {
-          Code.fail(`<${e.id}> should have been discarded`);
+        const event = context.getChildActivityById('errorEvent');
+        event.activate();
+        event.enter();
+
+        event.outbound[0].once('discarded', () => {
+          done();
         });
 
-        engine.execute({
-          listener: listener,
-          variables: {
-            input: 2
-          }
-        }, (err, inst) => {
-          if (err) return done(err);
-
-          inst.once('end', () => {
-            testHelper.expectNoLingeringListenersOnDefinition(inst);
-            done();
-          });
-        });
-      });
-
-      lab.test('cancels task', (done) => {
-        const engine = new Bpmn.Engine({
-          source: processXml
-        });
-        const listener = new EventEmitter();
-        listener.once('end-scriptTask', (e) => {
-          Code.fail(`<${e.id}> should have been discarded`);
-        });
-
-        engine.execute({
-          listener: listener
-        }, (err, inst) => {
-          if (err) return done(err);
-
-          inst.once('end', () => {
-            testHelper.expectNoLingeringListenersOnDefinition(inst);
-            done();
-          });
-        });
+        event.attachedTo.enter();
+        event.attachedTo.cancel();
       });
     });
   });

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.7.1">
-  <bpmn:process id="Process_1" isExecutable="true">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.7.2">
+  <bpmn:process id="issue-19-error-state" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="Start">
       <bpmn:outgoing>SequenceFlow_1ye6wuu</bpmn:outgoing>
     </bpmn:startEvent>
@@ -35,26 +35,18 @@
       <bpmn:outgoing>SequenceFlow_1rt4cxf</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:endEvent id="end" name="End">
-      <bpmn:incoming>SequenceFlow_1ea996h</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_17aoq0e</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_1rt4cxf" sourceRef="makeRequestService" targetRef="statusGateway" />
-    <bpmn:exclusiveGateway id="statusGateway" default="SequenceFlow_1lv4zi6">
-      <bpmn:incoming>SequenceFlow_1rt4cxf</bpmn:incoming>
-      <bpmn:incoming>SequenceFlow_194da38</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_1ea996h</bpmn:outgoing>
-      <bpmn:outgoing>SequenceFlow_1lv4zi6</bpmn:outgoing>
-      <bpmn:outgoing>toTerminateFlow</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_1ea996h" name="Success" sourceRef="statusGateway" targetRef="end">
+    <bpmn:sequenceFlow id="SequenceFlow_1rt4cxf" sourceRef="makeRequestService" targetRef="joinGateway" />
+    <bpmn:sequenceFlow id="SequenceFlow_1ea996h" name="" sourceRef="joinGateway" targetRef="statusGateway">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${services.statusCodeOk(variables.statusCode)}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:boundaryEvent id="requestErrorEvent" attachedToRef="makeRequestService">
-      <bpmn:outgoing>SequenceFlow_194da38</bpmn:outgoing>
-      <bpmn:errorEventDefinition camunda:errorCodeVariable="requestErrorCode" camunda:errorMessageVariable="requestErrorMessage" />
+    <bpmn:boundaryEvent id="requestErrorEvent" name="Errored" attachedToRef="makeRequestService">
+      <bpmn:outgoing>errorFlow</bpmn:outgoing>
+      <bpmn:errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="requestErrorCode" camunda:errorMessageVariable="requestErrorMessage" />
     </bpmn:boundaryEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_194da38" sourceRef="requestErrorEvent" targetRef="statusGateway" />
-    <bpmn:sequenceFlow id="SequenceFlow_1lv4zi6" name="Request failed" sourceRef="statusGateway" targetRef="waitForSignalTask" />
-    <bpmn:boundaryEvent id="BoundaryEvent_0ubi98t" name="10 minutes" attachedToRef="waitForSignalTask">
+    <bpmn:sequenceFlow id="errorFlow" sourceRef="requestErrorEvent" targetRef="joinGateway" />
+    <bpmn:boundaryEvent id="signalTimeoutEvent" name="10 minutes" attachedToRef="waitForSignalTask">
       <bpmn:timerEventDefinition>
         <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">${variables.timeout}</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
@@ -66,20 +58,46 @@
           <camunda:outputParameter name="retry">${true}</camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_1lv4zi6</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_1yeoz4y</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_07wpp9a</bpmn:outgoing>
     </bpmn:manualTask>
-    <bpmn:sequenceFlow id="toTerminateFlow" sourceRef="statusGateway" targetRef="terminateEvent">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${variables.retry}</bpmn:conditionExpression>
+    <bpmn:sequenceFlow id="toTerminateFlow" name="Yep!" sourceRef="retryGateway" targetRef="terminateEvent">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${retried}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:endEvent id="terminateEvent" name="Terminate">
       <bpmn:incoming>toTerminateFlow</bpmn:incoming>
       <bpmn:terminateEventDefinition />
     </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="statusGateway" name="Success?" default="SequenceFlow_0pkq4wo">
+      <bpmn:incoming>SequenceFlow_1ea996h</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_17aoq0e</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_0pkq4wo</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="SequenceFlow_17aoq0e" name="Yay!" sourceRef="statusGateway" targetRef="end">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${services.statusCodeOk(variables.statusCode)}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SequenceFlow_1yeoz4y" name="Try again" sourceRef="retryGateway" targetRef="waitForSignalTask" />
+    <bpmn:parallelGateway id="joinGateway" name="">
+      <bpmn:incoming>SequenceFlow_1rt4cxf</bpmn:incoming>
+      <bpmn:incoming>errorFlow</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1ea996h</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:exclusiveGateway id="retryGateway" name="Retried?" default="SequenceFlow_1yeoz4y">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="retried">${variables.retry}</camunda:inputParameter>
+          <camunda:outputParameter name="errorCode">${services.extractErrorCode(variables.requestErrorMessage)}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0pkq4wo</bpmn:incoming>
+      <bpmn:outgoing>toTerminateFlow</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_1yeoz4y</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="SequenceFlow_0pkq4wo" name="No..." sourceRef="statusGateway" targetRef="retryGateway" />
   </bpmn:process>
-  <bpmn:error id="Error_0w1hljb" />
+  <bpmn:error id="Error_0w1hljb" name="requestError" errorCode="${services.extractErrorCode(result.error)}" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="issue-19-error-state">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
         <dc:Bounds x="190" y="237" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -97,85 +115,108 @@
         <dc:Bounds x="272" y="215" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_10mlw9p_di" bpmnElement="end">
-        <dc:Bounds x="664" y="237" width="36" height="36" />
+        <dc:Bounds x="780" y="237" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="672" y="276" width="20" height="13" />
+          <dc:Bounds x="788" y="276" width="20" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_1rt4cxf_di" bpmnElement="SequenceFlow_1rt4cxf">
         <di:waypoint xsi:type="dc:Point" x="372" y="255" />
         <di:waypoint xsi:type="dc:Point" x="497" y="255" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="434.5" y="233.5" width="0" height="13" />
+          <dc:Bounds x="389.5" y="233.5" width="90" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ExclusiveGateway_0ryjvqp_di" bpmnElement="statusGateway" isMarkerVisible="true">
-        <dc:Bounds x="497" y="230" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="522" y="283" width="0" height="13" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_1ea996h_di" bpmnElement="SequenceFlow_1ea996h">
         <di:waypoint xsi:type="dc:Point" x="547" y="255" />
-        <di:waypoint xsi:type="dc:Point" x="664" y="255" />
+        <di:waypoint xsi:type="dc:Point" x="638" y="255" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="585" y="234" width="42" height="13" />
+          <dc:Bounds x="573" y="234" width="40" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="BoundaryEvent_0e4ddbq_di" bpmnElement="requestErrorEvent">
         <dc:Bounds x="305" y="277" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="323" y="316" width="0" height="13" />
+          <dc:Bounds x="331" y="311" width="37" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SequenceFlow_194da38_di" bpmnElement="SequenceFlow_194da38">
+      <bpmndi:BPMNEdge id="SequenceFlow_194da38_di" bpmnElement="errorFlow">
         <di:waypoint xsi:type="dc:Point" x="323" y="313" />
         <di:waypoint xsi:type="dc:Point" x="323" y="355" />
         <di:waypoint xsi:type="dc:Point" x="522" y="355" />
         <di:waypoint xsi:type="dc:Point" x="522" y="280" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="422.5" y="333.5" width="0" height="13" />
+          <dc:Bounds x="377.5" y="333.5" width="90" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="SequenceFlow_1lv4zi6_di" bpmnElement="SequenceFlow_1lv4zi6">
-        <di:waypoint xsi:type="dc:Point" x="522" y="230" />
-        <di:waypoint xsi:type="dc:Point" x="522" y="103" />
-        <di:waypoint xsi:type="dc:Point" x="480" y="103" />
+      <bpmndi:BPMNShape id="BoundaryEvent_0fkjyc0_di" bpmnElement="signalTimeoutEvent">
+        <dc:Bounds x="254" y="118" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="532" y="166" width="71" height="13" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="BoundaryEvent_0fkjyc0_di" bpmnElement="BoundaryEvent_0ubi98t">
-        <dc:Bounds x="410" y="125" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="403" y="166" width="54" height="13" />
+          <dc:Bounds x="247" y="159" width="54" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_07wpp9a_di" bpmnElement="SequenceFlow_07wpp9a">
-        <di:waypoint xsi:type="dc:Point" x="380" y="103" />
-        <di:waypoint xsi:type="dc:Point" x="322" y="103" />
+        <di:waypoint xsi:type="dc:Point" x="322" y="136" />
         <di:waypoint xsi:type="dc:Point" x="322" y="215" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="351" y="81.5" width="0" height="13" />
+          <dc:Bounds x="292" y="169" width="90" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="ManualTask_1nxtwwy_di" bpmnElement="waitForSignalTask">
-        <dc:Bounds x="380" y="63" width="100" height="80" />
+        <dc:Bounds x="272" y="56" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0pe6wn5_di" bpmnElement="toTerminateFlow">
-        <di:waypoint xsi:type="dc:Point" x="522" y="280" />
-        <di:waypoint xsi:type="dc:Point" x="522" y="333" />
-        <di:waypoint xsi:type="dc:Point" x="664" y="333" />
+        <di:waypoint xsi:type="dc:Point" x="688" y="96" />
+        <di:waypoint xsi:type="dc:Point" x="780" y="96" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="537" y="300" width="0" height="13" />
+          <dc:Bounds x="723" y="75" width="22" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="EndEvent_18ja9zt_di" bpmnElement="terminateEvent">
-        <dc:Bounds x="664" y="315" width="36" height="36" />
+        <dc:Bounds x="780" y="78" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="658" y="354" width="49" height="13" />
+          <dc:Bounds x="774" y="117" width="49" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_1chokjz_di" bpmnElement="statusGateway" isMarkerVisible="true">
+        <dc:Bounds x="638" y="230" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="639" y="288" width="48" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_17aoq0e_di" bpmnElement="SequenceFlow_17aoq0e">
+        <di:waypoint xsi:type="dc:Point" x="688" y="255" />
+        <di:waypoint xsi:type="dc:Point" x="780" y="255" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="723" y="233.5" width="22" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1yeoz4y_di" bpmnElement="SequenceFlow_1yeoz4y">
+        <di:waypoint xsi:type="dc:Point" x="638" y="96" />
+        <di:waypoint xsi:type="dc:Point" x="372" y="96" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="490" y="73" width="46" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ParallelGateway_0os8j1e_di" bpmnElement="joinGateway">
+        <dc:Bounds x="497" y="230" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="543" y="268" width="60" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_09lmfqt_di" bpmnElement="retryGateway" isMarkerVisible="true">
+        <dc:Bounds x="638" y="71" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="682" y="109" width="42" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0pkq4wo_di" bpmnElement="SequenceFlow_0pkq4wo">
+        <di:waypoint xsi:type="dc:Point" x="663" y="230" />
+        <di:waypoint xsi:type="dc:Point" x="663" y="121" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="672" y="169" width="24" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
