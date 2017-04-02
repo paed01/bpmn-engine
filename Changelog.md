@@ -7,7 +7,9 @@ Changelog
 - Parallel gateway `getState()` returns pending inbound and/or pending outbound, so old states are not supported
 
 ## Changes
-- Support camunda input/output for exclusive gateways
+- Add support for Manual task
+- Support camunda input/output for Exclusive Gateways, input is passed to conditional flows
+- Support camunda errorCodeVariable and errorMessageVariable for Error Events
 
 # 3.2.0
 
