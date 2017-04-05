@@ -93,14 +93,14 @@ listener.on('taken', (flow) => {
   console.log(`flow <${flow.id}> was taken`);
 });
 
+engine.once('end', (definition) => {
+  console.log(`User sirname is ${definition.variables.inputFromUser.sirname}`);
+});
+
 engine.execute({
   listener: listener
 }, (err, instance) => {
   if (err) throw err;
-
-  instance.once('end', () => {
-    console.log(`User sirname is ${instance.variables.inputFromUser.sirname}`);
-  });
 });
 ```
 
@@ -140,17 +140,15 @@ const engine = new Bpmn.Engine({
   source: processXml
 });
 
+engine.once('end', (definition) => {
+  if (definition.getChildActivityById('end1').taken) throw new Error('<end1> was not supposed to be taken, check your input');
+  console.log('TAKEN end2', definition.getChildActivityById('end2').taken);
+});
+
 engine.execute({
   variables: {
     input: 51
   }
-}, (err, instance) => {
-  if (err) throw err;
-
-  instance.once('end', () => {
-    if (instance.getChildActivityById('end1').taken) throw new Error('<end1> was not supposed to be taken, check your input');
-    console.log('TAKEN end2', instance.getChildActivityById('end2').taken);
-  });
 });
 ```
 
@@ -359,7 +357,6 @@ const processXml = `
   </process>
 </definitions>`;
 
-
 const engine = new Bpmn.Engine({
   name: 'service task example 1',
   source: processXml,
@@ -494,9 +491,10 @@ engine.execute({
   }
 }, (err, instance) => {
   if (err) throw err;
-  instance.once('end', () => {
-    console.log(instance.variables.taskInput.serviceTask.output);
-  });
+});
+
+engine.once('end', (definition) => {
+  console.log(definition.variables.taskInput.serviceTask.output);
 });
 ```
 
@@ -529,10 +527,12 @@ const engine = new Bpmn.Engine({
   name: 'sequence flow example',
   source: sourceXml
 });
+
 const listener = new EventEmitter();
 listener.on('taken-flow3withExpression', (flow) => {
   throw new Error(`<${flow.id}> should not have been taken`);
 });
+
 engine.execute({
   listener: listener,
   services: {
@@ -543,13 +543,13 @@ engine.execute({
   variables: {
     input: 2
   }
-}, (err, instance) => {
+}, (err) => {
   if (err) throw err;
-  instance.once('end', () => {
-    console.log('WOHO!');
-  });
 });
 
+engine.once('end', () => {
+  console.log('WOHO!');
+});
 ```
 
 # Task loop over collection
@@ -600,10 +600,9 @@ engine.execute({
   variables: {
     input: [1, 2, 3, 7]
   }
-}, (err, instance) => {
-  if (err) return console.log(err);
-  instance.once('end', () => {
-    console.log(instance.variables.sum, 'aught to be 13 blazing fast');
-  });
+});
+
+engine.once('end', (definition) => {
+  console.log(definition.variables.sum, 'aught to be 13 blazing fast');
 });
 ```
