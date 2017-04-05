@@ -1,5 +1,5 @@
 <!-- version -->
-# 4.0.0-rc3 API Reference
+# 4.0.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -387,11 +387,12 @@ setTimeout(() => {
 
 ### `getState()`
 
-Get state of a running execution.
+Get state of a running execution. Listener events `wait` and `start` are recommended when saving state.
 
 The saved state will include the following content:
 
 - `state`: `running` or `idle`
+- `engineVersion`: module package version
 - `moddleOptions`: Engine moddleOptions
 - `definitions`: List of definitions
   - `state`: State of definition, `pending`, `running`, or `completed`
@@ -427,10 +428,15 @@ const engine = new Bpmn.Engine({
 const listener = new EventEmitter();
 
 let state;
-listener.once('wait-userTask', (activity) => {
+listener.once('wait-userTask', () => {
   state = engine.getState();
   fs.writeFileSync('./tmp/some-random-id.json', JSON.stringify(state, null, 2));
   console.log(JSON.stringify(state, null, 2));
+});
+
+listener.once('start', () => {
+  state = engine.getState();
+  fs.writeFileSync('./tmp/some-random-id.json', JSON.stringify(state, null, 2));
 });
 
 engine.execute({
