@@ -5,6 +5,15 @@ Forms can be used by start events and user tasks.
 
 The engine consideres forms as reference only. If task input is to be validated this is outside the engine for now. One suggestion would be to validate the activity output as part of the flow.
 
+<!-- toc -->
+
+- [API](#api)
+  - [`activity.form.getFields()`](#activityformgetfields)
+  - [`activity.form.key`](#activityformkey)
+- [Example](#example)
+
+<!-- tocstop -->
+
 # API
 
 ## `activity.form.getFields()`

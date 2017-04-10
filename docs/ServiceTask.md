@@ -1,6 +1,8 @@
 ServiceTask
 ===========
 
+Inherits from [Activity](/docs/Activity.md).
+
 <!-- toc -->
 
 - [Define service](#define-service)

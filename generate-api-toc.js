@@ -9,13 +9,15 @@ const Package = require('./package.json');
 
 // Declare internals
 
-const internals = {
-  filename: process.argv[2] || './API.md'
-};
+const filenames = getFileNames();
 
+function getFileNames() {
+  const arg = process.argv[2] || './API.md';
+  return arg.split(',');
+}
 
-internals.generate = function() {
-  const api = Fs.readFileSync(internals.filename, 'utf8');
+function generate(filename) {
+  const api = Fs.readFileSync(filename, 'utf8');
   const tocOptions = {
     bullets: '-',
     slugify: function(text) {
@@ -29,7 +31,7 @@ internals.generate = function() {
   const output = Toc.insert(api, tocOptions)
     .replace(/<!-- version -->(.|\n)*<!-- versionstop -->/, '<!-- version -->\n# ' + Package.version + ' API Reference\n<!-- versionstop -->');
 
-  Fs.writeFileSync(internals.filename, output);
-};
+  Fs.writeFileSync(filename, output);
+}
 
-internals.generate();
+filenames.forEach(generate);

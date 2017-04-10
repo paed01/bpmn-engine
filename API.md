@@ -1,5 +1,5 @@
 <!-- version -->
-# 4.0.0 API Reference
+# 4.1.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -576,7 +576,7 @@ Each activity and flow emits events when changing state.
 - `wait`: A start event or user task waits for signal
 - `end`: A task has ended successfully
 - `cancel`: An activity execution was canceled
-- `leave`: The execution left the activity
+- `leave`: The execution left the activity, emitted asynchronously
 - `error`: An non-recoverable error has occurred
   The error event will not be emitted if an `bpmn:errorEvent` is attached
 

@@ -1,6 +1,8 @@
 Gateways
 ========
 
+Inherits from [Activity](/docs/Activity.md).
+
 # API
 
 ## `getState()`

@@ -47,7 +47,7 @@ Definition constructor.
 
 ### `getChildActivityById(id)`
 
-Get process activity by id. Loops processes to return first child activity that match id.
+Get process [activity](/docs/Activity.md) by id. Loops processes to return first child activity that match id.
 
 ### `getPendingActivities()`
 
@@ -84,7 +84,7 @@ Get definition state.
 - `processes`: Object with processes with id as key
   - `variables`: Execution variables
   - `services`: Execution services
-  - `children`: List of child states
+  - `children`: List of child [activity](/docs/Activity.md) states
     - `entered`: Boolean indicating if the child is currently executing
 
 ### `signal(activityId[, message])`

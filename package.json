@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "author": "Pål Edman <pal.edman@gmail.com> (https://github.com/paed01)",
   "main": "index.js",
   "repository": {
@@ -21,7 +21,7 @@
   "scripts": {
     "test": "make test-cov-lcov",
     "wintest": "node_modules/.bin/lab -v",
-    "toc": "node generate-api-toc ./API.md && node generate-api-toc ./docs/Examples.md && node generate-api-toc ./docs/Definition.md && node generate-api-toc ./docs/ServiceTask.md"
+    "toc": "node generate-api-toc ./API.md,./docs/Examples.md,./docs/Definition.md,./docs/ServiceTask.md,./docs/Activity.md,./docs/Form.md"
   },
   "keywords": [
     "workflow",

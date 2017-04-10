@@ -16,6 +16,7 @@ Base of almost all bpmn activity types.
   - [`properties`](#properties)
 - [Events](#events)
   - [`enter`](#enter)
+  - [`cancel`](#cancel)
   - [`leave`](#leave)
 
 <!-- tocstop -->
@@ -40,6 +41,8 @@ Get activity state.
 - `id`: Activity id
 - `type`: Activity type
 - `entered`: The activity is entered, i.e. in a running state
+- `taken`: The activity was taken
+- `canceled`: The activity was canceled
 
 ## `resume(activityState)`
 
@@ -76,6 +79,10 @@ Inherits `require('events').EventEmitter`.
 
 Execution has entered activity.
 
+## `cancel`
+
+Activity execution was canceled.
+
 ## `leave`
 
-Execution has left activity.
+Execution has left activity. The event is emitted asynchronously to enable the executing process instance to enter next activity.
