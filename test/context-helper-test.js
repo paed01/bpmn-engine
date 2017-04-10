@@ -407,4 +407,11 @@ lab.experiment('context-helper', () => {
       done();
     });
   });
+
+  lab.describe('getActivityProperties()', () => {
+    lab.test('returns nothing if activity is not found', (done) => {
+      expect(contextHelper.getActivityProperties(context, 'not-an-activity')).to.be.undefined();
+      done();
+    });
+  });
 });

@@ -17,22 +17,32 @@ const expect = Code.expect;
 lab.experiment('Activity', () => {
   const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
   <process id="theProcess" isExecutable="true">
     <startEvent id="start" name="Start" />
-    <userTask id="task" />
+    <userTask id="task">
+      <extensionElements>
+        <camunda:properties>
+          <camunda:property name="me" value="too" />
+          <camunda:property name="resolved" value="\${variables.boolval}" />
+          <camunda:property name="serviceval" value="\${services.negate(variables.boolval)}" />
+        </camunda:properties>
+      </extensionElements>
+    </userTask>
     <endEvent id="end" />
     <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
     <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
   </process>
 </definitions>`;
 
-  let activity, instance;
+  let activity, context; //, instance;
   lab.beforeEach((done) => {
-    testHelpers.getModdleContext(processXml, (cerr, moddleContext) => {
+    testHelpers.getContext(processXml, {
+      camunda: require('camunda-bpmn-moddle/resources/camunda')
+    }, (cerr, result) => {
       if (cerr) return done(cerr);
-      instance = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
-      activity = instance.getChildActivityById('start');
+      context = result;
+      activity = context.getChildActivityById('start');
       expect(activity).to.be.instanceof(Activity);
       done();
     });
@@ -69,7 +79,7 @@ lab.experiment('Activity', () => {
 
   lab.describe('onLoopedInbound()', () => {
     lab.test('leaves if entered', (done) => {
-      const task = instance.getChildActivityById('task');
+      const task = context.getChildActivityById('task');
       task.once('leave', () => {
         done();
       });
@@ -106,7 +116,7 @@ lab.experiment('Activity', () => {
 
   lab.describe('activate()', () => {
     lab.test('sets up inbound sequenceFlow listeners', (done) => {
-      const endEvent = new EndEvent(instance.context.moddleContext.elementsById.end, instance.context);
+      const endEvent = new EndEvent(context.moddleContext.elementsById.end, context);
       endEvent.activate();
       expect(endEvent.inbound[0].listenerCount('taken')).to.equal(1);
       expect(endEvent.inbound[0].listenerCount('discarded')).to.equal(1);
@@ -114,55 +124,57 @@ lab.experiment('Activity', () => {
     });
 
     lab.test('sets up inbound sequenceFlow listeners once', (done) => {
-      const endEvent = new EndEvent(instance.context.moddleContext.elementsById.end, instance.context);
+      const endEvent = new EndEvent(context.moddleContext.elementsById.end, context);
       endEvent.activate();
       endEvent.activate();
-      expect(instance.context.sequenceFlows[1].listenerCount('taken')).to.equal(1);
-      expect(instance.context.sequenceFlows[1].listenerCount('discarded')).to.equal(1);
+      expect(context.sequenceFlows[1].listenerCount('taken')).to.equal(1);
+      expect(context.sequenceFlows[1].listenerCount('discarded')).to.equal(1);
       done();
     });
   });
 
   lab.describe('deactivate()', () => {
     lab.test('tears down inbound sequenceFlow listeners', (done) => {
-      const endEvent = new EndEvent(instance.context.moddleContext.elementsById.end, instance.context);
+      const endEvent = new EndEvent(context.moddleContext.elementsById.end, context);
       endEvent.activate();
       endEvent.deactivate();
-      expect(instance.context.sequenceFlows[0].listenerCount('taken')).to.equal(0);
-      expect(instance.context.sequenceFlows[0].listenerCount('discarded')).to.equal(0);
+      expect(context.sequenceFlows[0].listenerCount('taken')).to.equal(0);
+      expect(context.sequenceFlows[0].listenerCount('discarded')).to.equal(0);
       done();
     });
 
     lab.test('tears down inbound sequenceFlow listeners once', (done) => {
-      const endEvent = new EndEvent(instance.context.moddleContext.elementsById.end, instance.context);
+      const endEvent = new EndEvent(context.moddleContext.elementsById.end, context);
       endEvent.activate();
       endEvent.deactivate();
       endEvent.deactivate();
-      expect(instance.context.sequenceFlows[0].listenerCount('taken')).to.equal(0);
-      expect(instance.context.sequenceFlows[0].listenerCount('discarded')).to.equal(0);
+      expect(context.sequenceFlows[0].listenerCount('taken')).to.equal(0);
+      expect(context.sequenceFlows[0].listenerCount('discarded')).to.equal(0);
       done();
     });
   });
 
   lab.describe('cancel()', () => {
     lab.test('cancels activity and takes all outbound', (done) => {
-      const task = instance.getChildActivityById('task');
+      const task = context.getChildActivityById('task');
       task.once('wait', (a) => {
         a.cancel();
       });
 
-      instance.once('end', () => {
+      task.once('leave', () => {
         expect(task.canceled).to.be.true();
-        expect(instance.getChildActivityById('end').canceled).to.be.false();
+        expect(task.outbound.length).to.be.above(0);
+        task.outbound.forEach((f) => expect(f.taken).to.be.true());
         done();
       });
-      instance.run();
+
+      task.run();
     });
   });
 
   lab.describe('getInput()', () => {
     lab.test('returns message if no io', (done) => {
-      const start = instance.getChildActivityById('start');
+      const start = context.getChildActivityById('start');
 
       expect(start.getInput(1)).to.equal(1);
 
@@ -172,9 +184,33 @@ lab.experiment('Activity', () => {
 
   lab.describe('getOutput()', () => {
     lab.test('returns message if no io', (done) => {
-      const start = instance.getChildActivityById('start');
+      const start = context.getChildActivityById('start');
 
       expect(start.getOutput(1)).to.equal(1);
+
+      done();
+    });
+  });
+
+  lab.describe('properties', () => {
+    lab.test('is exposed when process loads activity', (done) => {
+      const instance = new BaseProcess(context.moddleContext.elementsById.theProcess, context.moddleContext, {
+        services: {
+          negate: (val) => {
+            return !val;
+          }
+        },
+        variables: {
+          boolval: true
+        }
+      });
+      const task = instance.getChildActivityById('task');
+
+      expect(task.properties).to.equal({
+        me: 'too',
+        resolved: true,
+        serviceval: false
+      });
 
       done();
     });

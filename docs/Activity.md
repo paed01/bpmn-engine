@@ -12,6 +12,8 @@ Base of almost all bpmn activity types.
   - [`getState()`](#getstate)
   - [`resume(activityState)`](#resumeactivitystate)
   - [`discard([discardedFlow[,rootFlow]])`](#discarddiscardedflowrootflow)
+- [Activity properties](#activity-properties)
+  - [`properties`](#properties)
 - [Events](#events)
   - [`enter`](#enter)
   - [`leave`](#leave)
@@ -49,6 +51,22 @@ Cancels execution and discards all outbound sequence flows.
 
 - `discardedFlow`: Optional. Sequence flow instance that was discarded
 - `rootFlow`: Optional. First sequence flow instance that was discarded
+
+# Activity properties
+
+- `id`: Activity id
+- `name`: Activity name
+- `entered`: Boolean, indicating that activity has been entered
+- `isStart`: Boolean, indicating that the activity has no inbound flows
+- `isEnd`: Boolean, indicating that the activity has no outbound flows
+- [`properties`](#properties): Activity properties defined in modeler
+- `type`: Activity type
+
+## `properties`
+
+Activity properties defined in modeler.
+
+Value expressions are supported. Expressions are resolved when process is instantiated.
 
 # Events
 
