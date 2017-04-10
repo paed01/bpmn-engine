@@ -170,6 +170,61 @@ lab.experiment('Activity', () => {
 
       task.run();
     });
+
+    lab.test('returns cancel flag when getting state', (done) => {
+      const task = context.getChildActivityById('task');
+      task.once('wait', (a) => {
+        a.cancel();
+      });
+
+      task.once('leave', () => {
+        expect(task.getState().canceled).to.be.true();
+        done();
+      });
+
+      task.run();
+    });
+
+    lab.test('resets cancel flag ran again', (done) => {
+      const task = context.getChildActivityById('task');
+      task.once('wait', (a) => {
+        a.cancel();
+      });
+
+      task.once('leave', () => {
+        task.once('wait', (a) => {
+          expect(task.canceled).to.be.false();
+          a.signal();
+        });
+        task.once('leave', () => {
+          expect(task.canceled).to.be.false();
+          done();
+        });
+        task.run();
+      });
+
+      task.run();
+    });
+
+    lab.test('sets cancel flag when resumed', (done) => {
+      const task = context.getChildActivityById('task');
+      task.once('wait', (a) => {
+        a.cancel();
+      });
+
+      task.once('leave', () => {
+        const state = task.getState();
+
+        const newContext = testHelpers.cloneContext(context);
+        const taskToResume = newContext.getChildActivityById('end');
+
+        taskToResume.resume(state);
+        expect(taskToResume.canceled).to.be.true();
+        done();
+      });
+
+      task.run();
+    });
   });
 
   lab.describe('getInput()', () => {
@@ -213,6 +268,41 @@ lab.experiment('Activity', () => {
       });
 
       done();
+    });
+  });
+
+  lab.describe('getState()', () => {
+    lab.test('returns taken flag if taken', (done) => {
+      const end = context.getChildActivityById('end');
+
+      end.once('end', () => {
+        expect(end.getState().taken).to.be.true();
+        done();
+      });
+
+      end.run();
+    });
+  });
+
+  lab.describe('resume()', () => {
+    lab.test('sets taken flag when resumed', (done) => {
+      const task = context.getChildActivityById('task');
+      task.once('wait', (a) => {
+        a.signal();
+      });
+
+      task.once('leave', () => {
+        const state = task.getState();
+
+        const newContext = testHelpers.cloneContext(context);
+        const taskToResume = newContext.getChildActivityById('end');
+
+        taskToResume.resume(state);
+        expect(taskToResume.taken).to.be.true();
+        done();
+      });
+
+      task.run();
     });
   });
 });
