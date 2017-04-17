@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "author": "Pål Edman <pal.edman@gmail.com> (https://github.com/paed01)",
   "main": "index.js",
   "repository": {
@@ -35,14 +35,14 @@
     "camunda-bpmn-moddle": "^0.11.0",
     "code": "^4.0.0",
     "coveralls": "^2.13.0",
-    "lab": "^13.0.1",
+    "lab": "^13.0.2",
     "markdown-toc": "^1.1.0",
-    "nock": "^9.0.11",
+    "nock": "^9.0.13",
     "request": "^2.81.0",
     "unnecessary": "^1.3.3"
   },
   "dependencies": {
-    "async": "^2.2.0",
+    "async": "^2.3.0",
     "bpmn-moddle": "^0.14.0",
     "debug": "^2.6.3",
     "iso8601-duration": "^1.0.6"
