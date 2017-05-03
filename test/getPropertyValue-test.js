@@ -61,6 +61,111 @@ lab.experiment('getPropertyValue', () => {
     });
   });
 
+  lab.describe('array', () => {
+    lab.test('returns value at index', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: [1, 2, 3]
+        }
+      }, 'a.b[2]')).to.equal(3);
+      expect(getPropertyValue([1, 2, 3], '[2]')).to.equal(3);
+      done();
+    });
+
+    lab.test('returns length', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: [1, 2, 3]
+        }
+      }, 'a.b.length')).to.be.equal(3);
+      done();
+    });
+
+    lab.test('returns named value', (done) => {
+      const list = [1, 2, 3];
+      list.arb = 10;
+      expect(getPropertyValue({
+        a: {
+          b: list
+        }
+      }, 'a.b.arb')).to.be.equal(10);
+      done();
+    });
+
+    lab.test('returns undefined if out of bounds', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: [1, 2, 3]
+        }
+      }, 'a.b[4]')).to.be.undefined();
+      done();
+    });
+
+    lab.test('returns from last if negative index', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: [1, 2, 3]
+        }
+      }, 'a.b[-1]')).to.equal(3);
+      expect(getPropertyValue({
+        a: {
+          b: [1, 2, 3]
+        }
+      }, 'a.b[-2]')).to.equal(2);
+      expect(getPropertyValue({
+        a: {
+          b: [1, 2, 3]
+        }
+      }, 'a.b[-3]')).to.equal(1);
+      done();
+    });
+
+    lab.test('-0 returns first item', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: [1, 2, 3]
+        }
+      }, 'a.b[-0]')).to.equal(1);
+      done();
+    });
+
+    lab.test('returns undefined value if negative index is out of bounds', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: [1, 2, 3]
+        }
+      }, 'a.b[-4]')).to.be.undefined();
+      done();
+    });
+
+    lab.test('returns undefined value if negative index has trailing spaces', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: [1, 2, 3]
+        }
+      }, 'a.b[-1 ]')).to.be.undefined();
+      done();
+    });
+
+    lab.test('returns undefined value if negative index has preceding spaces', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: [1, 2, 3]
+        }
+      }, 'a.b[ -1]')).to.be.undefined();
+      done();
+    });
+
+    lab.test('returns undefined value if negative index has any spaces', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: [1, 2, 3]
+        }
+      }, 'a.b[- 1]')).to.be.undefined();
+      done();
+    });
+  });
+
   lab.describe('default value', () => {
     lab.test('undefined returns default value', (done) => {
       expect(getPropertyValue(undefined, 'input', 1)).to.equal(1);
