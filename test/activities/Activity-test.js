@@ -248,7 +248,7 @@ lab.experiment('Activity', () => {
   });
 
   lab.describe('properties', () => {
-    lab.test('is exposed when process loads activity', (done) => {
+    lab.test('are exposed when process loads activity', (done) => {
       const instance = new BaseProcess(context.moddleContext.elementsById.theProcess, context.moddleContext, {
         services: {
           negate: (val) => {

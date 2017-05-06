@@ -12,6 +12,13 @@ lab.experiment('getPropertyValue', () => {
   lab.describe('property path', () => {
     lab.test('returns object value', (done) => {
       expect(getPropertyValue({
+        a: 1
+      }, 'a')).to.equal(1);
+      done();
+    });
+
+    lab.test('returns object value', (done) => {
+      expect(getPropertyValue({
         a: {
           b: [1]
         }
@@ -237,11 +244,78 @@ lab.experiment('getPropertyValue', () => {
       }, 'f("a.b",3)')).to.equal('a.b3');
       done();
     });
+
+    lab.test('result returns boolean result', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: 5
+        },
+        f: (input) => {
+          return input === 5;
+        }
+      }, 'f(a.b,3)')).to.equal(true);
+      done();
+    });
+
+    lab.test('result returns boolean false', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: 5
+        },
+        f: (input) => {
+          return input === 4;
+        }
+      }, 'f(a.b,3)')).to.equal(false);
+      done();
+    });
+
+    lab.test('returns undefined function not found', (done) => {
+      expect(getPropertyValue({
+        f: () => {
+          return 3;
+        }
+      }, 'fn()')).to.be.undefined();
+      done();
+    });
+
+    lab.test('without arguments get entire context as argument', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: 3
+        },
+        f: (context) => {
+          return context.a.b;
+        }
+      }, 'f()')).to.equal(3);
+      done();
+    });
+
   });
 
   lab.describe('default value', () => {
     lab.test('undefined returns default value', (done) => {
       expect(getPropertyValue(undefined, 'input', 1)).to.equal(1);
+      done();
+    });
+
+    lab.test('no match returns default value', (done) => {
+      expect(getPropertyValue({a: 1}, '\n', 2)).to.equal(2);
+      done();
+    });
+  });
+
+  lab.describe('bad context object', () => {
+    lab.test('string', (done) => {
+      expect(getPropertyValue('string', 'input')).to.be.undefined();
+      done();
+    });
+    lab.test('null', (done) => {
+      expect(getPropertyValue(null, 'input')).to.be.undefined();
+      done();
+    });
+
+    lab.test('boolean true', (done) => {
+      expect(getPropertyValue(true, 'input')).to.be.undefined();
       done();
     });
   });

@@ -95,7 +95,7 @@ lab.experiment('expressions', () => {
             input: 0.1,
             property: 'input'
           }
-        })).to.equal('PTinput]}S');
+        })).to.equal('PT]}S');
         done();
       });
 
