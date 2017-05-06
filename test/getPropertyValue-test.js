@@ -164,6 +164,79 @@ lab.experiment('getPropertyValue', () => {
       }, 'a.b[- 1]')).to.be.undefined();
       done();
     });
+
+    lab.test('returns chained index', (done) => {
+      expect(getPropertyValue({
+        a: [[1], [2], [3, 4]]
+      }, 'a[-1][0]')).to.equal(3);
+      done();
+    });
+  });
+
+  lab.describe('function', () => {
+    lab.test('returns function result', (done) => {
+      expect(getPropertyValue({
+        f: () => {
+          return 3;
+        }
+      }, 'f()')).to.equal(3);
+      done();
+    });
+
+    lab.test('returns result with arguments', (done) => {
+      expect(getPropertyValue({
+        f: (input) => {
+          return input;
+        }
+      }, 'f(3)')).to.equal('3');
+      done();
+    });
+
+    lab.test('returns result with arguments addressing other property', (done) => {
+      expect(getPropertyValue({
+        a: 4,
+        f: (input) => {
+          return input;
+        }
+      }, 'f(a)')).to.equal(4);
+      done();
+    });
+
+    lab.test('returns result with arguments addressing chained property', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: 5
+        },
+        f: (input) => {
+          return input;
+        }
+      }, 'f(a.b)')).to.equal(5);
+      done();
+    });
+
+    lab.test('returns result with multiple arguments', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: 5
+        },
+        f: (input, n) => {
+          return input + Number(n);
+        }
+      }, 'f(a.b, 3)')).to.equal(8);
+      done();
+    });
+
+    lab.test('result with quoted argument', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: 5
+        },
+        f: (input, n) => {
+          return input + n;
+        }
+      }, 'f("a.b",3)')).to.equal('a.b3');
+      done();
+    });
   });
 
   lab.describe('default value', () => {
