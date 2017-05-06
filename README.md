@@ -43,7 +43,7 @@ The following elements are tested and supported.
     - Boundary Non-interupting
 - Tasks
   - Manual: needs signal
-  - Sequential loop
+  - [Loop](/docs/TaskLoop.md): Sequential and parallell
     - Cardinality, integer or expression
     - Condition, script or expression
     - Collection (camunda expression)

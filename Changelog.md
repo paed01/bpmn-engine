@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 4.2.0
+
+- Added support for parallell loop
+- `ServiceTask.resultVariable` removed since it couldn't be defined
+
 # 4.0.0
 
 ## Breaking changes

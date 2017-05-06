@@ -4,6 +4,7 @@ const Code = require('code');
 const EventEmitter = require('events').EventEmitter;
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
+const getPropertyValue = require('../../lib/getPropertyValue');
 
 const lab = exports.lab = Lab.script();
 const Bpmn = require('../../');
@@ -56,7 +57,6 @@ lab.experiment('task loop', () => {
 
         instance.once('end', () => {
           expect(startCount, 'number of start').to.equal(3);
-          expect(instance.variables.input).to.equal(14);
           testHelpers.expectNoLingeringListenersOnDefinition(instance);
           done();
         });
@@ -198,7 +198,7 @@ lab.experiment('task loop', () => {
     <bpmn:process id="taskLoopProcess" isExecutable="true">
       <bpmn:userTask id="recurring" name="Recurring">
         <bpmn:multiInstanceLoopCharacteristics isSequential="true">
-          <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">variables.taskInput.recurring.input > 3</bpmn:completionCondition>
+          <bpmn:completionCondition xsi:type="bpmn:tFormalExpression"><![CDATA[input > 3]]></bpmn:completionCondition>
         </bpmn:multiInstanceLoopCharacteristics>
       </bpmn:userTask>
     </bpmn:process>
@@ -212,6 +212,8 @@ lab.experiment('task loop', () => {
 
         let waitCount = 0;
         listener.on('wait-recurring', (task, instance) => {
+          if (waitCount > 5) throw new Error('Infinite loop');
+
           instance.signal('recurring', {
             input: ++waitCount
           });
@@ -263,7 +265,7 @@ lab.experiment('task loop', () => {
           listener: listener,
           services: {
             sum: (executionContext, callback) => {
-              const sum = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurringChild[0] : 0;
+              const sum = getPropertyValue(executionContext, 'variables.taskInput.recurringChild[0]', 0);
               callback(null, sum + executionContext.variables.index);
             }
           }
@@ -272,7 +274,7 @@ lab.experiment('task loop', () => {
 
           instance.once('end', () => {
             expect(startCount).to.equal(5);
-            expect(instance.variables.taskInput.recurring.taskInput.recurringChild[0]).to.equal(10);
+            expect(instance.variables.taskInput.recurring[0].taskInput.recurringChild[0]).to.equal(10);
             testHelpers.expectNoLingeringListenersOnDefinition(instance);
             done();
           });
@@ -284,22 +286,20 @@ lab.experiment('task loop', () => {
 <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
   <process id="taskLoopProcess" isExecutable="true">
-    <serviceTask id="recurring" name="Recurring">
+    <serviceTask id="recurring" name="Recurring" camunda:expression="\${services.iterate}">
       <multiInstanceLoopCharacteristics isSequential="true">
         <completionCondition xsi:type="tFormalExpression">\${services.condition(variables.input)}</completionCondition>
       </multiInstanceLoopCharacteristics>
-      <extensionElements>
-        <camunda:properties>
-          <camunda:property name="service" value="iterate" />
-        </camunda:properties>
-      </extensionElements>
     </serviceTask>
   </process>
 </definitions>
     `;
 
         const engine = new Bpmn.Engine({
-          source: def
+          source: def,
+          moddleOptions: {
+            camunda: require('camunda-bpmn-moddle/resources/camunda')
+          }
         });
         const listener = new EventEmitter();
 
@@ -348,12 +348,12 @@ lab.experiment('task loop', () => {
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:process id="Process_1" isExecutable="true">
     <bpmn:serviceTask id="recurring" name="Each item" camunda:expression="\${services.loop}">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.input}" />
       <bpmn:extensionElements>
         <camunda:inputOutput>
-          <camunda:outputParameter name="sum">\${result[0]}</camunda:outputParameter>
+          <camunda:outputParameter name="sum">\${result[-1][0]}</camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
-      <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.input}" />
     </bpmn:serviceTask>
   </bpmn:process>
 </bpmn:definitions>
@@ -376,23 +376,22 @@ lab.experiment('task loop', () => {
           listener: listener,
           services: {
             loop: (executionContext, callback) => {
-              const prevResult = executionContext.variables.sum ? executionContext.variables.sum : 0;
+              const prevResult = executionContext.result.length > 0 ? executionContext.result[executionContext.result.length - 1][0] : 0;
               callback(null, prevResult + executionContext.item);
             }
           },
           variables: {
             input: [1, 2, 3, 7]
           }
-        }, (err, instance) => {
-          if (err) return done(err);
-
-          instance.once('end', () => {
-            expect(startCount).to.equal(4);
-            expect(instance.variables.sum).to.equal(13);
-            testHelpers.expectNoLingeringListenersOnDefinition(instance);
-            done();
-          });
         });
+        engine.once('end', (instance) => {
+          expect(startCount).to.equal(4);
+          console.log(instance.variables)
+          expect(instance.variables.sum).to.equal(13);
+          testHelpers.expectNoLingeringListenersOnDefinition(instance);
+          done();
+        });
+
       });
 
       lab.test('breaks loop if error is returned in callback', (done) => {
@@ -504,4 +503,163 @@ lab.experiment('task loop', () => {
     });
 
   });
+
+  lab.describe('sequential', () => {
+    const processXml = `
+    <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+       xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
+      <bpmn:process id="taskLoopProcess" isExecutable="true">
+        <bpmn:serviceTask id="recurring" name="Recurring" camunda:expression="\${services.loopTest}">
+          <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+            <bpmn:loopCardinality>3</bpmn:loopCardinality>
+          </bpmn:multiInstanceLoopCharacteristics>
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:outputParameter name="result">\${result[0]}</camunda:outputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+        </bpmn:serviceTask>
+        <bpmn:boundaryEvent id="errorEvent" attachedToRef="recurring">
+          <bpmn:errorEventDefinition />
+        </bpmn:boundaryEvent>
+      </bpmn:process>
+    </bpmn:definitions>`;
+
+    let context;
+    lab.beforeEach((done) => {
+      testHelpers.getContext(processXml, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, c) => {
+        if (err) return done(err);
+        context = c;
+        done();
+      });
+    });
+
+    lab.test('runs loop on inbound', (done) => {
+      context.services = {
+        loopTest: (executionContext, next) => {
+          const idx = executionContext.index;
+          const tte = 20 - idx * 2;
+          setTimeout(next, tte, null, idx);
+        }
+      };
+
+      const task = context.getChildActivityById('recurring');
+
+      task.activate();
+
+      task.on('end', (t, result) => {
+        expect(task.getOutput()).to.equal({result: 2});
+        expect(result).to.equal([ { result: 0 }, { result: 1 }, { result: 2 } ]);
+        done();
+      });
+      task.run();
+
+    });
+
+    lab.test('breaks loop on error', (done) => {
+      context.services = {
+        loopTest: (executionContext, next) => {
+          const idx = executionContext.index;
+          const tte = 20 - idx * 2;
+          setTimeout(next, tte, idx === 1 && new Error('break'), idx);
+        }
+      };
+
+      const task = context.getChildActivityById('recurring');
+      const errorEvent = context.getChildActivityById('errorEvent');
+      errorEvent.activate();
+
+      task.activate();
+
+      task.on('leave', () => {
+        expect(task.getInput()).to.include({index: 1});
+        expect(task.getOutput()).to.equal({result: 0});
+        done();
+      });
+      task.run();
+
+    });
+  });
+
+  lab.describe('parallell', () => {
+    const processXml = `
+    <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+       xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
+      <bpmn:process id="taskLoopProcess" isExecutable="true">
+        <bpmn:serviceTask id="recurring" name="Recurring" camunda:expression="\${services.loopTest}">
+          <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+            <bpmn:loopCardinality>3</bpmn:loopCardinality>
+          </bpmn:multiInstanceLoopCharacteristics>
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:outputParameter name="result">\${result[0]}</camunda:outputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+        </bpmn:serviceTask>
+        <bpmn:boundaryEvent id="errorEvent" attachedToRef="recurring">
+          <bpmn:errorEventDefinition />
+        </bpmn:boundaryEvent>
+      </bpmn:process>
+    </bpmn:definitions>`;
+
+    let context;
+    lab.beforeEach((done) => {
+      testHelpers.getContext(processXml, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, c) => {
+        if (err) return done(err);
+        context = c;
+        done();
+      });
+    });
+
+    lab.test('runs loop on inbound', (done) => {
+      context.services = {
+        loopTest: (executionContext, next) => {
+          const idx = executionContext.index;
+          const tte = 20 - idx * 2;
+          setTimeout(next, tte, null, idx);
+        }
+      };
+
+      const task = context.getChildActivityById('recurring');
+
+      task.activate();
+
+      task.on('end', (t, result) => {
+        expect(task.getOutput()).to.equal({result: 0});
+        expect(result).to.equal([ { result: 0 }, { result: 1 }, { result: 2 } ]);
+        done();
+      });
+      task.run();
+
+    });
+
+    lab.test('breaks loop on error', (done) => {
+      context.services = {
+        loopTest: (executionContext, next) => {
+          const idx = executionContext.index;
+          const tte = 20 - idx * 2;
+          setTimeout(next, tte, idx === 1 && new Error('break'), idx);
+        }
+      };
+
+      const task = context.getChildActivityById('recurring');
+      const errorEvent = context.getChildActivityById('errorEvent');
+      errorEvent.activate();
+
+      task.activate();
+
+      task.on('leave', () => {
+        expect(task.getInput()).to.include(['index']);
+        expect(task.getOutput()).to.include(['result']);
+        done();
+      });
+      task.run();
+
+    });
+  });
+
 });

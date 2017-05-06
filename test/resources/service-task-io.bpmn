@@ -17,9 +17,7 @@
           </camunda:inputParameter>
           <camunda:inputParameter name="json">${variables.json}</camunda:inputParameter>
           <camunda:outputParameter name="statusCode">
-            <camunda:script scriptFormat="JavaScript"><![CDATA['use strict';
-result[0].statusCode
-]]></camunda:script>
+            <camunda:script scriptFormat="JavaScript"><![CDATA[result[0].statusCode]]></camunda:script>
           </camunda:outputParameter>
           <camunda:outputParameter name="body">${result[1]}</camunda:outputParameter>
         </camunda:inputOutput>

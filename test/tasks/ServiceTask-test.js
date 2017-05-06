@@ -420,8 +420,7 @@ lab.experiment('ServiceTask', () => {
         done();
       });
 
-      task.enter();
-      task.execute();
+      task.run();
     });
 
   });
@@ -598,13 +597,13 @@ lab.experiment('ServiceTask', () => {
           Accept: 'application/json'
         }
       })
-        .defaultReplyHeaders({
-          'Content-Type': 'application/json'
-        })
-        .get('/v1/data')
-        .reply(200, {
-          data: 4
-        });
+      .defaultReplyHeaders({
+        'Content-Type': 'application/json'
+      })
+      .get('/v1/data')
+      .reply(200, {
+        data: 4
+      });
 
       engine.execute({
         services: {
