@@ -437,6 +437,7 @@ lab.experiment('ScriptTask', () => {
     <scriptTask id="scriptTask" name="Execute" scriptFormat="JavaScript">
       <extensionElements>
         <camunda:inputOutput>
+          <camunda:inputParameter name="apiPath">\${variables.apiPath}</camunda:inputParameter>
           <camunda:inputParameter name="input">\${variables.input}</camunda:inputParameter>
           <camunda:inputParameter name="path">/api/v8</camunda:inputParameter>
           <camunda:outputParameter name="calledApi">\${api}</camunda:outputParameter>
@@ -447,7 +448,7 @@ lab.experiment('ScriptTask', () => {
       <outgoing>SequenceFlow_040np9m</outgoing>
       <script><![CDATA[
       next(null, {
-        api: variables.apiPath + path,
+        api: apiPath + path,
         result: input
       })]]></script>
     </scriptTask>
@@ -474,10 +475,151 @@ lab.experiment('ScriptTask', () => {
           done();
         });
 
-        task.enter();
-        task.execute();
+        task.run();
+      });
+    });
+  });
+
+  lab.describe('loop', () => {
+    lab.describe('sequential', () => {
+      let context;
+      lab.beforeEach((done) => {
+        getLoopContext(true, (err, result) => {
+          if (err) return done(err);
+          context = result;
+          done();
+        });
+      });
+
+      lab.test('emits start with task id', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+        const starts = [];
+        task.on('start', (activity) => {
+          starts.push(activity.id);
+        });
+
+        task.once('end', () => {
+          expect(starts).to.equal(['task', 'task', 'task']);
+          done();
+        });
+
+        task.run();
+      });
+
+      lab.test('emits end with output', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+
+        task.once('end', (t, output) => {
+          expect(output).to.equal(['Pål', 'Franz', 'Immanuel']);
+          done();
+        });
+
+        task.run();
+      });
+
+      lab.test('getOutput() returns result from loop', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+
+        task.once('end', () => {
+          expect(task.getOutput()).to.equal(['Pål', 'Franz', 'Immanuel']);
+          done();
+        });
+
+        task.run();
+      });
+
+    });
+
+    lab.describe('parallell', () => {
+      let context;
+      lab.beforeEach((done) => {
+        getLoopContext(false, (err, result) => {
+          if (err) return done(err);
+          context = result;
+          done();
+        });
+      });
+
+      lab.test('emits start with different ids', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+
+        const starts = [];
+        task.on('start', (activity) => {
+          starts.push(activity.id);
+        });
+
+        task.once('end', () => {
+          expect(starts.includes(task.id), 'unique task id').to.be.false();
+          done();
+        });
+
+        task.run();
+      });
+
+      lab.test('returns output in sequence', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+
+        task.once('end', () => {
+          expect(task.getOutput()).to.equal(['Pål', 'Franz', 'Immanuel']);
+          done();
+        });
+
+        task.run();
+      });
+
+      lab.test('getOutput() returns result from loop', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+
+        task.once('end', () => {
+          expect(task.getOutput()).to.equal(['Pål', 'Franz', 'Immanuel']);
+          done();
+        });
+
+        task.run();
       });
     });
   });
 
 });
+
+function getLoopContext(sequential, callback) {
+  const processXml = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <process id="sequentialLoopProcess" isExecutable="true">
+      <scriptTask id="task" scriptFormat="javascript">
+        <multiInstanceLoopCharacteristics isSequential="${sequential}" camunda:collection="\${variables.names}">
+          <loopCardinality>5</loopCardinality>
+        </multiInstanceLoopCharacteristics>
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="invertTimout">\${index}</camunda:inputParameter>
+            <camunda:inputParameter name="name">\${item}</camunda:inputParameter>
+            <camunda:inputParameter name="setTimeout">\${services.setTimeout}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+        <script><![CDATA[
+          setTimeout(next, 50 - invertTimout * 10, null, name);
+        ]]></script>
+      </scriptTask>
+    </process>
+  </definitions>`;
+  testHelpers.getContext(processXml, {
+    camunda: require('camunda-bpmn-moddle/resources/camunda')
+  }, (err, context) => {
+    if (err) return callback(err);
+
+    context.variables.names = ['Pål', 'Franz', 'Immanuel'];
+    context.services.setTimeout = setTimeout;
+
+    return callback(null, context);
+  });
+}
+

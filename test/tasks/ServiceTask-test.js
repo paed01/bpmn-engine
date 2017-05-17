@@ -6,6 +6,7 @@ const factory = require('../helpers/factory');
 const Lab = require('lab');
 const mapper = require('../../lib/mapper');
 const nock = require('nock');
+const request = require('request');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
@@ -763,4 +764,292 @@ lab.experiment('ServiceTask', () => {
       });
     });
   });
+
+  lab.describe('loop', () => {
+    lab.describe('sequential', () => {
+      let context;
+      lab.beforeEach((done) => {
+        const processXml = `
+        <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+          <process id="sequentialLoopProcess" isExecutable="true">
+            <serviceTask id="task">
+              <multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.paths}">
+                <loopCardinality>5</loopCardinality>
+              </multiInstanceLoopCharacteristics>
+              <extensionElements>
+                <camunda:inputOutput>
+                  <camunda:inputParameter name="version">\${index}</camunda:inputParameter>
+                  <camunda:inputParameter name="path">\${item}</camunda:inputParameter>
+                </camunda:inputOutput>
+                <camunda:connector>
+                  <camunda:inputOutput>
+                    <camunda:inputParameter name="reqOptions">
+                      <camunda:map>
+                        <camunda:entry key="uri">http://example.com/api\${path}?version=\${version}</camunda:entry>
+                        <camunda:entry key="json">\${true}</camunda:entry>
+                      </camunda:map>
+                    </camunda:inputParameter>
+                    <camunda:outputParameter name="statusCode">\${result[0].statusCode}</camunda:outputParameter>
+                    <camunda:outputParameter name="body" />
+                  </camunda:inputOutput>
+                  <camunda:connectorId>get</camunda:connectorId>
+                </camunda:connector>
+              </extensionElements>
+            </serviceTask>
+          </process>
+        </definitions>`;
+        testHelpers.getContext(processXml, {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }, (err, result) => {
+          if (err) return done(err);
+          context = result;
+          context.variables.paths = ['/pal', '/franz', '/immanuel'];
+          context.services.get = request.get;
+          done();
+        });
+      });
+
+      lab.test('emits start with task id', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+
+        nock('http://example.com')
+          .get('/api/pal?version=0')
+          .delay(50)
+          .reply(200, {})
+          .get('/api/franz?version=1')
+          .delay(30)
+          .reply(200, {})
+          .get('/api/immanuel?version=2')
+          .reply(409, {});
+
+        const starts = [];
+        task.on('start', (activity) => {
+          starts.push(activity.id);
+        });
+
+        task.once('end', () => {
+          expect(starts).to.equal(['task', 'task', 'task']);
+          done();
+        });
+
+        task.run();
+      });
+
+      lab.test('emits end with output', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+
+        task.on('start', (activity) => {
+          const input = activity.getInput();
+          nock('http://example.com')
+            .get(`/api${input.path}?version=${input.version}`)
+            .reply(input.version < 2 ? 200 : 409, {});
+        });
+        task.once('end', (t, output) => {
+          expect(output).to.equal([{
+            statusCode: 200,
+            body: {}
+          }, {
+            statusCode: 200,
+            body: {}
+          }, {
+            statusCode: 409,
+            body: {}
+          }]);
+          done();
+        });
+
+        task.run();
+      });
+
+      lab.test('getOutput() returns result from loop', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+
+        task.on('start', (activity) => {
+          const input = activity.getInput();
+          nock('http://example.com')
+            .get(`/api${input.path}?version=${input.version}`)
+            .delay(50 - input.version * 10)
+            .reply(input.version < 2 ? 200 : 409, {
+              idx: input.version
+            });
+        });
+
+        task.once('end', () => {
+          expect(task.getOutput()).to.equal([{
+            statusCode: 200,
+            body: {
+              idx: 0
+            }
+          }, {
+            statusCode: 200,
+            body: {
+              idx: 1
+            }
+          }, {
+            statusCode: 409,
+            body: {
+              idx: 2
+            }
+          }]);
+          done();
+        });
+
+        task.run();
+      });
+
+    });
+
+    lab.describe('parallell', () => {
+      let context;
+      lab.beforeEach((done) => {
+        const processXml = `
+        <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+          <process id="parallellLoopProcess" isExecutable="true">
+            <serviceTask id="task">
+              <multiInstanceLoopCharacteristics isSequential="false" camunda:collection="\${variables.paths}">
+                <loopCardinality>5</loopCardinality>
+              </multiInstanceLoopCharacteristics>
+              <extensionElements>
+                <camunda:inputOutput>
+                  <camunda:inputParameter name="version">\${index}</camunda:inputParameter>
+                  <camunda:inputParameter name="path">\${item}</camunda:inputParameter>
+                </camunda:inputOutput>
+                <camunda:connector>
+                  <camunda:inputOutput>
+                    <camunda:inputParameter name="reqOptions">
+                      <camunda:map>
+                        <camunda:entry key="uri">http://example.com/api\${path}?version=\${version}</camunda:entry>
+                        <camunda:entry key="json">\${true}</camunda:entry>
+                      </camunda:map>
+                    </camunda:inputParameter>
+                    <camunda:outputParameter name="statusCode">\${result[0].statusCode}</camunda:outputParameter>
+                    <camunda:outputParameter name="body" />
+                  </camunda:inputOutput>
+                  <camunda:connectorId>get</camunda:connectorId>
+                </camunda:connector>
+              </extensionElements>
+            </serviceTask>
+          </process>
+        </definitions>`;
+        testHelpers.getContext(processXml, {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }, (err, result) => {
+          if (err) return done(err);
+          context = result;
+          context.variables.paths = ['/pal', '/franz', '/immanuel'];
+          context.services.get = request.get;
+          done();
+        });
+      });
+
+      lab.test('emits start with different ids', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+
+        nock('http://example.com')
+          .get('/api/pal?version=0')
+          .delay(50)
+          .reply(200, {})
+          .get('/api/franz?version=1')
+          .delay(30)
+          .reply(200, {})
+          .get('/api/immanuel?version=2')
+          .reply(409, {});
+
+        const starts = [];
+        task.on('start', (activity) => {
+          starts.push(activity.id);
+        });
+
+        task.once('end', () => {
+          expect(starts.includes(task.id), 'unique task id').to.be.false();
+          done();
+        });
+
+        task.run();
+      });
+
+      lab.test('returns output in sequence', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+
+        task.on('start', (activity) => {
+          const input = activity.getInput();
+          nock('http://example.com')
+            .get(`/api${input.path}?version=${input.version}`)
+            .delay(50 - input.version * 10)
+            .reply(input.version < 2 ? 200 : 409, {
+              idx: input.version
+            });
+        });
+
+        task.once('end', (t, output) => {
+          expect(output).to.equal([{
+            statusCode: 200,
+            body: {
+              idx: 0
+            }
+          }, {
+            statusCode: 200,
+            body: {
+              idx: 1
+            }
+          }, {
+            statusCode: 409,
+            body: {
+              idx: 2
+            }
+          }]);
+          done();
+        });
+
+        task.run();
+      });
+
+      lab.test('getOutput() returns result from loop', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+
+        task.on('start', (activity) => {
+          const input = activity.getInput();
+          nock('http://example.com')
+            .get(`/api${input.path}?version=${input.version}`)
+            .delay(50 - input.version * 10)
+            .reply(input.version < 2 ? 200 : 409, {
+              idx: input.version
+            });
+        });
+
+        task.once('end', () => {
+          expect(task.getOutput()).to.equal([{
+            statusCode: 200,
+            body: {
+              idx: 0
+            }
+          }, {
+            statusCode: 200,
+            body: {
+              idx: 1
+            }
+          }, {
+            statusCode: 409,
+            body: {
+              idx: 2
+            }
+          }]);
+          done();
+        });
+
+        task.run();
+      });
+    });
+  });
+
 });

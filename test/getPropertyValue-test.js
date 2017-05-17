@@ -99,6 +99,26 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
+    lab.test('returns list item property', (done) => {
+      const list = [{c: 1}, {c: 2}, {c: 3}];
+      expect(getPropertyValue({
+        a: {
+          b: list
+        }
+      }, 'a.b[0].c')).to.be.equal(1);
+      expect(getPropertyValue({
+        a: {
+          b: list
+        }
+      }, 'a.b[-1].c')).to.be.equal(3);
+      expect(getPropertyValue({
+        a: {
+          b: list
+        }
+      }, 'a.b[42].c')).to.be.undefined();
+      done();
+    });
+
     lab.test('returns undefined if out of bounds', (done) => {
       expect(getPropertyValue({
         a: {

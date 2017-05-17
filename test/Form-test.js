@@ -23,7 +23,7 @@ lab.experiment('Forms', () => {
           <camunda:formField id="inputDate" label="Input date" type="date" defaultValue="\${variables.now}" />
         </camunda:formData>
       </extensionElements>
-      </startEvent>
+    </startEvent>
     <endEvent id="end" />
     <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
   </process>

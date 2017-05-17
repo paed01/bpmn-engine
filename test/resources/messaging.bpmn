@@ -15,8 +15,8 @@
     <bpmn:sendTask id="ping" name="Ping">
       <bpmn:extensionElements>
         <camunda:inputOutput>
-          <camunda:inputParameter name="from">${variables.user}</camunda:inputParameter>
-          <camunda:inputParameter name="to">${variables.to}</camunda:inputParameter>
+          <camunda:outputParameter name="from">${variables.user}</camunda:outputParameter>
+          <camunda:outputParameter name="to">${variables.to}</camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1ivyh5l</bpmn:incoming>

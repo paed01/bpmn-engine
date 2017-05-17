@@ -4,7 +4,8 @@ Changelog
 # 4.2.0
 
 - Added support for parallell loop
-- `ServiceTask.resultVariable` removed since it couldn't be defined
+- `ServiceTask.resultVariable` removed since it can't be defined
+- `SendTask` message requires output
 
 # 4.0.0
 

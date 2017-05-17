@@ -95,36 +95,4 @@ lab.experiment('ReceiveTask', () => {
       });
     });
   });
-
-  lab.experiment('signal()', () => {
-    lab.test('throws if not waiting for input', (done) => {
-      testHelpers.getModdleContext(receiveTaskProcessXml, (cerr, moddleContext) => {
-        if (cerr) return done(cerr);
-
-        const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
-        const task = process.getChildActivityById('receive');
-
-        expect(task.signal.bind(task)).to.throw(Error, /not waiting/);
-        done();
-      });
-    });
-
-    lab.test('emits error if not waiting for input', (done) => {
-      testHelpers.getModdleContext(receiveTaskProcessXml, (cerr, moddleContext) => {
-        if (cerr) return done(cerr);
-
-        const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
-        const task = process.getChildActivityById('receive');
-
-        task.once('error', (err, errTask) => {
-          expect(errTask.id).to.equal('receive');
-          expect(err).to.be.an.error(/not waiting/);
-          done();
-        });
-
-        task.signal.call(task);
-      });
-    });
-
-  });
 });

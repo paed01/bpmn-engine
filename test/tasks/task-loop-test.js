@@ -198,7 +198,7 @@ lab.experiment('task loop', () => {
     <bpmn:process id="taskLoopProcess" isExecutable="true">
       <bpmn:userTask id="recurring" name="Recurring">
         <bpmn:multiInstanceLoopCharacteristics isSequential="true">
-          <bpmn:completionCondition xsi:type="bpmn:tFormalExpression"><![CDATA[input > 3]]></bpmn:completionCondition>
+          <bpmn:completionCondition xsi:type="bpmn:tFormalExpression"><![CDATA[result[index].input > 3]]></bpmn:completionCondition>
         </bpmn:multiInstanceLoopCharacteristics>
       </bpmn:userTask>
     </bpmn:process>
@@ -376,7 +376,7 @@ lab.experiment('task loop', () => {
           listener: listener,
           services: {
             loop: (executionContext, callback) => {
-              const prevResult = executionContext.result.length > 0 ? executionContext.result[executionContext.result.length - 1][0] : 0;
+              const prevResult = getPropertyValue(executionContext, '_result.sum', 0);
               callback(null, prevResult + executionContext.item);
             }
           },
@@ -386,8 +386,7 @@ lab.experiment('task loop', () => {
         });
         engine.once('end', (instance) => {
           expect(startCount).to.equal(4);
-          console.log(instance.variables)
-          expect(instance.variables.sum).to.equal(13);
+          expect(instance.variables.sum, 'sum').to.equal(13);
           testHelpers.expectNoLingeringListenersOnDefinition(instance);
           done();
         });
@@ -426,15 +425,11 @@ lab.experiment('task loop', () => {
           listener: listener,
           services: {
             loop: (executionContext, callback) => {
-              const prevResult = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurring[0] : 0;
-
-              const result = prevResult + executionContext.item;
-
-              if (result > 2) {
+              if (executionContext.item > 1) {
                 return callback(new Error('Too much'));
               }
 
-              callback(null, result);
+              callback(null, executionContext.item);
             }
           },
           variables: {
@@ -451,55 +446,54 @@ lab.experiment('task loop', () => {
         });
       });
     });
+  });
 
-    lab.describe('combinations', () => {
-      lab.test('with condition and cardinality loops script task until condition is met', (done) => {
-        const def = `
-    <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
-      <bpmn:process id="taskLoopProcess" isExecutable="true">
-        <bpmn:scriptTask id="recurring" name="Recurring" scriptFormat="JavaScript">
-          <bpmn:multiInstanceLoopCharacteristics isSequential="true">
-            <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">variables.taskInput.recurring.input > 8</bpmn:completionCondition>
-            <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">\${variables.cardinality}</bpmn:loopCardinality>
-          </bpmn:multiInstanceLoopCharacteristics>
-          <bpmn:script><![CDATA[
-            'use strict';
-            var input = index;
-            next(null, {input: input})
-            ]]>
-          </bpmn:script>
-        </bpmn:scriptTask>
-      </bpmn:process>
-    </bpmn:definitions>
-      `;
+  lab.describe('combination', () => {
+    lab.test('with condition and cardinality loops script task until condition is met', (done) => {
+      const def = `
+  <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+    <bpmn:process id="taskLoopProcess" isExecutable="true">
+      <bpmn:scriptTask id="recurring" name="Recurring" scriptFormat="JavaScript">
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+          <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">index > 8</bpmn:completionCondition>
+          <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">\${variables.cardinality}</bpmn:loopCardinality>
+        </bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:script><![CDATA[
+          'use strict';
+          var input = index;
+          next(null, {input: input})
+          ]]>
+        </bpmn:script>
+      </bpmn:scriptTask>
+    </bpmn:process>
+  </bpmn:definitions>
+    `;
 
-        const engine = new Bpmn.Engine({
-          source: def
-        });
-        const listener = new EventEmitter();
+      const engine = new Bpmn.Engine({
+        source: def
+      });
+      const listener = new EventEmitter();
 
-        let startCount = 0;
-        listener.on('start-recurring', () => {
-          startCount++;
-        });
-
-        engine.execute({
-          listener: listener,
-          variables: {
-            cardinality: 13
-          }
-        }, (err, instance) => {
-          if (err) return done(err);
-
-          instance.once('end', () => {
-            expect(startCount).to.equal(10);
-            testHelpers.expectNoLingeringListenersOnDefinition(instance);
-            done();
-          });
-        });
+      let startCount = 0;
+      listener.on('start-recurring', () => {
+        startCount++;
       });
 
+      engine.execute({
+        listener: listener,
+        variables: {
+          cardinality: 13
+        }
+      }, (err, instance) => {
+        if (err) return done(err);
+
+        instance.once('end', () => {
+          expect(startCount).to.equal(10);
+          testHelpers.expectNoLingeringListenersOnDefinition(instance);
+          done();
+        });
+      });
     });
 
   });
@@ -513,11 +507,6 @@ lab.experiment('task loop', () => {
           <bpmn:multiInstanceLoopCharacteristics isSequential="true">
             <bpmn:loopCardinality>3</bpmn:loopCardinality>
           </bpmn:multiInstanceLoopCharacteristics>
-          <extensionElements>
-            <camunda:inputOutput>
-              <camunda:outputParameter name="result">\${result[0]}</camunda:outputParameter>
-            </camunda:inputOutput>
-          </extensionElements>
         </bpmn:serviceTask>
         <bpmn:boundaryEvent id="errorEvent" attachedToRef="recurring">
           <bpmn:errorEventDefinition />
@@ -550,8 +539,9 @@ lab.experiment('task loop', () => {
       task.activate();
 
       task.on('end', (t, result) => {
-        expect(task.getOutput()).to.equal({result: 2});
-        expect(result).to.equal([ { result: 0 }, { result: 1 }, { result: 2 } ]);
+        const compare = [ [0], [1], [2] ];
+        expect(task.getOutput()).to.equal(compare);
+        expect(result).to.equal(compare);
         done();
       });
       task.run();
@@ -575,7 +565,7 @@ lab.experiment('task loop', () => {
 
       task.on('leave', () => {
         expect(task.getInput()).to.include({index: 1});
-        expect(task.getOutput()).to.equal({result: 0});
+        expect(task.getOutput()).to.equal([[0]]);
         done();
       });
       task.run();
@@ -592,11 +582,6 @@ lab.experiment('task loop', () => {
           <bpmn:multiInstanceLoopCharacteristics isSequential="false">
             <bpmn:loopCardinality>3</bpmn:loopCardinality>
           </bpmn:multiInstanceLoopCharacteristics>
-          <extensionElements>
-            <camunda:inputOutput>
-              <camunda:outputParameter name="result">\${result[0]}</camunda:outputParameter>
-            </camunda:inputOutput>
-          </extensionElements>
         </bpmn:serviceTask>
         <bpmn:boundaryEvent id="errorEvent" attachedToRef="recurring">
           <bpmn:errorEventDefinition />
@@ -629,8 +614,9 @@ lab.experiment('task loop', () => {
       task.activate();
 
       task.on('end', (t, result) => {
-        expect(task.getOutput()).to.equal({result: 0});
-        expect(result).to.equal([ { result: 0 }, { result: 1 }, { result: 2 } ]);
+        const compare = [ [0], [1], [2] ];
+        expect(task.getOutput()).to.equal(compare);
+        expect(result).to.equal(compare);
         done();
       });
       task.run();
@@ -653,8 +639,8 @@ lab.experiment('task loop', () => {
       task.activate();
 
       task.on('leave', () => {
+        expect(errorEvent.taken).to.be.true();
         expect(task.getInput()).to.include(['index']);
-        expect(task.getOutput()).to.include(['result']);
         done();
       });
       task.run();
