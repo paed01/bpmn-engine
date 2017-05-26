@@ -96,16 +96,19 @@ lab.experiment('Definition', () => {
     });
 
     lab.test('passes options to initialized processes', (done) => {
-      definition.getProcesses({
+      const options = {
         variables: {
           input: 1
-        }
-      }, (err, mainProcess, processes) => {
+        },
+        listener: new EventEmitter()
+      };
+
+      definition.getProcesses(options, (err, mainProcess, processes) => {
         if (err) return done(err);
         expect(processes).to.exist();
         expect(processes.length).to.equal(2);
-        expect(processes[0].context.variables.input).to.equal(1);
-        expect(processes[1].context.variables.input).to.equal(1);
+        expect(processes[0].listener).to.equal(options.listener);
+        expect(processes[1].listener).to.equal(options.listener);
         done();
       });
     });
@@ -151,11 +154,11 @@ lab.experiment('Definition', () => {
           def.getProcesses({
             variables: {
               input: 2
-            }
+            },
+            listener: new EventEmitter()
           }, (err, mainProcess) => {
             if (err) return done(err);
             expect(mainProcess.listener).to.equal(listener);
-            expect(mainProcess.context.variables.input).to.equal(1);
             done();
           });
         });
@@ -179,10 +182,10 @@ lab.experiment('Definition', () => {
           const processes = def.getProcesses({
             variables: {
               input: 2
-            }
+            },
+            listener: new EventEmitter()
           });
           expect(processes[0].listener).to.equal(listener);
-          expect(processes[0].context.variables.input).to.equal(1);
           done();
         });
         def.execute();

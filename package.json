@@ -35,7 +35,7 @@
     "camunda-bpmn-moddle": "^0.11.0",
     "code": "^4.0.0",
     "coveralls": "^2.13.1",
-    "lab": "^13.0.4",
+    "lab": "^13.1.0",
     "markdown-toc": "^1.1.0",
     "nock": "^9.0.13",
     "request": "^2.81.0",
@@ -44,7 +44,7 @@
   "dependencies": {
     "async": "^2.4.0",
     "bpmn-moddle": "^0.14.0",
-    "debug": "^2.6.6",
+    "debug": "^2.6.8",
     "iso8601-duration": "^1.0.6"
   },
   "license": "BSD-3-Clause",

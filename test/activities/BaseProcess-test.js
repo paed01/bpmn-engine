@@ -1,6 +1,9 @@
 'use strict';
 
+const activityExecution = require('../../lib/activities/activity-execution');
+const processExecution = require('../../lib/activities/process-execution');
 const Code = require('code');
+// const BaseProcess = require('../../lib/activities/BaseProcess');
 const EventEmitter = require('events').EventEmitter;
 const factory = require('../helpers/factory');
 const mapper = require('../../lib/mapper');
@@ -11,17 +14,38 @@ const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 const Bpmn = require('../..');
 
-const BaseProcess = mapper.Process;
 const Definition = mapper.Definition;
 
-lab.experiment('BaseProcess', () => {
+lab.experiment('Process', () => {
+  lab.describe('execute()', () => {
+    lab.test('calls callback when completed', (done) => {
+      const processXml = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="tinyProcess" isExecutable="true">
+          <task id="vips" />
+        </process>
+      </definitions>`;
+
+      testHelpers.getContext(processXml, (cerr, context) => {
+        if (cerr) return done(cerr);
+
+        const instance = processExecution(context, () => {
+          done();
+        });
+
+        instance.execute();
+      });
+    });
+  });
 
   lab.describe('ctor', () => {
     lab.test('main process context stores message flows', (done) => {
-      testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (cerr, moddleContext) => {
+      testHelpers.getContext(factory.resource('lanes.bpmn').toString(), (cerr, context) => {
         if (cerr) return done(cerr);
-        const process = new BaseProcess(moddleContext.elementsById.mainProcess, moddleContext, {});
-        expect(process.context.messageFlows.length).to.equal(1);
+
+        const task = new BaseProcess(context);
+        expect(task.context.messageFlows.length).to.equal(1);
         done();
       });
     });
@@ -45,16 +69,19 @@ lab.experiment('BaseProcess', () => {
         listener: listener
       };
 
-      testHelpers.getModdleContext(factory.resource('mother-of-all.bpmn'), (cerr, moddleContext) => {
+      testHelpers.getContext(factory.resource('mother-of-all.bpmn').toString(), (cerr, context) => {
         if (cerr) return done(cerr);
-        instance = new BaseProcess(moddleContext.elementsById.motherOfAll, moddleContext, options);
+
+        instance = new BaseProcess(context, options);
+
         listener.on('wait', (activity) => {
           activity.signal({
             input: 1
           });
         });
-
-        done();
+        listener.once('end', () => {
+          done();
+        });
       });
     });
 
@@ -84,9 +111,9 @@ lab.experiment('BaseProcess', () => {
     <process id="theEmptyProcess" isExecutable="true" />
   </definitions>`;
 
-      testHelpers.getModdleContext(processXml, (cerr, moddleContext) => {
+      testHelpers.getContext(processXml, (cerr, context) => {
         if (cerr) return done(cerr);
-        const process = new BaseProcess(moddleContext.elementsById.theEmptyProcess, moddleContext, {});
+        const process = new BaseProcess(context);
         process.once('end', () => {
           done();
         });

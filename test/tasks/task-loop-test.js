@@ -372,12 +372,13 @@ lab.experiment('task loop', () => {
           startCount++;
         });
 
+        let sum = 0;
         engine.execute({
           listener: listener,
           services: {
             loop: (executionContext, callback) => {
-              const prevResult = getPropertyValue(executionContext, '_result.sum', 0);
-              callback(null, prevResult + executionContext.item);
+              sum += executionContext.item;
+              callback(null, sum);
             }
           },
           variables: {
@@ -386,7 +387,7 @@ lab.experiment('task loop', () => {
         });
         engine.once('end', (instance) => {
           expect(startCount).to.equal(4);
-          expect(instance.variables.sum, 'sum').to.equal(13);
+          expect(sum, 'sum').to.equal(13);
           testHelpers.expectNoLingeringListenersOnDefinition(instance);
           done();
         });

@@ -17,20 +17,20 @@ lab.experiment('context-helper', () => {
   lab.beforeEach((done) => {
     transformer.transform(factory.valid(), {}, (err, bpmnObject, result) => {
       if (err) return done(err);
-      context = result;
+      context = contextHelper(result);
       done();
     });
   });
 
   lab.describe('getOutboundSequenceFlows()', () => {
     lab.test('returns activity outbound sequence flows', (done) => {
-      const flows = contextHelper.getOutboundSequenceFlows(context, 'theStart');
+      const flows = context.getOutboundSequenceFlows('theStart');
       expect(flows).to.have.length(1);
       done();
     });
 
     lab.test('empty array if non found', (done) => {
-      const flows = contextHelper.getOutboundSequenceFlows(context, 'end1');
+      const flows = context.getOutboundSequenceFlows('end1');
       expect(flows).to.have.length(0);
       done();
     });
@@ -38,13 +38,13 @@ lab.experiment('context-helper', () => {
 
   lab.experiment('getInboundSequenceFlows()', () => {
     lab.test('returns activity inbound sequence flows', (done) => {
-      const flows = contextHelper.getInboundSequenceFlows(context, 'end2');
+      const flows = context.getInboundSequenceFlows('end2');
       expect(flows).to.have.length(1);
       done();
     });
 
     lab.test('empty array if non found', (done) => {
-      const flows = contextHelper.getInboundSequenceFlows(context, 'theStart');
+      const flows = context.getInboundSequenceFlows('theStart');
       expect(flows).to.have.length(0);
       done();
     });
@@ -54,7 +54,7 @@ lab.experiment('context-helper', () => {
       transformer.transform(processXml.toString(), {}, (err, bpmnObject, moddleContext) => {
         if (err) return done(err);
 
-        const flows = contextHelper.getInboundSequenceFlows(moddleContext, 'subProcess');
+        const flows = contextHelper(moddleContext).getInboundSequenceFlows('subProcess');
         expect(flows).to.have.length(1);
 
         done();
@@ -66,7 +66,7 @@ lab.experiment('context-helper', () => {
       transformer.transform(processXml.toString(), {}, (err, bpmnObject, moddleContext) => {
         if (err) return done(err);
 
-        const flows = contextHelper.getInboundSequenceFlows(moddleContext, 'mainProcess');
+        const flows = contextHelper(moddleContext).getInboundSequenceFlows('mainProcess');
         expect(flows).to.have.length(0);
 
         done();
@@ -76,47 +76,47 @@ lab.experiment('context-helper', () => {
   });
 
   lab.experiment('getDataObjectFromRef()', () => {
-    let userContext;
+    let ctxHelper;
     lab.before((done) => {
       transformer.transform(factory.userTask(), {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        userContext = result;
+        ctxHelper = contextHelper(result);
         done();
       });
     });
 
     lab.test('returns referenced data object', (done) => {
-      const dataObject = contextHelper.getDataObjectFromRef(userContext, 'inputFromUserRef');
+      const dataObject = ctxHelper.getDataObjectFromRef('inputFromUserRef');
       expect(dataObject).to.include(['id', '$type']);
       done();
     });
 
     lab.test('if found', (done) => {
-      const dataObject = contextHelper.getDataObjectFromRef(userContext, 'orphanRef');
+      const dataObject = ctxHelper.getDataObjectFromRef('orphanRef');
       expect(dataObject).to.not.exist();
       done();
     });
   });
 
   lab.experiment('getDataObjectFromAssociation()', () => {
-    let userContext;
+    let ctxHelper;
     lab.before((done) => {
       transformer.transform(factory.userTask(), {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        userContext = result;
+        ctxHelper = contextHelper(result);
         done();
       });
     });
 
     lab.test('returns data by association', (done) => {
-      const dataObject = contextHelper.getDataObjectFromAssociation(userContext, 'associatedWith');
+      const dataObject = ctxHelper.getDataObjectFromAssociation('associatedWith');
       expect(dataObject).to.include(['id', '$type']);
       expect(dataObject.id).to.equal('inputFromUser');
       done();
     });
 
     lab.test('if found', (done) => {
-      const dataObject = contextHelper.getDataObjectFromAssociation(userContext, 'non-association');
+      const dataObject = ctxHelper.getDataObjectFromAssociation('non-association');
       expect(dataObject).to.not.exist();
       done();
     });
@@ -142,7 +142,7 @@ lab.experiment('context-helper', () => {
 
       transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        const dataObject = contextHelper.getDataObjectFromAssociation(result, 'associatedWith');
+        const dataObject = contextHelper(result).getDataObjectFromAssociation('associatedWith');
         expect(dataObject).to.include(['id', '$type']);
         expect(dataObject.id).to.equal('inputFromUser');
         done();
@@ -151,7 +151,7 @@ lab.experiment('context-helper', () => {
   });
 
   lab.experiment('isTerminationElement()', () => {
-    let localContext;
+    let ctxHelper, moddleContext;
     lab.before((done) => {
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -172,34 +172,35 @@ lab.experiment('context-helper', () => {
 </definitions>`;
       transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        localContext = result;
+        moddleContext = result;
+        ctxHelper = contextHelper(result);
         done();
       });
     });
 
     lab.test('returns false if no element passed', (done) => {
-      expect(contextHelper.isTerminationElement()).to.be.false();
+      expect(ctxHelper.isTerminationElement()).to.be.false();
       done();
     });
 
     lab.test('returns false if no element eventDefinitions', (done) => {
-      expect(contextHelper.isTerminationElement({})).to.be.false();
+      expect(ctxHelper.isTerminationElement({})).to.be.false();
       done();
     });
     lab.test('returns false if empty element eventDefinitions', (done) => {
-      expect(contextHelper.isTerminationElement({
+      expect(ctxHelper.isTerminationElement({
         eventDefinitions: []
       })).to.be.false();
       done();
     });
 
     lab.test('returns false if empty element eventDefinitions', (done) => {
-      expect(contextHelper.isTerminationElement(localContext.elementsById.theEnd1)).to.be.false();
+      expect(ctxHelper.isTerminationElement(moddleContext.elementsById.theEnd1)).to.be.false();
       done();
     });
 
     lab.test('returns true if element eventDefinitions contains bpmn:TerminateEventDefinition', (done) => {
-      expect(contextHelper.isTerminationElement(localContext.elementsById.fatal)).to.be.true();
+      expect(ctxHelper.isTerminationElement(moddleContext.elementsById.fatal)).to.be.true();
       done();
     });
   });
@@ -215,7 +216,7 @@ lab.experiment('context-helper', () => {
 </definitions>`;
       transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        expect(contextHelper.hasInboundSequenceFlows(result, 'theStart')).to.be.false();
+        expect(contextHelper(result).hasInboundSequenceFlows('theStart')).to.be.false();
         done();
       });
     });
@@ -232,7 +233,7 @@ lab.experiment('context-helper', () => {
 </definitions>`;
       transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        expect(contextHelper.hasInboundSequenceFlows(result, 'theEnd')).to.be.true();
+        expect(contextHelper(result).hasInboundSequenceFlows('theEnd')).to.be.true();
         done();
       });
     });
@@ -248,7 +249,7 @@ lab.experiment('context-helper', () => {
 </definitions>`;
       transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        expect(contextHelper.hasInboundSequenceFlows(result, 'theEnd')).to.be.false();
+        expect(contextHelper(result).hasInboundSequenceFlows('theEnd')).to.be.false();
         done();
       });
     });
@@ -260,10 +261,12 @@ lab.experiment('context-helper', () => {
       transformer.transform(processXml.toString(), {}, (err, bpmnObject, moddleContext) => {
         if (err) return done(err);
 
-        const forParent = contextHelper.getActivities(moddleContext, 'mainProcess');
+        const ctxHelper = contextHelper(moddleContext);
+
+        const forParent = ctxHelper.getActivities('mainProcess');
         expect(forParent).to.have.length(3);
 
-        const forSubprocess = contextHelper.getActivities(moddleContext, 'subProcess');
+        const forSubprocess = ctxHelper.getActivities('subProcess');
 
         expect(forSubprocess).to.have.length(2);
 
@@ -275,12 +278,12 @@ lab.experiment('context-helper', () => {
   lab.experiment('getSequenceFlowTargetId()', () => {
 
     lab.test('returns target id', (done) => {
-      expect(contextHelper.getSequenceFlowTargetId(context, 'flow1')).to.equal('decision');
+      expect(context.getSequenceFlowTargetId('flow1')).to.equal('decision');
       done();
     });
 
     lab.test('if found', (done) => {
-      expect(contextHelper.getSequenceFlowTargetId(context, 'nonFoundFlow1')).to.not.exist();
+      expect(context.getSequenceFlowTargetId('nonFoundFlow1')).to.not.exist();
       done();
     });
   });
@@ -307,7 +310,7 @@ lab.experiment('context-helper', () => {
         }
       };
 
-      expect(contextHelper.getElementService(element)).to.equal({
+      expect(context.getElementService(element)).to.equal({
         connector: {
           $type: 'camunda:Connector',
           connectorId: 'postMessage'
@@ -338,7 +341,7 @@ lab.experiment('context-helper', () => {
         }
       };
 
-      expect(contextHelper.getElementService(element)).to.equal({
+      expect(context.getElementService(element)).to.equal({
         name: 'postMessage'
       });
       done();
@@ -355,7 +358,7 @@ lab.experiment('context-helper', () => {
         }
       };
 
-      expect(contextHelper.getElementService(element)).to.be.undefined();
+      expect(context.getElementService(element)).to.be.undefined();
       done();
     });
 
@@ -377,40 +380,32 @@ lab.experiment('context-helper', () => {
         }
       };
 
-      expect(contextHelper.getElementService(element)).to.not.exist();
+      expect(context.getElementService(element)).to.not.exist();
       done();
     });
-
-    lab.test('returns service from extensionElements property', (done) => {
-      expect(contextHelper.getElementService({
-
-      })).to.be.undefined();
-      done();
-    });
-
 
     lab.test('without element returns undefined', (done) => {
-      expect(contextHelper.getElementService()).to.be.undefined();
+      expect(context.getElementService()).to.be.undefined();
       done();
     });
 
     lab.test('without element extensionElements returns undefined', (done) => {
-      expect(contextHelper.getElementService({})).to.be.undefined();
+      expect(context.getElementService({})).to.be.undefined();
       done();
     });
   });
 
   lab.describe('getActivityErrorEventDefinition()', () => {
     lab.test('returns nothing if no activity', (done) => {
-      expect(contextHelper.getActivityErrorEventDefinition()).to.be.undefined();
-      expect(contextHelper.getActivityErrorEventDefinition({})).to.be.undefined();
+      expect(context.getActivityErrorEventDefinition()).to.be.undefined();
+      expect(context.getActivityErrorEventDefinition({})).to.be.undefined();
       done();
     });
   });
 
   lab.describe('getActivityProperties()', () => {
     lab.test('returns nothing if activity is not found', (done) => {
-      expect(contextHelper.getActivityProperties(context, 'not-an-activity')).to.be.undefined();
+      expect(context.getActivityProperties('not-an-activity')).to.be.undefined();
       done();
     });
   });
