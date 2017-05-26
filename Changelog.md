@@ -1,11 +1,14 @@
 Changelog
 =========
 
-# 4.2.0
+# 5.0.0
 
-- Added support for parallell loop
-- `ServiceTask.resultVariable` removed since it can't be defined
+## Breaking changes
+- Drop support for node v4 and v5
 - `SendTask` message requires output
+
+## Additions
+- Support for parallell loop
 
 # 4.0.0
 

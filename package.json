@@ -9,7 +9,7 @@
     "url": "git://github.com/paed01/bpmn-engine"
   },
   "engines": {
-    "node": ">=4"
+    "node": ">=6"
   },
   "files": [
     "API.md",
