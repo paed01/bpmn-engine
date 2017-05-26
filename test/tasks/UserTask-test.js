@@ -70,9 +70,9 @@ lab.experiment('UserTask', () => {
   lab.describe('events', () => {
     let context;
     lab.beforeEach((done) => {
-      testHelpers.getContext(factory.userTask('userTask'), (err, c) => {
+      testHelpers.getContext(factory.userTask('userTask'), (err, result) => {
         if (err) return done(err);
-        context = c;
+        context = result;
         done();
       });
     });
@@ -489,33 +489,9 @@ lab.experiment('UserTask', () => {
     lab.describe('sequential', () => {
       let context;
       lab.beforeEach((done) => {
-        const processXml = `
-        <?xml version="1.0" encoding="UTF-8"?>
-        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-          <process id="sequentialLoopProcess" isExecutable="true">
-            <userTask id="task">
-              <multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.boardMembers}">
-                <loopCardinality>5</loopCardinality>
-              </multiInstanceLoopCharacteristics>
-              <extensionElements>
-                <camunda:inputOutput>
-                  <camunda:inputParameter name="email">\${item}</camunda:inputParameter>
-                  <camunda:inputParameter name="index">\${index}</camunda:inputParameter>
-                </camunda:inputOutput>
-                <camunda:formData>
-                  <camunda:formField id="yay\${index}" type="boolean" />
-                </camunda:formData>
-              </extensionElements>
-            </userTask>
-          </process>
-        </definitions>`;
-        testHelpers.getContext(processXml, {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }, (err, result) => {
+        getLoopContext(true, (err, result) => {
           if (err) return done(err);
           context = result;
-          context.variables.boardMembers = ['pal@example.com', 'franz@example.com', 'immanuel@example.com'];
           done();
         });
       });
@@ -660,7 +636,7 @@ function getLoopContext(sequential, callback) {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
   }, (err, context) => {
     if (err) return callback(err);
-    context.variables.boardMembers = ['pal@example.com', 'franz@example.com', 'immanuel@example.com'];
+    context.variablesAndServices.variables.boardMembers = ['pal@example.com', 'franz@example.com', 'immanuel@example.com'];
     callback(null, context);
   });
 }

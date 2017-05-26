@@ -87,7 +87,7 @@ lab.experiment('Task', () => {
     });
 
     lab.test('event argument getInput() on start returns input parameters', (done) => {
-      context.variables = {
+      context.variablesAndServices.variables = {
         message: 'exec'
       };
 
@@ -104,7 +104,7 @@ lab.experiment('Task', () => {
     });
 
     lab.test('event argument getOutput() on end returns output parameter value based on input parameters', (done) => {
-      context.variables = {
+      context.variablesAndServices.variables = {
         message: 'exec'
       };
 
@@ -238,7 +238,7 @@ function getLoopContext(isSequential, callback) {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
   }, (err, context) => {
     if (err) return callback(err);
-    context.variables.analogue = ['labour', 'archiving', 'shopping'];
+    context.variablesAndServices.variables.analogue = ['labour', 'archiving', 'shopping'];
     callback(null, context);
   });
 }

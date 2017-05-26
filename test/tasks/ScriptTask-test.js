@@ -60,10 +60,9 @@ lab.experiment('ScriptTask', () => {
     </process>
   </definitions>`;
 
-      testHelpers.getModdleContext(processXml, (cerr, moddleContext) => {
+      testHelpers.getContext(processXml, (cerr, context) => {
         if (cerr) return done(cerr);
-        const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
-        const task = process.getChildActivityById('scriptTask');
+        const task = context.getChildActivityById('scriptTask');
         expect(task).to.include('inbound');
         expect(task.inbound).to.have.length(1);
         expect(task).to.include('outbound');
@@ -88,10 +87,9 @@ lab.experiment('ScriptTask', () => {
     </process>
   </definitions>`;
 
-      testHelpers.getModdleContext(alternativeProcessXml, (cerr, moddleContext) => {
+      testHelpers.getContext(alternativeProcessXml, (cerr, context) => {
         if (cerr) return done(cerr);
-        const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
-        const task = process.getChildActivityById('scriptTask');
+        const task = context.getChildActivityById('scriptTask');
         expect(task.isEnd).to.be.true();
         done();
       });
@@ -129,8 +127,8 @@ lab.experiment('ScriptTask', () => {
       }, (err, instance) => {
         if (err) return done(err);
 
-        instance.once('end', () => {
-          expect(instance.variables.input, 'input variable').to.equal(2);
+        instance.once('end', (p, executionContext) => {
+          expect(executionContext.getInput().input, 'input variable').to.equal(2);
           testHelpers.expectNoLingeringListenersOnDefinition(instance);
           done();
         });
@@ -616,8 +614,8 @@ function getLoopContext(sequential, callback) {
   }, (err, context) => {
     if (err) return callback(err);
 
-    context.variables.names = ['Pål', 'Franz', 'Immanuel'];
-    context.services.setTimeout = setTimeout;
+    context.variablesAndServices.variables.names = ['Pål', 'Franz', 'Immanuel'];
+    context.variablesAndServices.services.setTimeout = setTimeout;
 
     return callback(null, context);
   });

@@ -215,7 +215,7 @@ function getLoopContext(sequential, callback) {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
   }, (err, context) => {
     if (err) return callback(err);
-    context.variables.analogue = ['labour', 'archiving', 'shopping'];
+    context.variablesAndServices.variables.analogue = ['labour', 'archiving', 'shopping'];
     callback(null, context);
   });
 }

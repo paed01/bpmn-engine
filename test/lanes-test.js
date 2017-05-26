@@ -62,15 +62,12 @@ lab.experiment('Lanes', () => {
       }
     });
 
-    // listener.once('start-messageStartEvent', (activity) => {
-    //   console.log(activity.getInput())
-
-    //   expect(activity.getInput()).to.equal({
-    //     input: 0,
-    //     message: 'I\'m done',
-    //     arbval: '10'
-    //   });
-    // });
+    listener.once('end-messageStartEvent', (activity) => {
+      expect(activity.getOutput()).to.equal({
+        message: 'I\'m done',
+        arbval: '10'
+      });
+    });
 
     engine.once('end', () => {
       const participant = engine.definitions[0].processes.find((p) => p.id === 'participantProcess');
