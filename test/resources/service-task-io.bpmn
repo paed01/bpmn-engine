@@ -15,7 +15,7 @@
           <camunda:inputParameter name="uri">
             <camunda:script scriptFormat="JavaScript">variables.apiPath</camunda:script>
           </camunda:inputParameter>
-          <camunda:inputParameter name="json">${variables.json}</camunda:inputParameter>
+          <camunda:inputParameter name="json">${true}</camunda:inputParameter>
           <camunda:outputParameter name="statusCode">
             <camunda:script scriptFormat="JavaScript"><![CDATA[result[0].statusCode]]></camunda:script>
           </camunda:outputParameter>

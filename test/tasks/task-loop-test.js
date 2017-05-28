@@ -15,26 +15,25 @@ lab.experiment('task loop', () => {
 
     lab.test('on recurring task error the loop breaks', (done) => {
       const def = `
-  <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
-    <bpmn:process id="taskLoopProcess" isExecutable="true">
-      <bpmn:scriptTask id="recurring" name="Recurring" scriptFormat="JavaScript">
-        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
-          <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">7</bpmn:loopCardinality>
-        </bpmn:multiInstanceLoopCharacteristics>
-        <bpmn:script><![CDATA[
-          variables.input += variables.items[index];
-          if (index >= 2) next(new Error('Three is enough'));
-          else next();
-          ]]>
-        </bpmn:script>
-      </bpmn:scriptTask>
-      <bpmn:boundaryEvent id="errorEvent" attachedToRef="recurring">
-        <bpmn:errorEventDefinition />
-      </bpmn:boundaryEvent>
-    </bpmn:process>
-  </bpmn:definitions>
-    `;
+      <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+        <bpmn:process id="taskLoopProcess" isExecutable="true">
+          <bpmn:scriptTask id="recurring" name="Recurring" scriptFormat="JavaScript">
+            <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+              <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">7</bpmn:loopCardinality>
+            </bpmn:multiInstanceLoopCharacteristics>
+            <bpmn:script><![CDATA[
+              variables.input += variables.items[index];
+              if (index >= 2) next(new Error('Three is enough'));
+              else next();
+              ]]>
+            </bpmn:script>
+          </bpmn:scriptTask>
+          <bpmn:boundaryEvent id="errorEvent" attachedToRef="recurring">
+            <bpmn:errorEventDefinition />
+          </bpmn:boundaryEvent>
+        </bpmn:process>
+      </bpmn:definitions>`;
 
       const engine = new Bpmn.Engine({
         source: def
