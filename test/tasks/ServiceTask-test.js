@@ -179,14 +179,21 @@ lab.experiment('ServiceTask', () => {
   });
 
   lab.describe('IO', () => {
-    let context;
-    lab.beforeEach((done) => {
+    lab.test('uses input parameters', (done) => {
+      nock('http://example.com')
+        .defaultReplyHeaders({
+          'Content-Type': 'application/json'
+        })
+        .get('/test')
+        .reply(200, {
+          data: 4
+        });
+
       const processXml = factory.resource('service-task-io.bpmn').toString();
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, result) => {
+      }, (err, context) => {
         if (err) return done(err);
-        context = result;
         context.variablesAndServices = {
           services: {
             getRequest: {
@@ -198,35 +205,61 @@ lab.experiment('ServiceTask', () => {
             apiPath: 'http://example.com/test'
           }
         };
-        done();
-      });
-    });
 
-    lab.test('uses input parameters', (done) => {
-      nock('http://example.com')
-        .defaultReplyHeaders({
-          'Content-Type': 'application/json'
-        })
-        .get('/test')
-        .reply(200, {
-          data: 4
+        const task = context.getChildActivityById('serviceTask');
+        task.activate();
+
+        task.once('start', (activity) => {
+          expect(activity.getInput()).to.equal({ uri: 'http://example.com/test', json: true });
         });
 
-      const task = context.getChildActivityById('serviceTask');
-      task.activate();
+        task.once('end', (t, output) => {
+          expect(output).to.include(['statusCode', 'body']);
+          expect(output.statusCode).to.equal(200);
+          expect(output.body).to.equal({ data: 4});
+          done();
+        });
 
-      task.once('start', (activity) => {
-        expect(activity.getInput()).to.equal({ uri: 'http://example.com/test', json: true });
+        task.inbound[0].take();
       });
 
-      task.once('end', (t, output) => {
-        expect(output).to.include(['statusCode', 'body']);
-        expect(output.statusCode).to.equal(200);
-        expect(output.body).to.equal({ data: 4});
-        done();
-      });
+    });
 
-      task.inbound[0].take();
+    lab.test('returns mapped output', (done) => {
+      const processXml = factory.resource('service-task-io-types.bpmn').toString();
+      testHelpers.getContext(processXml, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, context) => {
+        if (err) return done(err);
+
+        context.variablesAndServices.variables = {
+          apiPath: 'http://example-2.com',
+          input: 2,
+        };
+        context.variablesAndServices.services = {
+          get: (arg, next) => {
+            next(null, {
+              statusCode: 200,
+              pathname: '/ignore'
+            }, {
+              data: arg.input
+            });
+          }
+        };
+
+        const task = context.getChildActivityById('serviceTask');
+        task.once('end', (activity, output) => {
+          expect(output).to.equal({
+            statusCode: 200,
+            body: {
+              data: 2
+            }
+          });
+          done();
+        });
+
+        task.run();
+      });
     });
   });
 
@@ -347,51 +380,6 @@ lab.experiment('ServiceTask', () => {
         task.run();
       });
     });
-  });
-
-  lab.describe('io', () => {
-    let context;
-    lab.beforeEach((done) => {
-      const processXml = factory.resource('service-task-io-types.bpmn').toString();
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, result) => {
-        if (err) return done(err);
-        context = result;
-        done();
-      });
-    });
-
-    lab.test('returns mapped output', (done) => {
-      context.variablesAndServices.variables = {
-        apiPath: 'http://example-2.com',
-        input: 2,
-      };
-      context.variablesAndServices.services = {
-        get: (arg, next) => {
-          next(null, {
-            statusCode: 200,
-            pathname: '/ignore'
-          }, {
-            data: arg.input
-          });
-        }
-      };
-
-      const task = context.getChildActivityById('serviceTask');
-      task.once('end', (activity, output) => {
-        expect(output).to.equal({
-          statusCode: 200,
-          body: {
-            data: 2
-          }
-        });
-        done();
-      });
-
-      task.run();
-    });
-
   });
 
   lab.describe('Camunda connector is defined with input/output', () => {

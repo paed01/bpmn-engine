@@ -1,5 +1,6 @@
 'use strict';
 
+const Bpmn = require('../..');
 const Code = require('code');
 const Lab = require('lab');
 const nock = require('nock');
@@ -8,57 +9,27 @@ const testHelpers = require('../helpers/testHelpers');
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 
-const Bpmn = require('../..');
-const mapper = require('../../lib/mapper');
-const BaseProcess = mapper.Process;
 
 lab.experiment('ScriptTask', () => {
   lab.describe('ctor', () => {
-    lab.test('throws if type is not JavaScript', (done) => {
-      const activity = {
-        $type: 'bpmn:ScriptTask',
-        scriptFormat: 'Java'
-      };
-
-      function test() {
-        new (mapper(activity.$type))(activity); // eslint-disable-line no-new
-      }
-
-      expect(test).to.throw(Error, /Java is unsupported/i);
-      done();
-    });
-
-    lab.test('throws if type is undefined', (done) => {
-      const activity = {
-        $type: 'bpmn:ScriptTask'
-      };
-
-      function test() {
-        new (mapper(activity.$type))(activity); // eslint-disable-line no-new
-      }
-
-      expect(test).to.throw(Error, /undefined is unsupported/i);
-      done();
-    });
-
     lab.test('should have inbound and outbound sequence flows', (done) => {
       const processXml = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <scriptTask id="scriptTask" scriptFormat="Javascript">
-      <script>
-        <![CDATA[
-          next(null, {input: 2});
-        ]]>
-      </script>
-    </scriptTask>
-    <endEvent id="theEnd" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
-    <sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
-    </process>
-  </definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <scriptTask id="scriptTask" scriptFormat="Javascript">
+            <script>
+              <![CDATA[
+                next(null, {input: 2});
+              ]]>
+            </script>
+          </scriptTask>
+          <endEvent id="theEnd" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
+          <sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
+        </process>
+      </definitions>`;
 
       testHelpers.getContext(processXml, (cerr, context) => {
         if (cerr) return done(cerr);
@@ -73,19 +44,19 @@ lab.experiment('ScriptTask', () => {
 
     lab.test('is considered end if without outbound sequenceFlows', (done) => {
       const alternativeProcessXml = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <process id="theProcess" isExecutable="true">
-    <scriptTask id="scriptTask" scriptFormat="Javascript">
-      <script>
-        <![CDATA[
-          this.context.input = 2;
-          next();
-        ]]>
-      </script>
-    </scriptTask>
-    </process>
-  </definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+        <scriptTask id="scriptTask" scriptFormat="Javascript">
+          <script>
+            <![CDATA[
+              this.context.input = 2;
+              next();
+            ]]>
+          </script>
+        </scriptTask>
+        </process>
+      </definitions>`;
 
       testHelpers.getContext(alternativeProcessXml, (cerr, context) => {
         if (cerr) return done(cerr);
@@ -99,65 +70,61 @@ lab.experiment('ScriptTask', () => {
   lab.experiment('execution', () => {
     lab.test('executes script', (done) => {
       const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-  <startEvent id="theStart" />
-  <scriptTask id="scriptTask" scriptFormat="Javascript">
-    <script>
-      <![CDATA[
-        this.variables.input++;
-        next(null, {input: this.variables.input});
-      ]]>
-    </script>
-  </scriptTask>
-  <endEvent id="theEnd" />
-  <sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
-  <sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <scriptTask id="scriptTask" scriptFormat="Javascript">
+            <script>
+              <![CDATA[
+                next(null, {input: this.variables.input});
+              ]]>
+            </script>
+          </scriptTask>
+          <endEvent id="theEnd" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
+          <sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
+        </process>
+      </definitions>`;
 
-      const engine = new Bpmn.Engine({
-        source: processXml
-      });
-      engine.execute({
-        variables: {
-          input: 1
-        }
-      }, (err, instance) => {
-        if (err) return done(err);
+      testHelpers.getContext(processXml, (cerr, context) => {
+        if (cerr) return done(cerr);
+        context.variablesAndServices.variables.input = 1;
 
-        instance.once('end', (p, executionContext) => {
-          expect(executionContext.getInput().input, 'input variable').to.equal(2);
-          testHelpers.expectNoLingeringListenersOnDefinition(instance);
+        const task = context.getChildActivityById('scriptTask');
+        task.activate();
+
+        task.once('end', (activity, output) => {
+          expect(output).to.equal({input: 1});
           done();
         });
+
+        task.inbound[0].take();
       });
     });
 
     lab.test('emits error if returned in next function', (done) => {
       const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-  <startEvent id="theStart" />
-  <scriptTask id="scriptTask" scriptFormat="Javascript">
-    <script>
-      <![CDATA[
-        next(new Error('Inside'));
-      ]]>
-    </script>
-  </scriptTask>
-  <endEvent id="theEnd" />
-  <sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
-  <sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+        <startEvent id="theStart" />
+        <scriptTask id="scriptTask" scriptFormat="Javascript">
+          <script>
+            <![CDATA[
+              next(new Error('Inside'));
+            ]]>
+          </script>
+        </scriptTask>
+        <endEvent id="theEnd" />
+        <sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
+        <sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
+        </process>
+      </definitions>`;
 
-      testHelpers.getModdleContext(processXml, (cerr, moddleContext) => {
+      testHelpers.getContext(processXml, (cerr, context) => {
         if (cerr) return done(cerr);
-        const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
-        const task = process.getChildActivityById('scriptTask');
+        const task = context.getChildActivityById('scriptTask');
 
         task.once('error', (e, tsk) => {
           expect(e).to.exist();
@@ -169,19 +136,8 @@ lab.experiment('ScriptTask', () => {
         task.run();
       });
     });
-  });
 
-  lab.experiment('context variables', () => {
-    lab.before((done) => {
-      nock.disableNetConnect();
-      done();
-    });
-    lab.after((done) => {
-      nock.cleanAll();
-      done();
-    });
-
-    lab.test('accepts module in context variables', (done) => {
+    lab.test('can access services', (done) => {
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -196,9 +152,7 @@ lab.experiment('ScriptTask', () => {
 
       request.get('http://example.com/test', (err, resp, body) => {
         if (err) return next(err);
-        const result = JSON.parse(body);
-        self.variables.data = result.data;
-        next();
+        next(null, JSON.parse(body));
       })
     ]]>
   </script>
@@ -215,26 +169,26 @@ lab.experiment('ScriptTask', () => {
           data: 2
         });
 
-      const engine = new Bpmn.Engine({
-        source: processXml
-      });
-      const options = {
-        services: {
+      testHelpers.getContext(processXml, (cerr, context) => {
+        if (cerr) return done(cerr);
+
+        context.variablesAndServices.services = {
           request: {
             module: 'request'
           }
-        }
-      };
+        };
 
-      engine.execute(options, (err, execution) => {
-        if (err) return done(err);
-        execution.once('end', () => {
-          expect(nock.isDone()).to.be.true();
-          expect(execution.variables).to.include({
+        const task = context.getChildActivityById('scriptTask');
+        task.activate();
+
+        task.once('end', (t, output) => {
+          expect(output).to.include({
             data: 2
           });
           done();
         });
+
+        task.inbound[0].take();
       });
     });
 
@@ -254,9 +208,7 @@ lab.experiment('ScriptTask', () => {
 
       request.get('http://example.com/test', (err, resp, body) => {
         if (err) return next(err);
-        const result = JSON.parse(body);
-        self.variables.data = result.data;
-        next();
+        next(null, JSON.parse(body));
       })
     ]]>
   </script>
@@ -273,29 +225,32 @@ lab.experiment('ScriptTask', () => {
           data: 3
         });
 
-      const engine = new Bpmn.Engine({
-        source: processXml
-      });
-      const options = {
-        services: {
-          require: {
-            module: 'require',
-            type: 'global'
+      testHelpers.getContext(processXml, (cerr, context) => {
+        if (cerr) return done(cerr);
+
+        context.variablesAndServices = {
+          services: {
+            require: {
+              module: 'require',
+              type: 'global'
+            }
+          },
+          variables: {
+            data: 1
           }
-        },
-        variables: {
-          data: 1
-        }
-      };
-      engine.execute(options, (err, execution) => {
-        if (err) return done(err);
-        execution.once('end', () => {
-          expect(nock.isDone()).to.be.true();
-          expect(execution.variables).to.include({
+        };
+
+        const task = context.getChildActivityById('scriptTask');
+        task.activate();
+
+        task.once('end', (t, output) => {
+          expect(output).to.include({
             data: 3
           });
           done();
         });
+
+        task.inbound[0].take();
       });
     });
 
@@ -311,8 +266,7 @@ lab.experiment('ScriptTask', () => {
       const self = this;
       services.get('http://example.com/test', {json: true}, (err, resp, body) => {
         if (err) return next(err);
-        self.variables.data = body.data;
-        next();
+        next(null, body);
       })
     ]]>
   </script>
@@ -332,34 +286,38 @@ lab.experiment('ScriptTask', () => {
           data: 4
         });
 
-      const engine = new Bpmn.Engine({
-        source: processXml
-      });
-      const options = {
-        services: {
-          get: {
-            module: 'request',
-            type: 'require',
-            fnName: 'get'
+      testHelpers.getContext(processXml, (cerr, context) => {
+        if (cerr) return done(cerr);
+
+        context.variablesAndServices = {
+          services: {
+            get: {
+              module: 'request',
+              type: 'require',
+              fnName: 'get'
+            }
+          },
+          variables: {
+            data: 1
           }
-        },
-        variables: {
-          data: 1
-        }
-      };
-      engine.execute(options, (err, execution) => {
-        if (err) return done(err);
-        execution.once('end', () => {
+        };
+
+        const task = context.getChildActivityById('scriptTask');
+        task.activate();
+
+        task.once('end', (t, output) => {
           expect(nock.isDone()).to.be.true();
-          expect(execution.variables).to.include({
+          expect(output).to.include({
             data: 4
           });
           done();
         });
+
+        task.inbound[0].take();
       });
     });
 
-    lab.test('can be used for subsequent decisions', (done) => {
+    lab.test('output can be used for subsequent decisions', (done) => {
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">

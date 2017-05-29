@@ -545,4 +545,10 @@ lab.experiment('validation', () => {
       });
     });
   });
+
+  lab.describe('ScriptTask', () => {
+    lab.test('scriptFormat not javascript returns validation error', (done) => {
+      done(new Error('Fail'));
+    });
+  });
 });
