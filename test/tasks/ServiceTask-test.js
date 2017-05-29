@@ -12,11 +12,9 @@ const testHelpers = require('../helpers/testHelpers');
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 
-const Bpmn = require('../..');
 const bpmnModdle = new BpmnModdle({
   camunda: require('camunda-bpmn-moddle/resources/camunda')
 });
-const ServiceTask = mapper('bpmn:ServiceTask');
 
 const bupServiceFn = testHelpers.serviceFn;
 
@@ -641,7 +639,7 @@ lab.experiment('ServiceTask', () => {
             .reply(input.version < 2 ? 200 : 409, {});
         });
         task.once('end', (t, output) => {
-          expect(output).to.equal([{
+          expect(output.loopResult).to.equal([{
             statusCode: 200,
             body: {}
           }, {
@@ -672,7 +670,7 @@ lab.experiment('ServiceTask', () => {
         });
 
         task.once('end', () => {
-          expect(task.getOutput()).to.equal([{
+          expect(task.getOutput().loopResult).to.equal([{
             statusCode: 200,
             body: {
               idx: 0
@@ -748,7 +746,7 @@ lab.experiment('ServiceTask', () => {
         });
 
         task.once('end', (t, output) => {
-          expect(output).to.equal([{
+          expect(output.loopResult).to.equal([{
             statusCode: 200,
             body: {
               idx: 0
@@ -785,7 +783,7 @@ lab.experiment('ServiceTask', () => {
         });
 
         task.once('end', () => {
-          expect(task.getOutput()).to.equal([{
+          expect(task.getOutput().loopResult).to.equal([{
             statusCode: 200,
             body: {
               idx: 0
@@ -825,6 +823,7 @@ function getLoopContext(isSequential, callback) {
           <camunda:inputOutput>
             <camunda:inputParameter name="version">\${index}</camunda:inputParameter>
             <camunda:inputParameter name="path">\${item}</camunda:inputParameter>
+            <camunda:outputParameter name="loopResult">\${result}</camunda:outputParameter>
           </camunda:inputOutput>
           <camunda:connector>
             <camunda:inputOutput>

@@ -398,7 +398,7 @@ lab.experiment('UserTask', () => {
           activity.signal(activity.id);
         });
         task.once('end', (t, output) => {
-          expect(output).to.be.equal(['task', 'task', 'task']);
+          expect(output.taskInput.task).to.be.equal(['task', 'task', 'task']);
           done();
         });
 
@@ -420,7 +420,7 @@ lab.experiment('UserTask', () => {
         });
 
         task.once('end', (t, output) => {
-          expect(output).to.be.equal([{
+          expect(output.taskInput.task).to.be.equal([{
             email: 'pal@example.com',
             yay0: true
           }, {
@@ -460,7 +460,7 @@ lab.experiment('UserTask', () => {
           }
         });
         task.once('end', (t, output) => {
-          expect(output.includes(task.id), 'unique task id').to.be.false();
+          expect(output.taskInput.task.includes(task.id), 'unique task id').to.be.false();
           done();
         });
 
@@ -482,7 +482,7 @@ lab.experiment('UserTask', () => {
         });
 
         task.once('end', (t, output) => {
-          expect(output).to.be.equal([{
+          expect(output.taskInput.task).to.be.equal([{
             email: 'pal@example.com',
             yay0: true
           }, {

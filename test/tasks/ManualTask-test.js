@@ -110,7 +110,7 @@ lab.experiment('ManualTask', () => {
           activity.signal(activity.id);
         });
         task.once('end', (t, output) => {
-          expect(output).to.be.equal(['task', 'task', 'task']);
+          expect(output.taskInput.task).to.be.equal(['task', 'task', 'task']);
           done();
         });
 
@@ -155,11 +155,11 @@ lab.experiment('ManualTask', () => {
         task.on('wait', (activity) => {
           starts.push(activity);
           if (starts.length === 3) {
-            starts.reverse().forEach((t) => t.signal());
+            starts.reverse().forEach((t) => t.signal(t.id));
           }
         });
         task.once('end', (t, output) => {
-          expect(output.includes(task.id), 'unique task id').to.be.false();
+          expect(output.taskInput.task.includes(task.id), 'unique task id').to.be.false();
           done();
         });
 
@@ -179,7 +179,7 @@ lab.experiment('ManualTask', () => {
         });
 
         task.once('end', (t, output) => {
-          expect(output).to.equal([0, 1, 2]);
+          expect(output.taskInput.task).to.equal([0, 1, 2]);
           done();
         });
 
