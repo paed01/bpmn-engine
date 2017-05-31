@@ -48,7 +48,7 @@ lab.experiment('InclusiveGateway', () => {
         const gateway = context.getChildActivityById('decision');
         gateway.activate();
 
-        context.variables.condition1 = true;
+        context.variablesAndServices.variables.condition1 = true;
 
         gateway.outbound.find((f) => f.id === 'condFlow').once('taken', () => {
           done();

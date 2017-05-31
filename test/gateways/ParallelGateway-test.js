@@ -13,62 +13,48 @@ const Bpmn = require('../..');
 lab.experiment('ParallelGateway', () => {
   lab.describe('join', () => {
     const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <parallelGateway id="fork" />
-    <parallelGateway id="join" />
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
-    <sequenceFlow id="flow2" sourceRef="fork" targetRef="join" />
-    <sequenceFlow id="flow3" sourceRef="fork" targetRef="join" />
-    <sequenceFlow id="flow4" sourceRef="join" targetRef="end" />
-  </process>
-</definitions>`;
+    <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theProcess" isExecutable="true">
+        <startEvent id="theStart" />
+        <parallelGateway id="fork" />
+        <parallelGateway id="join" />
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
+        <sequenceFlow id="flow2" sourceRef="fork" targetRef="join" />
+        <sequenceFlow id="flow3" sourceRef="fork" targetRef="join" />
+        <sequenceFlow id="flow4" sourceRef="join" targetRef="end" />
+      </process>
+    </definitions>`;
 
     let context;
     lab.beforeEach((done) => {
-      testHelpers.getContext(processXml, (err, c) => {
+      testHelpers.getContext(processXml, (err, result) => {
         if (err) return done(err);
-        context = c;
+        context = result;
         done();
       });
     });
 
-    lab.test('should have pending inbound when ran', (done) => {
+    lab.test('should have pending inbound on start', (done) => {
       const gateway = context.getChildActivityById('join');
       gateway.activate();
-      gateway.run();
-      expect(gateway.pendingInbound).to.have.length(2);
-      expect(gateway.pendingJoin).to.be.true();
-      done();
-    });
 
-    lab.test('emits start when first inbound is taken', (done) => {
-      const gateway = context.getChildActivityById('join');
-      gateway.activate();
-      gateway.run();
-      expect(gateway.pendingInbound).to.have.length(2);
-      expect(gateway.taken).to.not.be.true();
-
-      gateway.on('start', () => {
-        expect(gateway.taken).to.be.true();
-        expect(gateway.pendingInbound).to.have.length(1);
+      gateway.once('start', (activity) => {
+        expect(activity.pendingJoin).to.be.true();
+        expect(activity.pendingInbound).to.have.length(1);
         done();
       });
 
-      gateway.pendingInbound[0].take();
+      gateway.inbound[0].take();
     });
 
     lab.test('emits end when all inbounds are taken', (done) => {
       const gateway = context.getChildActivityById('join');
       gateway.activate();
-      gateway.run();
-      expect(gateway.pendingInbound).to.have.length(2);
 
       gateway.on('end', () => {
-        expect(gateway.pendingInbound).to.not.exist();
+        expect(gateway.taken).to.be.true();
         done();
       });
 
@@ -98,10 +84,9 @@ lab.experiment('ParallelGateway', () => {
       lab.test('on start returns pendingInbound', (done) => {
         const gateway = context.getChildActivityById('join');
         gateway.activate();
-        gateway.run();
 
-        gateway.once('start', () => {
-          const state = gateway.getState();
+        gateway.once('start', (activity) => {
+          const state = activity.getState();
           expect(state).to.include({
             pendingInbound: ['flow3']
           });
@@ -114,18 +99,18 @@ lab.experiment('ParallelGateway', () => {
       lab.test('discarded inbound is returned in discardedInbound', (done) => {
         const gateway = context.getChildActivityById('join');
         gateway.activate();
-        gateway.run();
 
-        gateway.once('start', () => {
-          const state = gateway.getState();
+        gateway.once('start', (activity) => {
+          const state = activity.getState();
           expect(state).to.include({
-            pendingInbound: ['flow3'],
+            pendingInbound: [],
             discardedInbound: ['flow2']
           });
           done();
         });
 
         gateway.inbound[0].discard();
+        gateway.inbound[1].take();
       });
     });
 
@@ -134,8 +119,8 @@ lab.experiment('ParallelGateway', () => {
       lab.test('sets resumed gateway pendingInbound', (done) => {
         const gateway = context.getChildActivityById('join');
 
-        gateway.on('start', () => {
-          const state = gateway.getState();
+        gateway.on('start', (activity) => {
+          const state = activity.getState();
 
           expect(state).to.include({
             pendingInbound: ['flow3']
@@ -150,7 +135,6 @@ lab.experiment('ParallelGateway', () => {
         });
 
         gateway.activate();
-        gateway.run();
         gateway.pendingInbound[0].take();
       });
 
@@ -248,19 +232,19 @@ lab.experiment('ParallelGateway', () => {
 
   lab.describe('fork', () => {
     const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <parallelGateway id="fork" />
-    <parallelGateway id="join" />
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
-    <sequenceFlow id="flow2" sourceRef="fork" targetRef="join" />
-    <sequenceFlow id="flow3" sourceRef="fork" targetRef="join" />
-    <sequenceFlow id="flow4" sourceRef="join" targetRef="end" />
-  </process>
-</definitions>`;
+    <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theProcess" isExecutable="true">
+        <startEvent id="theStart" />
+        <parallelGateway id="fork" />
+        <parallelGateway id="join" />
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
+        <sequenceFlow id="flow2" sourceRef="fork" targetRef="join" />
+        <sequenceFlow id="flow3" sourceRef="fork" targetRef="join" />
+        <sequenceFlow id="flow4" sourceRef="join" targetRef="end" />
+      </process>
+    </definitions>`;
 
     let context;
     lab.beforeEach((done) => {
@@ -273,9 +257,14 @@ lab.experiment('ParallelGateway', () => {
 
     lab.test('should have pending outbound when ran', (done) => {
       const gateway = context.getChildActivityById('fork');
-      gateway.run();
-      expect(gateway.pendingOutbound).to.have.length(2);
-      done();
+
+      gateway.activate();
+      gateway.once('start', (activity) => {
+        expect(activity.pendingOutbound).to.have.length(2);
+        done();
+      });
+
+      gateway.inbound[0].take();
     });
 
     lab.test('emits start when first outbound is taken', (done) => {
@@ -341,17 +330,17 @@ lab.experiment('ParallelGateway', () => {
 
     lab.test('start with fork emits start', (done) => {
       const startProcessXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <parallelGateway id="fork" />
-    <parallelGateway id="join" />
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="fork" targetRef="join" />
-    <sequenceFlow id="flow2" sourceRef="fork" targetRef="join" />
-    <sequenceFlow id="flow3" sourceRef="join" targetRef="end" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <parallelGateway id="fork" />
+          <parallelGateway id="join" />
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="fork" targetRef="join" />
+          <sequenceFlow id="flow2" sourceRef="fork" targetRef="join" />
+          <sequenceFlow id="flow3" sourceRef="join" targetRef="end" />
+        </process>
+      </definitions>`;
 
       testHelpers.getContext(startProcessXml, (err, ctx) => {
         if (err) return done(err);
