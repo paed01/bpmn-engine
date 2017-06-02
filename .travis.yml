@@ -3,6 +3,7 @@ language: node_js
 node_js:
 - '6'
 - '7'
+- '8'
 sudo: false
 after_success:
 - cat coverage.lcov | ./node_modules/.bin/coveralls --verbose
