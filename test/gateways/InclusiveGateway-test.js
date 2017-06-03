@@ -9,28 +9,28 @@ const expect = Code.expect;
 const Bpmn = require('../..');
 
 lab.experiment('InclusiveGateway', () => {
-  lab.describe('behavior', () => {
+  lab.describe('input', () => {
     const processXml = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
-     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
-    <process id="mainProcess" isExecutable="true">
-      <inclusiveGateway id="decision" default="defaultFlow">
-        <extensionElements>
-          <camunda:InputOutput>
-            <camunda:inputParameter name="takeCondition">\${variables.condition1}</camunda:inputParameter>
-          </camunda:InputOutput>
-        </extensionElements>
-      </inclusiveGateway>
-      <endEvent id="end1" />
-      <endEvent id="end2" />
-      <sequenceFlow id="condFlow" sourceRef="decision" targetRef="end1">
-        <conditionExpression xsi:type="tFormalExpression">\${takeCondition}</conditionExpression>
-      </sequenceFlow>
-      <sequenceFlow id="defaultFlow" sourceRef="decision" targetRef="end2" />
-    </process>
-  </definitions>
-        `;
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
+      <process id="mainProcess" isExecutable="true">
+        <inclusiveGateway id="decision" default="defaultFlow">
+          <extensionElements>
+            <camunda:InputOutput>
+              <camunda:inputParameter name="takeCondition">\${variables.condition1}</camunda:inputParameter>
+              <camunda:outputParameter name="enteredDecision">Yes</camunda:outputParameter>
+            </camunda:InputOutput>
+          </extensionElements>
+        </inclusiveGateway>
+        <endEvent id="end1" />
+        <endEvent id="end2" />
+        <sequenceFlow id="condFlow" sourceRef="decision" targetRef="end1">
+          <conditionExpression xsi:type="tFormalExpression">\${takeCondition}</conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="defaultFlow" sourceRef="decision" targetRef="end2" />
+      </process>
+    </definitions>`;
 
     let context;
     lab.beforeEach((done) => {
@@ -43,23 +43,40 @@ lab.experiment('InclusiveGateway', () => {
       });
     });
 
-    lab.describe('input', () => {
-      lab.test('is passed to conditional flow', (done) => {
-        const gateway = context.getChildActivityById('decision');
-        gateway.activate();
+    lab.test('is passed to conditional flow', (done) => {
+      const gateway = context.getChildActivityById('decision');
+      gateway.activate();
 
-        context.variablesAndServices.variables.condition1 = true;
+      context.variablesAndServices.variables.condition1 = true;
 
-        gateway.outbound.find((f) => f.id === 'condFlow').once('taken', () => {
-          done();
-        });
-
-        gateway.run();
+      gateway.outbound.find((f) => f.id === 'condFlow').once('taken', () => {
+        done();
       });
+
+      gateway.run();
     });
+
+    lab.test('end returns output in callback', (done) => {
+      const gateway = context.getChildActivityById('decision');
+      gateway.activate();
+
+      context.variablesAndServices.variables.condition1 = false;
+
+      gateway.once('end', (g, output) => {
+        expect(output).to.equal({
+          enteredDecision: 'Yes'
+        });
+        expect(gateway.outbound[0].taken, 'condFlow').to.be.false();
+        expect(gateway.outbound[1].taken, 'defaultFlow').to.be.true();
+        done();
+      });
+
+      gateway.run();
+    });
+
   });
 
-  lab.describe('engine behavior', () => {
+  lab.describe('behavior', () => {
     lab.test('should have inbound and outbound sequence flows', (done) => {
       const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>

@@ -13,29 +13,28 @@ const testHelpers = require('../helpers/testHelpers');
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 
-
 lab.experiment('Activity', () => {
   const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="start" name="Start" />
-    <userTask id="task">
-      <extensionElements>
-        <camunda:properties>
-          <camunda:property name="me" value="too" />
-          <camunda:property name="resolved" value="\${variables.boolval}" />
-          <camunda:property name="serviceval" value="\${services.negate(variables.boolval)}" />
-        </camunda:properties>
-      </extensionElements>
-    </userTask>
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
-    <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
-  </process>
-</definitions>`;
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <process id="theProcess" isExecutable="true">
+      <startEvent id="start" name="Start" />
+      <userTask id="task">
+        <extensionElements>
+          <camunda:properties>
+            <camunda:property name="me" value="too" />
+            <camunda:property name="resolved" value="\${variables.boolval}" />
+            <camunda:property name="serviceval" value="\${services.negate(variables.boolval)}" />
+          </camunda:properties>
+        </extensionElements>
+      </userTask>
+      <endEvent id="end" />
+      <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+      <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
+    </process>
+  </definitions>`;
 
-  let activity, context; //, instance;
+  let activity, context;
   lab.beforeEach((done) => {
     testHelpers.getContext(processXml, {
       camunda: require('camunda-bpmn-moddle/resources/camunda')
