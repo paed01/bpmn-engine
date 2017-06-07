@@ -10,19 +10,18 @@ const lab = exports.lab = Lab.script();
 lab.experiment('ErrorEvent', () => {
   lab.describe('as BoundaryEvent', () => {
     const processXml = `
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-  <process id="theProcess" isExecutable="true">
-    <serviceTask id="service" camunda:expression="\${services.test}" />
-    <boundaryEvent id="errorEvent" attachedToRef="service">
-      <errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="code" camunda:errorMessageVariable="message" />
-    </boundaryEvent>
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="service" targetRef="end" />
-    <sequenceFlow id="flow2" sourceRef="errorEvent" targetRef="end" />
-  </process>
-  <error id="Error_0w1hljb" name="requestError" errorCode="404" />
-</definitions>
-    `;
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <process id="theProcess" isExecutable="true">
+        <serviceTask id="service" camunda:expression="\${services.test}" />
+        <boundaryEvent id="errorEvent" attachedToRef="service">
+          <errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="code" camunda:errorMessageVariable="message" />
+        </boundaryEvent>
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="service" targetRef="end" />
+        <sequenceFlow id="flow2" sourceRef="errorEvent" targetRef="end" />
+      </process>
+      <error id="Error_0w1hljb" name="requestError" errorCode="404" />
+    </definitions>`;
 
     let context;
     lab.beforeEach((done) => {

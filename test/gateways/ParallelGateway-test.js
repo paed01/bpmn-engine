@@ -1,7 +1,7 @@
 'use strict';
 
 const Code = require('code');
-const EventEmitter = require('events').EventEmitter;
+const {EventEmitter} = require('events');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
@@ -64,15 +64,7 @@ lab.experiment('ParallelGateway', () => {
     lab.test('discards outbound if inbound was discarded', (done) => {
       const gateway = context.getChildActivityById('join');
 
-      const discardedFlows = [];
-      gateway.outbound.forEach((f) => {
-        f.once('discarded', () => {
-          discardedFlows.push(f.id);
-        });
-      });
-
-      gateway.on('leave', () => {
-        expect(discardedFlows).to.equal(['flow4']);
+      gateway.outbound[0].once('discarded', () => {
         done();
       });
 
@@ -120,29 +112,37 @@ lab.experiment('ParallelGateway', () => {
         const gateway = context.getChildActivityById('join');
 
         gateway.on('start', (activity) => {
-          const state = activity.getState();
+          activity.stop();
 
+          const state = activity.getState();
           expect(state).to.include({
             pendingInbound: ['flow3']
           });
 
           const clonedContext = testHelpers.cloneContext(context);
           const resumedGateway = clonedContext.getChildActivityById('join');
-          resumedGateway.resume(state);
-          expect(resumedGateway.pendingInbound).to.have.length(1);
+          resumedGateway.id += '-resumed';
 
-          done();
+          resumedGateway.once('start', (resumedActivity) => {
+            expect(resumedActivity.getState().pendingInbound).to.equal(['flow3']);
+            done();
+          });
+
+          resumedGateway.resume(state);
         });
 
         gateway.activate();
-        gateway.pendingInbound[0].take();
+        gateway.inbound[0].take();
       });
 
       lab.test('completes when pending inbound flows are taken', (done) => {
         const gateway = context.getChildActivityById('join');
 
-        gateway.on('start', () => {
-          const state = gateway.getState();
+        gateway.on('start', (activity) => {
+          activity.stop();
+
+          const state = activity.getState();
+
 
           expect(state).to.include({
             pendingInbound: ['flow3']
@@ -153,28 +153,33 @@ lab.experiment('ParallelGateway', () => {
 
           resumedGateway.id += '-resumed';
 
+          resumedGateway.once('start', () => {
+            resumedGateway.inbound[1].take();
+          });
+
           resumedGateway.once('end', () => {
             done();
           });
 
           resumedGateway.activate();
           resumedGateway.resume(state);
-          resumedGateway.pendingInbound[0].take();
         });
 
         gateway.activate();
-        gateway.run();
         gateway.inbound[0].take();
       });
 
-      lab.test('completes if one inbound flow is discarded', (done) => {
+      lab.test('completes even if one inbound flow was discarded', (done) => {
         const gateway = context.getChildActivityById('join');
 
-        gateway.on('start', () => {
-          const state = gateway.getState();
+        gateway.on('enter', (gatewayActivity, activity) => {
+          activity.stop();
+
+          const state = activity.getState();
 
           expect(state).to.include({
-            pendingInbound: ['flow3']
+            pendingInbound: ['flow3'],
+            discardedInbound: ['flow2']
           });
 
           const clonedContext = testHelpers.cloneContext(context);
@@ -182,25 +187,29 @@ lab.experiment('ParallelGateway', () => {
 
           resumedGateway.id += '-resumed';
 
+          resumedGateway.once('start', () => {
+            resumedGateway.inbound[1].take();
+          });
+
           resumedGateway.once('end', () => {
             done();
           });
 
           resumedGateway.activate();
           resumedGateway.resume(state);
-          resumedGateway.pendingInbound[0].take();
         });
 
         gateway.activate();
-        gateway.run();
         gateway.inbound[0].discard();
       });
 
       lab.test('discards outbound if all inbound was discarded', (done) => {
         const gateway = context.getChildActivityById('join');
 
-        gateway.on('start', () => {
-          const state = gateway.getState();
+        gateway.on('enter', (gw, activity) => {
+          activity.stop();
+
+          const state = activity.getState();
 
           expect(state).to.include({
             pendingInbound: ['flow3']
@@ -220,11 +229,10 @@ lab.experiment('ParallelGateway', () => {
 
           resumedGateway.activate();
           resumedGateway.resume(state);
-          resumedGateway.pendingInbound[0].discard();
+          resumedGateway.inbound[1].discard();
         });
 
         gateway.activate();
-        gateway.run();
         gateway.inbound[0].discard();
       });
     });
@@ -255,77 +263,50 @@ lab.experiment('ParallelGateway', () => {
       });
     });
 
-    lab.test('should have pending outbound when ran', (done) => {
+    lab.test('emits start before first outbound is taken', (done) => {
       const gateway = context.getChildActivityById('fork');
 
-      gateway.activate();
       gateway.once('start', (activity) => {
-        expect(activity.pendingOutbound).to.have.length(2);
-        done();
-      });
-
-      gateway.inbound[0].take();
-    });
-
-    lab.test('emits start when first outbound is taken', (done) => {
-      const gateway = context.getChildActivityById('fork');
-
-      gateway.on('start', () => {
-        expect(gateway.pendingOutbound).to.have.length(1);
+        expect(activity.getState().pendingOutbound).to.have.length(2);
         done();
       });
 
       gateway.activate();
-      gateway.run();
+      gateway.inbound[0].take();
     });
 
     lab.test('emits end when all outbounds are taken', (done) => {
       const gateway = context.getChildActivityById('fork');
 
-      gateway.on('end', () => {
-        expect(gateway.pendingOutbound).to.not.exist();
+      gateway.on('end', (activity) => {
+        expect(activity.getState().pendingOutbound).to.not.exist();
         done();
       });
 
       gateway.activate();
-      gateway.run();
+      gateway.inbound[0].take();
     });
 
-    lab.test('discards all outbound if inbound was discarded', (done) => {
+    lab.test('leaves and discards all outbound if inbound was discarded', (done) => {
       const gateway = context.getChildActivityById('fork');
 
       const discardedFlows = [];
       gateway.outbound.forEach((f) => {
         f.once('discarded', () => {
           discardedFlows.push(f.id);
+
+          if (gateway.outbound.length === discardedFlows.length) {
+            done();
+          }
         });
       });
 
       gateway.on('leave', () => {
-        expect(discardedFlows, 'discarded flows').to.equal(['flow2', 'flow3']);
-        done();
+        expect(discardedFlows, 'discarded flows').to.equal([]);
       });
 
       gateway.activate();
       gateway.inbound.forEach((f) => f.discard());
-    });
-
-    lab.describe('getState()', () => {
-
-      lab.test('on start returns pendingOutbound', (done) => {
-        const gateway = context.getChildActivityById('fork');
-
-        gateway.on('start', () => {
-          const state = gateway.getState();
-          expect(state).to.include({
-            pendingOutbound: ['flow3']
-          });
-          done();
-        });
-
-        gateway.activate();
-        gateway.run();
-      });
     });
 
     lab.test('start with fork emits start', (done) => {
@@ -346,7 +327,7 @@ lab.experiment('ParallelGateway', () => {
         if (err) return done(err);
         const gateway = ctx.getChildActivityById('fork');
 
-        gateway.on('start', () => {
+        gateway.once('start', () => {
           done();
         });
 
@@ -356,60 +337,42 @@ lab.experiment('ParallelGateway', () => {
     });
 
     lab.describe('resume()', () => {
-
-      lab.test('sets gateway pendingOutbound', (done) => {
-        const gateway = context.getChildActivityById('fork');
-
-        gateway.on('start', () => {
-          const state = gateway.getState();
-
-          expect(state).to.include({
-            pendingOutbound: ['flow3']
-          });
-
-          const clonedContext = testHelpers.cloneContext(context);
-          const resumedGateway = clonedContext.getChildActivityById('fork');
-          resumedGateway.resume(state);
-          expect(resumedGateway.pendingOutbound).to.have.length(1);
-
-          done();
-        });
-
-        gateway.activate();
-        gateway.run();
-      });
-
       lab.test('starts taking pending outbound flows', (done) => {
         const gateway = context.getChildActivityById('fork');
 
-        gateway.on('start', () => {
-          const state = gateway.getState();
+        gateway.on('start', (activity) => {
+          gateway.outbound[0].once('taken', () => {
 
-          expect(state).to.include({
-            pendingOutbound: ['flow3']
+            activity.stop();
+
+            const state = activity.getState();
+
+            expect(state).to.include({
+              pendingOutbound: ['flow3']
+            });
+
+            const clonedContext = testHelpers.cloneContext(context);
+            const resumedGateway = clonedContext.getChildActivityById('fork');
+
+            const takenFlows = [];
+            resumedGateway.outbound.forEach((flow) => {
+              flow.once('taken', (f) => takenFlows.push(f.id));
+            });
+
+            resumedGateway.id += '-resumed';
+
+            resumedGateway.once('end', () => {
+              expect(takenFlows).to.equal(['flow3']);
+              done();
+            });
+
+            resumedGateway.activate();
+            resumedGateway.resume(state);
           });
-
-          const clonedContext = testHelpers.cloneContext(context);
-          const resumedGateway = clonedContext.getChildActivityById('fork');
-
-          const takenFlows = [];
-          resumedGateway.outbound.forEach((flow) => {
-            flow.once('taken', (f) => takenFlows.push(f.id));
-          });
-
-          resumedGateway.id += '-resumed';
-
-          resumedGateway.once('end', () => {
-            expect(takenFlows).to.equal(['flow3']);
-            done();
-          });
-
-          resumedGateway.activate();
-          resumedGateway.resume(state);
         });
 
         gateway.activate();
-        gateway.run();
+        gateway.inbound[0].take();
       });
     });
   });
@@ -417,21 +380,21 @@ lab.experiment('ParallelGateway', () => {
   lab.describe('engine', () => {
     lab.test('should join diverging fork', (done) => {
       const definitionXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theJoinDivergingForkProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <parallelGateway id="fork" />
-    <parallelGateway id="join" />
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
-    <sequenceFlow id="flow2" sourceRef="fork" targetRef="join" />
-    <sequenceFlow id="flow3" sourceRef="fork" targetRef="join" />
-    <sequenceFlow id="flow4" sourceRef="fork" targetRef="join" />
-    <sequenceFlow id="flow5" sourceRef="fork" targetRef="join" />
-    <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theJoinDivergingForkProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <parallelGateway id="fork" />
+          <parallelGateway id="join" />
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
+          <sequenceFlow id="flow2" sourceRef="fork" targetRef="join" />
+          <sequenceFlow id="flow3" sourceRef="fork" targetRef="join" />
+          <sequenceFlow id="flow4" sourceRef="fork" targetRef="join" />
+          <sequenceFlow id="flow5" sourceRef="fork" targetRef="join" />
+          <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
+        </process>
+      </definitions>`;
 
       const engine = new Bpmn.Engine({
         source: definitionXml
@@ -439,7 +402,7 @@ lab.experiment('ParallelGateway', () => {
       engine.execute((err, definition) => {
         if (err) return done(err);
 
-        definition.on('end', () => {
+        definition.once('end', () => {
           expect(definition.getChildActivityById('end').taken, 'end').to.be.true();
           testHelpers.expectNoLingeringListenersOnDefinition(definition);
           done();
@@ -449,18 +412,18 @@ lab.experiment('ParallelGateway', () => {
 
     lab.test('should fork multiple diverging flows', (done) => {
       const definitionXml = `
-  <?xml version="1.0" encoding="UTF-8"?>
-    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <process id="theProcess" isExecutable="true">
-      <startEvent id="theStart" />
-      <parallelGateway id="fork" />
-      <endEvent id="end1" />
-      <endEvent id="end2" />
-      <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
-      <sequenceFlow id="flow2" sourceRef="fork" targetRef="end1" />
-      <sequenceFlow id="flow3" sourceRef="fork" targetRef="end2" />
-    </process>
-  </definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <parallelGateway id="fork" />
+          <endEvent id="end1" />
+          <endEvent id="end2" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
+          <sequenceFlow id="flow2" sourceRef="fork" targetRef="end1" />
+          <sequenceFlow id="flow3" sourceRef="fork" targetRef="end2" />
+        </process>
+      </definitions>`;
 
       const engine = new Bpmn.Engine({
         source: definitionXml
@@ -468,9 +431,12 @@ lab.experiment('ParallelGateway', () => {
       engine.execute((err, definition) => {
         if (err) return done(err);
 
-        definition.on('end', () => {
+        definition.once('end', () => {
           expect(definition.getChildActivityById('end1').taken, 'end1').to.be.true();
           expect(definition.getChildActivityById('end2').taken, 'end2').to.be.true();
+
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
+
           done();
         });
       });
@@ -478,25 +444,25 @@ lab.experiment('ParallelGateway', () => {
 
     lab.test('should join even if discarded flow', (done) => {
       const definitionXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <inclusiveGateway id="decision" default="flow4" />
-    <parallelGateway id="join" />
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
-    <sequenceFlow id="flow2" sourceRef="decision" targetRef="join" />
-    <sequenceFlow id="flow3" sourceRef="decision" targetRef="join" />
-    <sequenceFlow id="flow4" sourceRef="decision" targetRef="join" />
-    <sequenceFlow id="flow5" sourceRef="decision" targetRef="join">
-      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.variables.input <= 50
-      ]]></conditionExpression>
-    </sequenceFlow>
-    <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <inclusiveGateway id="decision" default="flow4" />
+          <parallelGateway id="join" />
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+          <sequenceFlow id="flow2" sourceRef="decision" targetRef="join" />
+          <sequenceFlow id="flow3" sourceRef="decision" targetRef="join" />
+          <sequenceFlow id="flow4" sourceRef="decision" targetRef="join" />
+          <sequenceFlow id="flow5" sourceRef="decision" targetRef="join">
+            <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
+            this.variables.input <= 50
+            ]]></conditionExpression>
+          </sequenceFlow>
+          <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
+        </process>
+      </definitions>`;
 
       const engine = new Bpmn.Engine({
         source: definitionXml
@@ -508,7 +474,7 @@ lab.experiment('ParallelGateway', () => {
       }, (err, definition) => {
         if (err) return done(err);
 
-        definition.on('end', () => {
+        definition.once('end', () => {
           expect(definition.getChildActivityById('end').taken, 'end').to.be.true();
           testHelpers.expectNoLingeringListenersOnDefinition(definition);
           done();
@@ -518,29 +484,29 @@ lab.experiment('ParallelGateway', () => {
 
     lab.test('should join discarded flow with tasks', (done) => {
       const definitionXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <inclusiveGateway id="decisions" />
-    <scriptTask id="script" scriptFormat="Javascript">
-      <script>next();</script>
-    </scriptTask>
-    <userTask id="task" />
-    <parallelGateway id="join" />
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decisions" />
-    <sequenceFlow id="flow2" sourceRef="decisions" targetRef="script" />
-    <sequenceFlow id="flow3" sourceRef="script" targetRef="join" />
-    <sequenceFlow id="flow4" sourceRef="decisions" targetRef="task">
-      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-        this.variables.input <= 50
-      ]]></conditionExpression>
-    </sequenceFlow>
-    <sequenceFlow id="flow5" sourceRef="task" targetRef="join" />
-    <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <inclusiveGateway id="decisions" />
+          <scriptTask id="script" scriptFormat="Javascript">
+            <script>next();</script>
+          </scriptTask>
+          <userTask id="task" />
+          <parallelGateway id="join" />
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decisions" />
+          <sequenceFlow id="flow2" sourceRef="decisions" targetRef="script" />
+          <sequenceFlow id="flow3" sourceRef="script" targetRef="join" />
+          <sequenceFlow id="flow4" sourceRef="decisions" targetRef="task">
+            <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
+              this.variables.input <= 50
+            ]]></conditionExpression>
+          </sequenceFlow>
+          <sequenceFlow id="flow5" sourceRef="task" targetRef="join" />
+          <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
+        </process>
+      </definitions>`;
 
       const engine = new Bpmn.Engine({
         source: definitionXml
@@ -560,29 +526,29 @@ lab.experiment('ParallelGateway', () => {
 
     lab.test('regardless of flow order', (done) => {
       const definitionXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <inclusiveGateway id="decision" />
-    <userTask id="task" />
-    <scriptTask id="script" scriptFormat="Javascript">
-      <script>next();</script>
-    </scriptTask>
-    <parallelGateway id="join" />
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
-    <sequenceFlow id="flow2" sourceRef="decision" targetRef="task">
-      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-        this.variables.input <= 50
-      ]]></conditionExpression>
-    </sequenceFlow>
-    <sequenceFlow id="flow3" sourceRef="task" targetRef="join" />
-    <sequenceFlow id="flow4" sourceRef="decision" targetRef="script" />
-    <sequenceFlow id="flow5" sourceRef="script" targetRef="join" />
-    <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <inclusiveGateway id="decision" />
+          <userTask id="task" />
+          <scriptTask id="script" scriptFormat="Javascript">
+            <script>next();</script>
+          </scriptTask>
+          <parallelGateway id="join" />
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+          <sequenceFlow id="flow2" sourceRef="decision" targetRef="task">
+            <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
+              this.variables.input <= 50
+            ]]></conditionExpression>
+          </sequenceFlow>
+          <sequenceFlow id="flow3" sourceRef="task" targetRef="join" />
+          <sequenceFlow id="flow4" sourceRef="decision" targetRef="script" />
+          <sequenceFlow id="flow5" sourceRef="script" targetRef="join" />
+          <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
+        </process>
+      </definitions>`;
 
       const engine = new Bpmn.Engine({
         source: definitionXml
@@ -604,29 +570,29 @@ lab.experiment('ParallelGateway', () => {
 
     lab.test('and with default', (done) => {
       const definitionXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <inclusiveGateway id="decision" default="flow4" />
-    <userTask id="task" />
-    <scriptTask id="script" scriptFormat="Javascript">
-      <script>next();</script>
-    </scriptTask>
-    <parallelGateway id="join" />
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
-    <sequenceFlow id="flow2" sourceRef="decision" targetRef="script">
-      <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-        this.variables.input <= 50
-      ]]></conditionExpression>
-    </sequenceFlow>
-    <sequenceFlow id="flow3" sourceRef="script" targetRef="join" />
-    <sequenceFlow id="flow4" sourceRef="decision" targetRef="task" />
-    <sequenceFlow id="flow5" sourceRef="task" targetRef="join" />
-    <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <inclusiveGateway id="decision" default="flow4" />
+          <userTask id="task" />
+          <scriptTask id="script" scriptFormat="Javascript">
+            <script>next();</script>
+          </scriptTask>
+          <parallelGateway id="join" />
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+          <sequenceFlow id="flow2" sourceRef="decision" targetRef="script">
+            <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
+              this.variables.input <= 50
+            ]]></conditionExpression>
+          </sequenceFlow>
+          <sequenceFlow id="flow3" sourceRef="script" targetRef="join" />
+          <sequenceFlow id="flow4" sourceRef="decision" targetRef="task" />
+          <sequenceFlow id="flow5" sourceRef="task" targetRef="join" />
+          <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
+        </process>
+      </definitions>`;
 
       const engine = new Bpmn.Engine({
         source: definitionXml
@@ -670,17 +636,17 @@ lab.experiment('ParallelGateway', () => {
 
     lab.test('completes process with ending join', (done) => {
       const definitionXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <parallelGateway id="fork" />
-    <parallelGateway id="join" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
-    <sequenceFlow id="flow2" sourceRef="fork" targetRef="join" />
-    <sequenceFlow id="flow3" sourceRef="fork" targetRef="join" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <parallelGateway id="fork" />
+          <parallelGateway id="join" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
+          <sequenceFlow id="flow2" sourceRef="fork" targetRef="join" />
+          <sequenceFlow id="flow3" sourceRef="fork" targetRef="join" />
+        </process>
+      </definitions>`;
 
       const engine = new Bpmn.Engine({
         source: definitionXml
@@ -720,23 +686,23 @@ lab.experiment('ParallelGateway', () => {
     lab.describe('resume()', () => {
       lab.test('should continue join', (done) => {
         const definitionXml = `
-  <?xml version="1.0" encoding="UTF-8"?>
-    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <process id="theProcess" isExecutable="true">
-      <startEvent id="theStart" />
-      <parallelGateway id="fork" />
-      <userTask id="task1" />
-      <userTask id="task2" />
-      <parallelGateway id="join" />
-      <endEvent id="end" />
-      <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
-      <sequenceFlow id="flow2" sourceRef="fork" targetRef="task1" />
-      <sequenceFlow id="flow3" sourceRef="fork" targetRef="task2" />
-      <sequenceFlow id="flow4" sourceRef="task1" targetRef="join" />
-      <sequenceFlow id="flow5" sourceRef="task2" targetRef="join" />
-      <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
-    </process>
-  </definitions>`;
+        <?xml version="1.0" encoding="UTF-8"?>
+          <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <process id="theProcess" isExecutable="true">
+            <startEvent id="theStart" />
+            <parallelGateway id="fork" />
+            <userTask id="task1" />
+            <userTask id="task2" />
+            <parallelGateway id="join" />
+            <endEvent id="end" />
+            <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fork" />
+            <sequenceFlow id="flow2" sourceRef="fork" targetRef="task1" />
+            <sequenceFlow id="flow3" sourceRef="fork" targetRef="task2" />
+            <sequenceFlow id="flow4" sourceRef="task1" targetRef="join" />
+            <sequenceFlow id="flow5" sourceRef="task2" targetRef="join" />
+            <sequenceFlow id="flow6" sourceRef="join" targetRef="end" />
+          </process>
+        </definitions>`;
 
         let state;
         const engine = new Bpmn.Engine({
