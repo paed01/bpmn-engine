@@ -12,21 +12,21 @@ const Bpmn = require('../..');
 lab.experiment('EndEvent', () => {
   lab.describe('behaviour', () => {
     const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="start" />
-    <endEvent id="end">
-      <extensionElements>
-        <camunda:InputOutput>
-          <camunda:inputParameter name="data">\${variables.statusCode}</camunda:inputParameter>
-        </camunda:InputOutput>
-      </extensionElements>
-    </endEvent>
-    <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
-  </process>
-</definitions>`;
+    <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <process id="theProcess" isExecutable="true">
+        <startEvent id="start" />
+        <endEvent id="end">
+          <extensionElements>
+            <camunda:InputOutput>
+              <camunda:inputParameter name="data">\${variables.statusCode}</camunda:inputParameter>
+            </camunda:InputOutput>
+          </extensionElements>
+        </endEvent>
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
+      </process>
+    </definitions>`;
 
     let context;
     lab.beforeEach((done) => {
@@ -53,35 +53,41 @@ lab.experiment('EndEvent', () => {
     });
 
     lab.test('getInput() returns io input', (done) => {
+      context.variablesAndServices.variables.statusCode = 200;
+
       const event = context.getChildActivityById('end');
-      context.variables.statusCode = 200;
-      expect(event.getInput()).to.equal({
-        data: 200
+      event.once('end', (activity) => {
+        expect(activity.getInput()).to.equal({
+          data: 200
+        });
+
+        done();
       });
 
-      done();
+      event.activate();
+      event.inbound[0].take();
     });
   });
 
-  lab.describe('engine behaviour', () => {
+  lab.describe('engine', () => {
     lab.experiment('terminateEventDefinition', () => {
       const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <endEvent id="fatal">
-      <terminateEventDefinition />
-    </endEvent>
-    <endEvent id="theEnd1" />
-    <endEvent id="theEnd2" />
-    <endEvent id="theEnd3" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fatal" />
-    <sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd1" />
-    <sequenceFlow id="flow3" sourceRef="theStart" targetRef="theEnd2" />
-    <sequenceFlow id="flow4" sourceRef="theStart" targetRef="theEnd3" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <endEvent id="fatal">
+            <terminateEventDefinition />
+          </endEvent>
+          <endEvent id="theEnd1" />
+          <endEvent id="theEnd2" />
+          <endEvent id="theEnd3" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fatal" />
+          <sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd1" />
+          <sequenceFlow id="flow3" sourceRef="theStart" targetRef="theEnd2" />
+          <sequenceFlow id="flow4" sourceRef="theStart" targetRef="theEnd3" />
+        </process>
+      </definitions>`;
 
       let definition;
       lab.before((done) => {
