@@ -7,7 +7,7 @@ const expect = require('code').expect;
 const transformer = require('../../lib/transformer');
 
 const pub = {};
-const eventNames = ['enter', 'start', 'wait', 'end', 'cancel', 'error', 'leave', 'message'];
+const eventNames = ['enter', 'start', 'wait', 'end', 'cancel', 'catch', 'error', 'leave', 'message'];
 
 pub.expectNoLingeringChildListeners = (context) => {
   Object.keys(context.children).forEach((id) => {

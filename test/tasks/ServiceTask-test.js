@@ -39,12 +39,12 @@ lab.experiment('ServiceTask', () => {
 
     lab.test('stores expression service', (done) => {
       const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-  <process id="theProcess" isExecutable="true">
-    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="theProcess" isExecutable="true">
+          <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" />
+        </process>
+      </definitions>`;
 
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -62,12 +62,12 @@ lab.experiment('ServiceTask', () => {
 
     lab.test.skip('throws if service definition is not found', (done) => {
       const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <serviceTask id="serviceTask" name="Get" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <serviceTask id="serviceTask" name="Get" />
+        </process>
+      </definitions>`;
 
       bpmnModdle.fromXML(processXml, (err, def, moddleContext) => {
         if (err) return done(err);

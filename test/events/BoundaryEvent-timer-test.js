@@ -11,7 +11,7 @@ const lab = exports.lab = Lab.script();
 const Bpmn = require('../..');
 const EventEmitter = require('events').EventEmitter;
 
-lab.experiment('TimerEvent', () => {
+lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
 
   lab.describe('behaviour', () => {
     let context;
