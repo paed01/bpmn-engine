@@ -1,6 +1,8 @@
 'use strict';
 
 const Code = require('code');
+const {Engine} = require('../../lib');
+const {EventEmitter} = require('events');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
@@ -93,8 +95,8 @@ lab.experiment('Task', () => {
 
       const task = context.getChildActivityById('task');
       task.activate();
-      task.once('start', (activity) => {
-        expect(activity.getInput()).to.equal({
+      task.once('start', (activity, execution) => {
+        expect(execution.getInput()).to.equal({
           input: 'exec'
         });
         done();
@@ -110,8 +112,8 @@ lab.experiment('Task', () => {
 
       const task = context.getChildActivityById('task');
       task.activate();
-      task.once('end', (activity) => {
-        expect(activity.getOutput()).to.equal({
+      task.once('end', (activity, execution) => {
+        expect(execution.getOutput()).to.equal({
           output: 'Input was exec'
         });
         done();
@@ -153,8 +155,8 @@ lab.experiment('Task', () => {
         task.activate();
 
         const doneTasks = [];
-        task.on('start', (activity) => {
-          doneTasks.push(activity.getInput().do);
+        task.on('start', (activity, execution) => {
+          doneTasks.push(execution.getInput().do);
         });
 
         task.once('end', () => {
@@ -182,8 +184,8 @@ lab.experiment('Task', () => {
         task.activate();
 
         const starts = [];
-        task.on('start', (activity) => {
-          starts.push(activity.id);
+        task.on('start', (activity, execution) => {
+          starts.push(execution.id);
         });
         task.once('end', () => {
           expect(starts.includes(task.id), 'unique task id').to.be.false();
@@ -198,8 +200,8 @@ lab.experiment('Task', () => {
         task.activate();
 
         const starts = [];
-        task.on('start', (activity) => {
-          starts.push(activity.getInput());
+        task.on('start', (activity, execution) => {
+          starts.push(execution.getInput());
         });
 
         task.once('end', () => {
@@ -209,11 +211,66 @@ lab.experiment('Task', () => {
 
         task.run();
       });
-
-
     });
   });
 
+  lab.describe('engine', () => {
+    lab.test('multiple inbound completes process', (done) => {
+      const processXml = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="testProcess" isExecutable="true">
+          <startEvent id="start" />
+          <task id="task" />
+          <exclusiveGateway id="decision" default="flow3">
+            <extensionElements>
+              <camunda:inputOutput>
+                <camunda:outputParameter name="defaultTaken">\${true}</camunda:outputParameter>
+              </camunda:inputOutput>
+            </extensionElements>
+          </exclusiveGateway>
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+          <sequenceFlow id="flow2" sourceRef="task" targetRef="decision" />
+          <sequenceFlow id="flow3" sourceRef="decision" targetRef="task" />
+          <sequenceFlow id="flow4" sourceRef="decision" targetRef="end">
+            <conditionExpression xsi:type="tFormalExpression">\${variables.defaultTaken}</conditionExpression>
+          </sequenceFlow>
+        </process>
+      </definitions>`;
+
+      const engine = new Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      let startCount = 0;
+      listener.on('start-task', (activity) => {
+        startCount++;
+        if (startCount > 2) {
+          Code.fail(`<${activity.id}> Too many starts`);
+        }
+      });
+      let endEventCount = 0;
+      listener.on('start-end', () => {
+        endEventCount++;
+      });
+
+      engine.execute({
+        listener
+      });
+      engine.once('end', () => {
+        expect(startCount, 'task starts').to.equal(2);
+        expect(endEventCount, 'end event').to.equal(1);
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
+      });
+    });
+  });
 });
 
 function getLoopContext(isSequential, callback) {

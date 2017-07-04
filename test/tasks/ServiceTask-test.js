@@ -4,17 +4,12 @@ const BpmnModdle = require('bpmn-moddle');
 const Code = require('code');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
-const mapper = require('../../lib/mapper');
 const nock = require('nock');
 const request = require('request');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
-
-const bpmnModdle = new BpmnModdle({
-  camunda: require('camunda-bpmn-moddle/resources/camunda')
-});
 
 const bupServiceFn = testHelpers.serviceFn;
 
@@ -55,12 +50,11 @@ lab.experiment('ServiceTask', () => {
         expect(task.service).to.include({
           value: '${services.get}'
         });
-        expect(task.service.execute).to.be.a.function();
         done();
       });
     });
 
-    lab.test.skip('throws if service definition is not found', (done) => {
+    lab.test('emits error if service definition is not found', (done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -69,19 +63,19 @@ lab.experiment('ServiceTask', () => {
         </process>
       </definitions>`;
 
-      bpmnModdle.fromXML(processXml, (err, def, moddleContext) => {
-        if (err) return done(err);
+      testHelpers.getContext(processXml, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (cerr, context) => {
+        if (cerr) return done(cerr);
+        const task = context.getChildActivityById('serviceTask');
+        task.activate();
+        task.once('error', (err) => {
+          expect(err).to.be.an.error(/no service definition found/i);
+          done();
+        });
 
-        const Context = require('../../lib/Context');
-
-        function test() {
-          new Context('theProcess', moddleContext); // eslint-disable-line no-new
-        }
-
-        expect(test).to.throw(Error, /No service defined/i);
-        done();
+        task.run();
       });
-
     });
   });
 
@@ -139,7 +133,7 @@ lab.experiment('ServiceTask', () => {
       task.inbound[0].take();
     });
 
-    lab.test('error in callback takes bound error event', (done) => {
+    lab.test('error in callback caught by bound error event', (done) => {
       testHelpers.serviceFn = (message, callback) => {
         callback(new Error('Failed'));
       };
@@ -150,7 +144,7 @@ lab.experiment('ServiceTask', () => {
       task.activate();
 
       boundEvent.once('end', (event) => {
-        expect(event.taken).to.be.true();
+        expect(event.getState().taken).to.be.true();
         done();
       });
 
@@ -168,7 +162,7 @@ lab.experiment('ServiceTask', () => {
       task.activate();
 
       timeoutEvent.once('end', (event) => {
-        expect(event.taken).to.be.true();
+        expect(event.getState().taken).to.be.true();
         done();
       });
 
@@ -207,11 +201,12 @@ lab.experiment('ServiceTask', () => {
         const task = context.getChildActivityById('serviceTask');
         task.activate();
 
-        task.once('start', (activity) => {
-          expect(activity.getInput()).to.equal({ uri: 'http://example.com/test', json: true });
+        task.once('start', (activityApi, executionContext) => {
+          expect(executionContext.getInput()).to.equal({ uri: 'http://example.com/test', json: true });
         });
 
-        task.once('end', (t, output) => {
+        task.once('end', (activityApi, executionContext) => {
+          const output = executionContext.getOutput();
           expect(output).to.include(['statusCode', 'body']);
           expect(output.statusCode).to.equal(200);
           expect(output.body).to.equal({ data: 4});
@@ -246,7 +241,8 @@ lab.experiment('ServiceTask', () => {
         };
 
         const task = context.getChildActivityById('serviceTask');
-        task.once('end', (activity, output) => {
+        task.once('end', (activityApi, executionContext) => {
+          const output = executionContext.getOutput();
           expect(output).to.equal({
             statusCode: 200,
             body: {
@@ -291,7 +287,8 @@ lab.experiment('ServiceTask', () => {
         const task = context.getChildActivityById('serviceTask');
         task.activate();
 
-        task.once('end', (t, output) => {
+        task.once('end', (activityApi, executionContext) => {
+          const output = executionContext.getOutput();
           expect(output).to.include(['taskOutput']);
           expect(output.taskOutput).to.equal([1, 'success']);
           done();
@@ -330,7 +327,8 @@ lab.experiment('ServiceTask', () => {
         const task = context.getChildActivityById('serviceTask');
         task.activate();
 
-        task.once('end', (t, output) => {
+        task.once('end', (activityApi, executionContext) => {
+          const output = executionContext.getOutput();
           expect(output).to.include(['taskOutput']);
           expect(output.taskOutput).to.equal([1]);
           done();
@@ -369,7 +367,8 @@ lab.experiment('ServiceTask', () => {
         const task = context.getChildActivityById('serviceTask');
         task.activate();
 
-        task.once('end', (t, output) => {
+        task.once('end', (activityApi, executionContext) => {
+          const output = executionContext.getOutput();
           expect(output).to.include(['taskOutput']);
           expect(output.taskOutput).to.equal(['whatever value']);
           done();
@@ -412,7 +411,8 @@ lab.experiment('ServiceTask', () => {
 
     lab.test('executes connector-id service', (done) => {
       const task = context.getChildActivityById('sendEmail_1');
-      task.once('end', (activity, output) => {
+      task.once('end', (activityApi, executionContext) => {
+        const output = executionContext.getOutput();
         expect(output).to.equal({
           messageId: 'success',
         });
@@ -431,11 +431,12 @@ lab.experiment('ServiceTask', () => {
         callback(null, 'success');
       };
 
-      task.once('start', (activity) => {
-        input = activity.getInput();
+      task.once('start', (activityApi, executionContext) => {
+        input = executionContext.getInput();
       });
 
-      task.once('end', (activity, output) => {
+      task.once('end', (activityApi, executionContext) => {
+        const output = executionContext.getOutput();
         expect(input).to.equal({
           emailAddress: 'lisa@example.com'
         });
@@ -456,7 +457,8 @@ lab.experiment('ServiceTask', () => {
         callback(null, 10);
       };
 
-      task.once('end', (activity, output) => {
+      task.once('end', (activityApi, executionContext) => {
+        const output = executionContext.getOutput();
         expect(output).to.equal({
           messageId: 10,
         });
@@ -525,7 +527,8 @@ lab.experiment('ServiceTask', () => {
 
         const task = processContext.getChildActivityById('serviceTask');
 
-        task.once('end', (activity, output) => {
+        task.once('end', (activityApi, executionContext) => {
+          const output = executionContext.getOutput();
           expect(output).to.equal({
             statusCode: 200,
             body: {data: 4}
@@ -578,7 +581,8 @@ lab.experiment('ServiceTask', () => {
 
         const task = processContext.getChildActivityById('serviceTask');
 
-        task.once('end', (activity, output) => {
+        task.once('end', (activityApi, executionContext) => {
+          const output = executionContext.getOutput();
           expect(output).to.equal({
             message: 'successfully executed with http://example.com/v3/data'
           });
@@ -632,13 +636,15 @@ lab.experiment('ServiceTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        task.on('start', (activity) => {
-          const input = activity.getInput();
+        task.on('start', (activityApi, executionContext) => {
+          const input = executionContext.getInput();
           nock('http://example.com')
             .get(`/api${input.path}?version=${input.version}`)
             .reply(input.version < 2 ? 200 : 409, {});
         });
-        task.once('end', (t, output) => {
+
+        task.once('end', (activityApi, executionContext) => {
+          const output = executionContext.getOutput();
           expect(output.loopResult).to.equal([{
             statusCode: 200,
             body: {}
@@ -659,8 +665,8 @@ lab.experiment('ServiceTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        task.on('start', (activity) => {
-          const input = activity.getInput();
+        task.on('start', (activityApi, executionContext) => {
+          const input = executionContext.getInput();
           nock('http://example.com')
             .get(`/api${input.path}?version=${input.version}`)
             .delay(50 - input.version * 10)
@@ -669,8 +675,8 @@ lab.experiment('ServiceTask', () => {
             });
         });
 
-        task.once('end', () => {
-          expect(task.getOutput().loopResult).to.equal([{
+        task.once('end', (activityApi, executionContext) => {
+          expect(executionContext.getOutput().loopResult).to.equal([{
             statusCode: 200,
             body: {
               idx: 0
@@ -719,8 +725,8 @@ lab.experiment('ServiceTask', () => {
           .reply(409, {});
 
         const starts = [];
-        task.on('start', (activity) => {
-          starts.push(activity.id);
+        task.on('start', (activityApi, executionContext) => {
+          starts.push(executionContext.id);
         });
 
         task.once('end', () => {
@@ -735,8 +741,8 @@ lab.experiment('ServiceTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        task.on('start', (activity) => {
-          const input = activity.getInput();
+        task.on('start', (activityApi, executionContext) => {
+          const input = executionContext.getInput();
           nock('http://example.com')
             .get(`/api${input.path}?version=${input.version}`)
             .delay(50 - input.version * 10)
@@ -745,8 +751,8 @@ lab.experiment('ServiceTask', () => {
             });
         });
 
-        task.once('end', (t, output) => {
-          expect(output.loopResult).to.equal([{
+        task.once('end', (activityApi, executionContext) => {
+          expect(executionContext.getOutput().loopResult).to.equal([{
             statusCode: 200,
             body: {
               idx: 0
@@ -772,8 +778,8 @@ lab.experiment('ServiceTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        task.on('start', (activity) => {
-          const input = activity.getInput();
+        task.on('start', (activityApi, executionContext) => {
+          const input = executionContext.getInput();
           nock('http://example.com')
             .get(`/api${input.path}?version=${input.version}`)
             .delay(50 - input.version * 10)
@@ -782,8 +788,8 @@ lab.experiment('ServiceTask', () => {
             });
         });
 
-        task.once('end', () => {
-          expect(task.getOutput().loopResult).to.equal([{
+        task.once('end', (activityApi, executionContext) => {
+          expect(executionContext.getOutput().loopResult).to.equal([{
             statusCode: 200,
             body: {
               idx: 0

@@ -39,10 +39,9 @@ lab.experiment('EndEvent', () => {
       });
     });
 
-    lab.test('has pending inbound and marked as end', (done) => {
+    lab.test('has inbound', (done) => {
       const event = context.getChildActivityById('end');
       expect(event.inbound).to.have.length(1);
-      expect(event.isEnd).to.be.true();
       done();
     });
 
@@ -52,12 +51,12 @@ lab.experiment('EndEvent', () => {
       done();
     });
 
-    lab.test('getInput() returns io input', (done) => {
+    lab.test('exection getInput() returns io input', (done) => {
       context.variablesAndServices.variables.statusCode = 200;
 
       const event = context.getChildActivityById('end');
-      event.once('end', (activity) => {
-        expect(activity.getInput()).to.equal({
+      event.once('end', (activity, executionContext) => {
+        expect(executionContext.getInput()).to.equal({
           data: 200
         });
 
@@ -130,7 +129,6 @@ lab.experiment('EndEvent', () => {
 
           instance.once('end', () => {
             expect(instance.isEnded).to.equal(true);
-            expect(instance.getChildActivityById('fatal').taken, 'fatal').to.be.true();
             testHelpers.expectNoLingeringListenersOnDefinition(instance);
             done();
           });

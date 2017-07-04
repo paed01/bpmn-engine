@@ -54,9 +54,11 @@ lab.experiment('ExclusiveGateway', () => {
       const gateway = context.getChildActivityById('decision');
       gateway.activate();
 
-      gateway.once('enter', (activity, activityExecution) => {
+      gateway.once('enter', (activityApi, activityExecution) => {
+        activityApi.stop();
+
         expect(gateway.outbound.map((f) => f.id), 'loaded outbound').to.equal(['defaultFlow', 'condFlow1', 'condFlow2']);
-        expect(activityExecution.getState().pendingOutbound, 'reordered outbound').to.equal(['condFlow1', 'condFlow2', 'defaultFlow']);
+        expect(activityExecution.getState().pendingOutbound, 'execution outbound').to.equal(['condFlow1', 'condFlow2', 'defaultFlow']);
         done();
       });
 
@@ -67,9 +69,10 @@ lab.experiment('ExclusiveGateway', () => {
       context.variablesAndServices.variables.condition1 = true;
 
       const gateway = context.getChildActivityById('decision');
-      gateway.activate();
+      const activityApi = gateway.activate();
 
       gateway.outbound.find((f) => f.id === 'condFlow1').once('taken', () => {
+        activityApi.stop();
         done();
       });
 
@@ -82,10 +85,13 @@ lab.experiment('ExclusiveGateway', () => {
       const gateway = context.getChildActivityById('decision');
       gateway.activate();
 
-      gateway.once('end', (activity, output) => {
+      gateway.once('end', (activityApi, activityExecution) => {
+        const output = activityExecution.getOutput();
+
         expect(output).to.equal({
           enteredDecision: 'Yes'
         });
+
         expect(gateway.outbound[0].taken, gateway.outbound[0].id).to.be.true();
         expect(gateway.outbound[1].taken, gateway.outbound[1].id).to.be.false();
         expect(gateway.outbound[2].taken, gateway.outbound[2].id).to.be.false();
@@ -126,13 +132,10 @@ lab.experiment('ExclusiveGateway', () => {
           discardedFlows.push(f.id);
 
           if (gateway.outbound.length === discardedFlows.length) {
+            expect(discardedFlows, 'discarded flows').to.equal(['defaultFlow', 'condFlow1', 'condFlow2']);
             done();
           }
         });
-      });
-
-      gateway.on('leave', () => {
-        expect(discardedFlows, 'discarded flows').to.equal(['defaultFlow', 'condFlow1', 'condFlow2']);
       });
 
       gateway.inbound[0].discard();
@@ -142,12 +145,13 @@ lab.experiment('ExclusiveGateway', () => {
       lab.test('sets resumed gateway pendingOutbound', (done) => {
         const gateway = context.getChildActivityById('decision');
 
-        gateway.on('start', (activity) => {
+        const activityApi = gateway.activate();
 
+        gateway.once('start', () => {
           gateway.outbound[1].once('discarded', () => {
-            activity.stop();
+            activityApi.stop();
 
-            const state = activity.getState();
+            const state = activityApi.getState();
 
             expect(state).to.include({
               discardedOutbound: ['condFlow1'],
@@ -158,9 +162,10 @@ lab.experiment('ExclusiveGateway', () => {
             const resumedGateway = clonedContext.getChildActivityById('decision');
             resumedGateway.id += '-resumed';
 
-            resumedGateway.once('enter', (g, resumedActivity) => {
+            resumedGateway.once('enter', (resumedApi, resumedActivity) => {
               resumedActivity.stop();
-              expect(resumedActivity.getState().pendingOutbound).to.equal(['condFlow2', 'defaultFlow']);
+
+              expect(resumedApi.getState().pendingOutbound).to.equal(['condFlow2', 'defaultFlow']);
               done();
             });
 
@@ -168,8 +173,7 @@ lab.experiment('ExclusiveGateway', () => {
           });
         });
 
-        gateway.activate();
-        gateway.run();
+        gateway.inbound[0].take();
       });
 
       lab.test('discards rest if one flow was taken', (done) => {
@@ -216,9 +220,8 @@ lab.experiment('ExclusiveGateway', () => {
         });
 
         gateway.activate();
-        gateway.run();
+        gateway.inbound[0].take();
       });
-
 
       lab.test('takes defaultFlow if no other flows were taken', (done) => {
         const gateway = context.getChildActivityById('decision');
@@ -249,8 +252,68 @@ lab.experiment('ExclusiveGateway', () => {
         });
 
         gateway.activate();
-        gateway.run();
+        gateway.inbound[0].take();
       });
+
+      lab.test('emits error when no conditional flow is taken', (done) => {
+        const definition = `
+        <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <process id="theProcess" isExecutable="true">
+            <startEvent id="theStart" />
+            <exclusiveGateway id="decision" />
+            <endEvent id="end1" />
+            <endEvent id="end2" />
+            <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+            <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
+              <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
+              this.variables.input <= 60
+              ]]></conditionExpression>
+            </sequenceFlow>
+            <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
+              <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
+              this.variables.input <= 50
+              ]]></conditionExpression>
+            </sequenceFlow>
+          </process>
+        </definitions>`;
+
+        testHelpers.getContext(definition, {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }, (getErr, testContext) => {
+          if (getErr) return done(getErr);
+
+          const gateway = testContext.getChildActivityById('decision');
+
+          gateway.once('start', (activity) => {
+            gateway.outbound[0].once('discarded', () => {
+              activity.stop();
+
+              const state = activity.getState();
+
+              expect(state).to.include({
+                discardedOutbound: ['flow2'],
+                pendingOutbound: ['flow3']
+              });
+
+              const clonedContext = testHelpers.cloneContext(testContext);
+              const resumedGateway = clonedContext.getChildActivityById('decision');
+              resumedGateway.id += '-resumed';
+
+              resumedGateway.once('error', (err) => {
+                expect(err).to.be.an.error(/no conditional flow/i);
+                done();
+              });
+
+              resumedGateway.resume(state);
+            });
+          });
+
+          gateway.activate();
+          gateway.inbound[0].take();
+        });
+      });
+
     });
   });
 
@@ -275,6 +338,7 @@ lab.experiment('ExclusiveGateway', () => {
       engine.execute((err, execution) => {
         if (err) return done(err);
         execution.once('end', () => {
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
           done();
         });
       });
@@ -317,8 +381,9 @@ lab.experiment('ExclusiveGateway', () => {
         if (err) return done(err);
 
         execution.once('end', () => {
-          expect(execution.getChildActivityById('end1').taken).to.be.true();
-          expect(execution.getChildActivityById('end2').taken, 'end2').to.be.false();
+          expect(execution.getChildState('end1').taken).to.be.true();
+          expect(execution.getChildState('end2').taken, 'end2').to.be.undefined();
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
           done();
         });
       });
@@ -358,8 +423,9 @@ lab.experiment('ExclusiveGateway', () => {
         if (err) return done(err);
 
         execution.once('end', () => {
-          expect(execution.getChildActivityById('end1').taken, 'end1').to.be.false();
-          expect(execution.getChildActivityById('end2').taken, 'end2').to.be.true();
+          expect(execution.getChildState('end1').taken, 'end1').to.be.undefined();
+          expect(execution.getChildState('end2').taken, 'end2').to.be.true();
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
           done();
         });
       });
@@ -395,8 +461,9 @@ lab.experiment('ExclusiveGateway', () => {
         if (err) return done(err);
 
         execution.once('end', () => {
-          expect(execution.getChildActivityById('end1').taken, 'end1').to.be.true();
-          expect(execution.getChildActivityById('end2').taken, 'end2').to.be.false();
+          expect(execution.getChildState('end1').taken, 'end1').to.be.true();
+          expect(execution.getChildState('end2').taken, 'end2').to.be.undefined();
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
           done();
         });
       });
@@ -432,8 +499,9 @@ lab.experiment('ExclusiveGateway', () => {
         if (err) return done(err);
 
         execution.once('end', () => {
-          expect(execution.getChildActivityById('end1').taken, 'end1').to.be.false();
-          expect(execution.getChildActivityById('end2').taken, 'end2').to.be.true();
+          expect(execution.getChildState('end1').taken, 'end1').to.be.undefined();
+          expect(execution.getChildState('end2').taken, 'end2').to.be.true();
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
           done();
         });
       });
@@ -470,6 +538,51 @@ lab.experiment('ExclusiveGateway', () => {
         expect(gateway).to.include({
           id: 'decision'
         });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
+      });
+
+      engine.execute({
+        variables: {
+          input: 61
+        }
+      }, (err) => {
+        if (err) return done(err);
+      });
+    });
+
+    lab.test('emits error when no conditional flow is taken on resumed gateway', (done) => {
+      const processXml = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <exclusiveGateway id="decision" />
+          <endEvent id="end1" />
+          <endEvent id="end2" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+          <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
+            <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
+            this.variables.input <= 60
+            ]]></conditionExpression>
+          </sequenceFlow>
+          <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
+            <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
+            this.variables.input <= 50
+            ]]></conditionExpression>
+          </sequenceFlow>
+        </process>
+      </definitions>`;
+
+      const engine = new Bpmn.Engine({
+        source: processXml
+      });
+      engine.once('error', (err, gateway) => {
+        expect(err).to.be.an.error(/no conditional flow/i);
+        expect(gateway).to.include({
+          id: 'decision'
+        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
 

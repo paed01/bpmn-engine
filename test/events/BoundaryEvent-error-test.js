@@ -3,13 +3,12 @@
 const Code = require('code');
 const expect = Code.expect;
 const {EventEmitter} = require('events');
-const factory = require('../helpers/factory');
 const getPropertyValue = require('../../lib/getPropertyValue');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const Bpmn = require('../..');
+const {Engine} = require('../..');
 
 lab.experiment('Error BoundaryEvent', () => {
 
@@ -76,6 +75,7 @@ lab.experiment('Error BoundaryEvent', () => {
     });
 
     lab.test('returns expected state on start', (done) => {
+      const task = context.getChildActivityById('service');
       const event = context.getChildActivityById('errorEvent');
 
       event.on('start', (activity) => {
@@ -90,7 +90,8 @@ lab.experiment('Error BoundaryEvent', () => {
         done();
       });
 
-      event.run();
+      event.activate();
+      task.run();
     });
 
     lab.test('resolves error code expression on caught error', (done) => {
@@ -100,7 +101,6 @@ lab.experiment('Error BoundaryEvent', () => {
 
       const task = context.getChildActivityById('service');
       const event = context.getChildActivityById('errorEvent');
-      event.activate();
 
       event.once('catch', (caughtError, activity) => {
         activity.stop();
@@ -110,6 +110,7 @@ lab.experiment('Error BoundaryEvent', () => {
         done();
       });
 
+      event.activate();
       task.run();
     });
 
@@ -122,11 +123,10 @@ lab.experiment('Error BoundaryEvent', () => {
       const event = context.getChildActivityById('errorEvent');
       event.activate();
 
-      event.once('end', (activity) => {
+      event.once('end', (activity, executionContext) => {
         activity.stop();
 
-        const output = activity.getOutput();
-
+        const output = executionContext.getOutput();
         expect(output.serviceError, 'errorCodeVariable').to.equal('FAIL');
         expect(output.message, 'errorMessageVariable').to.equal('FAIL');
         done();
@@ -205,8 +205,8 @@ lab.experiment('Error BoundaryEvent', () => {
       <error id="Error_0w1hljb" name="ServiceError" errorCode="\${message}" />
     </definitions>`;
 
-    lab.test('event is discarded if task completes', (done) => {
-      const engine = new Bpmn.Engine({
+    lab.test('boundary event is discarded if task completes', (done) => {
+      const engine = new Engine({
         source: processXml,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -235,7 +235,7 @@ lab.experiment('Error BoundaryEvent', () => {
     });
 
     lab.test('task is discarded on error', (done) => {
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: processXml,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -538,7 +538,7 @@ lab.experiment('Error BoundaryEvent', () => {
         <error id="Error_0w1hljb" name="ServiceError" errorCode="\${message}" />
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: processXml,
         name: 'stopMe',
         moddleOptions: {
@@ -546,11 +546,9 @@ lab.experiment('Error BoundaryEvent', () => {
         }
       });
       const listener = new EventEmitter();
-
       listener.once('start-service', () => {
         engine.stop();
       });
-
       testHelpers.testBoundError = (context, next) => {
         return next(new Error('FAILED'));
       };
@@ -563,8 +561,6 @@ lab.experiment('Error BoundaryEvent', () => {
             fnName: 'testBoundError'
           }
         }
-      }, (err) => {
-        if (err) return done(err);
       });
 
       engine.once('end', () => {
@@ -575,6 +571,7 @@ lab.experiment('Error BoundaryEvent', () => {
 
         expect(eventState.entered, 'entered bound error event').to.be.true();
         expect(eventState.attachedToId).to.equal('service');
+        expect(eventState.errorId).to.equal('Error_0w1hljb');
 
         expect(serviceState.entered, 'entered service').to.be.true();
 
@@ -602,7 +599,7 @@ lab.experiment('Error BoundaryEvent', () => {
         <error id="Error_0w1hljb" name="ServiceError" errorCode="\${message}" />
       </definitions>`;
 
-      const engine1 = new Bpmn.Engine({
+      const engine1 = new Engine({
         source: processXml,
         name: 'stopMe',
         moddleOptions: {
@@ -620,11 +617,12 @@ lab.experiment('Error BoundaryEvent', () => {
       engine1.once('end', () => {
         testHelpers.expectNoLingeringListenersOnEngine(engine1);
 
-        Bpmn.Engine.resume(state, {}, (err, resumedInstance) => {
+        const resumedEngine = Engine.resume(state, {}, (err) => {
           if (err) return done(err);
-          resumedInstance.once('end', () => {
-            done();
-          });
+        });
+        resumedEngine.once('end', () => {
+          testHelpers.expectNoLingeringListenersOnEngine(resumedEngine);
+          done();
         });
       });
 

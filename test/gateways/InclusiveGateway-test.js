@@ -72,7 +72,7 @@ lab.experiment('InclusiveGateway', () => {
         done();
       });
 
-      gateway.run();
+      gateway.inbound[0].take();
     });
 
     lab.test('end returns output in callback', (done) => {
@@ -81,8 +81,8 @@ lab.experiment('InclusiveGateway', () => {
       const gateway = context.getChildActivityById('decisions');
       gateway.activate();
 
-      gateway.once('end', (activity, output) => {
-        expect(output).to.equal({
+      gateway.once('end', (activity, executionContext) => {
+        expect(executionContext.getOutput()).to.equal({
           enteredDecision: 'Yes'
         });
         expect(gateway.outbound[0].taken, gateway.outbound[0].id).to.be.true();
@@ -90,7 +90,7 @@ lab.experiment('InclusiveGateway', () => {
         done();
       });
 
-      gateway.run();
+      gateway.inbound[0].take();
     });
 
     lab.test('discards default outbound if one outbound was taken', (done) => {
@@ -151,10 +151,6 @@ lab.experiment('InclusiveGateway', () => {
         });
       });
 
-      gateway.on('leave', () => {
-        expect(discardedFlows, 'discarded flows').to.equal(['defaultFlow', 'condFlow1', 'condFlow2']);
-      });
-
       gateway.inbound[0].discard();
     });
 
@@ -178,7 +174,8 @@ lab.experiment('InclusiveGateway', () => {
 
             const clonedContext = testHelpers.cloneContext(context);
             const resumedGateway = clonedContext.getChildActivityById('decisions');
-            resumedGateway.id += '-resumed';
+            const resumedGatewayApi = resumedGateway.activate(state);
+            resumedGatewayApi.id += '-resumed';
 
             resumedGateway.once('enter', (g, resumedActivity) => {
               resumedActivity.stop();
@@ -186,12 +183,12 @@ lab.experiment('InclusiveGateway', () => {
               done();
             });
 
-            resumedGateway.resume(state);
+            resumedGatewayApi.resume();
           });
         });
 
         gateway.activate();
-        gateway.run();
+        gateway.inbound[0].take();
       });
 
       lab.test('discards defaultFlow if other flows were taken', (done) => {
@@ -222,7 +219,8 @@ lab.experiment('InclusiveGateway', () => {
 
             const clonedContext = testHelpers.cloneContext(context);
             const resumedGateway = clonedContext.getChildActivityById('decisions');
-            resumedGateway.id += '-resumed';
+            const resumedGatewayApi = resumedGateway.activate(state);
+            resumedGatewayApi.id += '-resumed';
 
             resumedGateway.once('end', (g) => {
               const defaultFlow = g.outbound.find((f) => f.isDefault);
@@ -233,12 +231,12 @@ lab.experiment('InclusiveGateway', () => {
               done();
             });
 
-            resumedGateway.resume(state);
+            resumedGatewayApi.resume();
           });
         });
 
         gateway.activate();
-        gateway.run();
+        gateway.inbound[0].take();
       });
 
       lab.test('takes defaultFlow if no other flows were taken', (done) => {
@@ -267,7 +265,8 @@ lab.experiment('InclusiveGateway', () => {
 
             const clonedContext = testHelpers.cloneContext(context);
             const resumedGateway = clonedContext.getChildActivityById('decisions');
-            resumedGateway.id += '-resumed';
+            const resumedGatewayApi = resumedGateway.activate(state);
+            resumedGatewayApi.id += '-resumed';
 
             resumedGateway.once('end', (g) => {
               const defaultFlow = g.outbound.find((f) => f.isDefault);
@@ -278,12 +277,12 @@ lab.experiment('InclusiveGateway', () => {
               done();
             });
 
-            resumedGateway.resume(state);
+            resumedGatewayApi.resume(state);
           });
         });
 
         gateway.activate();
-        gateway.run();
+        gateway.inbound[0].take();
       });
     });
   });
@@ -325,9 +324,9 @@ lab.experiment('InclusiveGateway', () => {
         if (err) return done(err);
 
         execution.on('end', () => {
-          expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.true();
-          expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.true();
-          expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.true();
+          expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.true();
+          expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.true();
+          expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.true();
           done();
         });
       });
@@ -369,9 +368,9 @@ lab.experiment('InclusiveGateway', () => {
         if (err) return done(err);
 
         execution.once('end', () => {
-          expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.false();
-          expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.true();
-          expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.false();
+          expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.undefined();
+          expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.true();
+          expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.undefined();
 
           testHelpers.expectNoLingeringListenersOnEngine(engine);
 
@@ -416,9 +415,9 @@ lab.experiment('InclusiveGateway', () => {
         if (err) return done(err);
 
         execution.once('end', () => {
-          expect(execution.getChildActivityById('theEnd1').taken, 'theEnd1').to.be.true();
-          expect(execution.getChildActivityById('theEnd2').taken, 'theEnd2').to.be.false();
-          expect(execution.getChildActivityById('theEnd3').taken, 'theEnd3').to.be.false();
+          expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.true();
+          expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.undefined();
+          expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.undefined();
 
           testHelpers.expectNoLingeringListenersOnEngine(engine);
 
@@ -453,11 +452,8 @@ lab.experiment('InclusiveGateway', () => {
       const engine = new Bpmn.Engine({
         source: definitionXml
       });
-      engine.once('error', (err, gateway) => {
+      engine.once('error', (err) => {
         expect(err).to.be.an.error(/no conditional flow/i);
-        expect(gateway).to.include({
-          id: 'decision'
-        });
 
         testHelpers.expectNoLingeringListenersOnEngine(engine);
 

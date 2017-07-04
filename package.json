@@ -33,9 +33,9 @@
   ],
   "devDependencies": {
     "camunda-bpmn-moddle": "^0.11.0",
-    "code": "^4.0.0",
+    "code": "^4.1.0",
     "coveralls": "^2.13.1",
-    "lab": "^13.1.0",
+    "lab": "^14.1.0",
     "markdown-toc": "^1.1.0",
     "nock": "^9.0.13",
     "request": "^2.81.0",
