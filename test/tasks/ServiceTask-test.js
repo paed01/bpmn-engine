@@ -1,7 +1,8 @@
 'use strict';
 
-const BpmnModdle = require('bpmn-moddle');
 const Code = require('code');
+const {Engine} = require('../..');
+const {EventEmitter} = require('events');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
 const nock = require('nock');
@@ -499,15 +500,14 @@ lab.experiment('ServiceTask', () => {
         reqheaders: {
           'User-Agent': 'curl',
           Accept: 'application/json'
-        }
-      })
-      .defaultReplyHeaders({
-        'Content-Type': 'application/json'
-      })
-      .get('/v1/data')
-      .reply(200, {
-        data: 4
-      });
+        }})
+        .defaultReplyHeaders({
+          'Content-Type': 'application/json'
+        })
+        .get('/v1/data')
+        .reply(200, {
+          data: 4
+        });
 
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -590,6 +590,81 @@ lab.experiment('ServiceTask', () => {
         });
 
         task.run();
+      });
+    });
+  });
+
+  lab.describe('engine', () => {
+    lab.test('multiple inbound completes process', (done) => {
+      const processXml = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="testProcess" isExecutable="true">
+          <startEvent id="start" />
+          <serviceTask id="task" name="Get" camunda:expression="\${services.get(variables.defaultTaken)}" camunda:resultVariable="taskOutput" />
+          <exclusiveGateway id="decision" default="flow3">
+            <extensionElements>
+              <camunda:inputOutput>
+                <camunda:outputParameter name="defaultTaken">\${true}</camunda:outputParameter>
+              </camunda:inputOutput>
+            </extensionElements>
+          </exclusiveGateway>
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+          <sequenceFlow id="flow2" sourceRef="task" targetRef="decision" />
+          <sequenceFlow id="flow3" sourceRef="decision" targetRef="task" />
+          <sequenceFlow id="flow4" sourceRef="decision" targetRef="end">
+            <conditionExpression xsi:type="tFormalExpression">\${variables.defaultTaken}</conditionExpression>
+          </sequenceFlow>
+        </process>
+      </definitions>`;
+
+      const engine = new Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      let startCount = 0;
+      listener.on('start-task', (activity) => {
+        startCount++;
+        if (startCount > 2) {
+          Code.fail(`<${activity.id}> Too many starts`);
+        }
+      });
+      let endEventCount = 0;
+      listener.on('start-end', () => {
+        endEventCount++;
+      });
+
+      engine.execute({
+        listener,
+        services: {
+          get: (defaultTaken) => {
+            console.log(defaultTaken)
+            return function(context, callback) {
+              console.log(context)
+              callback(null, `successfully executed ${defaultTaken === true ? 'twice' : 'once'}`);
+            };
+          }
+        },
+        variables: {
+          api: 'http://example.com'
+        }
+      });
+      engine.once('end', (def) => {
+        expect(startCount, 'task starts').to.equal(2);
+        expect(endEventCount, 'end event').to.equal(1);
+        expect(def.getOutput()).to.equal({
+          api: 'http://example.com',
+          defaultTaken: true,
+          taskOutput: ['successfully executed twice']
+        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
   });

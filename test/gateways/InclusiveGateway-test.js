@@ -222,7 +222,7 @@ lab.experiment('InclusiveGateway', () => {
             const resumedGatewayApi = resumedGateway.activate(state);
             resumedGatewayApi.id += '-resumed';
 
-            resumedGateway.once('end', (g) => {
+            resumedGateway.once('leave', (g) => {
               const defaultFlow = g.outbound.find((f) => f.isDefault);
               expect(defaultFlow.taken, defaultFlow.id).to.be.true();
 
@@ -268,7 +268,7 @@ lab.experiment('InclusiveGateway', () => {
             const resumedGatewayApi = resumedGateway.activate(state);
             resumedGatewayApi.id += '-resumed';
 
-            resumedGateway.once('end', (g) => {
+            resumedGateway.once('leave', (g) => {
               const defaultFlow = g.outbound.find((f) => f.isDefault);
               expect(defaultFlow.taken, defaultFlow.id).to.be.true();
 

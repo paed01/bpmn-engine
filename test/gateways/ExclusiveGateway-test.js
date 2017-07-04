@@ -206,7 +206,7 @@ lab.experiment('ExclusiveGateway', () => {
             const resumedGateway = clonedContext.getChildActivityById('decision');
             resumedGateway.id += '-resumed';
 
-            resumedGateway.once('end', (g) => {
+            resumedGateway.once('leave', (g) => {
               const defaultFlow = g.outbound.find((f) => f.isDefault);
               expect(defaultFlow.taken, defaultFlow.id).to.be.true();
 
