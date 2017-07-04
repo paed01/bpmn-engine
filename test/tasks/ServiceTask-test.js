@@ -20,7 +20,7 @@ lab.experiment('ServiceTask', () => {
     done();
   });
 
-  lab.describe('ctor', () => {
+  lab.describe('behaviour', () => {
     lab.test('stores service if extension name', (done) => {
       const processXml = factory.resource('service-task.bpmn').toString();
       testHelpers.getContext(processXml, {
@@ -644,9 +644,7 @@ lab.experiment('ServiceTask', () => {
         listener,
         services: {
           get: (defaultTaken) => {
-            console.log(defaultTaken)
             return function(context, callback) {
-              console.log(context)
               callback(null, `successfully executed ${defaultTaken === true ? 'twice' : 'once'}`);
             };
           }
