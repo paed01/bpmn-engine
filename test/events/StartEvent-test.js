@@ -1,17 +1,15 @@
 'use strict';
 
-const Code = require('code');
+const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
-const factory = require('../helpers/factory');
 const Lab = require('lab');
-const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
-const Bpmn = require('../..');
+const {describe, it} = lab;
+const {expect} = Lab.assertions;
 
-lab.experiment('StartEvent', () => {
-  lab.test('should have outbound sequence flows', (done) => {
+describe('StartEvent', () => {
+  it('should have outbound sequence flows', (done) => {
     const processXml = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -22,7 +20,7 @@ lab.experiment('StartEvent', () => {
       </process>
     </definitions>`;
 
-    const engine = new Bpmn.Engine({
+    const engine = new Engine({
       source: processXml
     });
     engine.execute((err, execution) => {
@@ -32,7 +30,7 @@ lab.experiment('StartEvent', () => {
     });
   });
 
-  lab.describe('with form', () => {
+  describe('with form', () => {
     const processXml = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -51,18 +49,18 @@ lab.experiment('StartEvent', () => {
       </process>
     </definitions>`;
 
-    lab.test('requires signal to start', (done) => {
+    it('requires signal to start', (done) => {
       const listener = new EventEmitter();
 
-      listener.once('wait-start', (activity) => {
-        expect(activity.waiting).to.be.true();
-        activity.signal({
+      listener.once('wait-start', (activityApi) => {
+        expect(activityApi.getState().waiting).to.be.true();
+        activityApi.signal({
           formfield1: 1,
           formfield2: 2
         });
       });
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: processXml,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -78,8 +76,8 @@ lab.experiment('StartEvent', () => {
       });
     });
 
-    lab.test('getState() returns waiting true', (done) => {
-      const engine = new Bpmn.Engine({
+    it('getState() returns waiting true', (done) => {
+      const engine = new Engine({
         source: processXml,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -99,8 +97,8 @@ lab.experiment('StartEvent', () => {
       });
     });
 
-    lab.test('getState() returns form state', (done) => {
-      const engine = new Bpmn.Engine({
+    it('getState() returns form state', (done) => {
+      const engine = new Engine({
         source: processXml,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')

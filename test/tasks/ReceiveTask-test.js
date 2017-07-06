@@ -1,98 +1,67 @@
 'use strict';
 
-const BaseProcess = require('../../lib/mapper').Process;
-const Code = require('code');
+const {Engine} = require('../../lib');
+const {EventEmitter} = require('events').EventEmitter;
 const Lab = require('lab');
-const EventEmitter = require('events').EventEmitter;
-const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
+const {describe, it} = lab;
+const {expect} = Lab.assertions;
 
 const Bpmn = require('../..');
 
-lab.experiment('ReceiveTask', () => {
-  const receiveTaskProcessXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <receiveTask id="receive" />
-  </process>
-</definitions>`;
+describe('ReceiveTask', () => {
+  const source = `
+  <?xml version="1.0" encoding="UTF-8"?>
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <process id="theProcess" isExecutable="true">
+      <receiveTask id="receive" />
+    </process>
+  </definitions>`;
 
-  lab.experiment('wait', () => {
+  it('process emits wait when entering receive task', (done) => {
+    const engine = new Engine({
+      source
+    });
+    const listener = new EventEmitter();
+    engine.execute({
+      listener: listener,
+      variables: {
+        input: null
+      }
+    });
 
-    lab.test('process emits wait when entering receive task', (done) => {
-      testHelpers.getModdleContext(receiveTaskProcessXml, (cerr, moddleContext) => {
-        if (cerr) return done(cerr);
-
-        const listener = new EventEmitter();
-        const instance = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {
-          listener: listener,
-          variables: {
-            input: null
-          }
-        });
-
-        listener.on('wait-receive', (activity, execution) => {
-          execution.signal(activity.id, {
-            sirname: 'von Rosen'
-          });
-        });
-
-        instance.once('end', () => {
-          expect(instance.variables.taskInput.receive).to.equal({
-            sirname: 'von Rosen'
-          });
-          done();
-        });
-
-        instance.run();
+    listener.on('wait-receive', (activityApi, processExecution) => {
+      processExecution.signal(activityApi.id, {
+        sirname: 'von Rosen'
       });
     });
 
-    lab.test('ends when signal is called', (done) => {
-
-      const engine = new Bpmn.Engine({
-        source: receiveTaskProcessXml
+    engine.once('end', (definition) => {
+      expect(definition.getOutput().taskInput.receive).to.equal({
+        sirname: 'von Rosen'
       });
-      const listener = new EventEmitter();
+      done();
+    });
+  });
 
-      listener.once('wait-receive', (activity) => {
-        activity.signal();
-      });
+  it('completes if canceled', (done) => {
+    const engine = new Bpmn.Engine({
+      source
+    });
+    const listener = new EventEmitter();
 
-      engine.execute({
-        listener: listener
-      }, (err, execution) => {
-        if (err) return done(err);
-
-        execution.once('end', () => {
-          done();
-        });
-      });
+    listener.once('wait-receive', (activityApi) => {
+      activityApi.cancel();
     });
 
-    lab.test('completes if canceled', (done) => {
-      const engine = new Bpmn.Engine({
-        source: receiveTaskProcessXml
-      });
-      const listener = new EventEmitter();
+    engine.execute({
+      listener: listener
+    });
 
-      listener.once('wait-receive', (task) => {
-        task.cancel();
-      });
-
-      engine.execute({
-        listener: listener
-      }, (err, execution) => {
-        if (err) return done(err);
-
-        execution.once('end', () => {
-          expect(execution.getChildActivityById('receive').canceled).to.be.true();
-          done();
-        });
-      });
+    engine.once('end', (definition) => {
+      expect(definition.getChildState('receive').canceled).to.be.true();
+      done();
     });
   });
 });
