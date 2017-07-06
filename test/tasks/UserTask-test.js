@@ -1,135 +1,271 @@
 'use strict';
 
-const BaseProcess = require('../../lib/mapper').Process;
-const Code = require('code');
-const Lab = require('lab');
+const {Engine} = require('../../lib');
 const EventEmitter = require('events').EventEmitter;
-const factory = require('../helpers/factory');
+const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
+const {beforeEach, describe, it} = lab;
+const {expect, fail} = Lab.assertions;
 
-const Bpmn = require('../..');
+describe('UserTask', () => {
+  describe('behaviour', () => {
+    const taskProcessXml = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <process id="theProcess" isExecutable="true">
+        <startEvent id="start" />
+        <userTask id="task">
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="input">\${variables.message}</camunda:inputParameter>
+              <camunda:outputParameter name="output">Signaled \${input} with \${result}</camunda:outputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+        </userTask>
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+        <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
+      </process>
+    </definitions>`;
 
-lab.experiment('UserTask', () => {
-  lab.describe('properties', () => {
     let context;
-    lab.beforeEach((done) => {
-      testHelpers.getContext(factory.userTask('userTask'), (err, c) => {
-        if (err) return done(err);
-        context = c;
-        done();
-      });
-    });
-
-    lab.test('should have inbound and outbound sequence flows', (done) => {
-      const task = context.getChildActivityById('userTask');
-      expect(task).to.include('inbound');
-      expect(task.inbound).to.have.length(1);
-      expect(task).to.include('outbound');
-      expect(task.outbound).to.have.length(1);
-      done();
-    });
-
-    lab.test('is considered end if without outbound sequenceFlows', (done) => {
-      const alternativeProcessXml = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <process id="theProcess" isExecutable="true">
-      <userTask id="userTask" />
-    </process>
-  </definitions>`;
-
-      testHelpers.getContext(alternativeProcessXml, (cerr, context1) => {
-        if (cerr) return done(cerr);
-        const task = context1.getChildActivityById('userTask');
-        expect(task.isEnd).to.be.true();
-        done();
-      });
-    });
-
-    lab.test('is considered start if without inbound sequenceFlows', (done) => {
-      const alternativeProcessXml = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <process id="theProcess" isExecutable="true">
-      <userTask id="userTask" />
-    </process>
-  </definitions>`;
-
-      testHelpers.getContext(alternativeProcessXml, (cerr, context1) => {
-        if (cerr) return done(cerr);
-        const task = context1.getChildActivityById('userTask');
-        expect(task.isStart).to.be.true();
-        done();
-      });
-    });
-  });
-
-  lab.describe('events', () => {
-    let context;
-    lab.beforeEach((done) => {
-      testHelpers.getContext(factory.userTask('userTask'), (err, result) => {
+    beforeEach((done) => {
+      testHelpers.getContext(taskProcessXml, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, result) => {
         if (err) return done(err);
         context = result;
         done();
       });
     });
 
-    lab.test('emits start when inbound taken', (done) => {
-      const task = context.getChildActivityById('userTask');
+    describe('activate()', () => {
+      it('returns activity api', (done) => {
+        const task = context.getChildActivityById('task');
+        const activityApi = task.activate();
+        expect(activityApi).to.exist();
+        done();
+      });
 
+      it('activity api has the expected properties', (done) => {
+        const task = context.getChildActivityById('task');
+        const activityApi = task.activate();
+        expect(activityApi).to.include({
+          id: 'task',
+          type: 'bpmn:UserTask'
+        });
+        expect(activityApi.inbound).to.be.an.array().and.have.length(1);
+        expect(activityApi.outbound).to.be.an.array().and.have.length(1);
+        done();
+      });
+
+      it('activity api has the expected functions', (done) => {
+        const task = context.getChildActivityById('task');
+        const activityApi = task.activate();
+        expect(activityApi.run, 'run').to.be.a.function();
+        expect(activityApi.deactivate, 'deactivate').to.be.a.function();
+        expect(activityApi.execute, 'execute').to.be.a.function();
+        expect(activityApi.getState, 'getState').to.be.a.function();
+        expect(activityApi.resume, 'resume').to.be.a.function();
+        expect(activityApi.getApi, 'getApi').to.be.a.function();
+        done();
+      });
+    });
+
+    describe('events', () => {
+      it('emits start on taken inbound', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+        task.once('start', () => {
+          done();
+        });
+
+        task.inbound[0].take();
+      });
+
+      it('leaves on discarded inbound', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+        task.once('start', () => {
+          fail('No start should happen');
+        });
+        task.once('leave', () => {
+          done();
+        });
+
+        task.inbound[0].discard();
+      });
+
+      it('emits wait after start when inbound taken', (done) => {
+        const task = context.getChildActivityById('task');
+
+        task.activate();
+
+        const eventNames = [];
+        task.once('start', () => {
+          eventNames.push('start');
+        });
+        task.once('wait', (activity) => {
+          expect(activity.id).to.equal('task');
+          expect(eventNames).to.equal(['start']);
+          done();
+        });
+
+        task.inbound[0].take();
+      });
+
+      it('emits end when signal() is called', (done) => {
+        const task = context.getChildActivityById('task');
+
+        task.activate();
+
+        const eventNames = [];
+        task.once('start', () => {
+          eventNames.push('start');
+        });
+        task.once('wait', (activityApi, executionContext) => {
+          eventNames.push('wait');
+          executionContext.signal();
+        });
+        task.once('end', () => {
+          expect(eventNames).to.equal(['start', 'wait']);
+          done();
+        });
+
+        task.inbound[0].take();
+      });
+
+      it('emits leave when signal() is called', (done) => {
+        const task = context.getChildActivityById('task');
+
+        task.activate();
+
+        task.once('wait', (activityApi, executionApi) => {
+          executionApi.signal();
+        });
+        task.once('leave', () => {
+          done();
+        });
+
+        task.inbound[0].take();
+      });
+    });
+
+    describe('getState()', () => {
+      it('returns expected state on events', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+        task.once('enter', (activityApi, executionApi) => {
+          expect(activityApi.getApi(executionApi).getState()).to.equal({
+            id: 'task',
+            type: 'bpmn:UserTask',
+            entered: true
+          });
+        });
+        task.once('start', (activityApi, executionApi) => {
+          expect(activityApi.getApi(executionApi).getState()).to.equal({
+            id: 'task',
+            type: 'bpmn:UserTask',
+            entered: true
+          });
+        });
+        task.once('wait', (activityApi, executionApi) => {
+          expect(activityApi.getApi(executionApi).getState()).to.equal({
+            id: 'task',
+            type: 'bpmn:UserTask',
+            entered: true,
+            waiting: true
+          });
+          executionApi.signal();
+        });
+        task.once('end', (activityApi, executionApi) => {
+          expect(activityApi.getApi(executionApi).getState()).to.equal({
+            id: 'task',
+            type: 'bpmn:UserTask',
+            taken: true
+          });
+        });
+        task.once('leave', (activityApi, executionApi) => {
+          expect(activityApi.getApi(executionApi).getState()).to.equal({
+            id: 'task',
+            type: 'bpmn:UserTask',
+            taken: true
+          });
+          done();
+        });
+
+        task.inbound[0].take();
+      });
+    });
+  });
+
+  describe('IO', () => {
+    const taskProcessXml = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <process id="theProcess" isExecutable="true">
+        <startEvent id="start" />
+        <userTask id="task">
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="input">\${variables.message}</camunda:inputParameter>
+              <camunda:outputParameter name="output">Signaled \${input} with \${result}</camunda:outputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+        </userTask>
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+        <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
+      </process>
+    </definitions>`;
+
+    let context;
+    beforeEach((done) => {
+      testHelpers.getContext(taskProcessXml, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, result) => {
+        if (err) return done(err);
+        context = result;
+        done();
+      });
+    });
+
+    it('event argument getInput() on start returns input parameters', (done) => {
+      context.variablesAndServices.variables = {
+        message: 'executed'
+      };
+
+      const task = context.getChildActivityById('task');
       task.activate();
-      task.once('start', (activity) => {
-        expect(activity.id).to.equal('userTask');
+      task.once('start', (activityApi, executionApi) => {
+        expect(executionApi.getInput()).to.equal({
+          input: 'executed'
+        });
         done();
       });
 
       task.inbound[0].take();
     });
 
-    lab.test('emits wait after start when inbound taken', (done) => {
-      const task = context.getChildActivityById('userTask');
+    it('event argument getOutput() on end returns output parameter value based on signal and input parameters', (done) => {
+      context.variablesAndServices.variables = {
+        message: 'who'
+      };
 
+      const task = context.getChildActivityById('task');
       task.activate();
-
-      const eventNames = [];
-      task.once('start', () => {
-        eventNames.push('start');
-      });
-      task.once('wait', (activity) => {
-        expect(activity.id).to.equal('userTask');
-        expect(eventNames).to.equal(['start']);
-        done();
+      task.once('wait', (activityApi, executionApi) => {
+        executionApi.signal('me');
       });
 
-      task.inbound[0].take();
-    });
-
-    lab.test('wait argument has signal() and cancel()', (done) => {
-      const task = context.getChildActivityById('userTask');
-
-      task.activate();
-
-      task.once('wait', (activity) => {
-        expect(activity.signal).to.be.a.function();
-        expect(activity.cancel).to.be.a.function();
-        done();
-      });
-
-      task.inbound[0].take();
-    });
-
-    lab.test('leaves when signal() is called', (done) => {
-      const task = context.getChildActivityById('userTask');
-
-      task.activate();
-
-      task.once('wait', (activity) => {
-        activity.signal();
-      });
-      task.once('leave', () => {
+      task.once('end', (activityApi, executionApi) => {
+        expect(executionApi.getOutput()).to.equal({
+          output: 'Signaled who with me'
+        });
         done();
       });
 
@@ -137,189 +273,182 @@ lab.experiment('UserTask', () => {
     });
   });
 
-  lab.experiment('signal()', () => {
-    lab.test('user input is stored with process', (done) => {
+  describe('engine', () => {
+    it('multiple inbound completes process', (done) => {
+      const processXml = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="testProcess" isExecutable="true">
+          <startEvent id="start" />
+          <userTask id="task">
+            <extensionElements>
+              <camunda:inputOutput>
+                <camunda:inputParameter name="input">\${variables.defaultTaken}</camunda:inputParameter>
+                <camunda:outputParameter name="taskOutput">\${result}</camunda:outputParameter>
+              </camunda:inputOutput>
+            </extensionElements>
+          </userTask>
+          <exclusiveGateway id="decision" default="flow3">
+            <extensionElements>
+              <camunda:inputOutput>
+                <camunda:outputParameter name="defaultTaken">\${true}</camunda:outputParameter>
+              </camunda:inputOutput>
+            </extensionElements>
+          </exclusiveGateway>
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+          <sequenceFlow id="flow2" sourceRef="task" targetRef="decision" />
+          <sequenceFlow id="flow3" sourceRef="decision" targetRef="task" />
+          <sequenceFlow id="flow4" sourceRef="decision" targetRef="end">
+            <conditionExpression xsi:type="tFormalExpression">\${variables.defaultTaken}</conditionExpression>
+          </sequenceFlow>
+        </process>
+      </definitions>`;
 
-      const engine = new Bpmn.Engine({
-        source: factory.userTask()
-      });
-      const listener = new EventEmitter();
-
-      listener.once('wait-userTask', (activity, execution) => {
-        execution.signal('userTask', {
-          myName: 'Pål'
-        });
-      });
-
-      engine.execute({
-        listener: listener
-      }, (err, execution) => {
-        if (err) return done(err);
-
-        execution.once('end', () => {
-          expect(execution.variables.inputFromUser).to.equal({
-            myName: 'Pål'
-          });
-          done();
-        });
-      });
-    });
-
-    lab.test('but not if signal is called without input', (done) => {
-      const engine = new Bpmn.Engine({
-        source: factory.userTask()
-      });
-      const listener = new EventEmitter();
-
-      listener.once('wait-userTask', (activity, execution) => {
-        execution.signal('userTask');
-      });
-
-      engine.execute({
-        listener: listener
-      }, (err, execution) => {
-        if (err) return done(err);
-
-        execution.once('end', () => {
-          expect(execution.variables).to.not.include('inputFromUser');
-          done();
-        });
-      });
-    });
-
-    lab.test.skip('throws if not waiting for input', (done) => {
-      testHelpers.getModdleContext(factory.userTask(), (cerr, moddleContext) => {
-        if (cerr) return done(cerr);
-
-        const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
-        const task = process.getChildActivityById('userTask');
-
-        expect(task.signal.bind(task)).to.throw(Error);
-        done();
-      });
-    });
-
-    lab.test.skip('emits error if not waiting for input', (done) => {
-      testHelpers.getModdleContext(factory.userTask(), (cerr, moddleContext) => {
-        if (cerr) return done(cerr);
-
-        const process = new BaseProcess(moddleContext.elementsById.theProcess, moddleContext, {});
-        const task = process.getChildActivityById('userTask');
-
-        task.once('error', (err, errTask) => {
-          expect(errTask.id).to.equal('userTask');
-          expect(err).to.be.an.error(/not waiting/);
-          done();
-        });
-
-        task.signal.call(task);
-      });
-    });
-
-  });
-
-  lab.describe('without data association', () => {
-    const alternativeProcessXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <userTask id="userTask" />
-    <endEvent id="theEnd" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
-    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
-  </process>
-</definitions>`;
-
-    lab.test('the input is stored as taskInput with id', (done) => {
-      const engine = new Bpmn.Engine({
-        source: alternativeProcessXml
-      });
-      const listener = new EventEmitter();
-
-      listener.once('wait', (activity, execution) => {
-        if (activity.type !== 'bpmn:UserTask') return;
-
-        execution.signal(activity.id, {
-          sirname: 'von Rosen'
-        });
-      });
-
-      engine.execute({
-        listener: listener
-      }, (err, execution) => {
-        if (err) return done(err);
-
-        execution.once('end', () => {
-          expect(execution.variables).to.include('taskInput');
-          expect(execution.variables.taskInput).to.include('userTask');
-          expect(execution.variables.taskInput.userTask).to.equal({
-            sirname: 'von Rosen'
-          });
-          done();
-        });
-      });
-    });
-
-    lab.test('but not if signal is called without input', (done) => {
-      const engine = new Bpmn.Engine({
-        source: alternativeProcessXml
-      });
-      const listener = new EventEmitter();
-
-      listener.once('wait-userTask', (activity, execution) => {
-        execution.signal('userTask');
-      });
-
-      engine.execute({
-        listener: listener,
-        variables: {
-          taskInput: {}
+      const engine = new Engine({
+        source: processXml,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
+      });
+
+      const listener = new EventEmitter();
+      let startCount = 0;
+      listener.on('start-task', (activity) => {
+        startCount++;
+        if (startCount > 2) {
+          fail(`<${activity.id}> Too many starts`);
+        }
+      });
+      listener.on('wait-task', (activityApi) => {
+        activityApi.signal(activityApi.getInput().input);
+      });
+      let endEventCount = 0;
+      listener.on('start-end', () => {
+        endEventCount++;
+      });
+
+      engine.execute({
+        listener,
+        variables: {
+          test: 1
+        }
+      });
+      engine.once('end', (def) => {
+        expect(def.getOutput()).to.equal({
+          test: 1,
+          defaultTaken: true,
+          taskOutput: true
+        });
+
+        expect(startCount, 'task starts').to.equal(2);
+        expect(endEventCount, 'end event').to.equal(1);
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
+      });
+    });
+
+    it('user signal input is stored with process', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <userTask id="task" />
+          <endEvent id="theEnd" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="task" />
+          <sequenceFlow id="flow2" sourceRef="task" targetRef="theEnd" />
+        </process>
+      </definitions>`;
+      const engine = new Engine({
+        source
+      });
+      const listener = new EventEmitter();
+
+      listener.once('wait-task', (activityApi) => {
+        activityApi.signal('Pål');
+      });
+
+      engine.execute({
+        listener
       }, (err, execution) => {
         if (err) return done(err);
 
-        execution.once('end', () => {
-          expect(execution.variables.taskInput).to.be.empty();
+        execution.once('end', (def) => {
+          expect(def.getOutput().taskInput.task).to.equal('Pål');
+          done();
+        });
+      });
+    });
+
+    it('but not if signal is called without input', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <userTask id="task" />
+          <endEvent id="theEnd" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="task" />
+          <sequenceFlow id="flow2" sourceRef="task" targetRef="theEnd" />
+        </process>
+      </definitions>`;
+      const engine = new Engine({
+        source
+      });
+      const listener = new EventEmitter();
+
+      listener.once('wait-task', (activityApi) => {
+        activityApi.signal();
+      });
+
+      engine.execute({
+        listener: listener
+      }, (err, execution) => {
+        if (err) return done(err);
+
+        execution.once('end', (def) => {
+          expect(def.getOutput().taskInput).to.be.undefined();
           done();
         });
       });
     });
   });
 
-  lab.describe('with form', () => {
+  describe('with form', () => {
     const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="start" />
-    <userTask id="task">
-      <extensionElements>
-        <camunda:formData>
-          <camunda:formField id="formfield1" label="FormField1" type="string" />
-          <camunda:formField id="formfield2" type="long" />
-        </camunda:formData>
-      </extensionElements>
-      </userTask>
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
-    <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
-  </process>
-</definitions>`;
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <process id="theProcess" isExecutable="true">
+        <startEvent id="start" />
+        <userTask id="task">
+          <extensionElements>
+            <camunda:formData>
+              <camunda:formField id="formfield1" label="FormField1" type="string" />
+              <camunda:formField id="formfield2" type="long" />
+            </camunda:formData>
+          </extensionElements>
+          </userTask>
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+        <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
+      </process>
+    </definitions>`;
 
-    lab.test('requires signal to complete', (done) => {
+    it('requires signal to complete', (done) => {
       const listener = new EventEmitter();
 
-      listener.once('wait-task', (task) => {
-        expect(task.waiting).to.be.true();
-        task.signal({
+      listener.once('wait-task', (activityApi) => {
+        expect(activityApi.getState().waiting).to.be.true();
+        activityApi.signal({
           formfield1: 1,
           formfield2: 2
         });
       });
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: processXml,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -335,8 +464,8 @@ lab.experiment('UserTask', () => {
       });
     });
 
-    lab.test('getState() returns waiting true', (done) => {
-      const engine = new Bpmn.Engine({
+    it('getState() returns waiting true', (done) => {
+      const engine = new Engine({
         source: processXml,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -350,14 +479,13 @@ lab.experiment('UserTask', () => {
         done();
       });
 
-
       engine.execute({
         listener: listener
       });
     });
 
-    lab.test('getState() returns form state', (done) => {
-      const engine = new Bpmn.Engine({
+    it('getState() returns form state', (done) => {
+      const engine = new Engine({
         source: processXml,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -379,10 +507,10 @@ lab.experiment('UserTask', () => {
     });
   });
 
-  lab.describe('loop', () => {
-    lab.describe('sequential', () => {
+  describe('loop', () => {
+    describe('sequential', () => {
       let context;
-      lab.beforeEach((done) => {
+      beforeEach((done) => {
         getLoopContext(true, (err, result) => {
           if (err) return done(err);
           context = result;
@@ -390,37 +518,40 @@ lab.experiment('UserTask', () => {
         });
       });
 
-      lab.test('emits wait with the same id', (done) => {
+      it('emits wait with the same id', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        task.on('wait', (activity) => {
-          activity.signal(activity.id);
+        let waitCount = 0;
+        task.on('wait', (activityApi, executionContext) => {
+          if (waitCount > 5) fail('too many waits');
+          waitCount++;
+          executionContext.signal(executionContext.id);
         });
-        task.once('end', (t, output) => {
-          expect(output.taskInput.task).to.be.equal(['task', 'task', 'task']);
+        task.once('end', (activityApi, executionContext) => {
+          expect(executionContext.getOutput()).to.be.equal(['task', 'task', 'task']);
           done();
         });
 
         task.run();
       });
 
-      lab.test('assigns input to form', (done) => {
+      it('assigns input to form', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        task.on('wait', (activity) => {
-          const input = activity.getInput();
+        task.on('wait', (activityApi, executionContext) => {
+          const input = executionContext.getInput();
           const answer = {
             email: input.email
           };
-          answer[activity.form.getFields()[0].id] = input.index < 2;
+          answer[executionContext.form.getFields()[0].id] = input.index < 2;
 
-          activity.signal(answer);
+          executionContext.signal(answer);
         });
 
-        task.once('end', (t, output) => {
-          expect(output.taskInput.task).to.be.equal([{
+        task.once('end', (activityApi, executionContext) => {
+          expect(executionContext.getOutput()).to.be.equal([{
             email: 'pal@example.com',
             yay0: true
           }, {
@@ -438,9 +569,9 @@ lab.experiment('UserTask', () => {
 
     });
 
-    lab.describe('parallell', () => {
+    describe('parallell', () => {
       let context;
-      lab.beforeEach((done) => {
+      beforeEach((done) => {
         getLoopContext(false, (err, result) => {
           if (err) return done(err);
           context = result;
@@ -448,41 +579,44 @@ lab.experiment('UserTask', () => {
         });
       });
 
-      lab.test('emits wait with different ids', (done) => {
+      it('emits wait with different ids', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
         const starts = [];
-        task.on('wait', (activity) => {
-          starts.push(activity);
+        task.on('wait', (activityApi, executionContext) => {
+          starts.push(executionContext);
           if (starts.length === 3) {
-            starts.reverse().forEach((t) => t.signal(activity.id));
+            starts.reverse().forEach((t) => t.signal(t.id));
           }
         });
-        task.once('end', (t, output) => {
-          expect(output.taskInput.task.includes(task.id), 'unique task id').to.be.false();
+        task.once('end', (activityApi, executionContext) => {
+          const output = executionContext.getOutput();
+          expect(output).to.have.length(3);
+          output.forEach((id) => expect(id).to.match(/^task_/i));
+          expect(output.includes(task.id), 'unique task id').to.be.false();
           done();
         });
 
         task.run();
       });
 
-      lab.test('assigns input to form', (done) => {
+      it('assigns input to form', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        task.on('wait', (activity) => {
-          const input = activity.getInput();
+        task.on('wait', (activityApi, executionContext) => {
+          const input = executionContext.getInput();
           const answer = {
             email: input.email
           };
-          answer[activity.form.getFields()[0].id] = input.index < 2;
+          answer[executionContext.form.getFields()[0].id] = input.index < 2;
 
-          activity.signal(answer);
+          executionContext.signal(answer);
         });
 
-        task.once('end', (t, output) => {
-          expect(output.taskInput.task).to.be.equal([{
+        task.once('end', (activityApi, executionContext) => {
+          expect(executionContext.getOutput()).to.be.equal([{
             email: 'pal@example.com',
             yay0: true
           }, {

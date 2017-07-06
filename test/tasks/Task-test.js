@@ -1,15 +1,144 @@
 'use strict';
 
-const Code = require('code');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
+const {beforeEach, describe, it} = lab;
+const {expect, fail} = Lab.assertions;
 
 lab.experiment('Task', () => {
+  describe('behaviour', () => {
+    const taskProcessXml = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <process id="theProcess" isExecutable="true">
+        <startEvent id="start" />
+        <task id="task">
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="input">\${variables.message}</camunda:inputParameter>
+              <camunda:outputParameter name="output">Signaled \${input} with \${result}</camunda:outputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+        </task>
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+        <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
+      </process>
+    </definitions>`;
+
+    let context;
+    beforeEach((done) => {
+      testHelpers.getContext(taskProcessXml, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, result) => {
+        if (err) return done(err);
+        context = result;
+        done();
+      });
+    });
+
+    describe('activate()', () => {
+      it('returns activity api', (done) => {
+        const task = context.getChildActivityById('task');
+        const activityApi = task.activate();
+        expect(activityApi).to.exist();
+        done();
+      });
+
+      it('activity api has the expected properties', (done) => {
+        const task = context.getChildActivityById('task');
+        const activityApi = task.activate();
+        expect(activityApi).to.include({
+          id: 'task',
+          type: 'bpmn:Task'
+        });
+        expect(activityApi.inbound).to.be.an.array().and.have.length(1);
+        expect(activityApi.outbound).to.be.an.array().and.have.length(1);
+        done();
+      });
+
+      it('activity api has the expected functions', (done) => {
+        const task = context.getChildActivityById('task');
+        const activityApi = task.activate();
+        expect(activityApi.run, 'run').to.be.a.function();
+        expect(activityApi.deactivate, 'deactivate').to.be.a.function();
+        expect(activityApi.execute, 'execute').to.be.a.function();
+        expect(activityApi.getState, 'getState').to.be.a.function();
+        expect(activityApi.resume, 'resume').to.be.a.function();
+        expect(activityApi.getApi, 'getApi').to.be.a.function();
+        done();
+      });
+    });
+
+    describe('events', () => {
+      it('emits start on taken inbound', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+        task.once('start', () => {
+          done();
+        });
+
+        task.inbound[0].take();
+      });
+
+      it('leaves on discarded inbound', (done) => {
+        const task = context.getChildActivityById('task');
+        task.activate();
+        task.once('start', () => {
+          fail('No start should happen');
+        });
+        task.once('leave', () => {
+          done();
+        });
+
+        task.inbound[0].discard();
+      });
+
+      it('emits end after start when inbound taken', (done) => {
+        const task = context.getChildActivityById('task');
+
+        task.activate();
+
+        const eventNames = [];
+        task.once('start', () => {
+          eventNames.push('start');
+        });
+        task.once('end', (activity) => {
+          expect(activity.id).to.equal('task');
+          expect(eventNames).to.equal(['start']);
+          done();
+        });
+
+        task.inbound[0].take();
+      });
+
+      it('emits leave when completed', (done) => {
+        const task = context.getChildActivityById('task');
+
+        task.activate();
+
+        const eventNames = [];
+        task.once('start', () => {
+          eventNames.push('start');
+        });
+        task.once('end', () => {
+          eventNames.push('end');
+        });
+        task.once('leave', () => {
+          expect(eventNames).to.equal(['start', 'end']);
+          done();
+        });
+
+        task.inbound[0].take();
+      });
+    });
+  });
+
   lab.describe('events', () => {
     const taskProcessXml = `
     <?xml version="1.0" encoding="UTF-8"?>

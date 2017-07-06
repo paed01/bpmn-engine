@@ -51,14 +51,21 @@ pub.userTask = (userTaskId, definitionId) => {
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions id="${definitionId || 'testUserTask'}" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
+    <dataObjectReference id="globalInputRef" dataObjectRef="input" />
     <dataObjectReference id="inputFromUserRef" dataObjectRef="inputFromUser" />
+    <dataObject id="input" />
     <dataObject id="inputFromUser" />
     <startEvent id="theStart" />
     <userTask id="${userTaskId}">
       <ioSpecification id="inputSpec">
+        <dataInput id="input_1" name="Surname" />
+        <inputSet id="inputSet_1">
+          <dataInputRefs>input_1</dataInputRefs>
+        </inputSet>
         <dataOutput id="userInput" />
       </ioSpecification>
-      <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUserRef" />
+      <dataInputAssociation id="associatedInput" sourceRef="input_1" targetRef="globalInputRef" />
+      <dataOutputAssociation id="associatedOutput" sourceRef="userInput" targetRef="inputFromUserRef" />
     </userTask>
     <endEvent id="theEnd" />
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="${userTaskId}" />
