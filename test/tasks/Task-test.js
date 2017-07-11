@@ -9,7 +9,7 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
-lab.experiment('Task', () => {
+describe('Task', () => {
   describe('behaviour', () => {
     const taskProcessXml = `
     <?xml version="1.0" encoding="UTF-8"?>
@@ -175,7 +175,7 @@ lab.experiment('Task', () => {
       const task = context.getChildActivityById('task');
       task.activate();
       task.once('start', () => {
-        Code.fail('No start should happen');
+        fail('No start should happen');
       });
       task.once('leave', () => {
         done();
@@ -218,9 +218,9 @@ lab.experiment('Task', () => {
     });
 
     lab.test('event argument getInput() on start returns input parameters', (done) => {
-      context.variablesAndServices.variables = {
+      context.environment.assignVariables({
         message: 'exec'
-      };
+      });
 
       const task = context.getChildActivityById('task');
       task.activate();
@@ -235,9 +235,9 @@ lab.experiment('Task', () => {
     });
 
     lab.test('event argument getOutput() on end returns output parameter value based on input parameters', (done) => {
-      context.variablesAndServices.variables = {
+      context.environment.assignVariables({
         message: 'exec'
-      };
+      });
 
       const task = context.getChildActivityById('task');
       task.activate();
@@ -290,7 +290,7 @@ lab.experiment('Task', () => {
       listener.on('start-task', (activity) => {
         startCount++;
         if (startCount > 2) {
-          Code.fail(`<${activity.id}> Too many starts`);
+          fail(`<${activity.id}> Too many starts`);
         }
       });
       let endEventCount = 0;
@@ -424,7 +424,7 @@ function getLoopContext(isSequential, callback) {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
   }, (err, context) => {
     if (err) return callback(err);
-    context.variablesAndServices.variables.analogue = ['labour', 'archiving', 'shopping'];
+    context.environment.assignVariables({analogue: ['labour', 'archiving', 'shopping']});
     callback(null, context);
   });
 }

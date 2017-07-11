@@ -35,10 +35,12 @@ describe('SubProcess', () => {
     });
 
     it('emits end on completed', (done) => {
-      const subProcess = context.getChildActivityById('subProcess');
       const listener = new EventEmitter();
+      context.environment.setListener(listener);
 
-      subProcess.activate(null, listener);
+      const subProcess = context.getChildActivityById('subProcess');
+
+      subProcess.activate();
 
       listener.once('wait-subUserTask', (activityApi) => {
         activityApi.signal();
@@ -79,13 +81,15 @@ describe('SubProcess', () => {
       });
 
       it('assigns input', (done) => {
-        const task = context.getChildActivityById('sub-process-task');
         const listener = new EventEmitter();
+        context.environment.setListener(listener);
+
+        const task = context.getChildActivityById('sub-process-task');
         const taskApi = task.activate(null, listener);
 
         const doneTasks = [];
-        listener.on('start-serviceTask', (activity) => {
-          doneTasks.push(activity.getInput().input);
+        listener.on('start-serviceTask', (activityApi) => {
+          doneTasks.push(activityApi.getInput().input);
         });
 
         task.once('end', () => {
@@ -125,9 +129,11 @@ describe('SubProcess', () => {
       });
 
       it('assigns input to form', (done) => {
-        const task = context.getChildActivityById('sub-process-task');
         const listener = new EventEmitter();
-        const taskApi = task.activate(null, listener);
+        context.environment.setListener(listener);
+
+        const task = context.getChildActivityById('sub-process-task');
+        const taskApi = task.activate();
 
         const doneTasks = [];
         listener.on('end', (activity) => {

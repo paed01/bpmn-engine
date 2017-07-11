@@ -235,9 +235,9 @@ describe('UserTask', () => {
     });
 
     it('event argument getInput() on start returns input parameters', (done) => {
-      context.variablesAndServices.variables = {
+      context.environment.assignVariables({
         message: 'executed'
-      };
+      });
 
       const task = context.getChildActivityById('task');
       task.activate();
@@ -252,9 +252,9 @@ describe('UserTask', () => {
     });
 
     it('event argument getOutput() on end returns output parameter value based on signal and input parameters', (done) => {
-      context.variablesAndServices.variables = {
+      context.environment.assignVariables({
         message: 'who'
-      };
+      });
 
       const task = context.getChildActivityById('task');
       task.activate();
@@ -664,7 +664,7 @@ function getLoopContext(sequential, callback) {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
   }, (err, context) => {
     if (err) return callback(err);
-    context.variablesAndServices.variables.boardMembers = ['pal@example.com', 'franz@example.com', 'immanuel@example.com'];
+    context.environment.assignVariables({boardMembers: ['pal@example.com', 'franz@example.com', 'immanuel@example.com']});
     callback(null, context);
   });
 }

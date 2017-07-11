@@ -314,11 +314,9 @@ describe('ScriptTask', () => {
       testHelpers.getContext(processXml, (cerr, context) => {
         if (cerr) return done(cerr);
 
-        context.variablesAndServices.services = {
-          request: {
-            module: 'request'
-          }
-        };
+        context.environment.addService('request', {
+          module: 'request'
+        });
 
         const task = context.getChildActivityById('scriptTask');
         task.activate();
@@ -370,17 +368,12 @@ describe('ScriptTask', () => {
       testHelpers.getContext(processXml, (cerr, context) => {
         if (cerr) return done(cerr);
 
-        context.variablesAndServices = {
-          services: {
-            require: {
-              module: 'require',
-              type: 'global'
-            }
-          },
-          variables: {
-            data: 1
-          }
-        };
+        context.environment.addService('require', {
+          module: 'require',
+          type: 'global'
+        });
+
+        context.environment.assignVariables({data: 1});
 
         const task = context.getChildActivityById('scriptTask');
         task.activate();
@@ -431,18 +424,12 @@ describe('ScriptTask', () => {
       testHelpers.getContext(processXml, (cerr, context) => {
         if (cerr) return done(cerr);
 
-        context.variablesAndServices = {
-          services: {
-            get: {
-              module: 'request',
-              type: 'require',
-              fnName: 'get'
-            }
-          },
-          variables: {
-            data: 1
-          }
-        };
+        context.environment.addService('get', {
+          module: 'request',
+          type: 'require',
+          fnName: 'get'
+        });
+        context.environment.assignVariables({data: 1});
 
         const task = context.getChildActivityById('scriptTask');
         task.activate();
@@ -559,10 +546,10 @@ describe('ScriptTask', () => {
       }, (err, localContext) => {
         if (err) return done(err);
 
-        localContext.variablesAndServices.variables = {
+        localContext.environment.assignVariables({
           apiPath: 'http://example-2.com',
           input: 8
-        };
+        });
 
         const task = localContext.getChildActivityById('scriptTask');
 
@@ -715,8 +702,8 @@ function getLoopContext(sequential, callback) {
   }, (err, context) => {
     if (err) return callback(err);
 
-    context.environment.variables.names = ['Pål', 'Franz', 'Immanuel'];
-    context.environment.services.setTimeout = setTimeout;
+    context.environment.assignVariables({names: ['Pål', 'Franz', 'Immanuel']});
+    context.environment.addService('setTimeout', setTimeout);
 
     return callback(null, context);
   });
