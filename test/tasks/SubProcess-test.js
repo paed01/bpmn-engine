@@ -1,29 +1,29 @@
 'use strict';
 
-const Code = require('code');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('../../lib');
+const {EventEmitter} = require('events');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
-const Bpmn = require('../..');
+const {beforeEach, describe, it} = lab;
+const {expect} = Lab.assertions;
 
-lab.experiment('SubProcess', () => {
-  lab.describe('events', () => {
-    const processXml = factory.resource('sub-process.bpmn').toString();
+describe('SubProcess', () => {
+  describe('events', () => {
+    const source = factory.resource('sub-process.bpmn').toString();
     let context;
 
-    lab.beforeEach((done) => {
-      testHelpers.getContext(processXml, (err, result) => {
+    beforeEach((done) => {
+      testHelpers.getContext(source, (err, result) => {
         if (err) return done(err);
         context = result;
         done();
       });
     });
 
-    lab.test('emits start on inbound taken', (done) => {
+    it('emits start on inbound taken', (done) => {
       const subProcess = context.getChildActivityById('subProcess');
       subProcess.activate();
 
@@ -34,15 +34,14 @@ lab.experiment('SubProcess', () => {
       subProcess.inbound[0].take();
     });
 
-    lab.test('emits end on completed', (done) => {
+    it('emits end on completed', (done) => {
       const subProcess = context.getChildActivityById('subProcess');
       const listener = new EventEmitter();
 
-      subProcess.listener = listener;
-      subProcess.activate();
+      subProcess.activate(null, listener);
 
-      listener.once('wait', (activity) => {
-        activity.signal();
+      listener.once('wait-subUserTask', (activityApi) => {
+        activityApi.signal();
       });
 
       subProcess.once('end', () => {
@@ -54,10 +53,10 @@ lab.experiment('SubProcess', () => {
 
   });
 
-  lab.describe('loop', () => {
-    lab.describe('sequential', () => {
+  describe('loop', () => {
+    describe('sequential', () => {
       let context;
-      lab.beforeEach((done) => {
+      beforeEach((done) => {
         getLoopContext(true, (err, result) => {
           if (err) return done(err);
           context = result;
@@ -65,13 +64,11 @@ lab.experiment('SubProcess', () => {
         });
       });
 
-      lab.test('emits start with the same id', (done) => {
+      it('emits start with the same id', (done) => {
         const task = context.getChildActivityById('sub-process-task');
-        task.activate();
-
         const starts = [];
-        task.on('start', (activity) => {
-          starts.push(activity.id);
+        task.on('start', (activityApi, executionContext) => {
+          starts.push(executionContext.id);
         });
         task.once('end', () => {
           expect(starts).to.be.equal(['sub-process-task', 'sub-process-task', 'sub-process-task']);
@@ -81,12 +78,10 @@ lab.experiment('SubProcess', () => {
         task.run();
       });
 
-      lab.test('assigns input', (done) => {
+      it('assigns input', (done) => {
         const task = context.getChildActivityById('sub-process-task');
         const listener = new EventEmitter();
-        task.listener = listener;
-
-        task.activate();
+        const taskApi = task.activate(null, listener);
 
         const doneTasks = [];
         listener.on('start-serviceTask', (activity) => {
@@ -98,14 +93,14 @@ lab.experiment('SubProcess', () => {
           done();
         });
 
-        task.run();
+        taskApi.run();
       });
 
     });
 
-    lab.describe('parallell', () => {
+    describe('parallell', () => {
       let context;
-      lab.beforeEach((done) => {
+      beforeEach((done) => {
         getLoopContext(false, (err, result) => {
           if (err) return done(err);
           context = result;
@@ -113,14 +108,12 @@ lab.experiment('SubProcess', () => {
         });
       });
 
-      lab.test('emits start with different ids', (done) => {
+      it('emits start with different ids', (done) => {
         const task = context.getChildActivityById('sub-process-task');
 
-        task.activate();
-
         const starts = [];
-        task.on('start', (activity) => {
-          starts.push(activity.id);
+        task.on('start', (activityApi, executionContext) => {
+          starts.push(executionContext.id);
         });
 
         task.once('end', () => {
@@ -131,12 +124,10 @@ lab.experiment('SubProcess', () => {
         task.run();
       });
 
-      lab.test('assigns input to form', (done) => {
+      it('assigns input to form', (done) => {
         const task = context.getChildActivityById('sub-process-task');
         const listener = new EventEmitter();
-        task.listener = listener;
-
-        task.activate();
+        const taskApi = task.activate(null, listener);
 
         const doneTasks = [];
         listener.on('end', (activity) => {
@@ -148,25 +139,25 @@ lab.experiment('SubProcess', () => {
           done();
         });
 
-        task.run();
+        taskApi.run();
       });
     });
   });
 
-  lab.describe('run()', () => {
-    const processXml = factory.resource('sub-process.bpmn').toString();
+  describe('engine', () => {
+    const source = factory.resource('sub-process.bpmn').toString();
 
-    lab.test('completes parent process', (done) => {
+    it('completes parent process', (done) => {
       const listener = new EventEmitter();
-      listener.on('wait-subUserTask', (task) => {
-        task.signal();
+      listener.on('wait-subUserTask', (activityApi) => {
+        activityApi.signal();
       });
 
-      const engine = new Bpmn.Engine({
-        source: processXml
+      const engine = new Engine({
+        source
       });
       engine.execute({
-        listener: listener,
+        listener,
         variables: {
           input: 1
         }
@@ -175,31 +166,22 @@ lab.experiment('SubProcess', () => {
         definition.once('end', () => {
           testHelpers.expectNoLingeringListenersOnDefinition(definition);
           testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
-
-          const subProcess = definition.getChildActivityById('subProcess');
-          expect(subProcess.variables).to.only.include({
-            input: 1,
-            subScript: true
-          });
-
           done();
         });
       });
     });
-  });
 
-  lab.describe('cancel()', () => {
-    lab.test('takes all outbound and completes parent process', (done) => {
+    it('cancel sub process takes all outbound and completes parent process', (done) => {
       const listener = new EventEmitter();
-      listener.on('wait-subUserTask', (task, subProcessInstance) => {
+      listener.on('wait-subUserTask', (taskApi, subProcessInstance) => {
         subProcessInstance.cancel();
       });
 
-      const engine = new Bpmn.Engine({
-        source: processXml
+      const engine = new Engine({
+        source
       });
       engine.execute({
-        listener: listener,
+        listener,
         variables: {
           input: 0
         }
@@ -207,8 +189,8 @@ lab.experiment('SubProcess', () => {
         if (err) return done(err);
 
         definition.once('end', () => {
-          expect(definition.getChildActivityById('theEnd').taken, 'theEnd taken').to.be.true();
-          expect(definition.getChildActivityById('subProcess').canceled, 'subProcess canceled').to.be.true();
+          expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.true();
+          expect(definition.getChildState('subProcess').cancelled, 'subProcess canceled').to.be.true();
 
           testHelpers.expectNoLingeringListenersOnDefinition(definition);
           testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
@@ -216,24 +198,21 @@ lab.experiment('SubProcess', () => {
         });
       });
     });
-  });
 
-  lab.describe('cancel sub activity', () => {
-
-    lab.test('takes all outbound and completes parent process', (done) => {
+    it('cancelled sub activity takes all outbound and completes parent process', (done) => {
       const listener = new EventEmitter();
-      listener.once('wait-subUserTask', (task) => {
-        task.signal();
+      listener.once('wait-subUserTask', (activityApi) => {
+        activityApi.signal();
       });
-      listener.once('start-subScriptTask', (task) => {
-        task.cancel();
+      listener.once('start-subScriptTask', (activityApi) => {
+        activityApi.cancel();
       });
 
-      const engine = new Bpmn.Engine({
-        source: processXml
+      const engine = new Engine({
+        source
       });
       engine.execute({
-        listener: listener,
+        listener,
         variables: {
           input: 127
         }
@@ -241,8 +220,9 @@ lab.experiment('SubProcess', () => {
         if (err) return done(err);
 
         definition.once('end', () => {
-          expect(definition.getChildActivityById('theEnd').taken, 'theEnd taken').to.be.true();
-          expect(definition.getChildActivityById('subProcess').canceled, 'subProcess canceled').to.be.false();
+          expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.true();
+          expect(definition.getChildState('subProcess').cancelled, 'subProcess canceled').to.be.undefined();
+          expect(definition.getChildState('subProcess').taken, 'subProcess taken').to.be.true();
 
           testHelpers.expectNoLingeringListenersOnDefinition(definition);
           testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
@@ -252,10 +232,92 @@ lab.experiment('SubProcess', () => {
     });
   });
 
-  lab.describe('IO', () => {
+  describe('error', () => {
+    it('emits error if sub task fails', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+            targetNamespace="http://bpmn.io/schema/bpmn">
+        <process id="mainProcess" isExecutable="true">
+          <subProcess id="subProcess" name="Wrapped">
+            <serviceTask id="subServiceTask" name="Put" camunda:expression="\${services.throw}" />
+          </subProcess>
+        </process>
+      </definitions>`;
 
-    lab.test('transfers input to context variables', (done) => {
-      const ioXml = `
+      const engine = new Engine({
+        source,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+      engine.execute({
+        services: {
+          throw: (context, next) => {
+            next(new Error('Expected'));
+          }
+        }
+      }, (err) => {
+        if (err) return done(err);
+      });
+
+      engine.on('error', (thrownErr) => {
+        expect(thrownErr).to.be.an.error('Expected');
+        done();
+      });
+    });
+
+    it('catches error if bound error event is attached', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+            targetNamespace="http://bpmn.io/schema/bpmn">
+        <process id="mainProcess" isExecutable="true">
+          <subProcess id="subProcess" name="Wrapped">
+            <serviceTask id="subServiceTask" name="Put" camunda:expression="\${services.throw}" />
+          </subProcess>
+          <boundaryEvent id="errorEvent" attachedToRef="subProcess">
+            <errorEventDefinition errorRef="Error_def" camunda:errorCodeVariable="serviceError" camunda:errorMessageVariable="message" />
+          </boundaryEvent>
+        </process>
+        <error id="Error_def" name="SubProcessError" errorCode="\${message}" />
+      </definitions>`;
+
+      const engine = new Engine({
+        source,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+      engine.execute({
+        services: {
+          throw: (context, next) => {
+            next(new Error('Expected'));
+          }
+        }
+      }, (err) => {
+        if (err) return done(err);
+      });
+
+      engine.on('end', (def) => {
+        expect(def.getOutput()).to.equal({
+          taskInput: {
+            errorEvent: {
+              serviceError: 'Expected',
+              message: 'Expected'
+            }
+          }
+        });
+        done();
+      });
+    });
+  });
+
+  describe('IO', () => {
+    it('transfers input to context variables', (done) => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <bpmn:definitions id="Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
@@ -265,10 +327,11 @@ lab.experiment('SubProcess', () => {
             <bpmn:extensionElements>
               <camunda:inputOutput>
                 <camunda:inputParameter name="api">\${variables.apiPath}</camunda:inputParameter>
-                <camunda:outputParameter name="result"></camunda:outputParameter>
+                <camunda:inputParameter name="serviceFn">\${services.put}</camunda:inputParameter>
+                <camunda:outputParameter name="result">\${variables.result}</camunda:outputParameter>
               </camunda:inputOutput>
             </bpmn:extensionElements>
-            <bpmn:serviceTask id="subServiceTask" name="Put" camunda:expression="\${services.put()}">
+            <bpmn:serviceTask id="subServiceTask" name="Put" camunda:expression="\${serviceFn()}">
               <bpmn:extensionElements>
                 <camunda:inputOutput>
                   <camunda:inputParameter name="uri">\${variables.api}</camunda:inputParameter>
@@ -280,8 +343,8 @@ lab.experiment('SubProcess', () => {
         </bpmn:process>
       </bpmn:definitions>`;
 
-      const engine = new Bpmn.Engine({
-        source: ioXml,
+      const engine = new Engine({
+        source,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
@@ -297,21 +360,17 @@ lab.experiment('SubProcess', () => {
         variables: {
           apiPath: 'https://api.example.com/v1'
         }
-      }, (err, instance) => {
-        if (err) return done(err);
+      });
 
-        instance.once('end', () => {
-          expect(instance.variables).to.equal({
-            apiPath: 'https://api.example.com/v1',
-            result: 1
-          });
-          done();
+      engine.once('end', (def) => {
+        expect(def.getOutput()).to.equal({
+          apiPath: 'https://api.example.com/v1',
+          result: 1
         });
+        done();
       });
     });
   });
-
-
 });
 
 function getLoopContext(sequential, callback) {
@@ -340,12 +399,12 @@ function getLoopContext(sequential, callback) {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
   }, (err, context) => {
     if (err) return callback(err);
-    context.variablesAndServices.variables = {
+    context.environment.assignResult({
       prefix: 'sub',
       inputList: ['labour', 'archiving', 'shopping']
-    };
+    });
 
-    context.variablesAndServices.services.loop = (input, next) => {
+    context.environment.services.loop = (input, next) => {
       next(null, input);
     };
 

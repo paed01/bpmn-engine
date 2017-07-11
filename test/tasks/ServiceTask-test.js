@@ -2,6 +2,7 @@
 
 const Code = require('code');
 const {Engine} = require('../..');
+const Environment = require('../../lib/Environment');
 const {EventEmitter} = require('events');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
@@ -10,18 +11,19 @@ const request = require('request');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
+const {after, beforeEach, describe, it} = lab;
+const {expect} = Lab.assertions;
 
 const bupServiceFn = testHelpers.serviceFn;
 
-lab.experiment('ServiceTask', () => {
-  lab.after((done) => {
+describe('ServiceTask', () => {
+  after((done) => {
     testHelpers.serviceFn = bupServiceFn;
     done();
   });
 
-  lab.describe('behaviour', () => {
-    lab.test('stores service if extension name', (done) => {
+  describe('behaviour', () => {
+    it('stores service if extension name', (done) => {
       const processXml = factory.resource('service-task.bpmn').toString();
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -33,7 +35,7 @@ lab.experiment('ServiceTask', () => {
       });
     });
 
-    lab.test('stores expression service', (done) => {
+    it('stores expression service', (done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -55,7 +57,7 @@ lab.experiment('ServiceTask', () => {
       });
     });
 
-    lab.test('emits error if service definition is not found', (done) => {
+    it('emits error if service definition is not found', (done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -80,45 +82,46 @@ lab.experiment('ServiceTask', () => {
     });
   });
 
-  lab.describe('execute()', () => {
+  describe('execute()', () => {
     let context;
-    lab.beforeEach((done) => {
+    beforeEach((done) => {
       const processXml = factory.resource('service-task.bpmn').toString();
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, result) => {
         if (err) return done(err);
-        context = result;
-        context.variablesAndServices.services = {
-          postMessage: {
-            module: './test/helpers/testHelpers',
-            fnName: 'serviceFn'
-          }
+        testHelpers.serviceFn = (message, callback) => {
+          callback(null, true);
         };
+
+        const environment = Environment({
+          services: {
+            postMessage: {
+              module: './test/helpers/testHelpers',
+              fnName: 'serviceFn'
+            }
+          }
+        });
+        context = result.getSubContext(result.id, environment);
         done();
       });
     });
 
-    lab.test('executes service on taken inbound', (done) => {
-      let taken;
-      testHelpers.serviceFn = (message, callback) => {
-        taken = true;
-        callback();
-      };
-
+    it('executes service on taken inbound', (done) => {
       const task = context.getChildActivityById('serviceTask');
       task.activate();
 
-      task.once('end', () => {
-        expect(taken).to.be.true();
+      task.once('end', (activityApi, executionContext) => {
+        expect(executionContext.getOutput()).to.equal([true]);
+
         done();
       });
 
       task.inbound[0].take();
     });
 
-    lab.test('can access variables', (done) => {
-      testHelpers.serviceFn = (message, callback) => {
+    it('can access and modify variables', (done) => {
+      context.environment.services.postMessage = (message, callback) => {
         message.variables.input = 'wuiiii';
         callback();
       };
@@ -127,15 +130,15 @@ lab.experiment('ServiceTask', () => {
       task.activate();
 
       task.once('end', () => {
-        expect(context.variablesAndServices.variables.input).to.equal('wuiiii');
+        expect(context.environment.variables.input).to.equal('wuiiii');
         done();
       });
 
       task.inbound[0].take();
     });
 
-    lab.test('error in callback caught by bound error event', (done) => {
-      testHelpers.serviceFn = (message, callback) => {
+    it('error in callback caught by bound error event', (done) => {
+      context.environment.services.postMessage = (message, callback) => {
         callback(new Error('Failed'));
       };
 
@@ -152,8 +155,8 @@ lab.experiment('ServiceTask', () => {
       task.inbound[0].take();
     });
 
-    lab.test('times out if bound timeout event if callback is not called within timeout duration', (done) => {
-      testHelpers.serviceFn = () => {};
+    it('times out if bound timeout event if callback is not called within timeout duration', (done) => {
+      context.environment.services.postMessage = () => {};
 
       const task = context.getChildActivityById('serviceTask');
       const timeoutEvent = context.getChildActivityById('timerEvent');
@@ -171,8 +174,8 @@ lab.experiment('ServiceTask', () => {
     });
   });
 
-  lab.describe('IO', () => {
-    lab.test('uses input parameters', (done) => {
+  describe('IO', () => {
+    it('uses input parameters', (done) => {
       nock('http://example.com')
         .defaultReplyHeaders({
           'Content-Type': 'application/json'
@@ -185,9 +188,9 @@ lab.experiment('ServiceTask', () => {
       const processXml = factory.resource('service-task-io.bpmn').toString();
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, context) => {
+      }, (err, result) => {
         if (err) return done(err);
-        context.variablesAndServices = {
+        const environment = Environment({
           services: {
             getRequest: {
               module: 'request',
@@ -197,7 +200,8 @@ lab.experiment('ServiceTask', () => {
           variables: {
             apiPath: 'http://example.com/test'
           }
-        };
+        });
+        const context = result.getSubContext(result.id, environment);
 
         const task = context.getChildActivityById('serviceTask');
         task.activate();
@@ -219,26 +223,24 @@ lab.experiment('ServiceTask', () => {
 
     });
 
-    lab.test('returns mapped output', (done) => {
+    it('returns mapped output', (done) => {
       const processXml = factory.resource('service-task-io-types.bpmn').toString();
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, context) => {
         if (err) return done(err);
 
-        context.variablesAndServices.variables = {
+        context.environment.assignVariables({
           apiPath: 'http://example-2.com',
           input: 2,
-        };
-        context.variablesAndServices.services = {
-          get: (arg, next) => {
-            next(null, {
-              statusCode: 200,
-              pathname: '/ignore'
-            }, {
-              data: arg.input
-            });
-          }
+        });
+        context.environment.services.get = (arg, next) => {
+          next(null, {
+            statusCode: 200,
+            pathname: '/ignore'
+          }, {
+            data: arg.input
+          });
         };
 
         const task = context.getChildActivityById('serviceTask');
@@ -258,8 +260,8 @@ lab.experiment('ServiceTask', () => {
     });
   });
 
-  lab.describe('service expression', () => {
-    lab.test('executes function call expression with context as argument', (done) => {
+  describe('service expression', () => {
+    it('executes function call expression with context as argument', (done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -272,18 +274,12 @@ lab.experiment('ServiceTask', () => {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, context) => {
         if (err) return done(err);
-        context.variablesAndServices = {
-          services: {
-            getService: () => {
-              return (executionContext, callback) => {
-                callback(null, executionContext.variables.input, 'success');
-              };
-            }
-          },
-          variables: {
-            input: 1
-          }
+        context.environment.services.getService = () => {
+          return (executionContext, callback) => {
+            callback(null, executionContext.variables.input, 'success');
+          };
         };
+        context.environment.variables.input = 1;
 
         const task = context.getChildActivityById('serviceTask');
         task.activate();
@@ -299,7 +295,7 @@ lab.experiment('ServiceTask', () => {
       });
     });
 
-    lab.test('executes expression function call with variable reference argument with context as argument', (done) => {
+    it('executes expression function call with variable reference argument with context as argument', (done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -312,18 +308,14 @@ lab.experiment('ServiceTask', () => {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, context) => {
         if (err) return done(err);
-        context.variablesAndServices = {
-          services: {
-            getService: (input) => {
-              return (executionContext, callback) => {
-                callback(null, input);
-              };
-            }
-          },
-          variables: {
-            input: 1
-          }
+        context.environment.services.getService = (input) => {
+          return (executionContext, callback) => {
+            callback(null, input);
+          };
         };
+        context.environment.assignVariables({
+          input: 1
+        });
 
         const task = context.getChildActivityById('serviceTask');
         task.activate();
@@ -339,7 +331,7 @@ lab.experiment('ServiceTask', () => {
       });
     });
 
-    lab.test('executes expression function call with static value argument with context as argument', (done) => {
+    it('executes expression function call with static value argument with context as argument', (done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -352,18 +344,14 @@ lab.experiment('ServiceTask', () => {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, context) => {
         if (err) return done(err);
-        context.variablesAndServices = {
-          services: {
-            getService: (input) => {
-              return (executionContext, callback) => {
-                callback(null, input);
-              };
-            }
-          },
-          variables: {
-            input: 1
-          }
+        context.environment.services.getService = (input) => {
+          return (executionContext, callback) => {
+            callback(null, input);
+          };
         };
+        context.environment.assignVariables({
+          input: 1
+        });
 
         const task = context.getChildActivityById('serviceTask');
         task.activate();
@@ -380,7 +368,7 @@ lab.experiment('ServiceTask', () => {
     });
   });
 
-  lab.describe('Camunda connector is defined with input/output', () => {
+  describe('Camunda connector is defined with input/output', () => {
     let context;
     lab.before((done) => {
       testHelpers.getContext(factory.resource('issue-4.bpmn').toString(), {
@@ -388,21 +376,17 @@ lab.experiment('ServiceTask', () => {
       }, (err, result) => {
         if (err) return done(err);
         context = result;
-        context.variablesAndServices = {
-          services: {
-            'send-email': (emailAddress, callback) => {
-              callback(null, 'success');
-            }
-          },
-          variables: {
-            emailAddress: 'lisa@example.com'
-          }
+        context.environment.services['send-email'] = (emailAddress, callback) => {
+          callback(null, 'success');
         };
+        context.environment.assignVariables({
+          emailAddress: 'lisa@example.com'
+        });
         done();
       });
     });
 
-    lab.test('service task has io', (done) => {
+    it('service task has io', (done) => {
       const task = context.getChildActivityById('sendEmail_1');
       expect(task.io, 'task IO').to.exist();
       expect(task.io.input).to.exist();
@@ -410,7 +394,7 @@ lab.experiment('ServiceTask', () => {
       done();
     });
 
-    lab.test('executes connector-id service', (done) => {
+    it('executes connector-id service', (done) => {
       const task = context.getChildActivityById('sendEmail_1');
       task.once('end', (activityApi, executionContext) => {
         const output = executionContext.getOutput();
@@ -423,11 +407,11 @@ lab.experiment('ServiceTask', () => {
       task.run();
     });
 
-    lab.test('executes service using defined input', (done) => {
+    it('executes service using defined input', (done) => {
       const task = context.getChildActivityById('sendEmail_1');
       let input, inputArg;
 
-      context.variablesAndServices.services['send-email'] = (emailAddress, callback) => {
+      context.environment.services['send-email'] = (emailAddress, callback) => {
         inputArg = emailAddress;
         callback(null, 'success');
       };
@@ -451,10 +435,10 @@ lab.experiment('ServiceTask', () => {
       task.run();
     });
 
-    lab.test('returns defined output', (done) => {
+    it('returns defined output', (done) => {
       const task = context.getChildActivityById('sendEmail_1');
 
-      context.variablesAndServices.services['send-email'] = (emailAddress, callback) => {
+      context.environment.services['send-email'] = (emailAddress, callback) => {
         callback(null, 10);
       };
 
@@ -469,7 +453,7 @@ lab.experiment('ServiceTask', () => {
       task.run();
     });
 
-    lab.test('service expects input options', (done) => {
+    it('service expects input options', (done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -513,17 +497,13 @@ lab.experiment('ServiceTask', () => {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, processContext) => {
         if (err) return done(err);
-        processContext.variablesAndServices = {
-          services: {
-            get: {
-              module: 'request',
-              fnName: 'get'
-            }
-          },
-          variables: {
-            api: 'http://example.com'
-          }
-        };
+        processContext.environment.addService('get', {
+          module: 'request',
+          fnName: 'get'
+        });
+        processContext.environment.assignVariables({
+          api: 'http://example.com'
+        });
 
         const task = processContext.getChildActivityById('serviceTask');
 
@@ -540,7 +520,7 @@ lab.experiment('ServiceTask', () => {
       });
     });
 
-    lab.test('service function address other service function', (done) => {
+    it('service function address other service function', (done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -564,20 +544,16 @@ lab.experiment('ServiceTask', () => {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, processContext) => {
         if (err) return done(err);
-        processContext.variablesAndServices = {
-          services: {
-            appendPath: (uri) => {
-              return `${uri}/v3/data`;
-            },
-            myFunc: (message, callback) => {
-              const apiWithPath = message.services.appendPath(message.variables.api);
-              callback(null, `successfully executed with ${apiWithPath}`);
-            }
-          },
-          variables: {
-            api: 'http://example.com'
-          }
-        };
+        processContext.environment.addService('appendPath', (uri) => {
+          return `${uri}/v3/data`;
+        });
+        processContext.environment.addService('myFunc', (message, callback) => {
+          const apiWithPath = message.services.appendPath(message.variables.api);
+          callback(null, `successfully executed with ${apiWithPath}`);
+        });
+        processContext.environment.assignVariables({
+          api: 'http://example.com'
+        });
 
         const task = processContext.getChildActivityById('serviceTask');
 
@@ -594,8 +570,8 @@ lab.experiment('ServiceTask', () => {
     });
   });
 
-  lab.describe('engine', () => {
-    lab.test('multiple inbound completes process', (done) => {
+  describe('engine', () => {
+    it('multiple inbound completes process', (done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -667,10 +643,10 @@ lab.experiment('ServiceTask', () => {
     });
   });
 
-  lab.describe('loop', () => {
-    lab.describe('sequential', () => {
+  describe('loop', () => {
+    describe('sequential', () => {
       let context;
-      lab.beforeEach((done) => {
+      beforeEach((done) => {
         getLoopContext(true, (err, result) => {
           if (err) return done(err);
           context = result;
@@ -678,7 +654,7 @@ lab.experiment('ServiceTask', () => {
         });
       });
 
-      lab.test('emits start with task id', (done) => {
+      it('emits start with task id', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
@@ -705,7 +681,7 @@ lab.experiment('ServiceTask', () => {
         task.run();
       });
 
-      lab.test('emits end with output', (done) => {
+      it('emits end with output', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
@@ -734,7 +710,7 @@ lab.experiment('ServiceTask', () => {
         task.run();
       });
 
-      lab.test('getOutput() returns result from loop', (done) => {
+      it('getOutput() returns result from loop', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
@@ -773,9 +749,9 @@ lab.experiment('ServiceTask', () => {
 
     });
 
-    lab.describe('parallell', () => {
+    describe('parallell', () => {
       let context;
-      lab.beforeEach((done) => {
+      beforeEach((done) => {
         getLoopContext(false, (err, result) => {
           if (err) return done(err);
           context = result;
@@ -783,7 +759,7 @@ lab.experiment('ServiceTask', () => {
         });
       });
 
-      lab.test('emits start with different ids', (done) => {
+      it('emits start with different ids', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
@@ -810,7 +786,7 @@ lab.experiment('ServiceTask', () => {
         task.run();
       });
 
-      lab.test('returns output in sequence', (done) => {
+      it('returns output in sequence', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
@@ -847,7 +823,7 @@ lab.experiment('ServiceTask', () => {
         task.run();
       });
 
-      lab.test('getOutput() returns result from loop', (done) => {
+      it('getOutput() returns result from loop', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
@@ -925,14 +901,10 @@ function getLoopContext(isSequential, callback) {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
   }, (err, context) => {
     if (err) return callback(err);
-    context.variablesAndServices = {
-      variables: {
-        paths: ['/pal', '/franz', '/immanuel']
-      },
-      services: {
-        get: request.get
-      }
-    };
+    context.environment.assignVariables({
+      paths: ['/pal', '/franz', '/immanuel']
+    });
+    context.environment.services.get = request.get;
     callback(null, context);
   });
 }

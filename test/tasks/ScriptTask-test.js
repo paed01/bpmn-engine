@@ -101,14 +101,12 @@ describe('ScriptTask', () => {
     });
 
     it('event argument getInput() on start returns input parameters', (done) => {
-      context.variablesAndServices.variables = {
-        message: 'executed'
-      };
+      context.environment.variables.message = 'executed';
 
       const task = context.getChildActivityById('task');
       task.activate();
-      task.once('start', (activity, execution) => {
-        expect(execution.getInput()).to.equal({
+      task.once('start', (activityApi, executionContext) => {
+        expect(executionContext.getInput()).to.equal({
           input: 'executed'
         });
         done();
@@ -118,9 +116,7 @@ describe('ScriptTask', () => {
     });
 
     it('event argument getOutput() on end returns output parameter value based on input parameters', (done) => {
-      context.variablesAndServices.variables = {
-        message: 'exec'
-      };
+      context.environment.variables.message = 'exec';
 
       const task = context.getChildActivityById('task');
       task.activate();
@@ -235,7 +231,7 @@ describe('ScriptTask', () => {
 
       testHelpers.getContext(processXml, (cerr, context) => {
         if (cerr) return done(cerr);
-        context.variablesAndServices.variables.input = 1;
+        context.environment.variables.input = 1;
 
         const task = context.getChildActivityById('scriptTask');
         task.activate();
@@ -719,8 +715,8 @@ function getLoopContext(sequential, callback) {
   }, (err, context) => {
     if (err) return callback(err);
 
-    context.variablesAndServices.variables.names = ['Pål', 'Franz', 'Immanuel'];
-    context.variablesAndServices.services.setTimeout = setTimeout;
+    context.environment.variables.names = ['Pål', 'Franz', 'Immanuel'];
+    context.environment.services.setTimeout = setTimeout;
 
     return callback(null, context);
   });
