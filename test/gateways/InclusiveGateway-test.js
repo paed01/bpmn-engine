@@ -1,15 +1,15 @@
 'use strict';
 
-const Code = require('code');
+const {Engine} = require('../../lib');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
-const Bpmn = require('../..');
+const {beforeEach, describe, it} = lab;
+const {expect} = Lab.assertions;
 
-lab.experiment('InclusiveGateway', () => {
-  lab.describe('behavior', () => {
+describe('InclusiveGateway', () => {
+  describe('behavior', () => {
     const processXml = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -39,7 +39,7 @@ lab.experiment('InclusiveGateway', () => {
     </definitions>`;
 
     let context;
-    lab.beforeEach((done) => {
+    beforeEach((done) => {
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, c) => {
@@ -49,7 +49,7 @@ lab.experiment('InclusiveGateway', () => {
       });
     });
 
-    lab.test('outbound flows are reordered with default flow last', (done) => {
+    it('outbound flows are reordered with default flow last', (done) => {
       const gateway = context.getChildActivityById('decisions');
       gateway.activate();
 
@@ -62,7 +62,7 @@ lab.experiment('InclusiveGateway', () => {
       gateway.inbound[0].take();
     });
 
-    lab.test('variables and services are passed to conditional flow', (done) => {
+    it('variables and services are passed to conditional flow', (done) => {
       context.environment.assignVariables({condition1: true});
 
       const gateway = context.getChildActivityById('decisions');
@@ -75,7 +75,7 @@ lab.experiment('InclusiveGateway', () => {
       gateway.inbound[0].take();
     });
 
-    lab.test('end returns output in callback', (done) => {
+    it('end returns output in callback', (done) => {
       context.environment.assignVariables({condition1: false});
 
       const gateway = context.getChildActivityById('decisions');
@@ -91,7 +91,7 @@ lab.experiment('InclusiveGateway', () => {
       gateway.inbound[0].take();
     });
 
-    lab.test('discards default outbound if one outbound was taken', (done) => {
+    it('discards default outbound if one outbound was taken', (done) => {
       context.environment.assignVariables({condition2: true});
 
       const gateway = context.getChildActivityById('decisions');
@@ -112,7 +112,7 @@ lab.experiment('InclusiveGateway', () => {
       gateway.inbound[0].take();
     });
 
-    lab.test('discards default outbound if more than one outbound was taken', (done) => {
+    it('discards default outbound if more than one outbound was taken', (done) => {
       context.environment.assignVariables({
         condition1: true,
         condition2: true
@@ -136,7 +136,7 @@ lab.experiment('InclusiveGateway', () => {
       gateway.inbound[0].take();
     });
 
-    lab.test('discards all outbound if inbound was discarded', (done) => {
+    it('discards all outbound if inbound was discarded', (done) => {
       const gateway = context.getChildActivityById('decisions');
       gateway.activate();
 
@@ -154,8 +154,8 @@ lab.experiment('InclusiveGateway', () => {
       gateway.inbound[0].discard();
     });
 
-    lab.describe('resume()', () => {
-      lab.test('sets resumed gateway pendingOutbound', (done) => {
+    describe('resume()', () => {
+      it('sets resumed gateway pendingOutbound', (done) => {
         context.environment.assignVariables({condition2: true});
 
         const gateway = context.getChildActivityById('decisions');
@@ -191,7 +191,7 @@ lab.experiment('InclusiveGateway', () => {
         gateway.inbound[0].take();
       });
 
-      lab.test('discards defaultFlow if other flows were taken', (done) => {
+      it('discards defaultFlow if other flows were taken', (done) => {
         context.environment.assignVariables({
           condition1: true,
           condition2: true
@@ -241,7 +241,7 @@ lab.experiment('InclusiveGateway', () => {
         gateway.inbound[0].take();
       });
 
-      lab.test('takes defaultFlow if no other flows were taken', (done) => {
+      it('takes defaultFlow if no other flows were taken', (done) => {
         const gateway = context.getChildActivityById('decisions');
 
         const flowSequence = [];
@@ -289,8 +289,8 @@ lab.experiment('InclusiveGateway', () => {
     });
   });
 
-  lab.describe('engine', () => {
-    lab.test('should support multiple conditional flows, case 1', (done) => {
+  describe('engine', () => {
+    it('should support multiple conditional flows, case 1', (done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -315,7 +315,7 @@ lab.experiment('InclusiveGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: processXml
       });
       engine.execute({
@@ -334,7 +334,7 @@ lab.experiment('InclusiveGateway', () => {
       });
     });
 
-    lab.test('should support the default flow in combination with multiple conditional flows, case condition met', (done) => {
+    it('should support the default flow in combination with multiple conditional flows, case condition met', (done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -359,7 +359,7 @@ lab.experiment('InclusiveGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: processXml
       });
       engine.execute({
@@ -381,7 +381,7 @@ lab.experiment('InclusiveGateway', () => {
       });
     });
 
-    lab.test('should support the default flow in combination with multiple conditional flows, case no conditions met', (done) => {
+    it('should support the default flow in combination with multiple conditional flows, case no conditions met', (done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -406,7 +406,7 @@ lab.experiment('InclusiveGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: processXml
       });
       engine.execute({
@@ -428,7 +428,7 @@ lab.experiment('InclusiveGateway', () => {
       });
     });
 
-    lab.test('emits error when no conditional flow is taken', (done) => {
+    it('emits error when no conditional flow is taken', (done) => {
       const definitionXml = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -451,7 +451,7 @@ lab.experiment('InclusiveGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: definitionXml
       });
       engine.once('error', (err) => {
