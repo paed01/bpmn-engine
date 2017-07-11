@@ -66,7 +66,7 @@ lab.experiment('ExclusiveGateway', () => {
     });
 
     lab.test('variables and services are passed to conditional flow', (done) => {
-      context.variablesAndServices.variables.condition1 = true;
+      context.environment.assignVariables({condition1: true});
 
       const gateway = context.getChildActivityById('decision');
       const activityApi = gateway.activate();
@@ -80,7 +80,7 @@ lab.experiment('ExclusiveGateway', () => {
     });
 
     lab.test('end returns output in callback', (done) => {
-      context.variablesAndServices.variables.condition1 = false;
+      context.environment.assignVariables({condition1: false});
 
       const gateway = context.getChildActivityById('decision');
       gateway.activate();
@@ -102,7 +102,7 @@ lab.experiment('ExclusiveGateway', () => {
     });
 
     lab.test('discards rest outbound if one outbound was taken', (done) => {
-      context.variablesAndServices.variables.condition2 = true;
+      context.environment.assignVariables({condition2: true});
 
       const gateway = context.getChildActivityById('decision');
       gateway.activate();
@@ -177,8 +177,10 @@ lab.experiment('ExclusiveGateway', () => {
       });
 
       lab.test('discards rest if one flow was taken', (done) => {
-        context.variablesAndServices.variables.condition1 = true;
-        context.variablesAndServices.variables.condition2 = true;
+        context.environment.assignVariables({
+          condition1: true,
+          condition2: true
+        });
 
         const gateway = context.getChildActivityById('decision');
 
