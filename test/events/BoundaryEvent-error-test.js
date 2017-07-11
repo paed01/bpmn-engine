@@ -1,18 +1,18 @@
 'use strict';
 
-const Code = require('code');
-const expect = Code.expect;
+const {Engine} = require('../..');
 const {EventEmitter} = require('events');
 const getPropertyValue = require('../../lib/getPropertyValue');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const {Engine} = require('../..');
+const {beforeEach, describe, it} = lab;
+const {expect, fail} = Lab.assertions;
 
-lab.experiment('Error BoundaryEvent', () => {
+describe('Error BoundaryEvent', () => {
 
-  lab.describe('behaviour', () => {
+  describe('behaviour', () => {
     const processXml = `
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
       <process id="theProcess" isExecutable="true">
@@ -30,27 +30,22 @@ lab.experiment('Error BoundaryEvent', () => {
     </definitions>`;
 
     let context;
-    lab.beforeEach((done) => {
+    beforeEach((done) => {
 
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, c) => {
         if (err) return done(err);
         context = c;
-
-        context.variablesAndServices = {
-          services: {
-            test: (arg, next) => {
-              next();
-            }
-          }
-        };
+        context.environment.addService('test', (arg, next) => {
+          next();
+        });
 
         done();
       });
     });
 
-    lab.test('has property cancelActivity true', (done) => {
+    it('has property cancelActivity true', (done) => {
       const event = context.getChildActivityById('errorEvent');
       expect(event).to.include({
         cancelActivity: true
@@ -58,7 +53,7 @@ lab.experiment('Error BoundaryEvent', () => {
       done();
     });
 
-    lab.test('loads event definitions on activate', (done) => {
+    it('loads event definitions on activate', (done) => {
       const event = context.getChildActivityById('errorEvent');
       const eventApi = event.activate();
 
@@ -74,7 +69,7 @@ lab.experiment('Error BoundaryEvent', () => {
       done();
     });
 
-    lab.test('returns expected state on start', (done) => {
+    it('returns expected state on start', (done) => {
       const task = context.getChildActivityById('service');
       const event = context.getChildActivityById('errorEvent');
 
@@ -94,10 +89,10 @@ lab.experiment('Error BoundaryEvent', () => {
       task.run();
     });
 
-    lab.test('resolves error code expression on caught error', (done) => {
-      context.variablesAndServices.services.test = (arg, next) => {
+    it('resolves error code expression on caught error', (done) => {
+      context.environment.addService('test', (arg, next) => {
         next(new Error('FAIL'));
-      };
+      });
 
       const task = context.getChildActivityById('service');
       const event = context.getChildActivityById('errorEvent');
@@ -114,10 +109,10 @@ lab.experiment('Error BoundaryEvent', () => {
       task.run();
     });
 
-    lab.test('outputs errorCodeVariable on caught error', (done) => {
-      context.variablesAndServices.services.test = (arg, next) => {
+    it('outputs errorCodeVariable on caught error', (done) => {
+      context.environment.addService('test', (arg, next) => {
         next(new Error('FAIL'));
-      };
+      });
 
       const task = context.getChildActivityById('service');
       const event = context.getChildActivityById('errorEvent');
@@ -135,7 +130,7 @@ lab.experiment('Error BoundaryEvent', () => {
       task.run();
     });
 
-    lab.test('discards outbound when attachedTo completes', (done) => {
+    it('discards outbound when attachedTo completes', (done) => {
       const task = context.getChildActivityById('service');
       const event = context.getChildActivityById('errorEvent');
       task.activate();
@@ -148,10 +143,10 @@ lab.experiment('Error BoundaryEvent', () => {
       task.run();
     });
 
-    lab.test('discards attachedTo if completed', (done) => {
-      context.variablesAndServices.services.test = (arg, next) => {
+    it('discards attachedTo if completed', (done) => {
+      context.environment.addService('test', (arg, next) => {
         next(new Error('FAIL'));
-      };
+      });
 
       const task = context.getChildActivityById('service');
       const event = context.getChildActivityById('errorEvent');
@@ -165,10 +160,10 @@ lab.experiment('Error BoundaryEvent', () => {
       task.inbound[0].take();
     });
 
-    lab.test('returns expected state when completed', (done) => {
-      context.variablesAndServices.services.test = (arg, next) => {
+    it('returns expected state when completed', (done) => {
+      context.environment.addService('test', (arg, next) => {
         next(new Error('FAIL'));
-      };
+      });
 
       const task = context.getChildActivityById('service');
       const event = context.getChildActivityById('errorEvent');
@@ -188,7 +183,7 @@ lab.experiment('Error BoundaryEvent', () => {
     });
   });
 
-  lab.describe('engine', () => {
+  describe('engine', () => {
     const processXml = `
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
       <process id="theProcess" isExecutable="true">
@@ -205,7 +200,7 @@ lab.experiment('Error BoundaryEvent', () => {
       <error id="Error_0w1hljb" name="ServiceError" errorCode="\${message}" />
     </definitions>`;
 
-    lab.test('boundary event is discarded if task completes', (done) => {
+    it('boundary event is discarded if task completes', (done) => {
       const engine = new Engine({
         source: processXml,
         moddleOptions: {
@@ -214,7 +209,7 @@ lab.experiment('Error BoundaryEvent', () => {
       });
       const listener = new EventEmitter();
       listener.once('end-errorEvent', (e) => {
-        Code.fail(`<${e.id}> should have been discarded`);
+        fail(`<${e.id}> should have been discarded`);
       });
 
       engine.execute({
@@ -234,7 +229,7 @@ lab.experiment('Error BoundaryEvent', () => {
       });
     });
 
-    lab.test('task is discarded on error', (done) => {
+    it('task is discarded on error', (done) => {
       const engine = new Engine({
         source: processXml,
         moddleOptions: {
@@ -243,7 +238,7 @@ lab.experiment('Error BoundaryEvent', () => {
       });
       const listener = new EventEmitter();
       listener.once('end-service', (e) => {
-        Code.fail(`<${e.id}> should have been discarded`);
+        fail(`<${e.id}> should have been discarded`);
       });
 
       engine.execute({
@@ -264,7 +259,7 @@ lab.experiment('Error BoundaryEvent', () => {
     });
   });
 
-  //   lab.test('emits end when timed out', (done) => {
+  //   it('emits end when timed out', (done) => {
   //     const event = context.getChildActivityById('timeoutEvent');
   //     event.activate();
 
@@ -275,11 +270,11 @@ lab.experiment('Error BoundaryEvent', () => {
   //     event.run();
   //   });
 
-  //   lab.test('stops timer if discarded', (done) => {
+  //   it('stops timer if discarded', (done) => {
   //     const event = context.getChildActivityById('timeoutEvent');
   //     event.activate();
 
-  //     event.once('end', Code.fail.bind(null, 'No end event should have been emitted'));
+  //     event.once('end', fail.bind(null, 'No end event should have been emitted'));
   //     event.once('leave', () => {
   //       expect(event.timer).to.not.exist();
   //       done();
@@ -291,7 +286,7 @@ lab.experiment('Error BoundaryEvent', () => {
   //     event.run();
   //   });
 
-  //   lab.test('starts when attachedTo runs', (done) => {
+  //   it('starts when attachedTo runs', (done) => {
   //     const task = context.getChildActivityById('dontWaitForMe');
   //     task.activate();
 
@@ -305,7 +300,7 @@ lab.experiment('Error BoundaryEvent', () => {
   //     task.inbound[0].take();
   //   });
 
-  //   lab.test('discards outbound when attachedTo completes', (done) => {
+  //   it('discards outbound when attachedTo completes', (done) => {
   //     const task = context.getChildActivityById('dontWaitForMe');
   //     task.activate();
 
@@ -323,7 +318,7 @@ lab.experiment('Error BoundaryEvent', () => {
   //     task.inbound[0].take();
   //   });
 
-  //   lab.test('discards attachedTo if completed', (done) => {
+  //   it('discards attachedTo if completed', (done) => {
   //     context.variablesAndServices.variables.duration = 'PT0.01S';
 
   //     const task = context.getChildActivityById('dontWaitForMe');
@@ -339,7 +334,7 @@ lab.experiment('Error BoundaryEvent', () => {
   //     task.inbound[0].take();
   //   });
 
-  //   lab.test('returns expected state when completed', (done) => {
+  //   it('returns expected state when completed', (done) => {
   //     context.variablesAndServices.variables.duration = 'PT0.01S';
 
   //     const task = context.getChildActivityById('dontWaitForMe');
@@ -358,10 +353,10 @@ lab.experiment('Error BoundaryEvent', () => {
   //     task.inbound[0].take();
   //   });
 
-  //   lab.describe('interupting', () => {
+  //   describe('interupting', () => {
   //     const processXml = factory.resource('boundary-timeout.bpmn');
 
-  //     lab.test('is discarded if task completes', (done) => {
+  //     it('is discarded if task completes', (done) => {
   //       const engine = new Bpmn.Engine({
   //         source: processXml
   //       });
@@ -370,7 +365,7 @@ lab.experiment('Error BoundaryEvent', () => {
   //         task.signal();
   //       });
   //       listener.once('end-boundTimeoutEvent', (e) => {
-  //         Code.fail(`<${e.id}> should have been discarded`);
+  //         fail(`<${e.id}> should have been discarded`);
   //       });
 
   //       engine.execute({
@@ -385,7 +380,7 @@ lab.experiment('Error BoundaryEvent', () => {
   //       });
   //     });
 
-  //     lab.test('is discarded if task is canceled', (done) => {
+  //     it('is discarded if task is canceled', (done) => {
   //       const engine = new Bpmn.Engine({
   //         source: processXml
   //       });
@@ -394,7 +389,7 @@ lab.experiment('Error BoundaryEvent', () => {
   //         task.cancel();
   //       });
   //       listener.once('end-boundTimeoutEvent', (e) => {
-  //         Code.fail(`<${e.id}> should have been discarded`);
+  //         fail(`<${e.id}> should have been discarded`);
   //       });
 
   //       engine.execute({
@@ -409,13 +404,13 @@ lab.experiment('Error BoundaryEvent', () => {
   //       });
   //     });
 
-  //     lab.test('cancels task', (done) => {
+  //     it('cancels task', (done) => {
   //       const engine = new Bpmn.Engine({
   //         source: processXml
   //       });
   //       const listener = new EventEmitter();
   //       listener.once('end-userTask', (e) => {
-  //         Code.fail(`<${e.id}> should have been discarded`);
+  //         fail(`<${e.id}> should have been discarded`);
   //       });
 
   //       engine.execute({
@@ -431,10 +426,10 @@ lab.experiment('Error BoundaryEvent', () => {
   //     });
   //   });
 
-  //   lab.describe('non-interupting', () => {
+  //   describe('non-interupting', () => {
   //     const processXml = factory.resource('boundary-non-interupting-timer.bpmn');
 
-  //     lab.test('does not discard task', (done) => {
+  //     it('does not discard task', (done) => {
   //       const engine = new Bpmn.Engine({
   //         source: processXml
   //       });
@@ -464,7 +459,7 @@ lab.experiment('Error BoundaryEvent', () => {
   //       });
   //     });
 
-  //     lab.test('is discarded if task completes', (done) => {
+  //     it('is discarded if task completes', (done) => {
   //       const engine = new Bpmn.Engine({
   //         source: processXml
   //       });
@@ -495,7 +490,7 @@ lab.experiment('Error BoundaryEvent', () => {
   //       });
   //     });
 
-  //     lab.test('is discarded if task is canceled', (done) => {
+  //     it('is discarded if task is canceled', (done) => {
   //       const engine = new Bpmn.Engine({
   //         source: processXml
   //       });
@@ -504,7 +499,7 @@ lab.experiment('Error BoundaryEvent', () => {
   //         task.cancel();
   //       });
   //       listener.once('end-boundaryEvent', (e) => {
-  //         Code.fail(`<${e.id}> should have been discarded`);
+  //         fail(`<${e.id}> should have been discarded`);
   //       });
 
   //       engine.execute({
@@ -521,8 +516,8 @@ lab.experiment('Error BoundaryEvent', () => {
   //   });
   // });
 
-  lab.describe('getState()', () => {
-    lab.test('returns remaining entered and attachedTo', (done) => {
+  describe('getState()', () => {
+    it('returns remaining entered and attachedTo', (done) => {
       const processXml = `
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
         <process id="interruptedProcess" isExecutable="true">
@@ -582,8 +577,8 @@ lab.experiment('Error BoundaryEvent', () => {
     });
   });
 
-  lab.describe('resume()', () => {
-    lab.test('resumes if not entered yet', (done) => {
+  describe('resume()', () => {
+    it('resumes if not entered yet', (done) => {
       const processXml = `
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
         <process id="interruptedProcess" isExecutable="true">

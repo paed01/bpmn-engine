@@ -1,20 +1,20 @@
 'use strict';
 
-const Code = require('code');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('../../lib');
+const {EventEmitter} = require('events');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 const getPropertyValue = require('../../lib/getPropertyValue');
 
 const lab = exports.lab = Lab.script();
-const Bpmn = require('../../');
-const expect = Code.expect;
+const {beforeEach, describe, it} = lab;
+const {expect} = Lab.assertions;
 
-lab.experiment('task loop', () => {
-  lab.describe('sequential', () => {
+describe('task loop', () => {
+  describe('sequential', () => {
 
-    lab.test('on recurring task error the loop breaks', (done) => {
-      const def = `
+    it('on recurring task error the loop breaks', (done) => {
+      const source = `
       <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
         <bpmn:process id="taskLoopProcess" isExecutable="true">
@@ -35,8 +35,8 @@ lab.experiment('task loop', () => {
         </bpmn:process>
       </bpmn:definitions>`;
 
-      const engine = new Bpmn.Engine({
-        source: def
+      const engine = new Engine({
+        source
       });
       const listener = new EventEmitter();
 
@@ -62,8 +62,8 @@ lab.experiment('task loop', () => {
       });
     });
 
-    lab.describe('cardinality', () => {
-      lab.test('loops script task until cardinality is reached', (done) => {
+    describe('cardinality', () => {
+      it('loops script task until cardinality is reached', (done) => {
         const def = `
     <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -82,7 +82,7 @@ lab.experiment('task loop', () => {
     </bpmn:definitions>
       `;
 
-        const engine = new Bpmn.Engine({
+        const engine = new Engine({
           source: def
         });
         const listener = new EventEmitter();
@@ -110,7 +110,7 @@ lab.experiment('task loop', () => {
         });
       });
 
-      lab.test('loops task until cardinality is reached', (done) => {
+      it('loops task until cardinality is reached', (done) => {
         const def = `
     <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -124,7 +124,7 @@ lab.experiment('task loop', () => {
     </bpmn:definitions>
       `;
 
-        const engine = new Bpmn.Engine({
+        const engine = new Engine({
           source: def
         });
         const listener = new EventEmitter();
@@ -147,7 +147,7 @@ lab.experiment('task loop', () => {
         });
       });
 
-      lab.test('loops task until cardinality as expression is reached', (done) => {
+      it('loops task until cardinality as expression is reached', (done) => {
         const def = `
     <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -161,7 +161,7 @@ lab.experiment('task loop', () => {
     </bpmn:definitions>
       `;
 
-        const engine = new Bpmn.Engine({
+        const engine = new Engine({
           source: def
         });
         const listener = new EventEmitter();
@@ -188,9 +188,9 @@ lab.experiment('task loop', () => {
       });
     });
 
-    lab.describe('condition', () => {
+    describe('condition', () => {
 
-      lab.test('loops user task until condition is met', (done) => {
+      it('loops user task until condition is met', (done) => {
         const def = `
   <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -204,7 +204,7 @@ lab.experiment('task loop', () => {
   </bpmn:definitions>
     `;
 
-        const engine = new Bpmn.Engine({
+        const engine = new Engine({
           source: def
         });
         const listener = new EventEmitter();
@@ -231,7 +231,7 @@ lab.experiment('task loop', () => {
         });
       });
 
-      lab.test('loops sub process until cardinality is met', (done) => {
+      it('loops sub process until cardinality is met', (done) => {
         const def = `
   <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -247,7 +247,7 @@ lab.experiment('task loop', () => {
   </definitions>
     `;
 
-        const engine = new Bpmn.Engine({
+        const engine = new Engine({
           source: def,
           moddleOptions: {
             camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -280,7 +280,7 @@ lab.experiment('task loop', () => {
         });
       });
 
-      lab.test('loops service task until condition expression is met', (done) => {
+      it('loops service task until condition expression is met', (done) => {
         const def = `
 <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -294,7 +294,7 @@ lab.experiment('task loop', () => {
 </definitions>
     `;
 
-        const engine = new Bpmn.Engine({
+        const engine = new Engine({
           source: def,
           moddleOptions: {
             camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -339,9 +339,9 @@ lab.experiment('task loop', () => {
 
     });
 
-    lab.describe('camunda collection expression', () => {
+    describe('camunda collection expression', () => {
 
-      lab.test('loops each item', (done) => {
+      it('loops each item', (done) => {
         const def = `
 <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -358,7 +358,7 @@ lab.experiment('task loop', () => {
 </bpmn:definitions>
     `;
 
-        const engine = new Bpmn.Engine({
+        const engine = new Engine({
           source: def,
           moddleOptions: {
             camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -393,7 +393,7 @@ lab.experiment('task loop', () => {
 
       });
 
-      lab.test('breaks loop if error is returned in callback', (done) => {
+      it('breaks loop if error is returned in callback', (done) => {
         const def = `
 <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -408,7 +408,7 @@ lab.experiment('task loop', () => {
 </definitions>
     `;
 
-        const engine = new Bpmn.Engine({
+        const engine = new Engine({
           source: def,
           moddleOptions: {
             camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -448,8 +448,8 @@ lab.experiment('task loop', () => {
     });
   });
 
-  lab.describe('combination', () => {
-    lab.test('with condition and cardinality loops script task until condition is met', (done) => {
+  describe('combination', () => {
+    it('with condition and cardinality loops script task until condition is met', (done) => {
       const def = `
   <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -470,7 +470,7 @@ lab.experiment('task loop', () => {
   </bpmn:definitions>
     `;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: def
       });
       const listener = new EventEmitter();
@@ -498,7 +498,7 @@ lab.experiment('task loop', () => {
 
   });
 
-  lab.describe('sequential', () => {
+  describe('sequential', () => {
     const processXml = `
     <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
        xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -515,7 +515,7 @@ lab.experiment('task loop', () => {
     </bpmn:definitions>`;
 
     let context;
-    lab.beforeEach((done) => {
+    beforeEach((done) => {
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, c) => {
@@ -525,7 +525,7 @@ lab.experiment('task loop', () => {
       });
     });
 
-    lab.test('runs loop on inbound', (done) => {
+    it('runs loop on inbound', (done) => {
       context.services = {
         loopTest: (executionContext, next) => {
           const idx = executionContext.index;
@@ -548,7 +548,7 @@ lab.experiment('task loop', () => {
 
     });
 
-    lab.test('breaks loop on error', (done) => {
+    it('breaks loop on error', (done) => {
       context.services = {
         loopTest: (executionContext, next) => {
           const idx = executionContext.index;
@@ -573,7 +573,7 @@ lab.experiment('task loop', () => {
     });
   });
 
-  lab.describe('parallell', () => {
+  describe('parallell', () => {
     const processXml = `
     <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
        xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -590,7 +590,7 @@ lab.experiment('task loop', () => {
     </bpmn:definitions>`;
 
     let context;
-    lab.beforeEach((done) => {
+    beforeEach((done) => {
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, c) => {
@@ -600,7 +600,7 @@ lab.experiment('task loop', () => {
       });
     });
 
-    lab.test('runs loop on inbound', (done) => {
+    it('runs loop on inbound', (done) => {
       context.services = {
         loopTest: (executionContext, next) => {
           const idx = executionContext.index;
@@ -623,7 +623,7 @@ lab.experiment('task loop', () => {
 
     });
 
-    lab.test('breaks loop on error', (done) => {
+    it('breaks loop on error', (done) => {
       context.services = {
         loopTest: (executionContext, next) => {
           const idx = executionContext.index;
