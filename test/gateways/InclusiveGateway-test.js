@@ -63,7 +63,7 @@ lab.experiment('InclusiveGateway', () => {
     });
 
     lab.test('variables and services are passed to conditional flow', (done) => {
-      context.variablesAndServices.variables.condition1 = true;
+      context.environment.assignVariables({condition1: true});
 
       const gateway = context.getChildActivityById('decisions');
       gateway.activate();
@@ -76,7 +76,7 @@ lab.experiment('InclusiveGateway', () => {
     });
 
     lab.test('end returns output in callback', (done) => {
-      context.variablesAndServices.variables.condition1 = false;
+      context.environment.assignVariables({condition1: false});
 
       const gateway = context.getChildActivityById('decisions');
       gateway.activate();
@@ -85,8 +85,6 @@ lab.experiment('InclusiveGateway', () => {
         expect(executionContext.getOutput()).to.equal({
           enteredDecision: 'Yes'
         });
-        expect(gateway.outbound[0].taken, gateway.outbound[0].id).to.be.true();
-        expect(gateway.outbound[1].taken, gateway.outbound[1].id).to.be.false();
         done();
       });
 
@@ -94,7 +92,7 @@ lab.experiment('InclusiveGateway', () => {
     });
 
     lab.test('discards default outbound if one outbound was taken', (done) => {
-      context.variablesAndServices.variables.condition2 = true;
+      context.environment.assignVariables({condition2: true});
 
       const gateway = context.getChildActivityById('decisions');
       gateway.activate();
@@ -115,8 +113,10 @@ lab.experiment('InclusiveGateway', () => {
     });
 
     lab.test('discards default outbound if more than one outbound was taken', (done) => {
-      context.variablesAndServices.variables.condition1 = true;
-      context.variablesAndServices.variables.condition2 = true;
+      context.environment.assignVariables({
+        condition1: true,
+        condition2: true
+      });
 
       const gateway = context.getChildActivityById('decisions');
       gateway.activate();
@@ -156,7 +156,7 @@ lab.experiment('InclusiveGateway', () => {
 
     lab.describe('resume()', () => {
       lab.test('sets resumed gateway pendingOutbound', (done) => {
-        context.variablesAndServices.variables.condition2 = true;
+        context.environment.assignVariables({condition2: true});
 
         const gateway = context.getChildActivityById('decisions');
 
@@ -192,8 +192,10 @@ lab.experiment('InclusiveGateway', () => {
       });
 
       lab.test('discards defaultFlow if other flows were taken', (done) => {
-        context.variablesAndServices.variables.condition1 = true;
-        context.variablesAndServices.variables.condition2 = true;
+        context.environment.assignVariables({
+          condition1: true,
+          condition2: true
+        });
 
         const gateway = context.getChildActivityById('decisions');
 
