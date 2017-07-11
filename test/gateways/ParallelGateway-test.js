@@ -1,17 +1,17 @@
 'use strict';
 
-const Code = require('code');
+const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
-const Bpmn = require('../..');
+const {beforeEach, describe, it} = lab;
+const {expect, fail} = Lab.assertions;
 
-lab.experiment('ParallelGateway', () => {
-  lab.describe('join', () => {
+describe('ParallelGateway', () => {
+  describe('join', () => {
     const processXml = `
     <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -28,7 +28,7 @@ lab.experiment('ParallelGateway', () => {
     </definitions>`;
 
     let context;
-    lab.beforeEach((done) => {
+    beforeEach((done) => {
       testHelpers.getContext(processXml, (err, result) => {
         if (err) return done(err);
         context = result;
@@ -36,7 +36,7 @@ lab.experiment('ParallelGateway', () => {
       });
     });
 
-    lab.test('should have pending inbound on start', (done) => {
+    it('should have pending inbound on start', (done) => {
       const gateway = context.getChildActivityById('join');
       gateway.activate();
 
@@ -50,7 +50,7 @@ lab.experiment('ParallelGateway', () => {
       gateway.inbound[0].take();
     });
 
-    lab.test('emits end when all inbounds are taken', (done) => {
+    it('emits end when all inbounds are taken', (done) => {
       const gateway = context.getChildActivityById('join');
       gateway.activate();
 
@@ -64,7 +64,7 @@ lab.experiment('ParallelGateway', () => {
       gateway.inbound.forEach((f) => f.take());
     });
 
-    lab.test('emits leave when all inbounds are taken', (done) => {
+    it('emits leave when all inbounds are taken', (done) => {
       const gateway = context.getChildActivityById('join');
       gateway.activate();
 
@@ -78,7 +78,7 @@ lab.experiment('ParallelGateway', () => {
       gateway.inbound.forEach((f) => f.take());
     });
 
-    lab.test('discards outbound if inbound was discarded', (done) => {
+    it('discards outbound if inbound was discarded', (done) => {
       const gateway = context.getChildActivityById('join');
 
       gateway.outbound[0].once('discarded', () => {
@@ -89,8 +89,8 @@ lab.experiment('ParallelGateway', () => {
       gateway.inbound.forEach((f) => f.discard());
     });
 
-    lab.describe('getState()', () => {
-      lab.test('on start returns pendingInbound', (done) => {
+    describe('getState()', () => {
+      it('on start returns pendingInbound', (done) => {
         const gateway = context.getChildActivityById('join');
         gateway.activate();
 
@@ -105,7 +105,7 @@ lab.experiment('ParallelGateway', () => {
         gateway.inbound[0].take();
       });
 
-      lab.test('discarded inbound is returned in discardedInbound', (done) => {
+      it('discarded inbound is returned in discardedInbound', (done) => {
         const gateway = context.getChildActivityById('join');
         gateway.activate();
 
@@ -124,9 +124,9 @@ lab.experiment('ParallelGateway', () => {
       });
     });
 
-    lab.describe('resume()', () => {
+    describe('resume()', () => {
 
-      lab.test('sets resumed gateway pendingInbound', (done) => {
+      it('sets resumed gateway pendingInbound', (done) => {
         const gateway = context.getChildActivityById('join');
 
         gateway.on('start', (activity) => {
@@ -154,7 +154,7 @@ lab.experiment('ParallelGateway', () => {
         gateway.inbound[0].take();
       });
 
-      lab.test('completes when pending inbound flows are taken', (done) => {
+      it('completes when pending inbound flows are taken', (done) => {
         const gateway = context.getChildActivityById('join');
 
         gateway.on('start', (activityApi) => {
@@ -187,7 +187,7 @@ lab.experiment('ParallelGateway', () => {
         gateway.inbound[0].take();
       });
 
-      lab.test('completes even if one inbound flow was discarded', (done) => {
+      it('completes even if one inbound flow was discarded', (done) => {
         const gateway = context.getChildActivityById('join');
 
         gateway.on('enter', (activityApi) => {
@@ -221,7 +221,7 @@ lab.experiment('ParallelGateway', () => {
         gateway.inbound[0].discard();
       });
 
-      lab.test('discards outbound if all inbound was discarded', (done) => {
+      it('discards outbound if all inbound was discarded', (done) => {
         const gateway = context.getChildActivityById('join');
 
         gateway.on('enter', (activityApi) => {
@@ -242,10 +242,10 @@ lab.experiment('ParallelGateway', () => {
             done();
           });
           resumedGateway.outbound[0].once('taken', () => {
-            Code.fail('Should not be taken');
+            fail('Should not be taken');
           });
           resumedGateway.once('start', () => {
-            Code.fail('Should not emit start');
+            fail('Should not emit start');
           });
 
           const resumedGatewayApi = resumedGateway.activate(state);
@@ -259,7 +259,7 @@ lab.experiment('ParallelGateway', () => {
     });
   });
 
-  lab.describe('fork', () => {
+  describe('fork', () => {
     const processXml = `
     <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -276,7 +276,7 @@ lab.experiment('ParallelGateway', () => {
     </definitions>`;
 
     let context;
-    lab.beforeEach((done) => {
+    beforeEach((done) => {
       testHelpers.getContext(processXml, (err, c) => {
         if (err) return done(err);
         context = c;
@@ -284,7 +284,7 @@ lab.experiment('ParallelGateway', () => {
       });
     });
 
-    lab.test('emits start before first outbound is taken', (done) => {
+    it('emits start before first outbound is taken', (done) => {
       const gateway = context.getChildActivityById('fork');
 
       gateway.once('start', (activityApi) => {
@@ -296,7 +296,7 @@ lab.experiment('ParallelGateway', () => {
       gateway.inbound[0].take();
     });
 
-    lab.test('emits end when all outbounds are taken', (done) => {
+    it('emits end when all outbounds are taken', (done) => {
       const gateway = context.getChildActivityById('fork');
 
       gateway.on('end', (activity) => {
@@ -308,7 +308,7 @@ lab.experiment('ParallelGateway', () => {
       gateway.inbound[0].take();
     });
 
-    lab.test('leaves and discards all outbound if inbound was discarded', (done) => {
+    it('leaves and discards all outbound if inbound was discarded', (done) => {
       const gateway = context.getChildActivityById('fork');
 
       const discardedFlows = [];
@@ -330,7 +330,7 @@ lab.experiment('ParallelGateway', () => {
       gateway.inbound.forEach((f) => f.discard());
     });
 
-    lab.test('start with fork emits start', (done) => {
+    it('start with fork emits start', (done) => {
       const startProcessXml = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -356,8 +356,8 @@ lab.experiment('ParallelGateway', () => {
       });
     });
 
-    lab.describe('resume()', () => {
-      lab.test('starts taking pending outbound flows', (done) => {
+    describe('resume()', () => {
+      it('starts taking pending outbound flows', (done) => {
         const gateway = context.getChildActivityById('fork');
 
         gateway.on('start', (activityApi) => {
@@ -396,8 +396,8 @@ lab.experiment('ParallelGateway', () => {
     });
   });
 
-  lab.describe('engine', () => {
-    lab.test('should join diverging fork', (done) => {
+  describe('engine', () => {
+    it('should join diverging fork', (done) => {
       const definitionXml = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -415,7 +415,7 @@ lab.experiment('ParallelGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: definitionXml
       });
       engine.execute((err, definition) => {
@@ -429,7 +429,7 @@ lab.experiment('ParallelGateway', () => {
       });
     });
 
-    lab.test('should fork multiple diverging flows', (done) => {
+    it('should fork multiple diverging flows', (done) => {
       const definitionXml = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -444,7 +444,7 @@ lab.experiment('ParallelGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: definitionXml
       });
       engine.execute((err, definition) => {
@@ -461,7 +461,7 @@ lab.experiment('ParallelGateway', () => {
       });
     });
 
-    lab.test('should join even if discarded flow', (done) => {
+    it('should join even if discarded flow', (done) => {
       const definitionXml = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -483,7 +483,7 @@ lab.experiment('ParallelGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: definitionXml
       });
       engine.execute({
@@ -501,7 +501,7 @@ lab.experiment('ParallelGateway', () => {
       });
     });
 
-    lab.test('should join discarded flow with tasks', (done) => {
+    it('should join discarded flow with tasks', (done) => {
       const definitionXml = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -527,7 +527,7 @@ lab.experiment('ParallelGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: definitionXml
       });
       engine.once('end', (def) => {
@@ -543,7 +543,7 @@ lab.experiment('ParallelGateway', () => {
       });
     });
 
-    lab.test('regardless of flow order', (done) => {
+    it('regardless of flow order', (done) => {
       const definitionXml = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -569,7 +569,7 @@ lab.experiment('ParallelGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: definitionXml
       });
       engine.execute({
@@ -587,7 +587,7 @@ lab.experiment('ParallelGateway', () => {
       });
     });
 
-    lab.test('and with default', (done) => {
+    it('and with default', (done) => {
       const definitionXml = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -613,7 +613,7 @@ lab.experiment('ParallelGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: definitionXml
       });
       engine.execute({
@@ -631,9 +631,9 @@ lab.experiment('ParallelGateway', () => {
       });
     });
 
-    lab.test('completes process with multiple joins in discarded path', (done) => {
+    it('completes process with multiple joins in discarded path', (done) => {
       const definitionXml = factory.resource('multiple-joins.bpmn');
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: definitionXml
       });
 
@@ -653,7 +653,7 @@ lab.experiment('ParallelGateway', () => {
       });
     });
 
-    lab.test('completes process with ending join', (done) => {
+    it('completes process with ending join', (done) => {
       const definitionXml = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -667,7 +667,7 @@ lab.experiment('ParallelGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: definitionXml
       });
 
@@ -678,8 +678,8 @@ lab.experiment('ParallelGateway', () => {
       engine.execute();
     });
 
-    lab.test('completes process with succeeding joins', (done) => {
-      const engine = new Bpmn.Engine({
+    it('completes process with succeeding joins', (done) => {
+      const engine = new Engine({
         source: factory.resource('succeeding-joins.bpmn'),
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -687,9 +687,9 @@ lab.experiment('ParallelGateway', () => {
       });
 
       const listener = new EventEmitter();
-      listener.on('start', (activity, inst) => {
-        if (activity.type !== 'bpmn:Process') {
-          expect(inst.getState().children.filter(c => c.entered).length, `start ${activity.id}`).to.be.above(0);
+      listener.on('start', (activityApi, processExecution) => {
+        if (activityApi.type !== 'bpmn:Process') {
+          expect(processExecution.getState().children.filter(c => c.entered).length, `start ${activityApi.id}`).to.be.above(0);
         }
       });
 
@@ -698,12 +698,12 @@ lab.experiment('ParallelGateway', () => {
       });
 
       engine.execute({
-        listener: listener
+        listener
       });
     });
 
-    lab.describe('resume()', () => {
-      lab.test('should continue join', (done) => {
+    describe('resume()', () => {
+      it('should continue join', (done) => {
         const definitionXml = `
         <?xml version="1.0" encoding="UTF-8"?>
           <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -724,7 +724,7 @@ lab.experiment('ParallelGateway', () => {
         </definitions>`;
 
         let state;
-        const engine = new Bpmn.Engine({
+        const engine = new Engine({
           source: definitionXml
         });
         const listener = new EventEmitter();
@@ -744,7 +744,7 @@ lab.experiment('ParallelGateway', () => {
           listener2.once('wait-task2', (activityApi) => {
             activityApi.signal();
           });
-          const engine2 = Bpmn.Engine.resume(state, {
+          const engine2 = Engine.resume(state, {
             listener: listener2
           });
           engine2.once('end', () => {
@@ -754,7 +754,7 @@ lab.experiment('ParallelGateway', () => {
         });
 
         engine.execute({
-          listener: listener
+          listener
         });
 
       });
