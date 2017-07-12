@@ -1,7 +1,7 @@
 'use strict';
 
 const {Engine} = require('../../lib');
-const EventEmitter = require('events').EventEmitter;
+const {EventEmitter} = require('events');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 

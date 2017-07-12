@@ -184,7 +184,7 @@ describe('Error BoundaryEvent', () => {
   });
 
   describe('engine', () => {
-    const processXml = `
+    const source = `
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
       <process id="theProcess" isExecutable="true">
         <startEvent id="start" />
@@ -202,7 +202,7 @@ describe('Error BoundaryEvent', () => {
 
     it('boundary event is discarded if task completes', (done) => {
       const engine = new Engine({
-        source: processXml,
+        source,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
@@ -213,7 +213,39 @@ describe('Error BoundaryEvent', () => {
       });
 
       engine.execute({
-        listener: listener,
+        listener,
+        services: {
+          test: (arg, next) => {
+            next();
+          }
+        }
+      }, (err, definition) => {
+        if (err) return done(err);
+
+        definition.once('end', () => {
+          testHelpers.expectNoLingeringListenersOnDefinition(definition);
+          done();
+        });
+      });
+    });
+
+    it('boundary event is discarded if task is canceled', (done) => {
+      const engine = new Engine({
+        source,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+      const listener = new EventEmitter();
+      listener.once('start-service', (activityApi) => {
+        activityApi.cancel();
+      });
+      listener.once('end-errorEvent', (activityApi) => {
+        fail(`<${activityApi.id}> should have been discarded`);
+      });
+
+      engine.execute({
+        listener,
         services: {
           test: (arg, next) => {
             next();
@@ -231,7 +263,7 @@ describe('Error BoundaryEvent', () => {
 
     it('task is discarded on error', (done) => {
       const engine = new Engine({
-        source: processXml,
+        source,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
@@ -242,7 +274,7 @@ describe('Error BoundaryEvent', () => {
       });
 
       engine.execute({
-        listener: listener,
+        listener,
         services: {
           test: (arg, next) => {
             next(new Error('Boom'));
@@ -259,262 +291,136 @@ describe('Error BoundaryEvent', () => {
     });
   });
 
-  //   it('emits end when timed out', (done) => {
-  //     const event = context.getChildActivityById('timeoutEvent');
-  //     event.activate();
+  describe('attachedTo multiple inbound', () => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <process id="testProcess" isExecutable="true">
+        <startEvent id="start" />
+        <serviceTask id="task" name="Get" camunda:expression="\${services.get(variables.defaultTaken)}" camunda:resultVariable="taskOutput" />
+        <boundaryEvent id="errorEvent" attachedToRef="task">
+          <errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="serviceError" camunda:errorMessageVariable="message" />
+        </boundaryEvent>
+        <exclusiveGateway id="decision" default="flow4">
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:outputParameter name="defaultTaken">\${true}</camunda:outputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+        </exclusiveGateway>
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+        <sequenceFlow id="flow2" sourceRef="task" targetRef="decision" />
+        <sequenceFlow id="flow3" sourceRef="errorEvent" targetRef="decision" />
+        <sequenceFlow id="flow4" sourceRef="decision" targetRef="task" />
+        <sequenceFlow id="flow5" sourceRef="decision" targetRef="end">
+          <conditionExpression xsi:type="tFormalExpression">\${variables.defaultTaken}</conditionExpression>
+        </sequenceFlow>
+      </process>
+      <error id="Error_0w1hljb" name="ServiceError" errorCode="\${message}" />
+    </definitions>`;
 
-  //     event.once('end', () => {
-  //       done();
-  //     });
+    it('completes process if no error', (done) => {
+      const engine = new Engine({
+        source,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
 
-  //     event.run();
-  //   });
+      const listener = new EventEmitter();
+      let startCount = 0;
+      listener.on('start-task', (activity) => {
+        startCount++;
+        if (startCount > 2) {
+          fail(`<${activity.id}> Too many starts`);
+        }
+      });
+      let endEventCount = 0;
+      listener.on('start-end', () => {
+        endEventCount++;
+      });
 
-  //   it('stops timer if discarded', (done) => {
-  //     const event = context.getChildActivityById('timeoutEvent');
-  //     event.activate();
+      engine.execute({
+        listener,
+        services: {
+          get: (defaultTaken) => {
+            return function(context, callback) {
+              callback(null, `successfully executed ${defaultTaken === true ? 'twice' : 'once'}`);
+            };
+          }
+        },
+        variables: {
+          api: 'http://example.com'
+        }
+      });
+      engine.once('end', (def) => {
+        expect(startCount, 'task starts').to.equal(2);
+        expect(endEventCount, 'end event').to.equal(1);
+        expect(def.getOutput()).to.equal({
+          api: 'http://example.com',
+          defaultTaken: true,
+          taskOutput: ['successfully executed twice']
+        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
+      });
+    });
 
-  //     event.once('end', fail.bind(null, 'No end event should have been emitted'));
-  //     event.once('leave', () => {
-  //       expect(event.timer).to.not.exist();
-  //       done();
-  //     });
-  //     event.once('start', (activity) => {
-  //       activity.discard();
-  //     });
+    it('completes process if error is caught', (done) => {
+      const engine = new Engine({
+        source,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
 
-  //     event.run();
-  //   });
+      const listener = new EventEmitter();
+      let startCount = 0;
+      listener.on('start-task', (activity) => {
+        startCount++;
+        if (startCount > 2) {
+          fail(`<${activity.id}> Too many starts`);
+        }
+      });
+      let endEventCount = 0;
+      listener.on('start-end', () => {
+        endEventCount++;
+      });
 
-  //   it('starts when attachedTo runs', (done) => {
-  //     const task = context.getChildActivityById('dontWaitForMe');
-  //     task.activate();
+      engine.execute({
+        listener,
+        services: {
+          get: (defaultTaken) => {
+            return function(context, callback) {
+              callback(new Error(`successfully caught ${defaultTaken === true ? 'twice' : 'once'}`));
+            };
+          }
+        },
+        variables: {
+          api: 'http://example.com'
+        }
+      });
+      engine.once('end', (def) => {
+        expect(startCount, 'task starts').to.equal(2);
+        expect(endEventCount, 'end event').to.equal(1);
+        expect(def.getOutput()).to.equal({
+          api: 'http://example.com',
+          defaultTaken: true,
+          taskInput: {
+            errorEvent: {
+              serviceError: 'successfully caught twice',
+              message: 'successfully caught twice'
+            }
+          }
+        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
+      });
+    });
 
-  //     const event = context.getChildActivityById('timeoutEvent');
-  //     event.activate();
-
-  //     event.once('start', () => {
-  //       done();
-  //     });
-
-  //     task.inbound[0].take();
-  //   });
-
-  //   it('discards outbound when attachedTo completes', (done) => {
-  //     const task = context.getChildActivityById('dontWaitForMe');
-  //     task.activate();
-
-  //     const event = context.getChildActivityById('timeoutEvent');
-  //     event.activate();
-
-  //     task.once('wait', (activity) => {
-  //       activity.signal();
-  //     });
-
-  //     event.outbound[0].once('discarded', () => {
-  //       done();
-  //     });
-
-  //     task.inbound[0].take();
-  //   });
-
-  //   it('discards attachedTo if completed', (done) => {
-  //     context.variablesAndServices.variables.duration = 'PT0.01S';
-
-  //     const task = context.getChildActivityById('dontWaitForMe');
-  //     task.activate();
-
-  //     const event = context.getChildActivityById('timeoutEvent');
-  //     event.activate();
-
-  //     task.outbound[0].once('discarded', () => {
-  //       done();
-  //     });
-
-  //     task.inbound[0].take();
-  //   });
-
-  //   it('returns expected state when completed', (done) => {
-  //     context.variablesAndServices.variables.duration = 'PT0.01S';
-
-  //     const task = context.getChildActivityById('dontWaitForMe');
-  //     task.activate();
-
-  //     const event = context.getChildActivityById('timeoutEvent');
-  //     event.activate();
-
-  //     event.once('end', (eventApi) => {
-  //       const state = eventApi.getState();
-  //       expect(state).to.not.include(['entered']);
-  //       expect(state.timeout).to.be.below(1);
-  //       done();
-  //     });
-
-  //     task.inbound[0].take();
-  //   });
-
-  //   describe('interupting', () => {
-  //     const processXml = factory.resource('boundary-timeout.bpmn');
-
-  //     it('is discarded if task completes', (done) => {
-  //       const engine = new Bpmn.Engine({
-  //         source: processXml
-  //       });
-  //       const listener = new EventEmitter();
-  //       listener.once('wait-userTask', (task) => {
-  //         task.signal();
-  //       });
-  //       listener.once('end-boundTimeoutEvent', (e) => {
-  //         fail(`<${e.id}> should have been discarded`);
-  //       });
-
-  //       engine.execute({
-  //         listener: listener
-  //       }, (err, definition) => {
-  //         if (err) return done(err);
-
-  //         definition.once('end', () => {
-  //           testHelpers.expectNoLingeringListenersOnDefinition(definition);
-  //           done();
-  //         });
-  //       });
-  //     });
-
-  //     it('is discarded if task is canceled', (done) => {
-  //       const engine = new Bpmn.Engine({
-  //         source: processXml
-  //       });
-  //       const listener = new EventEmitter();
-  //       listener.once('wait-userTask', (task) => {
-  //         task.cancel();
-  //       });
-  //       listener.once('end-boundTimeoutEvent', (e) => {
-  //         fail(`<${e.id}> should have been discarded`);
-  //       });
-
-  //       engine.execute({
-  //         listener: listener
-  //       }, (err, definition) => {
-  //         if (err) return done(err);
-
-  //         definition.once('end', () => {
-  //           testHelpers.expectNoLingeringListenersOnDefinition(definition);
-  //           done();
-  //         });
-  //       });
-  //     });
-
-  //     it('cancels task', (done) => {
-  //       const engine = new Bpmn.Engine({
-  //         source: processXml
-  //       });
-  //       const listener = new EventEmitter();
-  //       listener.once('end-userTask', (e) => {
-  //         fail(`<${e.id}> should have been discarded`);
-  //       });
-
-  //       engine.execute({
-  //         listener: listener
-  //       }, (err, definition) => {
-  //         if (err) return done(err);
-
-  //         definition.once('end', () => {
-  //           testHelpers.expectNoLingeringListenersOnDefinition(definition);
-  //           done();
-  //         });
-  //       });
-  //     });
-  //   });
-
-  //   describe('non-interupting', () => {
-  //     const processXml = factory.resource('boundary-non-interupting-timer.bpmn');
-
-  //     it('does not discard task', (done) => {
-  //       const engine = new Bpmn.Engine({
-  //         source: processXml
-  //       });
-  //       const listener = new EventEmitter();
-
-  //       const calledEnds = [];
-  //       listener.once('end-userTask', (e) => {
-  //         calledEnds.push(e.id);
-  //       });
-
-  //       listener.once('end-boundaryEvent', (activity, execution) => {
-  //         calledEnds.push(activity.id);
-
-  //         execution.signal('userTask');
-  //       });
-
-  //       engine.execute({
-  //         listener: listener
-  //       }, (err, definition) => {
-  //         if (err) return done(err);
-
-  //         definition.once('end', () => {
-  //           expect(calledEnds).to.include(['userTask', 'boundaryEvent']);
-  //           testHelpers.expectNoLingeringListenersOnDefinition(definition);
-  //           done();
-  //         });
-  //       });
-  //     });
-
-  //     it('is discarded if task completes', (done) => {
-  //       const engine = new Bpmn.Engine({
-  //         source: processXml
-  //       });
-  //       const listener = new EventEmitter();
-
-  //       listener.once('wait-userTask', (task) => {
-  //         task.signal();
-  //       });
-
-  //       const calledEnds = [];
-  //       listener.once('end-userTask', (e) => {
-  //         calledEnds.push(e.id);
-  //       });
-
-  //       listener.once('end-boundaryEvent', (e) => {
-  //         calledEnds.push(e.id);
-  //       });
-
-  //       engine.execute({
-  //         listener: listener
-  //       }, (err, definition) => {
-  //         if (err) return done(err);
-  //         definition.once('end', () => {
-  //           expect(calledEnds).to.include(['userTask']);
-  //           testHelpers.expectNoLingeringListenersOnDefinition(definition);
-  //           done();
-  //         });
-  //       });
-  //     });
-
-  //     it('is discarded if task is canceled', (done) => {
-  //       const engine = new Bpmn.Engine({
-  //         source: processXml
-  //       });
-  //       const listener = new EventEmitter();
-  //       listener.once('wait-userTask', (task) => {
-  //         task.cancel();
-  //       });
-  //       listener.once('end-boundaryEvent', (e) => {
-  //         fail(`<${e.id}> should have been discarded`);
-  //       });
-
-  //       engine.execute({
-  //         listener: listener
-  //       }, (err, definition) => {
-  //         if (err) return done(err);
-
-  //         definition.once('end', () => {
-  //           testHelpers.expectNoLingeringListenersOnDefinition(definition);
-  //           done();
-  //         });
-  //       });
-  //     });
-  //   });
-  // });
+  });
 
   describe('getState()', () => {
     it('returns remaining entered and attachedTo', (done) => {

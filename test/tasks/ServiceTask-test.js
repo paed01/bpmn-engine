@@ -1,6 +1,5 @@
 'use strict';
 
-const Code = require('code');
 const {Engine} = require('../..');
 const Environment = require('../../lib/Environment');
 const {EventEmitter} = require('events');
@@ -12,7 +11,7 @@ const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const {after, beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
+const {expect, fail} = Lab.assertions;
 
 const bupServiceFn = testHelpers.serviceFn;
 
@@ -608,7 +607,7 @@ describe('ServiceTask', () => {
       listener.on('start-task', (activity) => {
         startCount++;
         if (startCount > 2) {
-          Code.fail(`<${activity.id}> Too many starts`);
+          fail(`<${activity.id}> Too many starts`);
         }
       });
       let endEventCount = 0;

@@ -1,16 +1,16 @@
 'use strict';
 
-const Code = require('code');
+const {Engine} = require('../../lib');
+const {EventEmitter} = require('events');
 const Lab = require('lab');
-const EventEmitter = require('events').EventEmitter;
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
-const Bpmn = require('../..');
+const {beforeEach, describe, it} = lab;
+const {expect, fail} = Lab.assertions;
 
-lab.experiment('EndEvent', () => {
-  lab.describe('behaviour', () => {
+describe('EndEvent', () => {
+  describe('behaviour', () => {
     const processXml = `
     <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -29,7 +29,7 @@ lab.experiment('EndEvent', () => {
     </definitions>`;
 
     let context;
-    lab.beforeEach((done) => {
+    beforeEach((done) => {
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, c) => {
@@ -39,20 +39,20 @@ lab.experiment('EndEvent', () => {
       });
     });
 
-    lab.test('has inbound', (done) => {
+    it('has inbound', (done) => {
       const event = context.getChildActivityById('end');
       expect(event.inbound).to.have.length(1);
       done();
     });
 
-    lab.test('supports io', (done) => {
+    it('supports io', (done) => {
       const event = context.getChildActivityById('end');
       expect(event.io).to.exist();
       done();
     });
 
-    lab.test('exection getInput() returns io input', (done) => {
-      context.variablesAndServices.variables.statusCode = 200;
+    it('exection getInput() returns io input', (done) => {
+      context.environment.assignVariables({statusCode: 200});
 
       const event = context.getChildActivityById('end');
       event.once('end', (activity, executionContext) => {
@@ -68,9 +68,9 @@ lab.experiment('EndEvent', () => {
     });
   });
 
-  lab.describe('engine', () => {
-    lab.experiment('terminateEventDefinition', () => {
-      const processXml = `
+  describe('engine', () => {
+    describe('terminateEventDefinition', () => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -90,8 +90,8 @@ lab.experiment('EndEvent', () => {
 
       let definition;
       lab.before((done) => {
-        const engine = new Bpmn.Engine({
-          source: processXml
+        const engine = new Engine({
+          source
         });
         engine.getDefinition((err, def) => {
           if (err) return done(err);
@@ -100,26 +100,26 @@ lab.experiment('EndEvent', () => {
         });
       });
 
-      lab.test('should have inbound sequence flows', (done) => {
+      it('should have inbound sequence flows', (done) => {
         const element = definition.getChildActivityById('fatal');
         expect(element).to.include('inbound');
         expect(element.inbound).to.have.length(1);
         done();
       });
 
-      lab.test('and have property isTermation flag true', (done) => {
+      it('and have property isTermation flag true', (done) => {
         const element = definition.getChildActivityById('fatal');
         expect(element.terminate).to.be.true();
         done();
       });
 
-      lab.test('should terminate process', (done) => {
-        const engine = new Bpmn.Engine({
-          source: processXml
+      it('should terminate process', (done) => {
+        const engine = new Engine({
+          source
         });
         const listener = new EventEmitter();
-        listener.once('end-theEnd1', (c) => {
-          Code.fail(new Error(`${c.id} should have been terminated`));
+        listener.once('end-theEnd1', (activityApi) => {
+          fail(new Error(`${activityApi.id} should have been terminated`));
         });
 
         engine.execute({

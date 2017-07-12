@@ -10,7 +10,7 @@ const {expect} = Lab.assertions;
 
 describe('StartEvent', () => {
   it('should have outbound sequence flows', (done) => {
-    const processXml = `
+    const source = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theProcess" isExecutable="true">
@@ -21,7 +21,7 @@ describe('StartEvent', () => {
     </definitions>`;
 
     const engine = new Engine({
-      source: processXml
+      source
     });
     engine.execute((err, execution) => {
       if (err) return done(err);
@@ -31,7 +31,7 @@ describe('StartEvent', () => {
   });
 
   describe('with form', () => {
-    const processXml = `
+    const source = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -61,7 +61,7 @@ describe('StartEvent', () => {
       });
 
       const engine = new Engine({
-        source: processXml,
+        source,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
@@ -78,7 +78,7 @@ describe('StartEvent', () => {
 
     it('getState() returns waiting true', (done) => {
       const engine = new Engine({
-        source: processXml,
+        source,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
@@ -99,7 +99,7 @@ describe('StartEvent', () => {
 
     it('getState() returns form state', (done) => {
       const engine = new Engine({
-        source: processXml,
+        source,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }

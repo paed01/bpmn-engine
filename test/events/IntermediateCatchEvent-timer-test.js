@@ -1,19 +1,19 @@
 'use strict';
 
-const Code = require('code');
-const expect = Code.expect;
+const {Engine} = require('../../lib');
+const {EventEmitter} = require('events');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const Bpmn = require('../..');
-const EventEmitter = require('events').EventEmitter;
+const {beforeEach, describe, it} = lab;
+const {expect} = Lab.assertions;
 
-lab.experiment('Intermediate Catch Event', () => {
-  lab.describe('behaviour', () => {
+describe('Intermediate Catch Event', () => {
+  describe('behaviour', () => {
     let context;
-    lab.beforeEach((done) => {
+    beforeEach((done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -39,7 +39,7 @@ lab.experiment('Intermediate Catch Event', () => {
       });
     });
 
-    lab.test('loads event definitions on activate', (done) => {
+    it('loads event definitions on activate', (done) => {
       const event = context.getChildActivityById('timeoutEvent');
       const eventApi = event.activate();
 
@@ -56,7 +56,7 @@ lab.experiment('Intermediate Catch Event', () => {
       done();
     });
 
-    lab.test('resolves timeout when inbound is taken', (done) => {
+    it('resolves timeout when inbound is taken', (done) => {
       const event = context.getChildActivityById('timeoutEvent');
 
       event.on('start', (activity) => {
@@ -69,7 +69,7 @@ lab.experiment('Intermediate Catch Event', () => {
       event.inbound[0].take();
     });
 
-    lab.test('returns expected state on start', (done) => {
+    it('returns expected state on start', (done) => {
       const event = context.getChildActivityById('timeoutEvent');
 
       event.on('start', (activity) => {
@@ -88,28 +88,31 @@ lab.experiment('Intermediate Catch Event', () => {
       event.inbound[0].take();
     });
 
-    lab.test('resolves duration expression when executed', (done) => {
-      const processXml = `
+    it('resolves duration expression when executed', (done) => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="interruptedProcess" isExecutable="true">
-          <userTask id="dontWaitForMe" />
-          <boundaryEvent id="timeoutEventWithVar" attachedToRef="dontWaitForMe">
+          <startEvent id="start" />
+          <intermediateCatchEvent id="timeoutEventWithVar">
             <timerEventDefinition>
               <timeDuration xsi:type="tFormalExpression">PT\${variables.timeout}S</timeDuration>
             </timerEventDefinition>
-          </boundaryEvent>
+          </intermediateCatchEvent>
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="start" targetRef="timeoutEvent" />
+          <sequenceFlow id="flow2" sourceRef="timeoutEvent" targetRef="end" />
         </process>
       </definitions>`;
 
-      testHelpers.getContext(processXml, {
+      testHelpers.getContext(source, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, context2) => {
         if (err) return done(err);
 
-        context2.variablesAndServices.variables = {
+        context2.environment.assignVariables({
           timeout: 0.2
-        };
+        });
 
         const event = context2.getChildActivityById('timeoutEventWithVar');
 
@@ -123,7 +126,7 @@ lab.experiment('Intermediate Catch Event', () => {
       });
     });
 
-    lab.test('emits end when timed out', (done) => {
+    it('emits end when timed out', (done) => {
       const event = context.getChildActivityById('timeoutEvent');
       event.activate();
 
@@ -134,7 +137,7 @@ lab.experiment('Intermediate Catch Event', () => {
       event.inbound[0].take();
     });
 
-    lab.test('discards outbound if inbound was discarded', (done) => {
+    it('discards outbound if inbound was discarded', (done) => {
       const event = context.getChildActivityById('timeoutEvent');
 
       event.outbound[0].once('discarded', () => {
@@ -146,9 +149,9 @@ lab.experiment('Intermediate Catch Event', () => {
     });
   });
 
-  lab.describe('TimerEventDefinition', () => {
-    lab.test('waits duration', (done) => {
-      const engine = new Bpmn.Engine({
+  describe('TimerEventDefinition', () => {
+    it('waits duration', (done) => {
+      const engine = new Engine({
         source: factory.resource('timer-event.bpmn')
       });
       const listener = new EventEmitter();

@@ -1,22 +1,22 @@
 'use strict';
 
-const Code = require('code');
-const expect = Code.expect;
+const {Engine} = require('../../lib');
+const {EventEmitter} = require('events');
 const factory = require('../helpers/factory');
 const getPropertyValue = require('../../lib/getPropertyValue');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const Bpmn = require('../..');
-const EventEmitter = require('events').EventEmitter;
+const {beforeEach, describe, it} = lab;
+const {expect, fail} = Lab.assertions;
 
-lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
+describe('BoundaryEvent with TimerEventDefinition', () => {
 
-  lab.describe('behaviour', () => {
+  describe('behaviour', () => {
     let context;
-    lab.beforeEach((done) => {
-      const processXml = `
+    beforeEach((done) => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="interruptedProcess" isExecutable="true">
@@ -35,7 +35,7 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(processXml, {
+      testHelpers.getContext(source, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, c) => {
         if (err) return done(err);
@@ -44,7 +44,7 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       });
     });
 
-    lab.test('loads event definitions on activate', (done) => {
+    it('loads event definitions on activate', (done) => {
       const event = context.getChildActivityById('timeoutEvent');
       const eventApi = event.activate();
 
@@ -61,7 +61,7 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       done();
     });
 
-    lab.test('has property cancelActivity true', (done) => {
+    it('has property cancelActivity true', (done) => {
       const event = context.getChildActivityById('timeoutEvent');
       expect(event).to.include({
         cancelActivity: true
@@ -69,7 +69,7 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       done();
     });
 
-    lab.test('resolves timeout when executed', (done) => {
+    it('resolves timeout when executed', (done) => {
       const task = context.getChildActivityById('dontWaitForMe');
       const event = context.getChildActivityById('timeoutEvent');
       event.activate();
@@ -83,7 +83,7 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       task.run();
     });
 
-    lab.test('returns expected state on start', (done) => {
+    it('returns expected state on start', (done) => {
       const task = context.getChildActivityById('dontWaitForMe');
       const event = context.getChildActivityById('timeoutEvent');
       event.activate();
@@ -105,7 +105,7 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       task.run();
     });
 
-    lab.test('resolves duration expression when executed', (done) => {
+    it('resolves duration expression when executed', (done) => {
       const processXml = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -124,9 +124,9 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       }, (err, context2) => {
         if (err) return done(err);
 
-        context2.variablesAndServices.variables = {
+        context2.environment.assignVariables({
           timeout: 0.2
-        };
+        });
 
         const task = context2.getChildActivityById('dontWaitForMe');
         const event = context2.getChildActivityById('timeoutEventWithVar');
@@ -142,7 +142,7 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       });
     });
 
-    lab.test('emits end when timed out', (done) => {
+    it('emits end when timed out', (done) => {
       const task = context.getChildActivityById('dontWaitForMe');
       const event = context.getChildActivityById('timeoutEvent');
       event.activate();
@@ -154,12 +154,12 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       task.run();
     });
 
-    lab.test('stops timer if discarded', (done) => {
+    it('stops timer if discarded', (done) => {
       const task = context.getChildActivityById('dontWaitForMe');
       const event = context.getChildActivityById('timeoutEvent');
       event.activate();
 
-      event.once('end', Code.fail.bind(null, 'No end event should have been emitted'));
+      event.once('end', fail.bind(null, 'No end event should have been emitted'));
       event.once('leave', () => {
         expect(event.timer).to.not.exist();
         done();
@@ -171,7 +171,7 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       task.run();
     });
 
-    lab.test('starts when attachedTo inbound is taken', (done) => {
+    it('starts when attachedTo inbound is taken', (done) => {
       const task = context.getChildActivityById('dontWaitForMe');
       task.activate();
 
@@ -185,15 +185,15 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       task.inbound[0].take();
     });
 
-    lab.test('discards outbound when attachedTo completes', (done) => {
+    it('discards outbound when attachedTo completes', (done) => {
       const task = context.getChildActivityById('dontWaitForMe');
       task.activate();
 
       const event = context.getChildActivityById('timeoutEvent');
       event.activate();
 
-      task.once('wait', (activity) => {
-        activity.signal();
+      task.once('wait', (activityApi, executionContext) => {
+        activityApi.getApi(executionContext).signal();
       });
 
       event.outbound[0].once('discarded', () => {
@@ -203,8 +203,8 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       task.inbound[0].take();
     });
 
-    lab.test('discards attachedTo if completed', (done) => {
-      context.variablesAndServices.variables.duration = 'PT0.01S';
+    it('discards attachedTo if completed', (done) => {
+      context.environment.assignVariables({duration: 'PT0.01S'});
 
       const task = context.getChildActivityById('dontWaitForMe');
       task.activate();
@@ -219,8 +219,8 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       task.inbound[0].take();
     });
 
-    lab.test('returns expected state when completed', (done) => {
-      context.variablesAndServices.variables.duration = 'PT0.01S';
+    it('returns expected state when completed', (done) => {
+      context.environment.assignVariables({duration: 'PT0.01S'});
 
       const task = context.getChildActivityById('dontWaitForMe');
       task.activate();
@@ -238,16 +238,16 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       task.inbound[0].take();
     });
 
-    lab.test('is discarded if task is canceled', (done) => {
-      const engine = new Bpmn.Engine({
+    it('is discarded if task is canceled', (done) => {
+      const engine = new Engine({
         source: factory.resource('boundary-timeout.bpmn')
       });
       const listener = new EventEmitter();
-      listener.once('wait-userTask', (activity) => {
-        activity.cancel();
+      listener.once('wait-userTask', (activityApi) => {
+        activityApi.cancel();
       });
       listener.once('end-boundTimeoutEvent', (e) => {
-        Code.fail(`<${e.id}> should have been discarded`);
+        fail(`<${e.id}> should have been discarded`);
       });
 
       engine.execute({
@@ -262,13 +262,13 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       });
     });
 
-    lab.test('cancels task', (done) => {
-      const engine = new Bpmn.Engine({
+    it('cancels task', (done) => {
+      const engine = new Engine({
         source: factory.resource('boundary-timeout.bpmn')
       });
       const listener = new EventEmitter();
       listener.once('end-userTask', (e) => {
-        Code.fail(`<${e.id}> should have been discarded`);
+        fail(`<${e.id}> should have been discarded`);
       });
 
       engine.execute({
@@ -283,11 +283,11 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
       });
     });
 
-    lab.describe('non-interupting', () => {
+    describe('non-interupting', () => {
       const processXml = factory.resource('boundary-non-interupting-timer.bpmn');
 
-      lab.test('does not discard task', (done) => {
-        const engine = new Bpmn.Engine({
+      it('does not discard task', (done) => {
+        const engine = new Engine({
           source: processXml
         });
         const listener = new EventEmitter();
@@ -316,8 +316,8 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
         });
       });
 
-      lab.test('is discarded if task completes', (done) => {
-        const engine = new Bpmn.Engine({
+      it('is discarded if task completes', (done) => {
+        const engine = new Engine({
           source: processXml
         });
         const listener = new EventEmitter();
@@ -347,8 +347,8 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
         });
       });
 
-      lab.test('is discarded if task is canceled', (done) => {
-        const engine = new Bpmn.Engine({
+      it('is discarded if task is canceled', (done) => {
+        const engine = new Engine({
           source: processXml
         });
         const listener = new EventEmitter();
@@ -356,7 +356,7 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
           task.cancel();
         });
         listener.once('end-boundaryEvent', (e) => {
-          Code.fail(`<${e.id}> should have been discarded`);
+          fail(`<${e.id}> should have been discarded`);
         });
 
         engine.execute({
@@ -373,8 +373,8 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
     });
   });
 
-  lab.describe('getState()', () => {
-    lab.test('returns remaining timeout and attachedTo', (done) => {
+  describe('getState()', () => {
+    it('returns remaining timeout and attachedTo', (done) => {
       const processXml = `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -388,7 +388,7 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
     </process>
   </definitions>
       `;
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: processXml,
         name: 'stopMe'
       });
@@ -421,8 +421,8 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
     });
   });
 
-  lab.describe('resume()', () => {
-    lab.test('resumes if not entered yet', (done) => {
+  describe('resume()', () => {
+    it('resumes if not entered yet', (done) => {
       const processXml = `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -438,7 +438,7 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
     </process>
   </definitions>
       `;
-      const engine1 = new Bpmn.Engine({
+      const engine1 = new Engine({
         source: processXml,
         name: 'stopMe'
       });
@@ -457,7 +457,7 @@ lab.experiment('BoundaryEvent with TimerEventDefinition', () => {
         listener2.once('wait-takeMeFirst', (task) => {
           task.signal('Continue');
         });
-        Bpmn.Engine.resume(state, {
+        Engine.resume(state, {
           listener: listener2
         }, (err, resumedInstance) => {
           if (err) return done(err);

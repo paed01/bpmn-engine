@@ -169,7 +169,7 @@ lab.experiment('ExclusiveGateway', () => {
               done();
             });
 
-            resumedGateway.resume(state);
+            resumedGateway.activate(state).resume();
           });
         });
 
@@ -217,7 +217,7 @@ lab.experiment('ExclusiveGateway', () => {
               done();
             });
 
-            resumedGateway.resume(state);
+            resumedGateway.activate(state).resume();
           });
         });
 
@@ -249,7 +249,7 @@ lab.experiment('ExclusiveGateway', () => {
               done();
             });
 
-            resumedGateway.resume(state);
+            resumedGateway.activate(state).resume();
           });
         });
 
@@ -307,7 +307,7 @@ lab.experiment('ExclusiveGateway', () => {
                 done();
               });
 
-              resumedGateway.resume(state);
+              resumedGateway.activate(state).resume();
             });
           });
 
