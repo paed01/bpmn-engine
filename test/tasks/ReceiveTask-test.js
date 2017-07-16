@@ -25,7 +25,7 @@ describe('ReceiveTask', () => {
     });
     const listener = new EventEmitter();
     engine.execute({
-      listener: listener,
+      listener,
       variables: {
         input: null
       }
@@ -52,11 +52,12 @@ describe('ReceiveTask', () => {
     const listener = new EventEmitter();
 
     listener.once('wait-receive', (activityApi) => {
+      console.log('KJLASDKLSADJL')
       activityApi.cancel();
     });
 
     engine.execute({
-      listener: listener
+      listener
     });
 
     engine.once('end', (definition) => {

@@ -232,7 +232,7 @@ describe('Engine', () => {
       engine.execute();
     });
 
-    it('emits end when all processes are completed', (done) => {
+    it('emits end when all processes have completed', (done) => {
       const engine = new Bpmn.Engine({
         name: 'end test',
         source: factory.resource('lanes.bpmn')
