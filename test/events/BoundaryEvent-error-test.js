@@ -73,9 +73,8 @@ describe('Error BoundaryEvent', () => {
       const task = context.getChildActivityById('service');
       const event = context.getChildActivityById('errorEvent');
 
-      event.on('start', (activity) => {
-        activity.stop();
-        expect(activity.getState()).to.equal({
+      event.on('start', (activityApi, executionContext) => {
+        expect(activityApi.getApi(executionContext).getState()).to.equal({
           id: 'errorEvent',
           type: 'bpmn:BoundaryEvent',
           attachedToId: 'service',
@@ -97,8 +96,8 @@ describe('Error BoundaryEvent', () => {
       const task = context.getChildActivityById('service');
       const event = context.getChildActivityById('errorEvent');
 
-      event.once('catch', (caughtError, activity) => {
-        activity.stop();
+      event.once('catch', (caughtError, activityApi) => {
+        activityApi.stop();
         expect(caughtError.name, 'name').to.equal('ServiceError');
         expect(caughtError.message, 'message').to.equal('FAIL');
         expect(caughtError.errorCode, 'error code').to.equal('FAIL');

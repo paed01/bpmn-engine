@@ -1,5 +1,6 @@
 'use strict';
 
+const ck = require('chronokinesis');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
 const factory = require('../helpers/factory');
@@ -7,7 +8,7 @@ const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
+const {afterEach, beforeEach, describe, it} = lab;
 const {expect} = Lab.assertions;
 
 describe('Intermediate Catch Event', () => {
@@ -38,6 +39,7 @@ describe('Intermediate Catch Event', () => {
         done();
       });
     });
+    afterEach(ck.reset);
 
     it('loads event definitions on activate', (done) => {
       const event = context.getChildActivityById('timeoutEvent');
@@ -59,9 +61,9 @@ describe('Intermediate Catch Event', () => {
     it('resolves timeout when inbound is taken', (done) => {
       const event = context.getChildActivityById('timeoutEvent');
 
-      event.on('start', (activity) => {
-        activity.stop();
-        expect(activity.getState().timeout).to.equal(10);
+      event.on('start', (activityApi, executionContext) => {
+        activityApi.stop();
+        expect(activityApi.getApi(executionContext).getState().duration).to.equal(10);
         done();
       });
 
@@ -70,17 +72,21 @@ describe('Intermediate Catch Event', () => {
     });
 
     it('returns expected state on start', (done) => {
+      ck.freeze();
+      const startedAt = new Date();
       const event = context.getChildActivityById('timeoutEvent');
 
-      event.on('start', (activity) => {
-        activity.stop();
-        expect(activity.getState()).to.equal({
+      event.on('start', (activityApi, executionContext) => {
+        expect(activityApi.getApi(executionContext).getState()).to.include({
           id: 'timeoutEvent',
           type: 'bpmn:IntermediateCatchEvent',
+          startedAt,
           timeout: 10,
           duration: 10,
           entered: true
         });
+        ck.reset();
+        activityApi.stop();
         done();
       });
 
@@ -116,9 +122,9 @@ describe('Intermediate Catch Event', () => {
 
         const event = context2.getChildActivityById('timeoutEventWithVar');
 
-        event.once('start', (activity) => {
-          activity.stop();
-          expect(activity.getState().timeout).to.equal(200);
+        event.once('start', (activityApi, executionContext) => {
+          expect(activityApi.getApi(executionContext).getState().duration).to.equal(200);
+          activityApi.stop();
           done();
         });
 

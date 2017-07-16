@@ -1,5 +1,6 @@
 'use strict';
 
+const ck = require('chronokinesis');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
 const factory = require('../helpers/factory');
@@ -8,7 +9,7 @@ const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
+const {afterEach, beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
 describe('BoundaryEvent with TimerEventDefinition', () => {
@@ -43,6 +44,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         done();
       });
     });
+    afterEach(ck.reset);
 
     it('loads event definitions on activate', (done) => {
       const event = context.getChildActivityById('timeoutEvent');
@@ -69,36 +71,42 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       done();
     });
 
-    it('resolves timeout when executed', (done) => {
+    it('resolves duration when executed', (done) => {
       const task = context.getChildActivityById('dontWaitForMe');
       const event = context.getChildActivityById('timeoutEvent');
       event.activate();
 
-      event.on('start', (activity) => {
-        activity.stop();
-        expect(activity.getState().timeout).to.equal(100);
+      event.on('start', (activityApi, executionContext) => {
+        activityApi.stop();
+        expect(activityApi.getApi(executionContext).getState().duration).to.equal(100);
         done();
+      });
+      event.once('end', () => {
+        fail('should have been stopped');
       });
 
       task.run();
     });
 
     it('returns expected state on start', (done) => {
+      ck.freeze();
+      const startedAt = new Date();
       const task = context.getChildActivityById('dontWaitForMe');
       const event = context.getChildActivityById('timeoutEvent');
       event.activate();
 
-      event.on('start', (activity) => {
-        activity.stop();
-        expect(activity.getState().timeout).to.equal(100);
-        expect(activity.getState()).to.equal({
+      event.on('start', (activityApi, executionContext) => {
+        const eventApi = activityApi.getApi(executionContext);
+        expect(eventApi.getState()).to.equal({
           id: 'timeoutEvent',
           type: 'bpmn:BoundaryEvent',
           attachedToId: 'dontWaitForMe',
+          startedAt,
           timeout: 100,
           duration: 100,
           entered: true
         });
+        eventApi.stop();
         done();
       });
 
@@ -132,10 +140,13 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         const event = context2.getChildActivityById('timeoutEventWithVar');
         event.activate();
 
-        event.once('start', (activity) => {
-          activity.stop();
-          expect(activity.getState().timeout).to.equal(200);
+        event.once('start', (activityApi, executionContext) => {
+          expect(activityApi.getApi(executionContext).getState().duration).to.equal(200);
+          activityApi.stop();
           done();
+        });
+        event.once('end', () => {
+          fail('should have been stopped');
         });
 
         task.run();
@@ -147,7 +158,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       const event = context.getChildActivityById('timeoutEvent');
       event.activate();
 
-      event.once('end', () => {
+      event.on('end', () => {
         done();
       });
 
@@ -161,11 +172,10 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
 
       event.once('end', fail.bind(null, 'No end event should have been emitted'));
       event.once('leave', () => {
-        expect(event.timer).to.not.exist();
         done();
       });
-      event.once('start', (activity) => {
-        activity.discard();
+      event.once('start', (activityApi, executionContext) => {
+        activityApi.getApi(executionContext).discard();
       });
 
       task.run();
@@ -178,7 +188,8 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       const event = context.getChildActivityById('timeoutEvent');
       event.activate();
 
-      event.once('start', () => {
+      event.once('start', (activityApi) => {
+        activityApi.stop();
         done();
       });
 
@@ -228,7 +239,8 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       const event = context.getChildActivityById('timeoutEvent');
       event.activate();
 
-      event.once('end', (eventApi) => {
+      event.once('end', (activityApi, executionContext) => {
+        const eventApi = activityApi.getApi(executionContext);
         const state = eventApi.getState();
         expect(state).to.not.include(['entered']);
         expect(state.timeout).to.be.below(1);
@@ -246,8 +258,8 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       listener.once('wait-userTask', (activityApi) => {
         activityApi.cancel();
       });
-      listener.once('end-boundTimeoutEvent', (e) => {
-        fail(`<${e.id}> should have been discarded`);
+      listener.once('end-boundTimeoutEvent', (activityApi) => {
+        fail(`<${activityApi.id}> should have been discarded`);
       });
 
       engine.execute({
@@ -375,21 +387,21 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
 
   describe('getState()', () => {
     it('returns remaining timeout and attachedTo', (done) => {
-      const processXml = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <process id="interruptedProcess" isExecutable="true">
-      <userTask id="dontWaitForMe" />
-      <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
-        <timerEventDefinition>
-          <timeDuration xsi:type="tFormalExpression">PT0.1S</timeDuration>
-        </timerEventDefinition>
-      </boundaryEvent>
-    </process>
-  </definitions>
-      `;
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="interruptedProcess" isExecutable="true">
+          <userTask id="dontWaitForMe" />
+          <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
+            <timerEventDefinition>
+              <timeDuration xsi:type="tFormalExpression">PT0.1S</timeDuration>
+            </timerEventDefinition>
+          </boundaryEvent>
+        </process>
+      </definitions>`;
+
       const engine = new Engine({
-        source: processXml,
+        source,
         name: 'stopMe'
       });
       const listener1 = new EventEmitter();
@@ -410,7 +422,6 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         const state = engine.getState();
 
         const eventState = getPropertyValue(state, 'definitions[0].processes.interruptedProcess.children', []).find(({id}) => id === 'timeoutEvent');
-
         expect(eventState.timeout).to.be.below(100);
         expect(eventState.attachedToId).to.equal('dontWaitForMe');
 
@@ -422,24 +433,76 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
   });
 
   describe('resume()', () => {
-    it('resumes if not entered yet', (done) => {
-      const processXml = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <process id="interruptedProcess" isExecutable="true">
-      <userTask id="takeMeFirst" />
-      <userTask id="dontWaitForMe" />
-      <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
-        <timerEventDefinition>
-          <timeDuration xsi:type="tFormalExpression">PT0.05S</timeDuration>
-        </timerEventDefinition>
-      </boundaryEvent>
-      <sequenceFlow id="flow1" sourceRef="takeMeFirst" targetRef="dontWaitForMe" />
-    </process>
-  </definitions>
-      `;
+    it('resumes from remaining timeout', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="interruptedProcess" isExecutable="true">
+          <userTask id="dontWaitForMe" />
+          <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
+            <timerEventDefinition>
+              <timeDuration xsi:type="tFormalExpression">PT0.05S</timeDuration>
+            </timerEventDefinition>
+          </boundaryEvent>
+        </process>
+      </definitions>`;
+
       const engine1 = new Engine({
-        source: processXml,
+        source,
+        name: 'stopMe'
+      });
+      const listener = new EventEmitter();
+
+      let state;
+      listener.once('wait-dontWaitForMe', () => {
+        setTimeout(engine1.stop.bind(engine1), 10);
+      });
+
+      engine1.once('end', () => {
+        let timer = Date.now();
+        state = engine1.getState();
+
+        testHelpers.expectNoLingeringListenersOnEngine(engine1);
+        const listener2 = new EventEmitter();
+        listener2.once('enter-timeoutEvent', (activityApi) => {
+          timer = activityApi.getState().timeout;
+        });
+        Engine.resume(state, {
+          listener: listener2
+        }, (err, resumedInstance) => {
+          if (err) return done(err);
+          resumedInstance.once('end', () => {
+            expect(timer, 'timeout').to.be.above(0).and.lessThan(41);
+            done();
+          });
+        });
+      });
+
+      engine1.execute({
+        listener
+      }, (err) => {
+        if (err) return done(err);
+      });
+    });
+
+    it('resumes if not entered yet', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="interruptedProcess" isExecutable="true">
+          <userTask id="takeMeFirst" />
+          <userTask id="dontWaitForMe" />
+          <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
+            <timerEventDefinition>
+              <timeDuration xsi:type="tFormalExpression">PT0.05S</timeDuration>
+            </timerEventDefinition>
+          </boundaryEvent>
+          <sequenceFlow id="flow1" sourceRef="takeMeFirst" targetRef="dontWaitForMe" />
+        </process>
+      </definitions>`;
+
+      const engine1 = new Engine({
+        source,
         name: 'stopMe'
       });
       const listener1 = new EventEmitter();
@@ -452,7 +515,6 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
 
       engine1.once('end', () => {
         testHelpers.expectNoLingeringListenersOnEngine(engine1);
-
         const listener2 = new EventEmitter();
         listener2.once('wait-takeMeFirst', (task) => {
           task.signal('Continue');
@@ -473,5 +535,129 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         if (err) return done(err);
       });
     });
+  });
+
+  describe('attachedTo multiple inbound', () => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <process id="testProcess" isExecutable="true">
+        <startEvent id="start" />
+        <serviceTask id="task" name="Get" camunda:expression="\${services.get(variables.defaultTaken)}" camunda:resultVariable="taskOutput" />
+        <boundaryEvent id="timeoutEvent" attachedToRef="task">
+          <timerEventDefinition>
+            <timeDuration xsi:type="tFormalExpression">PT0.05S</timeDuration>
+          </timerEventDefinition>
+        </boundaryEvent>
+        <exclusiveGateway id="decision" default="flow4">
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:outputParameter name="defaultTaken">\${true}</camunda:outputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+        </exclusiveGateway>
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+        <sequenceFlow id="flow2" sourceRef="task" targetRef="decision" />
+        <sequenceFlow id="flow3" sourceRef="timeoutEvent" targetRef="decision" />
+        <sequenceFlow id="flow4" sourceRef="decision" targetRef="task" />
+        <sequenceFlow id="flow5" sourceRef="decision" targetRef="end">
+          <conditionExpression xsi:type="tFormalExpression">\${variables.defaultTaken}</conditionExpression>
+        </sequenceFlow>
+      </process>
+    </definitions>`;
+
+    it('completes process if no timeout', (done) => {
+      const engine = new Engine({
+        source,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      let startCount = 0;
+      listener.on('start-task', (activity) => {
+        startCount++;
+        if (startCount > 2) {
+          fail(`<${activity.id}> Too many starts`);
+        }
+      });
+      let endEventCount = 0;
+      listener.on('start-end', () => {
+        endEventCount++;
+      });
+
+      engine.execute({
+        listener,
+        services: {
+          get: (defaultTaken) => {
+            return function(context, callback) {
+              callback(null, `successfully executed ${defaultTaken === true ? 'twice' : 'once'}`);
+            };
+          }
+        },
+        variables: {
+          api: 'http://example.com'
+        }
+      });
+      engine.once('end', (def) => {
+        expect(startCount, 'task starts').to.equal(2);
+        expect(endEventCount, 'end event').to.equal(1);
+        expect(def.getOutput()).to.equal({
+          api: 'http://example.com',
+          defaultTaken: true,
+          taskOutput: ['successfully executed twice']
+        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
+      });
+    });
+
+    it('completes process if timed out', (done) => {
+      const engine = new Engine({
+        source,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      let startCount = 0;
+      listener.on('start-task', (activity) => {
+        startCount++;
+        if (startCount > 2) {
+          fail(`<${activity.id}> Too many starts`);
+        }
+      });
+      let endEventCount = 0;
+      listener.on('start-end', () => {
+        endEventCount++;
+      });
+
+      engine.execute({
+        listener,
+        services: {
+          get: () => {
+            return function() {};
+          }
+        },
+        variables: {
+          api: 'http://example.com'
+        }
+      });
+      engine.once('end', (def) => {
+        expect(startCount, 'task starts').to.equal(2);
+        expect(endEventCount, 'end event').to.equal(1);
+        expect(def.getOutput()).to.equal({
+          api: 'http://example.com',
+          defaultTaken: true
+        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
+      });
+    });
+
   });
 });

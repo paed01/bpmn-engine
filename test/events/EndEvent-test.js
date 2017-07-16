@@ -66,6 +66,33 @@ describe('EndEvent', () => {
       event.activate();
       event.inbound[0].take();
     });
+
+    it('emits events in expected sequence', (done) => {
+      const event = context.getChildActivityById('end');
+      const sequence = [];
+
+      event.on('enter', (a, b) => {
+        expect(a.id).to.equal(b.id);
+        sequence.push('enter');
+      });
+      event.on('start', (a, b) => {
+        expect(a.id).to.equal(b.id);
+        sequence.push('start');
+      });
+      event.on('end', (a, b) => {
+        expect(a.id).to.equal(b.id);
+        sequence.push('end');
+      });
+      event.on('leave', (a, b) => {
+        expect(a.id).to.equal(b.id);
+        sequence.push('leave');
+        expect(sequence).to.equal(['enter', 'start', 'end', 'leave']);
+        done();
+      });
+
+      event.activate();
+      event.inbound[0].take();
+    });
   });
 
   describe('engine', () => {
@@ -124,14 +151,12 @@ describe('EndEvent', () => {
 
         engine.execute({
           listener: listener
-        }, (err, instance) => {
-          if (err) return done(err);
+        });
 
-          instance.once('end', () => {
-            expect(instance.isEnded).to.equal(true);
-            testHelpers.expectNoLingeringListenersOnDefinition(instance);
-            done();
-          });
+        engine.once('end', (def) => {
+          expect(def.isEnded).to.equal(true);
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
+          done();
         });
       });
     });

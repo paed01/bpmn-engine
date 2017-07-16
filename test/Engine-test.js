@@ -1,6 +1,6 @@
 'use strict';
 
-const Code = require('code');
+const Bpmn = require('..');
 const BpmnModdle = require('bpmn-moddle');
 const EventEmitter = require('events').EventEmitter;
 const factory = require('./helpers/factory');
@@ -8,37 +8,36 @@ const Lab = require('lab');
 const testHelpers = require('./helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
+const {before, describe, it} = lab;
+const {expect, fail} = Lab.assertions;
 
-const Bpmn = require('..');
-
-lab.experiment('Engine', () => {
-  lab.test('Bpmn exposes Engine', (done) => {
+describe('Engine', () => {
+  it('Bpmn exposes Engine', (done) => {
     expect(Bpmn).to.include('Engine');
     done();
   });
-  lab.test('Bpmn exposes Defintion', (done) => {
+  it('Bpmn exposes Defintion', (done) => {
     expect(Bpmn).to.include('Definition');
     done();
   });
-  lab.test('Bpmn exposes transformer', (done) => {
+  it('Bpmn exposes transformer', (done) => {
     expect(Bpmn).to.include('transformer');
     done();
   });
-  lab.test('Bpmn exposes validation', (done) => {
+  it('Bpmn exposes validation', (done) => {
     expect(Bpmn).to.include('validation');
     done();
   });
 
-  lab.experiment('ctor', () => {
-    lab.test('without arguments', (done) => {
+  describe('ctor', () => {
+    it('without arguments', (done) => {
       expect(() => {
         new Bpmn.Engine(); // eslint-disable-line no-new
       }).to.not.throw();
       done();
     });
 
-    lab.test('takes source option', (done) => {
+    it('takes source option', (done) => {
       const engine = new Bpmn.Engine({
         source: factory.valid()
       });
@@ -47,7 +46,7 @@ lab.experiment('Engine', () => {
       done();
     });
 
-    lab.test('throws if unsupported option is passed', (done) => {
+    it('throws if unsupported option is passed', (done) => {
       expect(() => {
         new Bpmn.Engine({ // eslint-disable-line no-new
           context: {}
@@ -56,7 +55,7 @@ lab.experiment('Engine', () => {
       done();
     });
 
-    lab.test('takes moddleOptions as option', (done) => {
+    it('takes moddleOptions as option', (done) => {
       const engine = new Bpmn.Engine({
         source: factory.valid(),
         moddleOptions: {
@@ -67,7 +66,7 @@ lab.experiment('Engine', () => {
       done();
     });
 
-    lab.test('accepts source as Buffer', (done) => {
+    it('accepts source as Buffer', (done) => {
       const buff = new Buffer(factory.valid());
       const engine = new Bpmn.Engine({
         name: 'source from buffer',
@@ -79,7 +78,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('but not function', (done) => {
+    it('but not function', (done) => {
       const source = () => {};
       expect(() => {
         new Bpmn.Engine({ // eslint-disable-line no-new
@@ -89,7 +88,7 @@ lab.experiment('Engine', () => {
       done();
     });
 
-    lab.test('accepts name', (done) => {
+    it('accepts name', (done) => {
       let engine;
       expect(() => {
         engine = new Bpmn.Engine({ // eslint-disable-line no-new
@@ -103,8 +102,8 @@ lab.experiment('Engine', () => {
     });
   });
 
-  lab.experiment('getDefinition()', () => {
-    lab.test('returns definition of passed moddle context', (done) => {
+  describe('getDefinition()', () => {
+    it('returns definition of passed moddle context', (done) => {
       const moddle = new BpmnModdle();
       moddle.fromXML(factory.valid('contextTest'), (moddleErr, definition, moddleContext) => {
         if (moddleErr) return done(moddleErr);
@@ -119,7 +118,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('returns definition of passed deserialized moddle context', (done) => {
+    it('returns definition of passed deserialized moddle context', (done) => {
       const moddle = new BpmnModdle();
       moddle.fromXML(factory.valid('contextTest'), (moddleErr, definition, context) => {
         if (moddleErr) return done(moddleErr);
@@ -134,7 +133,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('returns error in callback if invalid definition', (done) => {
+    it('returns error in callback if invalid definition', (done) => {
       const engine = new Bpmn.Engine({
         source: 'not xml'
       });
@@ -144,7 +143,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('returns undefined in callback if no definitions', (done) => {
+    it('returns undefined in callback if no definitions', (done) => {
       const engine = new Bpmn.Engine();
       engine.getDefinition((err, def) => {
         expect(err).not.to.exist();
@@ -154,8 +153,8 @@ lab.experiment('Engine', () => {
     });
   });
 
-  lab.describe('execute()', () => {
-    lab.test('without arguments runs process', (done) => {
+  describe('execute()', () => {
+    it('without arguments runs process', (done) => {
       const engine = new Bpmn.Engine({
         source: factory.valid()
       });
@@ -166,7 +165,7 @@ lab.experiment('Engine', () => {
       engine.execute();
     });
 
-    lab.test('returns error in callback if no source', (done) => {
+    it('returns error in callback if no source', (done) => {
       const engine = new Bpmn.Engine({
         source: ''
       });
@@ -176,7 +175,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('returns error in callback if not well formatted xml', (done) => {
+    it('returns error in callback if not well formatted xml', (done) => {
       const engine = new Bpmn.Engine({
         source: 'jdalsk'
       });
@@ -186,7 +185,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('emits error if not well formatted xml', (done) => {
+    it('emits error if not well formatted xml', (done) => {
       const engine = new Bpmn.Engine({
         source: 'jdalsk'
       });
@@ -198,12 +197,12 @@ lab.experiment('Engine', () => {
       engine.execute();
     });
 
-    lab.test('returns error in callback if no executable process', (done) => {
+    it('returns error in callback if no executable process', (done) => {
       const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="false" />
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="false" />
+      </definitions>`;
 
       const engine = new Bpmn.Engine({
         source: processXml
@@ -214,15 +213,15 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('emits error if called with invalid definition and no callback', (done) => {
-      const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="false" />
-</definitions>`;
+    it('emits error if called with invalid definition and no callback', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="false" />
+      </definitions>`;
 
       const engine = new Bpmn.Engine({
-        source: processXml
+        source
       });
 
       engine.once('error', (err) => {
@@ -233,7 +232,7 @@ lab.experiment('Engine', () => {
       engine.execute();
     });
 
-    lab.test('emits end when all processes are completed', (done) => {
+    it('emits end when all processes are completed', (done) => {
       const engine = new Bpmn.Engine({
         name: 'end test',
         source: factory.resource('lanes.bpmn')
@@ -248,16 +247,16 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('emits error if execution fails', (done) => {
+    it('emits error if execution fails', (done) => {
       const engine = new Bpmn.Engine({
         name: 'end test',
         source: `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-  <process id="theProcess" isExecutable="true">
-    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" />
-  </process>
-</definitions>`,
+        <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+          <process id="theProcess" isExecutable="true">
+            <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" />
+          </process>
+        </definitions>`,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
@@ -280,7 +279,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('runs process with deserialized context', (done) => {
+    it('runs process with deserialized context', (done) => {
       const moddle = new BpmnModdle();
       moddle.fromXML(factory.resource('lanes.bpmn').toString(), (moddleErr, definition, context) => {
         if (moddleErr) return done(moddleErr);
@@ -300,8 +299,8 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.describe('execute options', () => {
-      lab.test('throws error if listener doesn´t have an emit function', (done) => {
+    describe('execute options', () => {
+      it('throws error if listener doesn´t have an emit function', (done) => {
         const engine = new Bpmn.Engine({
           source: factory.resource('lanes.bpmn')
         });
@@ -312,11 +311,11 @@ lab.experiment('Engine', () => {
           });
         }
 
-        expect(testFn).to.throw(Error, /\"emit\" function is required/);
+        expect(testFn).to.throw(Error, /"emit" function is required/);
         done();
       });
 
-      lab.test('returns error in callback if service type is not "global" or "require"', (done) => {
+      it('returns error in callback if service type is not "global" or "require"', (done) => {
         const engine = new Bpmn.Engine({
           source: factory.resource('lanes.bpmn')
         });
@@ -337,19 +336,17 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('exposes services to participant processes', (done) => {
+    it('exposes services to participant processes', (done) => {
       const engine = new Bpmn.Engine({
         source: factory.resource('mother-of-all.bpmn')
       });
       const listener = new EventEmitter();
-      listener.on('wait', (activity) => {
-        activity.signal({
-          input: 1
-        });
-      });
-
-      engine.once('end', () => {
-        done();
+      listener.on('wait', (activityApi) => {
+        if (activityApi.type === 'bpmn:UserTask') {
+          activityApi.signal({
+            input: 1
+          });
+        }
       });
 
       engine.execute({
@@ -364,16 +361,18 @@ lab.experiment('Engine', () => {
           input: 0
         },
         listener: listener
-      }, (err) => {
-        if (err) return done(err);
+      });
+
+      engine.once('end', () => {
+        done();
       });
     });
   });
 
-  lab.describe('getState()', () => {
+  describe('getState()', () => {
     const processXml = factory.userTask();
 
-    lab.test('returns state "running" when running definitions', (done) => {
+    it('returns state "running" when running definitions', (done) => {
       const engine = new Bpmn.Engine({
         source: processXml
       });
@@ -398,7 +397,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('returns state "idle" when nothing is running', (done) => {
+    it('returns state "idle" when nothing is running', (done) => {
       const engine = new Bpmn.Engine({
         source: processXml
       });
@@ -413,7 +412,7 @@ lab.experiment('Engine', () => {
       done();
     });
 
-    lab.test('returns state of running definitions', (done) => {
+    it('returns state of running definitions', (done) => {
       const engine = new Bpmn.Engine({
         name: 'running',
         source: processXml
@@ -439,7 +438,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('returns engine package version', (done) => {
+    it('returns engine package version', (done) => {
       const engine = new Bpmn.Engine({
         source: processXml
       });
@@ -460,9 +459,9 @@ lab.experiment('Engine', () => {
     });
   });
 
-  lab.describe('Engine.resume()', () => {
+  describe('Engine.resume()', () => {
     let engineState;
-    lab.before((done) => {
+    before((done) => {
       const engine = new Bpmn.Engine({
         name: 'test resume',
         source: factory.userTask()
@@ -483,7 +482,7 @@ lab.experiment('Engine', () => {
       engine.once('end', done.bind(null, null));
     });
 
-    lab.test('resumes execution and returns definition in callback', (done) => {
+    it('resumes execution and returns definition in callback', (done) => {
       const resumeListener = new EventEmitter();
       const resumedEngine = Bpmn.Engine.resume(testHelpers.readFromDb(engineState), {
         listener: resumeListener
@@ -495,7 +494,7 @@ lab.experiment('Engine', () => {
       resumedEngine.once('end', done.bind(null, null));
     });
 
-    lab.test('resumes without callback', (done) => {
+    it('resumes without callback', (done) => {
       const resumeListener = new EventEmitter();
       resumeListener.once('wait', (task) => {
         task.signal();
@@ -508,7 +507,7 @@ lab.experiment('Engine', () => {
       resumedEngine.once('end', done.bind(null, null));
     });
 
-    lab.test('resume failure emits error if no callback', (done) => {
+    it('resume failure emits error if no callback', (done) => {
       testHelpers.getModdleContext(factory.invalid(), {}, (merr, moddleContext) => {
         const engine = Bpmn.Engine.resume({
           name: 'Invalid state',
@@ -523,7 +522,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('resume failure returns error in callback', (done) => {
+    it('resume failure returns error in callback', (done) => {
       testHelpers.getModdleContext(factory.invalid(), {}, (merr, moddleContext) => {
         Bpmn.Engine.resume({
           name: 'Invalid state',
@@ -538,7 +537,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('with invalid engine state throws', (done) => {
+    it('with invalid engine state throws', (done) => {
       function fn() {
         Bpmn.Engine.resume({
           definitions: 'invalid array'
@@ -549,20 +548,20 @@ lab.experiment('Engine', () => {
     });
   });
 
-  lab.describe('multiple definitions', () => {
+  describe('multiple definitions', () => {
     const engine = new Bpmn.Engine();
     const listener = new EventEmitter();
     const processes = [];
 
-    lab.test('given we have a first definition', (done) => {
+    it('given we have a first definition', (done) => {
       engine.addDefinitionBySource(factory.userTask('userTask1', 'def1'), done);
     });
 
-    lab.test('and a second definition', (done) => {
+    it('and a second definition', (done) => {
       engine.addDefinitionBySource(factory.userTask('userTask2', 'def2'), done);
     });
 
-    lab.test('when we execute', (done) => {
+    it('when we execute', (done) => {
       let startCount = 0;
       listener.on('start-theProcess', function EH(process) {
         startCount++;
@@ -578,16 +577,16 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('all processes are started', (done) => {
+    it('all processes are started', (done) => {
       expect(processes.length).to.equal(2);
       expect(processes[0]).to.contain({entered: true});
       expect(processes[1]).to.contain({entered: true});
       done();
     });
 
-    lab.test('when first process completes engine doesn´t emit end event', (done) => {
+    it('when first process completes engine doesn´t emit end event', (done) => {
       const endListener = () => {
-        Code.fail('Should not have ended');
+        fail('Should not have ended');
       };
       engine.once('end', endListener);
 
@@ -601,7 +600,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('when second process is completed engine emits end event', (done) => {
+    it('when second process is completed engine emits end event', (done) => {
       engine.once('end', () => {
         done();
       });
@@ -611,8 +610,8 @@ lab.experiment('Engine', () => {
     });
   });
 
-  lab.describe('addDefinitionBySource()', () => {
-    lab.test('adds definition', (done) => {
+  describe('addDefinitionBySource()', () => {
+    it('adds definition', (done) => {
       const engine = new Bpmn.Engine();
       engine.addDefinitionBySource(factory.valid(), (err) => {
         if (err) return done(err);
@@ -621,7 +620,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('adds definition once, identified by id', (done) => {
+    it('adds definition once, identified by id', (done) => {
       const engine = new Bpmn.Engine();
       const source = factory.valid('def1');
 
@@ -637,7 +636,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('adds definition with moddleOptions', (done) => {
+    it('adds definition with moddleOptions', (done) => {
       const engine = new Bpmn.Engine();
       engine.addDefinitionBySource(factory.valid(), {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -648,7 +647,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('returns error in callback if transform error', (done) => {
+    it('returns error in callback if transform error', (done) => {
       const engine = new Bpmn.Engine();
       engine.addDefinitionBySource('not xml', (err) => {
         expect(err).to.exist();
@@ -658,14 +657,14 @@ lab.experiment('Engine', () => {
     });
   });
 
-  lab.describe('signal()', () => {
-    lab.test('without definitions is ignored', (done) => {
+  describe('signal()', () => {
+    it('without definitions is ignored', (done) => {
       const engine = new Bpmn.Engine();
       engine.signal();
       done();
     });
 
-    lab.test('without waiting task is ignored', (done) => {
+    it('without waiting task is ignored', (done) => {
       const definitionSource = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -684,7 +683,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('with non-existing activity id is ignored', (done) => {
+    it('with non-existing activity id is ignored', (done) => {
       const definitionSource = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -704,7 +703,7 @@ lab.experiment('Engine', () => {
     });
   });
 
-  lab.describe('getPendingActivities()', () => {
+  describe('getPendingActivities()', () => {
     const definitionSource = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -737,7 +736,7 @@ lab.experiment('Engine', () => {
     `;
 
     let engine, pending;
-    lab.test('given an engine', (done) => {
+    it('given an engine', (done) => {
       engine = new Bpmn.Engine({
         source: definitionSource,
         moddleOptions: {
@@ -747,12 +746,12 @@ lab.experiment('Engine', () => {
       done();
     });
 
-    lab.test('returns empty definitions if not loaded', (done) => {
+    it('returns empty definitions if not loaded', (done) => {
       expect(engine.getPendingActivities().definitions).to.have.length(0);
       done();
     });
 
-    lab.test('when executed', (done) => {
+    it('when executed', (done) => {
 
       const listener = new EventEmitter();
       listener.once('enter-join', () => {
@@ -765,7 +764,7 @@ lab.experiment('Engine', () => {
       });
     });
 
-    lab.test('then all entered activities are returned', (done) => {
+    it('then all entered activities are returned', (done) => {
       expect(pending.definitions).to.have.length(1);
       expect(pending.definitions[0]).to.include(['children']);
       expect(pending.definitions[0].children).to.have.length(3);
@@ -773,7 +772,7 @@ lab.experiment('Engine', () => {
       done();
     });
 
-    lab.test('comples when all user tasks are signaled', (done) => {
+    it('comples when all user tasks are signaled', (done) => {
       engine.once('end', done.bind(null, null));
 
       pending.definitions[0].children.filter(c => c.type === 'bpmn:UserTask').forEach((c) => {
