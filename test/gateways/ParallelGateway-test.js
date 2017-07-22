@@ -40,8 +40,8 @@ describe('ParallelGateway', () => {
       const gateway = context.getChildActivityById('join');
       gateway.activate();
 
-      gateway.once('start', (activityApi) => {
-        const state = activityApi.getState();
+      gateway.once('start', (activityApi, executionContext) => {
+        const state = activityApi.getApi(executionContext).getState();
         expect(state.pendingJoin).to.be.true();
         expect(state.pendingInbound).to.have.length(1);
         done();
@@ -54,8 +54,8 @@ describe('ParallelGateway', () => {
       const gateway = context.getChildActivityById('join');
       gateway.activate();
 
-      gateway.on('end', (activityApi) => {
-        const state = activityApi.getState();
+      gateway.on('end', (activityApi, executionContext) => {
+        const state = activityApi.getApi(executionContext).getState();
         expect(state.taken).to.be.true();
         expect(state.pendingInbound).to.be.undefined();
         done();
@@ -90,12 +90,12 @@ describe('ParallelGateway', () => {
     });
 
     describe('getState()', () => {
-      it('on start returns pendingInbound', (done) => {
+      it('on enter returns pendingInbound', (done) => {
         const gateway = context.getChildActivityById('join');
         gateway.activate();
 
-        gateway.once('start', (activityApi) => {
-          const state = activityApi.getState();
+        gateway.once('enter', (activityApi, executionContext) => {
+          const state = activityApi.getApi(executionContext).getState();
           expect(state).to.include({
             pendingInbound: ['flow3']
           });
@@ -105,12 +105,43 @@ describe('ParallelGateway', () => {
         gateway.inbound[0].take();
       });
 
+      it('on start returns pendingInbound', (done) => {
+        const gateway = context.getChildActivityById('join');
+        gateway.activate();
+
+        gateway.once('start', (activityApi, executionContext) => {
+          const state = activityApi.getApi(executionContext).getState();
+          expect(state).to.include({
+            pendingInbound: ['flow3']
+          });
+          done();
+        });
+
+        gateway.inbound[0].take();
+      });
+
+      it('on discarded inbound returns discardedInbound', (done) => {
+        const gateway = context.getChildActivityById('join');
+        gateway.activate();
+
+        gateway.once('enter', (activityApi, executionContext) => {
+          const state = activityApi.getApi(executionContext).getState();
+
+          expect(state).to.include({
+            discardedInbound: ['flow2']
+          });
+          done();
+        });
+
+        gateway.inbound[0].discard();
+      });
+
       it('discarded inbound is returned in discardedInbound', (done) => {
         const gateway = context.getChildActivityById('join');
         gateway.activate();
 
-        gateway.once('start', (activityApi) => {
-          const state = activityApi.getState();
+        gateway.once('start', (activityApi, executionContext) => {
+          const state = activityApi.getApi(executionContext).getState();
 
           expect(state).to.include({
             pendingInbound: [],
@@ -129,10 +160,11 @@ describe('ParallelGateway', () => {
       it('sets resumed gateway pendingInbound', (done) => {
         const gateway = context.getChildActivityById('join');
 
-        gateway.on('start', (activity) => {
-          activity.stop();
+        gateway.on('start', (activityApi, executionContext) => {
+          const gatewayApi = activityApi.getApi(executionContext);
+          gatewayApi.stop();
 
-          const state = activity.getState();
+          const state = gatewayApi.getState();
           expect(state).to.include({
             pendingInbound: ['flow3']
           });
@@ -141,8 +173,8 @@ describe('ParallelGateway', () => {
           const resumedGateway = clonedContext.getChildActivityById('join');
           resumedGateway.id += '-resumed';
 
-          resumedGateway.once('enter', (resumedActivity) => {
-            expect(resumedActivity.getState().pendingInbound).to.equal(['flow3']);
+          resumedGateway.once('enter', (resumedActivityApi, resumedExecutionContext) => {
+            expect(resumedActivityApi.getApi(resumedExecutionContext).getState().pendingInbound).to.equal(['flow3']);
             done();
           });
 
@@ -157,10 +189,11 @@ describe('ParallelGateway', () => {
       it('completes when pending inbound flows are taken', (done) => {
         const gateway = context.getChildActivityById('join');
 
-        gateway.on('start', (activityApi) => {
-          activityApi.stop();
+        gateway.on('start', (activityApi, executionContext) => {
+          const gatewayApi = activityApi.getApi(executionContext);
+          gatewayApi.stop();
 
-          const state = activityApi.getState();
+          const state = gatewayApi.getState();
 
           expect(state).to.include({
             pendingInbound: ['flow3']
@@ -190,11 +223,11 @@ describe('ParallelGateway', () => {
       it('completes even if one inbound flow was discarded', (done) => {
         const gateway = context.getChildActivityById('join');
 
-        gateway.on('enter', (activityApi) => {
-          activityApi.stop();
+        gateway.on('enter', (activityApi, executionContext) => {
+          const gatewayApi = activityApi.getApi(executionContext);
+          gatewayApi.stop();
 
-          const state = activityApi.getState();
-
+          const state = gatewayApi.getState();
           expect(state).to.include({
             pendingInbound: ['flow3'],
             discardedInbound: ['flow2']
@@ -224,10 +257,11 @@ describe('ParallelGateway', () => {
       it('discards outbound if all inbound was discarded', (done) => {
         const gateway = context.getChildActivityById('join');
 
-        gateway.on('enter', (activityApi) => {
-          activityApi.stop();
+        gateway.on('enter', (activityApi, executionContext) => {
+          const gatewayApi = activityApi.getApi(executionContext);
+          gatewayApi.stop();
 
-          const state = activityApi.getState();
+          const state = gatewayApi.getState();
 
           expect(state).to.include({
             pendingInbound: ['flow3']
@@ -287,8 +321,8 @@ describe('ParallelGateway', () => {
     it('emits start before first outbound is taken', (done) => {
       const gateway = context.getChildActivityById('fork');
 
-      gateway.once('start', (activityApi) => {
-        expect(activityApi.getState().pendingOutbound).to.have.length(2);
+      gateway.once('start', (activityApi, executionContext) => {
+        expect(activityApi.getApi(executionContext).getState().pendingOutbound).to.have.length(2);
         done();
       });
 
@@ -360,11 +394,13 @@ describe('ParallelGateway', () => {
       it('starts taking pending outbound flows', (done) => {
         const gateway = context.getChildActivityById('fork');
 
-        gateway.on('start', (activityApi) => {
-          gateway.outbound[0].once('taken', () => {
-            activityApi.stop();
+        gateway.on('start', (activityApi, executionContext) => {
+          const gatewayApi = activityApi.getApi(executionContext);
 
-            const state = activityApi.getState();
+          gateway.outbound[0].once('taken', () => {
+            gatewayApi.stop();
+
+            const state = gatewayApi.getState();
 
             expect(state).to.include({
               pendingOutbound: ['flow3']
@@ -588,7 +624,7 @@ describe('ParallelGateway', () => {
     });
 
     it('and with default', (done) => {
-      const definitionXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -614,47 +650,41 @@ describe('ParallelGateway', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: definitionXml
+        source
       });
       engine.execute({
         variables: {
           input: 50
         }
-      }, (err, definition) => {
-        if (err) return done(err);
-
-        definition.on('end', () => {
-          expect(definition.getChildState('end').taken, 'end').to.be.true();
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          done();
-        });
+      });
+      engine.once('end', (def) => {
+        expect(def.getChildState('end').taken, 'end').to.be.true();
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
     it('completes process with multiple joins in discarded path', (done) => {
-      const definitionXml = factory.resource('multiple-joins.bpmn');
       const engine = new Engine({
-        source: definitionXml
+        source: factory.resource('multiple-joins.bpmn')
       });
 
       engine.execute({
         variables: {
           input: 51
         }
-      }, (err, definition) => {
-        if (err) return done(err);
+      });
 
-        definition.on('end', () => {
-          expect(definition.getChildState('scriptTask1').taken, 'scriptTask1').to.be.true();
-          expect(definition.getChildState('scriptTask2').taken, 'scriptTask2').to.be.true();
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          done();
-        });
+      engine.once('end', (def) => {
+        expect(def.getChildState('scriptTask1').taken, 'scriptTask1').to.be.true();
+        expect(def.getChildState('scriptTask2').taken, 'scriptTask2').to.be.true();
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
     it('completes process with ending join', (done) => {
-      const definitionXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -668,7 +698,7 @@ describe('ParallelGateway', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: definitionXml
+        source
       });
 
       engine.once('end', () => {
@@ -732,13 +762,17 @@ describe('ParallelGateway', () => {
           task.signal();
         });
 
-        listener.once('start-join', () => {
+        listener.once('start-join', (activityApi) => {
+          console.log(activityApi.getState())
+
           state = engine.getState();
           engine.stop();
         });
 
         engine.once('end', () => {
           testHelpers.expectNoLingeringListenersOnEngine(engine);
+
+          console.log(state.definitions[0].processes.theProcess)
 
           const listener2 = new EventEmitter();
           listener2.once('wait-task2', (activityApi) => {

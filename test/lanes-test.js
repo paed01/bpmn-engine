@@ -11,11 +11,11 @@ const Bpmn = require('../');
 const expect = Code.expect;
 
 lab.experiment('Lanes', () => {
-  const processXml = factory.resource('lanes.bpmn');
+  const source = factory.resource('lanes.bpmn');
 
   lab.test('main process stores outbound messageFlows', (done) => {
     const engine = new Bpmn.Engine({
-      source: processXml,
+      source,
       moddleOptions: {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }
@@ -32,7 +32,7 @@ lab.experiment('Lanes', () => {
   lab.test('completes process', (done) => {
     const listener = new EventEmitter();
     const engine = new Bpmn.Engine({
-      source: processXml,
+      source,
       moddleOptions: {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }
@@ -44,7 +44,7 @@ lab.experiment('Lanes', () => {
     });
 
     engine.execute({
-      listener: listener,
+      listener,
       variables: {
         input: 0
       }
@@ -56,14 +56,14 @@ lab.experiment('Lanes', () => {
   lab.test('participant startEvent receives and stores message on process context', (done) => {
     const listener = new EventEmitter();
     const engine = new Bpmn.Engine({
-      source: processXml,
+      source,
       moddleOptions: {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }
     });
 
-    listener.once('end-messageStartEvent', (activity) => {
-      expect(activity.getOutput()).to.equal({
+    listener.once('end-messageStartEvent', (activityApi) => {
+      expect(activityApi.getOutput()).to.equal({
         message: 'I\'m done',
         arbval: '10'
       });
@@ -71,14 +71,15 @@ lab.experiment('Lanes', () => {
 
     engine.once('end', () => {
       const participant = engine.definitions[0].processes.find((p) => p.id === 'participantProcess');
-      expect(participant.variables).to.include({
+
+      expect(participant.environment.variables).to.include({
         input: 0,
         message: 'Done! Aswell!',
         arbval: '10'
       });
 
       const mainProcess = engine.definitions[0].processes.find((p) => p.id === 'mainProcess');
-      expect(mainProcess.variables).to.include({
+      expect(mainProcess.environment.getOutput()).to.include({
         message: 'I\'m done'
       });
 
@@ -86,7 +87,7 @@ lab.experiment('Lanes', () => {
     });
 
     engine.execute({
-      listener: listener,
+      listener,
       variables: {
         input: 0
       }

@@ -474,7 +474,7 @@ describe('Engine', () => {
       });
 
       engine.execute({
-        listener: listener,
+        listener,
         variables: {
           input: null
         }
@@ -484,11 +484,14 @@ describe('Engine', () => {
 
     it('resumes execution and returns definition in callback', (done) => {
       const resumeListener = new EventEmitter();
+      resumeListener.once('wait-userTask', (activityApi) => {
+        activityApi.signal();
+      });
+
       const resumedEngine = Bpmn.Engine.resume(testHelpers.readFromDb(engineState), {
         listener: resumeListener
-      }, (resumeErr, instance) => {
+      }, (resumeErr) => {
         if (resumeErr) return done(resumeErr);
-        instance.signal('userTask');
       });
 
       resumedEngine.once('end', done.bind(null, null));
@@ -496,8 +499,8 @@ describe('Engine', () => {
 
     it('resumes without callback', (done) => {
       const resumeListener = new EventEmitter();
-      resumeListener.once('wait', (task) => {
-        task.signal();
+      resumeListener.once('wait', (activityApi) => {
+        activityApi.signal();
       });
 
       const resumedEngine = Bpmn.Engine.resume(testHelpers.readFromDb(engineState), {
@@ -564,6 +567,8 @@ describe('Engine', () => {
     it('when we execute', (done) => {
       let startCount = 0;
       listener.on('start-theProcess', function EH(process) {
+        console.log('JKASDJKALDSLASD')
+
         startCount++;
         processes.push(process);
         if (startCount === 2) {
@@ -573,7 +578,7 @@ describe('Engine', () => {
       });
 
       engine.execute({
-        listener: listener
+        listener
       });
     });
 
@@ -592,7 +597,9 @@ describe('Engine', () => {
 
       const definition = engine.getDefinitionById('def1');
       const task = definition.getChildActivityById('userTask1');
-      task.signal();
+      task.once('wait', (activityApi, executionContext) => {
+        activityApi.getApi(executionContext).signal();
+      });
 
       definition.once('end', () => {
         engine.removeListener('end', endListener);

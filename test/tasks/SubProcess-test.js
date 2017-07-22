@@ -177,7 +177,7 @@ describe('SubProcess', () => {
       });
     });
 
-    it('cancel sub process takes all outbound and completes parent process', (done) => {
+    it('cancel sub process discards outbound and completes parent process', (done) => {
       const listener = new EventEmitter();
       listener.on('wait-subUserTask', (taskApi, subProcessInstance) => {
         subProcessInstance.cancel();
@@ -195,7 +195,7 @@ describe('SubProcess', () => {
         if (err) return done(err);
 
         definition.once('end', () => {
-          expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.true();
+          expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.undefined();
           expect(definition.getChildState('subProcess').cancelled, 'subProcess canceled').to.be.true();
 
           testHelpers.expectNoLingeringListenersOnDefinition(definition);
@@ -205,7 +205,7 @@ describe('SubProcess', () => {
       });
     });
 
-    it('cancelled sub activity takes all outbound and completes parent process', (done) => {
+    it('cancelled sub activity takes outbound and completes parent process', (done) => {
       const listener = new EventEmitter();
       listener.once('wait-subUserTask', (activityApi) => {
         activityApi.signal();
@@ -222,18 +222,16 @@ describe('SubProcess', () => {
         variables: {
           input: 127
         }
-      }, (err, definition) => {
-        if (err) return done(err);
+      });
 
-        definition.once('end', () => {
-          expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.true();
-          expect(definition.getChildState('subProcess').cancelled, 'subProcess canceled').to.be.undefined();
-          expect(definition.getChildState('subProcess').taken, 'subProcess taken').to.be.true();
+      engine.once('end', (definition) => {
+        expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.true();
+        expect(definition.getChildState('subProcess').cancelled, 'subProcess canceled').to.be.undefined();
+        expect(definition.getChildState('subProcess').taken, 'subProcess taken').to.be.true();
 
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
-          done();
-        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
+        done();
       });
     });
   });

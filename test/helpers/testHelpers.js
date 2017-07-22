@@ -35,7 +35,7 @@ pub.expectNoLingeringChildListeners = (context) => {
 };
 
 pub.expectNoLingeringListenersOnDefinition = (definition) => {
-  definition.processes.forEach((p) => {
+  definition.getProcesses().forEach((p) => {
     checkListeners(p, eventNames, ` on process <${p.id}>`);
     pub.expectNoLingeringListeners(p);
   });
