@@ -32,7 +32,7 @@ describe('Engine', () => {
   describe('ctor', () => {
     it('without arguments', (done) => {
       expect(() => {
-        new Bpmn.Engine(); // eslint-disable-line no-new
+        new Bpmn.Engine();
       }).to.not.throw();
       done();
     });
@@ -46,12 +46,21 @@ describe('Engine', () => {
       done();
     });
 
+    it('throws if unsupported source is passed', (done) => {
+      expect(() => {
+        new Bpmn.Engine({
+          source: {}
+        });
+      }).to.throw(/Unparsable Bpmn source/i);
+      done();
+    });
+
     it('throws if unsupported option is passed', (done) => {
       expect(() => {
-        new Bpmn.Engine({ // eslint-disable-line no-new
+        new Bpmn.Engine({
           context: {}
         });
-      }).to.throw();
+      }).to.throw(/Option \w+ is unsupported/i);
       done();
     });
 
@@ -81,7 +90,7 @@ describe('Engine', () => {
     it('but not function', (done) => {
       const source = () => {};
       expect(() => {
-        new Bpmn.Engine({ // eslint-disable-line no-new
+        new Bpmn.Engine({
           source: source
         });
       }).to.throw();
@@ -91,7 +100,7 @@ describe('Engine', () => {
     it('accepts name', (done) => {
       let engine;
       expect(() => {
-        engine = new Bpmn.Engine({ // eslint-disable-line no-new
+        engine = new Bpmn.Engine({
           name: 'no source'
         });
       }).to.not.throw();
@@ -107,8 +116,9 @@ describe('Engine', () => {
       const moddle = new BpmnModdle();
       moddle.fromXML(factory.valid('contextTest'), (moddleErr, definition, moddleContext) => {
         if (moddleErr) return done(moddleErr);
+
         const engine = new Bpmn.Engine({
-          moddleContext: moddleContext
+          moddleContext
         });
         engine.getDefinition((err) => {
           if (err) return done(err);
@@ -248,22 +258,23 @@ describe('Engine', () => {
     });
 
     it('emits error if execution fails', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="theProcess" isExecutable="true">
+          <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" />
+        </process>
+      </definitions>`;
+
       const engine = new Bpmn.Engine({
+        source,
         name: 'end test',
-        source: `
-        <?xml version="1.0" encoding="UTF-8"?>
-        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-          <process id="theProcess" isExecutable="true">
-            <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" />
-          </process>
-        </definitions>`,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
       });
       engine.once('error', (err) => {
         expect(err).to.be.an.error('Inner error');
-        expect(engine.started).to.be.false();
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -274,8 +285,6 @@ describe('Engine', () => {
             next(new Error('Inner error'));
           }
         }
-      }, (err) => {
-        if (err) return done(err);
       });
     });
 
@@ -370,11 +379,11 @@ describe('Engine', () => {
   });
 
   describe('getState()', () => {
-    const processXml = factory.userTask();
+    const source = factory.userTask();
 
     it('returns state "running" when running definitions', (done) => {
       const engine = new Bpmn.Engine({
-        source: processXml
+        source
       });
       const listener = new EventEmitter();
 
@@ -399,15 +408,14 @@ describe('Engine', () => {
 
     it('returns state "idle" when nothing is running', (done) => {
       const engine = new Bpmn.Engine({
-        source: processXml
+        source
       });
 
       const state = engine.getState();
 
       expect(state).to.be.an.object();
       expect(state).to.include({
-        state: 'idle',
-        definitions: []
+        state: 'idle'
       });
       done();
     });
@@ -415,7 +423,7 @@ describe('Engine', () => {
     it('returns state of running definitions', (done) => {
       const engine = new Bpmn.Engine({
         name: 'running',
-        source: processXml
+        source
       });
       const listener = new EventEmitter();
 
@@ -440,7 +448,7 @@ describe('Engine', () => {
 
     it('returns engine package version', (done) => {
       const engine = new Bpmn.Engine({
-        source: processXml
+        source
       });
       const listener = new EventEmitter();
 
@@ -557,20 +565,21 @@ describe('Engine', () => {
     const processes = [];
 
     it('given we have a first definition', (done) => {
-      engine.addDefinitionBySource(factory.userTask('userTask1', 'def1'), done);
+      engine.addDefinitionBySource(factory.userTask('userTask1', 'def1'));
+      done();
     });
 
     it('and a second definition', (done) => {
-      engine.addDefinitionBySource(factory.userTask('userTask2', 'def2'), done);
+      engine.addDefinitionBySource(factory.userTask('userTask2', 'def2'));
+      done();
     });
 
     it('when we execute', (done) => {
       let startCount = 0;
-      listener.on('start-theProcess', function EH(process) {
-        console.log('JKASDJKALDSLASD')
-
+      listener.on('start-theProcess', function EH(processApi) {
         startCount++;
-        processes.push(process);
+
+        processes.push(processApi);
         if (startCount === 2) {
           listener.removeListener('start-theProcess', EH);
           return done();
@@ -584,8 +593,8 @@ describe('Engine', () => {
 
     it('all processes are started', (done) => {
       expect(processes.length).to.equal(2);
-      expect(processes[0]).to.contain({entered: true});
-      expect(processes[1]).to.contain({entered: true});
+      expect(processes[0].getState()).to.contain({entered: true});
+      expect(processes[1].getState()).to.contain({entered: true});
       done();
     });
 
@@ -596,15 +605,13 @@ describe('Engine', () => {
       engine.once('end', endListener);
 
       const definition = engine.getDefinitionById('def1');
-      const task = definition.getChildActivityById('userTask1');
-      task.once('wait', (activityApi, executionContext) => {
-        activityApi.getApi(executionContext).signal();
-      });
 
       definition.once('end', () => {
         engine.removeListener('end', endListener);
         done();
       });
+
+      definition.signal('userTask1');
     });
 
     it('when second process is completed engine emits end event', (done) => {
@@ -612,15 +619,17 @@ describe('Engine', () => {
         done();
       });
 
-      const task = engine.getDefinitionById('def2').getChildActivityById('userTask2');
-      task.signal();
+      const definition = engine.getDefinitionById('def2');
+      definition.signal('userTask2');
     });
   });
 
   describe('addDefinitionBySource()', () => {
     it('adds definition', (done) => {
       const engine = new Bpmn.Engine();
-      engine.addDefinitionBySource(factory.valid(), (err) => {
+      engine.addDefinitionBySource(factory.valid());
+
+      engine.getDefinitions((err) => {
         if (err) return done(err);
         expect(engine.definitions.length).to.equal(1);
         done();
@@ -630,16 +639,13 @@ describe('Engine', () => {
     it('adds definition once, identified by id', (done) => {
       const engine = new Bpmn.Engine();
       const source = factory.valid('def1');
+      engine.addDefinitionBySource(source);
+      engine.addDefinitionBySource(source);
 
-      engine.addDefinitionBySource(source, (err1) => {
-        if (err1) return done(err1);
+      engine.getDefinitions((err) => {
+        if (err) return done(err);
         expect(engine.definitions.length).to.equal(1);
-
-        engine.addDefinitionBySource(source, (err2) => {
-          if (err2) return done(err2);
-          expect(engine.definitions.length).to.equal(1);
-          done();
-        });
+        done();
       });
     });
 
@@ -647,7 +653,9 @@ describe('Engine', () => {
       const engine = new Bpmn.Engine();
       engine.addDefinitionBySource(factory.valid(), {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err) => {
+      });
+
+      engine.getDefinitions((err) => {
         if (err) return done(err);
         expect(engine.definitions.length).to.equal(1);
         done();
@@ -656,8 +664,9 @@ describe('Engine', () => {
 
     it('returns error in callback if transform error', (done) => {
       const engine = new Bpmn.Engine();
-      engine.addDefinitionBySource('not xml', (err) => {
-        expect(err).to.exist();
+      engine.addDefinitionBySource('not xml');
+      engine.getDefinitions((err) => {
+        expect(err).to.be.an.error();
         expect(engine.definitions.length).to.equal(0);
         done();
       });
@@ -672,17 +681,17 @@ describe('Engine', () => {
     });
 
     it('without waiting task is ignored', (done) => {
-      const definitionSource = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-  <process id="singleUserTask" isExecutable="true">
-    <task id="task" />
-  </process>
-</definitions>
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="singleUserTask" isExecutable="true">
+          <task id="task" />
+        </process>
+      </definitions>
       `;
       const engine = new Bpmn.Engine({
-        source: definitionSource
+        source
       });
       engine.execute(() => {
         engine.signal('task');
@@ -691,61 +700,63 @@ describe('Engine', () => {
     });
 
     it('with non-existing activity id is ignored', (done) => {
-      const definitionSource = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-  <process id="singleUserTask" isExecutable="true">
-    <userTask id="userTask" />
-  </process>
-</definitions>
-      `;
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="singleUserTask" isExecutable="true">
+          <userTask id="userTask" />
+        </process>
+      </definitions>`;
       const engine = new Bpmn.Engine({
-        source: definitionSource
+        source
       });
-      engine.execute(() => {
+      const listener = new EventEmitter();
+      listener.once('wait', () => {
         engine.signal('task');
         done();
       });
+
+      engine.execute({listener});
     });
   });
 
   describe('getPendingActivities()', () => {
-    const definitionSource = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-  <process id="theWaitingGame" isExecutable="true">
-    <startEvent id="start" />
-    <parallelGateway id="fork" />
-    <userTask id="userTask1" />
-    <userTask id="userTask2">
-      <extensionElements>
-        <camunda:formData>
-          <camunda:formField id="surname" label="Surname" type="string" />
-          <camunda:formField id="givenName" label="Given name" type="string" />
-        </camunda:formData>
-      </extensionElements>
-    </userTask>
-    <task id="task" />
-    <parallelGateway id="join" />
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="start" targetRef="fork" />
-    <sequenceFlow id="flow2" sourceRef="fork" targetRef="userTask1" />
-    <sequenceFlow id="flow3" sourceRef="fork" targetRef="userTask2" />
-    <sequenceFlow id="flow4" sourceRef="fork" targetRef="task" />
-    <sequenceFlow id="flow5" sourceRef="userTask1" targetRef="join" />
-    <sequenceFlow id="flow6" sourceRef="userTask2" targetRef="join" />
-    <sequenceFlow id="flow7" sourceRef="task" targetRef="join" />
-    <sequenceFlow id="flowEnd" sourceRef="join" targetRef="end" />
-  </process>
-</definitions>
-    `;
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <process id="theWaitingGame" isExecutable="true">
+        <startEvent id="start" />
+        <parallelGateway id="fork" />
+        <userTask id="userTask1" />
+        <userTask id="userTask2">
+          <extensionElements>
+            <camunda:formData>
+              <camunda:formField id="surname" label="Surname" type="string" />
+              <camunda:formField id="givenName" label="Given name" type="string" />
+            </camunda:formData>
+          </extensionElements>
+        </userTask>
+        <task id="task" />
+        <parallelGateway id="join" />
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="fork" />
+        <sequenceFlow id="flow2" sourceRef="fork" targetRef="userTask1" />
+        <sequenceFlow id="flow3" sourceRef="fork" targetRef="userTask2" />
+        <sequenceFlow id="flow4" sourceRef="fork" targetRef="task" />
+        <sequenceFlow id="flow5" sourceRef="userTask1" targetRef="join" />
+        <sequenceFlow id="flow6" sourceRef="userTask2" targetRef="join" />
+        <sequenceFlow id="flow7" sourceRef="task" targetRef="join" />
+        <sequenceFlow id="flowEnd" sourceRef="join" targetRef="end" />
+      </process>
+    </definitions>`;
 
     let engine, pending;
     it('given an engine', (done) => {
       engine = new Bpmn.Engine({
-        source: definitionSource,
+        name: 'get pending',
+        source,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
@@ -759,23 +770,21 @@ describe('Engine', () => {
     });
 
     it('when executed', (done) => {
-
       const listener = new EventEmitter();
-      listener.once('enter-join', () => {
+      listener.once('start-join', () => {
         pending = engine.getPendingActivities();
         done();
       });
 
       engine.execute({
-        listener: listener
+        listener
       });
     });
 
     it('then all entered activities are returned', (done) => {
       expect(pending.definitions).to.have.length(1);
       expect(pending.definitions[0]).to.include(['children']);
-      expect(pending.definitions[0].children).to.have.length(3);
-      expect(pending.definitions[0].children).to.have.length(3);
+      expect(pending.definitions[0].children).to.have.length(5);
       done();
     });
 
