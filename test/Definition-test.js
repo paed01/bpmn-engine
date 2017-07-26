@@ -822,5 +822,56 @@ describe('Definition', () => {
       });
     });
 
+    it('with parallel task loop returns pending tasks including loop', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="parallellLoopProcess" isExecutable="true">
+          <userTask id="task">
+            <multiInstanceLoopCharacteristics isSequential="false" camunda:collection="\${variables.boardMembers}">
+              <loopCardinality>5</loopCardinality>
+            </multiInstanceLoopCharacteristics>
+            <extensionElements>
+              <camunda:inputOutput>
+                <camunda:inputParameter name="email">\${item}</camunda:inputParameter>
+                <camunda:inputParameter name="index">\${index}</camunda:inputParameter>
+              </camunda:inputOutput>
+              <camunda:formData>
+                <camunda:formField id="yay\${index}" type="boolean" />
+              </camunda:formData>
+            </extensionElements>
+          </userTask>
+        </process>
+      </definitions>`;
+      testHelpers.getModdleContext(source, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, moddleContext) => {
+        if (err) return done(err);
+
+        const listener = new EventEmitter();
+        const definition = new Definition(moddleContext, {
+          listener,
+          variables: {
+            boardMembers: ['pal@example.com', 'franz@example.com', 'immanuel@example.com']
+          }
+        });
+
+        let count = 0;
+        listener.on('wait', () => {
+          ++count;
+          if (count < 3) return;
+
+          const pending = definition.getPendingActivities();
+          expect(pending.children.length, 'pending activities count').to.equal(4);
+
+          pending.children.forEach((c) => {
+            if (c.signal) c.signal();
+          });
+        });
+
+        definition.execute(done);
+      });
+    });
   });
 });
