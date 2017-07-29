@@ -22,7 +22,7 @@ describe('Definition', () => {
 
     it('throws without arguments', (done) => {
       expect(() => {
-        new Definition(); // eslint-disable-line no-new
+        new Definition();
       }).to.throw(/No moddle context/);
       done();
     });

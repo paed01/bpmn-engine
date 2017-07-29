@@ -1,19 +1,19 @@
 'use strict';
 
-const Code = require('code');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
+const {describe, it} = lab;
+const {expect} = Lab.assertions;
 
 const mapper = require('../../lib/mapper');
 
-lab.experiment('Activity InputOutput', () => {
-  lab.describe('ctor', () => {
-    lab.test('script parameter throws if type is not JavaScript', (done) => {
+describe('Activity InputOutput', () => {
+  describe('ctor', () => {
+    it('script parameter throws if type is not JavaScript', (done) => {
       function test() {
-        new mapper.ActivityIO({ // eslint-disable-line no-new
+        new mapper.ActivityIO({
           $type: 'camunda:InputOutput',
           inputParameters: [{
             $type: 'camunda:inputParameter',
@@ -31,8 +31,8 @@ lab.experiment('Activity InputOutput', () => {
       done();
     });
 
-    lab.test('no children is ignored', (done) => {
-      const io = new mapper.ActivityIO({ // eslint-disable-line no-new
+    it('no children is ignored', (done) => {
+      const io = new mapper.ActivityIO({
         $type: 'camunda:InputOutput',
         inputParameters: [],
         outputParameters: []
@@ -45,9 +45,9 @@ lab.experiment('Activity InputOutput', () => {
     });
   });
 
-  lab.describe('getInput()', () => {
+  describe('getInput()', () => {
 
-    lab.test('returns static values', (done) => {
+    it('returns static values', (done) => {
       const io = new mapper.ActivityIO({
         $type: 'camunda:InputOutput',
         inputParameters: [{
@@ -72,7 +72,7 @@ lab.experiment('Activity InputOutput', () => {
       done();
     });
 
-    lab.test('returns script values', (done) => {
+    it('returns script values', (done) => {
       const io = new mapper.ActivityIO({
         $type: 'camunda:InputOutput',
         inputParameters: [{
@@ -96,7 +96,7 @@ lab.experiment('Activity InputOutput', () => {
       done();
     });
 
-    lab.test('returns script values that address variable', (done) => {
+    it('returns script values that address variable', (done) => {
       const io = new mapper.ActivityIO({
         $type: 'camunda:InputOutput',
         inputParameters: [{
@@ -124,26 +124,25 @@ lab.experiment('Activity InputOutput', () => {
       done();
     });
 
-    lab.test('can access parentContext variables', (done) => {
+    it('can access parentContext variables', (done) => {
       const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
-  <process id="mainProcess" isExecutable="true">
-    <task id="task" name="Task 1">
-      <extensionElements>
-        <camunda:InputOutput>
-          <camunda:inputParameter name="inputMessage">
-            <camunda:script scriptFormat="JavaScript">variables.input</camunda:script>
-          </camunda:inputParameter>
-          <camunda:outputParameter name="message">
-            <camunda:script scriptFormat="JavaScript"><![CDATA[inputMessage + variables.arbval]]>;</camunda:script>
-          </camunda:outputParameter>
-        </camunda:InputOutput>
-      </extensionElements>
-    </task>
-  </process>
-</definitions>
-      `;
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
+        <process id="mainProcess" isExecutable="true">
+          <task id="task" name="Task 1">
+            <extensionElements>
+              <camunda:InputOutput>
+                <camunda:inputParameter name="inputMessage">
+                  <camunda:script scriptFormat="JavaScript">variables.input</camunda:script>
+                </camunda:inputParameter>
+                <camunda:outputParameter name="message">
+                  <camunda:script scriptFormat="JavaScript"><![CDATA[inputMessage + variables.arbval]]>;</camunda:script>
+                </camunda:outputParameter>
+              </camunda:InputOutput>
+            </extensionElements>
+          </task>
+        </process>
+      </definitions>`;
 
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -158,9 +157,9 @@ lab.experiment('Activity InputOutput', () => {
     });
   });
 
-  lab.describe('getOutput()', () => {
+  describe('getOutput()', () => {
 
-    lab.test('returns static values', (done) => {
+    it('returns static values', (done) => {
       const io = new mapper.ActivityIO({
         $type: 'camunda:InputOutput',
         inputParameters: [{
@@ -186,7 +185,7 @@ lab.experiment('Activity InputOutput', () => {
       done();
     });
 
-    lab.test('returns script values', (done) => {
+    it('returns script values', (done) => {
       const io = new mapper.ActivityIO({
         $type: 'camunda:InputOutput',
         outputParameters: [{
@@ -210,7 +209,7 @@ lab.experiment('Activity InputOutput', () => {
       done();
     });
 
-    lab.test('returns script values that address variable', (done) => {
+    it('returns script values that address variable', (done) => {
       const io = new mapper.ActivityIO({
         $type: 'camunda:InputOutput',
         outputParameters: [{
@@ -236,8 +235,8 @@ lab.experiment('Activity InputOutput', () => {
       done();
     });
 
-    lab.test('empty parameter definition return undefined', (done) => {
-      const io = new mapper.ActivityIO({ // eslint-disable-line no-new
+    it('empty parameter definition return undefined', (done) => {
+      const io = new mapper.ActivityIO({
         $type: 'camunda:InputOutput',
         outputParameters: [{
           $type: 'camunda:outputParameter',
@@ -255,8 +254,8 @@ lab.experiment('Activity InputOutput', () => {
       done();
     });
 
-    lab.test('no parameter definition return undefined', (done) => {
-      const io = new mapper.ActivityIO({ // eslint-disable-line no-new
+    it('no parameter definition return undefined', (done) => {
+      const io = new mapper.ActivityIO({
         $type: 'camunda:InputOutput',
         outputParameters: [{
           $type: 'camunda:outputParameter',
@@ -273,8 +272,8 @@ lab.experiment('Activity InputOutput', () => {
       done();
     });
 
-    lab.test('unknown definition type returns undefined', (done) => {
-      const io = new mapper.ActivityIO({ // eslint-disable-line no-new
+    it('unknown definition type returns undefined', (done) => {
+      const io = new mapper.ActivityIO({
         $type: 'camunda:InputOutput',
         outputParameters: [{
           $type: 'camunda:outputParameter',
@@ -298,26 +297,25 @@ lab.experiment('Activity InputOutput', () => {
       done();
     });
 
-    lab.test('can access parentContext variables', (done) => {
+    it('can access parentContext variables', (done) => {
       const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
-  <process id="mainProcess" isExecutable="true">
-    <task id="task" name="Task 1">
-      <extensionElements>
-        <camunda:InputOutput>
-          <camunda:inputParameter name="inputMessage">
-            <camunda:script scriptFormat="JavaScript">variables.input</camunda:script>
-          </camunda:inputParameter>
-          <camunda:outputParameter name="message">
-            <camunda:script scriptFormat="JavaScript"><![CDATA[inputMessage + variables.arbval]]>;</camunda:script>
-          </camunda:outputParameter>
-        </camunda:InputOutput>
-      </extensionElements>
-    </task>
-  </process>
-</definitions>
-      `;
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
+        <process id="mainProcess" isExecutable="true">
+          <task id="task" name="Task 1">
+            <extensionElements>
+              <camunda:InputOutput>
+                <camunda:inputParameter name="inputMessage">
+                  <camunda:script scriptFormat="JavaScript">variables.input</camunda:script>
+                </camunda:inputParameter>
+                <camunda:outputParameter name="message">
+                  <camunda:script scriptFormat="JavaScript"><![CDATA[inputMessage + variables.arbval]]>;</camunda:script>
+                </camunda:outputParameter>
+              </camunda:InputOutput>
+            </extensionElements>
+          </task>
+        </process>
+      </definitions>`;
 
       testHelpers.getContext(processXml, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')

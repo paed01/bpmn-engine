@@ -1,16 +1,16 @@
 'use strict';
 
-const Code = require('code');
 const factory = require('./helpers/factory');
 const Lab = require('lab');
 const testHelpers = require('./helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
+const {beforeEach, describe, it} = lab;
+const {expect} = Lab.assertions;
 
-lab.experiment('input/output', () => {
+describe('input/output', () => {
   let context;
-  lab.beforeEach((done) => {
+  beforeEach((done) => {
     const processXml = factory.resource('service-task-io-types.bpmn').toString();
     testHelpers.getContext(processXml, {
       camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -21,10 +21,10 @@ lab.experiment('input/output', () => {
     });
   });
 
-  lab.describe('service task with camunda input/output', () => {
-    lab.describe('getInput()', () => {
+  describe('service task with camunda input/output', () => {
+    describe('getInput()', () => {
 
-      lab.test('return object with named input arguments', (done) => {
+      it('return object with named input arguments', (done) => {
         context.variables = {
           apiPath: 'http://example-2.com',
           input: 2
@@ -50,9 +50,9 @@ lab.experiment('input/output', () => {
 
     });
 
-    lab.describe('getOutput()', () => {
+    describe('getOutput()', () => {
 
-      lab.test('returns object mapped to array arguments', (done) => {
+      it('returns object mapped to array arguments', (done) => {
         context.variables = {
           apiPath: 'http://example-2.com',
           input: 2
@@ -82,10 +82,10 @@ lab.experiment('input/output', () => {
 
   });
 
-  lab.describe('user task', () => {
-    lab.describe('getInput()', () => {
+  describe('user task', () => {
+    describe('getInput()', () => {
 
-      lab.test('return object with named input arguments', (done) => {
+      it('return object with named input arguments', (done) => {
         context.variables = {
           input: 2
         };
@@ -107,9 +107,9 @@ lab.experiment('input/output', () => {
 
     });
 
-    lab.describe('getOutput()', () => {
+    describe('getOutput()', () => {
 
-      lab.test('returns mapped output from result object', (done) => {
+      it('returns mapped output from result object', (done) => {
         context.variables = {
           apiPath: 'http://example-2.com',
           input: 2
@@ -140,10 +140,10 @@ lab.experiment('input/output', () => {
 
   });
 
-  lab.describe('script task', () => {
-    lab.describe('getInput()', () => {
+  describe('script task', () => {
+    describe('getInput()', () => {
 
-      lab.test('return object with named input arguments', (done) => {
+      it('return object with named input arguments', (done) => {
         context.variables = {
           input: 2
         };
@@ -165,9 +165,9 @@ lab.experiment('input/output', () => {
 
     });
 
-    lab.describe('getOutput()', () => {
+    describe('getOutput()', () => {
 
-      lab.test('without output parameters returns unaltered output from script', (done) => {
+      it('without output parameters returns unaltered output from script', (done) => {
         context.variables = {
           apiPath: 'http://example-2.com',
           input: 2
