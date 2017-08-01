@@ -169,14 +169,12 @@ describe('Intermediate Catch Event', () => {
 
       engine.execute({
         listener: listener
-      }, (err, definition) => {
+      }, (err) => {
         if (err) return done(err);
 
-        definition.once('end', () => {
-          expect(calledEnds).to.include(['task1', 'duration', 'task2']);
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          done();
-        });
+        expect(calledEnds).to.include(['task1', 'duration', 'task2']);
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
   });

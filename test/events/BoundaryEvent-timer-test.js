@@ -263,14 +263,12 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       });
 
       engine.execute({
-        listener: listener
-      }, (err, definition) => {
+        listener
+      }, (err) => {
         if (err) return done(err);
 
-        definition.once('end', () => {
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          done();
-        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
@@ -285,22 +283,20 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
 
       engine.execute({
         listener: listener
-      }, (err, definition) => {
+      }, (err) => {
         if (err) return done(err);
 
-        definition.once('end', () => {
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          done();
-        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
     describe('non-interupting', () => {
-      const processXml = factory.resource('boundary-non-interupting-timer.bpmn');
+      const source = factory.resource('boundary-non-interupting-timer.bpmn');
 
       it('does not discard task', (done) => {
         const engine = new Engine({
-          source: processXml
+          source
         });
         const listener = new EventEmitter();
 
@@ -317,20 +313,18 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
 
         engine.execute({
           listener: listener
-        }, (err, definition) => {
+        }, (err) => {
           if (err) return done(err);
 
-          definition.once('end', () => {
-            expect(calledEnds).to.include(['userTask', 'boundaryEvent']);
-            testHelpers.expectNoLingeringListenersOnDefinition(definition);
-            done();
-          });
+          expect(calledEnds).to.include(['userTask', 'boundaryEvent']);
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
+          done();
         });
       });
 
       it('is discarded if task completes', (done) => {
         const engine = new Engine({
-          source: processXml
+          source
         });
         const listener = new EventEmitter();
 
@@ -348,20 +342,18 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         });
 
         engine.execute({
-          listener: listener
-        }, (err, definition) => {
+          listener
+        }, (err) => {
           if (err) return done(err);
-          definition.once('end', () => {
-            expect(calledEnds).to.include(['userTask']);
-            testHelpers.expectNoLingeringListenersOnDefinition(definition);
-            done();
-          });
+          expect(calledEnds).to.include(['userTask']);
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
+          done();
         });
       });
 
       it('is discarded if task is canceled', (done) => {
         const engine = new Engine({
-          source: processXml
+          source
         });
         const listener = new EventEmitter();
         listener.once('wait-userTask', (task) => {
@@ -373,13 +365,11 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
 
         engine.execute({
           listener: listener
-        }, (err, definition) => {
+        }, (err) => {
           if (err) return done(err);
 
-          definition.once('end', () => {
-            testHelpers.expectNoLingeringListenersOnDefinition(definition);
-            done();
-          });
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
+          done();
         });
       });
     });
@@ -404,16 +394,16 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         source,
         name: 'stopMe'
       });
-      const listener1 = new EventEmitter();
+      const listener = new EventEmitter();
 
-      listener1.once('wait-dontWaitForMe', () => {
+      listener.once('wait-dontWaitForMe', () => {
         setTimeout(() => {
           engine.stop();
         }, 10);
       });
 
       engine.execute({
-        listener: listener1
+        listener
       }, (err) => {
         if (err) return done(err);
       });
@@ -469,12 +459,10 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         });
         Engine.resume(state, {
           listener: listener2
-        }, (err, resumedInstance) => {
+        }, (err) => {
           if (err) return done(err);
-          resumedInstance.once('end', () => {
-            expect(timer, 'timeout').to.be.above(0).and.lessThan(41);
-            done();
-          });
+          expect(timer, 'timeout').to.be.above(0).and.lessThan(41);
+          done();
         });
       });
 
@@ -521,12 +509,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         });
         Engine.resume(state, {
           listener: listener2
-        }, (err, resumedInstance) => {
-          if (err) return done(err);
-          resumedInstance.once('end', () => {
-            done();
-          });
-        });
+        }, done);
       });
 
       engine1.execute({
@@ -602,11 +585,10 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
           api: 'http://example.com'
         }
       });
-      engine.once('end', (def) => {
+      engine.once('end', (execution) => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
-        expect(def.getOutput()).to.equal({
-          api: 'http://example.com',
+        expect(execution.getOutput()).to.equal({
           defaultTaken: true,
           taskOutput: ['successfully executed twice']
         });
@@ -651,7 +633,6 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
         expect(def.getOutput()).to.equal({
-          api: 'http://example.com',
           defaultTaken: true
         });
         testHelpers.expectNoLingeringListenersOnEngine(engine);

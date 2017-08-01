@@ -1,19 +1,18 @@
 'use strict';
 
-const Code = require('code');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('../../lib');
+const {EventEmitter} = require('events');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
+const {describe, it} = lab;
+const {expect} = Lab.assertions;
 
-const Bpmn = require('../..');
-
-lab.experiment('message tasks', () => {
-  lab.test('Sends message between lanes', (done) => {
-    const engine = new Bpmn.Engine({
+describe('message tasks', () => {
+  it('Sends message between lanes', (done) => {
+    const engine = new Engine({
       source: factory.resource('messaging.bpmn'),
       moddleOptions: {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -27,8 +26,8 @@ lab.experiment('message tasks', () => {
       });
     });
 
-    engine.once('end', (def) => {
-      expect(def.variables).to.include({
+    engine.once('end', (execution, definition) => {
+      expect(definition.environment.variables).to.include({
         user: 'a@b.c',
         receivedFrom: 'a@b.c',
         me: 'c@d.e',
@@ -39,7 +38,7 @@ lab.experiment('message tasks', () => {
     });
 
     engine.execute({
-      listener: listener,
+      listener,
       variables: {
         user: 'a@b.c'
       }

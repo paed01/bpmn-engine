@@ -128,7 +128,7 @@ describe('SubProcess', () => {
         task.run();
       });
 
-      it('assigns input to form', (done) => {
+      it('assigns loop input to sub task', (done) => {
         const listener = new EventEmitter();
         context.environment.setListener(listener);
 
@@ -136,8 +136,8 @@ describe('SubProcess', () => {
         const taskApi = task.activate();
 
         const doneTasks = [];
-        listener.on('end', (activity) => {
-          doneTasks.push(activity.getInput().input);
+        listener.on('end-serviceTask', (activityApi) => {
+          doneTasks.push(activityApi.getInput().input);
         });
 
         task.once('end', () => {
@@ -167,13 +167,10 @@ describe('SubProcess', () => {
         variables: {
           input: 1
         }
-      }, (err, definition) => {
-        if (err) return done(err);
-        definition.once('end', () => {
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
-          done();
-        });
+      });
+
+      engine.on('end', () => {
+        done();
       });
     });
 
@@ -191,17 +188,16 @@ describe('SubProcess', () => {
         variables: {
           input: 0
         }
-      }, (err, definition) => {
-        if (err) return done(err);
+      });
 
-        definition.once('end', () => {
-          expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.undefined();
-          expect(definition.getChildState('subProcess').cancelled, 'subProcess canceled').to.be.true();
+      engine.on('end', (execution, definition) => {
+        expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.undefined();
+        expect(definition.getChildState('subProcess').entered, 'subProcess entered').to.be.undefined();
+        expect(definition.getChildState('subProcess').cancelled, 'subProcess canceled').to.be.true();
 
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
-          done();
-        });
+        testHelpers.expectNoLingeringListenersOnDefinition(definition);
+        testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
+        done();
       });
     });
 
@@ -224,7 +220,7 @@ describe('SubProcess', () => {
         }
       });
 
-      engine.once('end', (definition) => {
+      engine.once('end', (execution, definition) => {
         expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.true();
         expect(definition.getChildState('subProcess').cancelled, 'subProcess canceled').to.be.undefined();
         expect(definition.getChildState('subProcess').taken, 'subProcess taken').to.be.true();
@@ -262,12 +258,41 @@ describe('SubProcess', () => {
             next(new Error('Expected'));
           }
         }
-      }, (err) => {
-        if (err) return done(err);
       });
 
       engine.on('error', (thrownErr) => {
         expect(thrownErr).to.be.an.error('Expected');
+        done();
+      });
+    });
+
+    it('returns error in execute callback', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+            targetNamespace="http://bpmn.io/schema/bpmn">
+        <process id="mainProcess" isExecutable="true">
+          <subProcess id="subProcess" name="Wrapped">
+            <serviceTask id="subServiceTask" name="Put" camunda:expression="\${services.throw}" />
+          </subProcess>
+        </process>
+      </definitions>`;
+
+      const engine = new Engine({
+        source,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+      engine.execute({
+        services: {
+          throw: (context, next) => {
+            next(new Error('Expected'));
+          }
+        }
+      }, (err) => {
+        expect(err).to.be.an.error('Expected');
         done();
       });
     });
@@ -366,9 +391,8 @@ describe('SubProcess', () => {
         }
       });
 
-      engine.once('end', (def) => {
-        expect(def.getOutput()).to.equal({
-          apiPath: 'https://api.example.com/v1',
+      engine.once('end', (execution) => {
+        expect(execution.getOutput()).to.equal({
           result: 1
         });
         done();
@@ -403,14 +427,14 @@ function getLoopContext(sequential, callback) {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
   }, (err, context) => {
     if (err) return callback(err);
-    context.environment.assignResult({
+    context.environment.assignVariables({
       prefix: 'sub',
       inputList: ['labour', 'archiving', 'shopping']
     });
 
-    context.environment.services.loop = (input, next) => {
+    context.environment.addService('loop', (input, next) => {
       next(null, input);
-    };
+    });
 
     callback(null, context);
   });

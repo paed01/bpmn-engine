@@ -204,8 +204,7 @@ describe('EndEvent', () => {
         listener: listener
       });
 
-      engine.once('end', (def) => {
-        expect(def.isEnded).to.equal(true);
+      engine.once('end', () => {
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });

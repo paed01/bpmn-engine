@@ -1,8 +1,10 @@
 'use strict';
 
-const factory = require('./helpers/factory');
+const {Engine} = require('../../.');
+const EventEmitter = require('events').EventEmitter;
+const factory = require('../helpers/factory');
 const Lab = require('lab');
-const testHelpers = require('./helpers/testHelpers');
+const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
@@ -10,9 +12,9 @@ const {expect} = Lab.assertions;
 
 describe('input/output', () => {
   let context;
+  const source = factory.resource('service-task-io-types.bpmn').toString();
   beforeEach((done) => {
-    const processXml = factory.resource('service-task-io-types.bpmn').toString();
-    testHelpers.getContext(processXml, {
+    testHelpers.getContext(source, {
       camunda: require('camunda-bpmn-moddle/resources/camunda')
     }, (err, result) => {
       if (err) return done(err);
@@ -23,12 +25,11 @@ describe('input/output', () => {
 
   describe('service task with camunda input/output', () => {
     describe('getInput()', () => {
-
       it('return object with named input arguments', (done) => {
-        context.variables = {
+        context.environment.assignVariables({
           apiPath: 'http://example-2.com',
           input: 2
-        };
+        });
 
         const task = context.getChildActivityById('serviceTask');
         expect(task).to.include(['io']);
@@ -47,16 +48,14 @@ describe('input/output', () => {
 
         done();
       });
-
     });
 
     describe('getOutput()', () => {
-
       it('returns object mapped to array arguments', (done) => {
-        context.variables = {
+        context.environment.assignVariables({
           apiPath: 'http://example-2.com',
           input: 2
-        };
+        });
 
         const task = context.getChildActivityById('serviceTask');
         expect(task).to.include(['io']);
@@ -77,18 +76,16 @@ describe('input/output', () => {
 
         done();
       });
-
     });
-
   });
 
   describe('user task', () => {
     describe('getInput()', () => {
 
       it('return object with named input arguments', (done) => {
-        context.variables = {
+        context.environment.assignVariables({
           input: 2
-        };
+        });
 
         const task = context.getChildActivityById('userTask');
         expect(task).to.include(['io']);
@@ -110,10 +107,10 @@ describe('input/output', () => {
     describe('getOutput()', () => {
 
       it('returns mapped output from result object', (done) => {
-        context.variables = {
+        context.environment.assignVariables({
           apiPath: 'http://example-2.com',
           input: 2
-        };
+        });
 
         const task = context.getChildActivityById('userTask');
         expect(task).to.include(['io']);
@@ -144,9 +141,9 @@ describe('input/output', () => {
     describe('getInput()', () => {
 
       it('return object with named input arguments', (done) => {
-        context.variables = {
+        context.environment.assignVariables({
           input: 2
-        };
+        });
 
         const task = context.getChildActivityById('scriptTask');
         expect(task).to.include(['io']);
@@ -168,24 +165,110 @@ describe('input/output', () => {
     describe('getOutput()', () => {
 
       it('without output parameters returns unaltered output from script', (done) => {
-        context.variables = {
+        context.environment.assignVariables({
           apiPath: 'http://example-2.com',
           input: 2
-        };
+        });
 
         const task = context.getChildActivityById('scriptTask');
 
-        task.once('end', (activity, output) => {
-          expect(output).to.equal([2, '3']);
+        task.once('end', (activityApi, executionContext) => {
+          expect(executionContext.getOutput()).to.equal([2, '3']);
           done();
         });
 
-        task.enter();
-        task.execute({
+        task.activate().run({
           inputValue: 2
         });
       });
     });
 
+  });
+
+  describe('engine', () => {
+    it('saves to environment variables', (done) => {
+      const engine = new Engine({
+        source,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        }
+      });
+
+      const listener = new EventEmitter();
+      listener.on('wait-userTask', (activityApi) => {
+        expect(activityApi.getInput()).to.equal({
+          inputScript: 42,
+          message: undefined
+        });
+        activityApi.signal({
+          accept: 'Yes',
+          managerEmail: 'a@b.c',
+          timestamp: new Date('1986-12-12T01:01Z')
+        });
+      });
+      listener.on('end-userTask', (activityApi) => {
+        expect(activityApi.getOutput()).to.equal({
+          accepted: true,
+          managerEmail: 'a@b.c',
+          original: {
+            accept: 'Yes',
+            timestamp: new Date('1986-12-12T01:01Z')
+          }
+        });
+      });
+      listener.on('start-serviceTask', (activityApi) => {
+        expect(activityApi.getInput()).to.equal({
+          input: 42,
+          inputConstant: 'hard coded value',
+          list: [42, '2'],
+          options: {
+            uri: 'http://example-2.com'
+          },
+          path: undefined
+        });
+      });
+      listener.on('end-serviceTask', (activityApi) => {
+        expect(activityApi.getOutput()).to.equal({
+          statusCode: 200,
+          body: {}
+        });
+      });
+
+      listener.on('enter-scriptTask', (activityApi) => {
+        expect(activityApi.getInput()).to.equal({
+          input1: undefined,
+          input2: '3',
+        });
+      });
+
+      engine.execute({
+        listener,
+        services: {
+          get: (arg, next) => {
+            next(null, {
+              statusCode: 200
+            }, {});
+          }
+        },
+        variables: {
+          apiPath: 'http://example-2.com',
+          input: 42
+        }
+      });
+
+      engine.on('end', (e, def) => {
+        expect(def.environment.getOutput()).to.equal({
+          accepted: true,
+          body: {},
+          managerEmail: 'a@b.c',
+          original: {
+            accept: 'Yes',
+            timestamp: new Date('1986-12-12T01:01Z')
+          },
+          statusCode: 200
+        });
+        done();
+      });
+    });
   });
 });

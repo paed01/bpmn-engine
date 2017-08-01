@@ -4,7 +4,28 @@
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>SequenceFlow_0coruyk</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_0coruyk" sourceRef="StartEvent_1" targetRef="userTask" />
+    <bpmn:userTask id="userTask" name="User asks">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="message">${text}</camunda:inputParameter>
+          <camunda:inputParameter name="inputScript">
+            <camunda:script scriptFormat="JavaScript">variables.input</camunda:script>
+          </camunda:inputParameter>
+          <camunda:outputParameter name="accepted">
+            <camunda:script scriptFormat="JavaScript"><![CDATA[accept === 'Yes']]></camunda:script>
+          </camunda:outputParameter>
+          <camunda:outputParameter name="managerEmail" />
+          <camunda:outputParameter name="original">
+            <camunda:map>
+              <camunda:entry key="accept"></camunda:entry>
+              <camunda:entry key="timestamp"></camunda:entry>
+            </camunda:map>
+          </camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0coruyk</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0jnd1g6</bpmn:outgoing>
+    </bpmn:userTask>
     <bpmn:serviceTask id="serviceTask" name="IOrs">
       <bpmn:extensionElements>
         <camunda:inputOutput>
@@ -34,34 +55,6 @@
       <bpmn:incoming>SequenceFlow_0jnd1g6</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1jgxkq2</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:endEvent id="EndEvent_0xvvikh">
-      <bpmn:incoming>SequenceFlow_040np9m</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_1jgxkq2" sourceRef="serviceTask" targetRef="scriptTask" />
-    <bpmn:sequenceFlow id="SequenceFlow_0jnd1g6" sourceRef="userTask" targetRef="serviceTask" />
-    <bpmn:userTask id="userTask" name="User asks">
-      <bpmn:extensionElements>
-        <camunda:inputOutput>
-          <camunda:inputParameter name="message">${text}</camunda:inputParameter>
-          <camunda:inputParameter name="inputScript">
-            <camunda:script scriptFormat="JavaScript">variables.input</camunda:script>
-          </camunda:inputParameter>
-          <camunda:outputParameter name="accepted">
-            <camunda:script scriptFormat="JavaScript"><![CDATA[accept === 'Yes']]></camunda:script>
-          </camunda:outputParameter>
-          <camunda:outputParameter name="managerEmail" />
-          <camunda:outputParameter name="original">
-            <camunda:map>
-              <camunda:entry key="accept"></camunda:entry>
-              <camunda:entry key="timestamp"></camunda:entry>
-            </camunda:map>
-          </camunda:outputParameter>
-        </camunda:inputOutput>
-      </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_0coruyk</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_0jnd1g6</bpmn:outgoing>
-    </bpmn:userTask>
-    <bpmn:sequenceFlow id="SequenceFlow_040np9m" sourceRef="scriptTask" targetRef="EndEvent_0xvvikh" />
     <bpmn:scriptTask id="scriptTask" name="Execute" scriptFormat="JavaScript">
       <bpmn:extensionElements>
         <camunda:inputOutput>
@@ -73,6 +66,13 @@
       <bpmn:outgoing>SequenceFlow_040np9m</bpmn:outgoing>
       <bpmn:script>next(null, [input1, input2])</bpmn:script>
     </bpmn:scriptTask>
+    <bpmn:endEvent id="EndEvent_0xvvikh">
+      <bpmn:incoming>SequenceFlow_040np9m</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0coruyk" sourceRef="StartEvent_1" targetRef="userTask" />
+    <bpmn:sequenceFlow id="SequenceFlow_0jnd1g6" sourceRef="userTask" targetRef="serviceTask" />
+    <bpmn:sequenceFlow id="SequenceFlow_1jgxkq2" sourceRef="serviceTask" targetRef="scriptTask" />
+    <bpmn:sequenceFlow id="SequenceFlow_040np9m" sourceRef="scriptTask" targetRef="EndEvent_0xvvikh" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="IoTypes">

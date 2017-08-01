@@ -4,15 +4,13 @@ const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
-const getPropertyValue = require('../../lib/getPropertyValue');
 
 const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
+const {expect, fail} = Lab.assertions;
 
 describe('task loop', () => {
   describe('sequential', () => {
-
     it('on recurring task error the loop breaks', (done) => {
       const source = `
       <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -46,19 +44,17 @@ describe('task loop', () => {
       });
 
       engine.execute({
-        listener: listener,
+        listener,
         variables: {
           input: 0,
           items: [0].concat(Array(10).fill(7))
         }
-      }, (err, instance) => {
-        if (err) return done(err);
+      });
 
-        instance.once('end', () => {
-          expect(startCount, 'number of start').to.equal(3);
-          testHelpers.expectNoLingeringListenersOnDefinition(instance);
-          done();
-        });
+      engine.on('end', () => {
+        expect(startCount, 'number of start').to.equal(3);
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
@@ -92,20 +88,18 @@ describe('task loop', () => {
         });
 
         engine.execute({
-          listener: listener,
+          listener,
           variables: {
             input: 0,
             items: [0].concat(Array(10).fill(7))
           }
-        }, (err, instance) => {
-          if (err) return done(err);
+        });
 
-          instance.once('end', () => {
-            expect(startCount, 'number of start').to.equal(7);
-            expect(instance.variables.input).to.equal(42);
-            testHelpers.expectNoLingeringListenersOnDefinition(instance);
-            done();
-          });
+        engine.once('end', (execution, definition) => {
+          expect(startCount, 'number of start').to.equal(7);
+          expect(definition.environment.variables.input).to.equal(42);
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
+          done();
         });
       });
 
@@ -133,15 +127,13 @@ describe('task loop', () => {
         });
 
         engine.execute({
-          listener: listener
-        }, (err, instance) => {
+          listener
+        }, (err) => {
           if (err) return done(err);
 
-          instance.once('end', () => {
-            expect(startCount).to.equal(5);
-            testHelpers.expectNoLingeringListenersOnDefinition(instance);
-            done();
-          });
+          expect(startCount).to.equal(5);
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
+          done();
         });
       });
 
@@ -169,18 +161,16 @@ describe('task loop', () => {
         });
 
         engine.execute({
-          listener: listener,
+          listener,
           variables: {
             loopCardinality: 7
           }
-        }, (err, instance) => {
+        }, (err) => {
           if (err) return done(err);
 
-          instance.once('end', () => {
-            expect(startCount).to.equal(7);
-            testHelpers.expectNoLingeringListenersOnDefinition(instance);
-            done();
-          });
+          expect(startCount).to.equal(7);
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
+          done();
         });
       });
     });
@@ -206,24 +196,22 @@ describe('task loop', () => {
         const listener = new EventEmitter();
 
         let waitCount = 0;
-        listener.on('wait-recurring', (task, instance) => {
-          if (waitCount > 5) throw new Error('Infinite loop');
+        listener.on('wait-recurring', (activityApi) => {
+          if (waitCount > 5) fail(Error('Infinite loop'));
 
-          instance.signal('recurring', {
+          activityApi.signal({
             input: ++waitCount
           });
         });
 
         engine.execute({
-          listener: listener
-        }, (err, instance) => {
+          listener
+        }, (err) => {
           if (err) return done(err);
 
-          instance.once('end', () => {
-            expect(waitCount).to.equal(4);
-            testHelpers.expectNoLingeringListenersOnDefinition(instance);
-            done();
-          });
+          expect(waitCount).to.equal(4);
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
+          done();
         });
       });
 
@@ -259,7 +247,7 @@ describe('task loop', () => {
         };
 
         engine.execute({
-          listener: listener,
+          listener,
           variables: {
             input: 0
           },
@@ -272,14 +260,12 @@ describe('task loop', () => {
               fnName: 'iterate'
             }
           }
-        }, (err, instance) => {
+        }, (err) => {
           if (err) return done(err);
 
-          instance.once('end', () => {
-            expect(startCount).to.equal(4);
-            testHelpers.expectNoLingeringListenersOnDefinition(instance);
-            done();
-          });
+          expect(startCount).to.equal(4);
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
+          done();
         });
       });
 
@@ -318,7 +304,7 @@ describe('task loop', () => {
 
         let sum = 0;
         engine.execute({
-          listener: listener,
+          listener,
           services: {
             loop: (executionContext, callback) => {
               sum += executionContext.item;
@@ -329,10 +315,10 @@ describe('task loop', () => {
             input: [1, 2, 3, 7]
           }
         });
-        engine.once('end', (instance) => {
+        engine.once('end', () => {
           expect(startCount).to.equal(4);
           expect(sum, 'sum').to.equal(13);
-          testHelpers.expectNoLingeringListenersOnDefinition(instance);
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
           done();
         });
 
@@ -366,7 +352,7 @@ describe('task loop', () => {
         });
 
         engine.execute({
-          listener: listener,
+          listener,
           services: {
             loop: (executionContext, callback) => {
               if (executionContext.item > 1) {
@@ -379,14 +365,11 @@ describe('task loop', () => {
           variables: {
             input: [1, 2, 3, 7]
           }
-        }, (err, instance) => {
+        }, (err) => {
           if (err) return done(err);
-
-          instance.once('end', () => {
-            expect(startCount).to.equal(2);
-            testHelpers.expectNoLingeringListenersOnDefinition(instance);
-            done();
-          });
+          expect(startCount).to.equal(2);
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
+          done();
         });
       });
     });
@@ -424,18 +407,16 @@ describe('task loop', () => {
       });
 
       engine.execute({
-        listener: listener,
+        listener,
         variables: {
           cardinality: 13
         }
-      }, (err, instance) => {
+      }, (err) => {
         if (err) return done(err);
 
-        instance.once('end', () => {
-          expect(startCount).to.equal(9);
-          testHelpers.expectNoLingeringListenersOnDefinition(instance);
-          done();
-        });
+        expect(startCount).to.equal(9);
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 

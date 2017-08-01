@@ -133,7 +133,7 @@ describe('ScriptTask', () => {
 
   describe('engine', () => {
     it('multiple inbound completes process', (done) => {
-      const processXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -169,7 +169,7 @@ describe('ScriptTask', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: processXml,
+        source,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
@@ -196,7 +196,6 @@ describe('ScriptTask', () => {
       });
       engine.once('end', (def) => {
         expect(def.getOutput()).to.equal({
-          test: 1,
           defaultTaken: true,
           taskOutput: true
         });
@@ -446,8 +445,8 @@ describe('ScriptTask', () => {
       });
     });
 
-    it('output can be used for subsequent decisions', (done) => {
-      const processXml = `
+    it('variables are editable and can be used for subsequent decisions', (done) => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -456,7 +455,7 @@ describe('ScriptTask', () => {
         <scriptTask id="scriptTask" scriptFormat="Javascript">
           <script>
             <![CDATA[
-              this.variables.stopLoop = true;
+              variables.stopLoop = true;
               next();
             ]]>
           </script>
@@ -474,14 +473,24 @@ describe('ScriptTask', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: processXml
+        source
       });
-      engine.execute((err, execution) => {
-        if (err) return done(err);
-        execution.once('end', () => {
-          expect(nock.isDone()).to.be.true();
-          done();
-        });
+
+      const listener = new EventEmitter();
+      let count = 0;
+      listener.on('start-scriptTask', () => {
+        ++count;
+        if (count > 2) {
+          fail('too many starts');
+        }
+      });
+
+      engine.execute({
+        listener
+      });
+
+      engine.once('end', () => {
+        done();
       });
     });
   });
@@ -506,14 +515,12 @@ describe('ScriptTask', () => {
       const engine = new Engine({
         source: processXml
       });
-      engine.execute((err, execution) => {
-        if (err) return done(err);
-        execution.once('end', (def) => {
-          const output = def.getOutput();
-          expect(output.taskInput.scriptTask).to.equal({output: 1});
-          expect(output.stopLoop).to.equal(true);
-          done();
-        });
+      engine.execute();
+
+      engine.once('end', (exec, def) => {
+        expect(exec.getOutput().taskInput.scriptTask).to.equal({output: 1});
+        expect(def.environment.variables.stopLoop).to.equal(true);
+        done();
       });
     });
 

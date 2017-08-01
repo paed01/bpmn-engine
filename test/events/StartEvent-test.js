@@ -136,7 +136,7 @@ describe('StartEvent', () => {
       });
 
       engine.execute({
-        listener: listener
+        listener
       });
     });
 
@@ -157,7 +157,7 @@ describe('StartEvent', () => {
       });
 
       engine.execute({
-        listener: listener
+        listener
       });
     });
 
@@ -192,6 +192,11 @@ describe('StartEvent', () => {
       <process id="theProcess" isExecutable="true">
         <startEvent id="start">
           <messageEventDefinition />
+          <extensionElements>
+            <camunda:InputOutput>
+              <camunda:outputParameter name="signal">\${signal}</camunda:outputParameter>
+            </camunda:InputOutput>
+          </extensionElements>
         </startEvent>
         <endEvent id="end" />
         <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
@@ -214,8 +219,8 @@ describe('StartEvent', () => {
       engine.execute({
         listener
       });
-      engine.once('end', (def) => {
-        expect(def.getOutput()).to.include({
+      engine.once('end', (exection) => {
+        expect(exection.getOutput()).to.include({
           signal: 'START'
         });
         done();

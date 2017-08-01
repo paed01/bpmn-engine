@@ -218,13 +218,11 @@ describe('Error BoundaryEvent', () => {
             next();
           }
         }
-      }, (err, definition) => {
+      }, (err) => {
         if (err) return done(err);
 
-        definition.once('end', () => {
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          done();
-        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
@@ -250,13 +248,11 @@ describe('Error BoundaryEvent', () => {
             next();
           }
         }
-      }, (err, definition) => {
+      }, (err) => {
         if (err) return done(err);
 
-        definition.once('end', () => {
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          done();
-        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
@@ -279,13 +275,11 @@ describe('Error BoundaryEvent', () => {
             next(new Error('Boom'));
           }
         }
-      }, (err, definition) => {
+      }, (err) => {
         if (err) return done(err);
 
-        definition.once('end', () => {
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          done();
-        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
   });
@@ -354,11 +348,10 @@ describe('Error BoundaryEvent', () => {
           api: 'http://example.com'
         }
       });
-      engine.once('end', (def) => {
+      engine.once('end', (execution) => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
-        expect(def.getOutput()).to.equal({
-          api: 'http://example.com',
+        expect(execution.getOutput()).to.equal({
           defaultTaken: true,
           taskOutput: ['successfully executed twice']
         });
@@ -401,11 +394,10 @@ describe('Error BoundaryEvent', () => {
           api: 'http://example.com'
         }
       });
-      engine.once('end', (def) => {
+      engine.once('end', (execution) => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
-        expect(def.getOutput()).to.equal({
-          api: 'http://example.com',
+        expect(execution.getOutput()).to.equal({
           defaultTaken: true,
           taskInput: {
             errorEvent: {

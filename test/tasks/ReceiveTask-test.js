@@ -52,7 +52,6 @@ describe('ReceiveTask', () => {
     const listener = new EventEmitter();
 
     listener.once('wait-receive', (activityApi) => {
-      console.log('KJLASDKLSADJL')
       activityApi.cancel();
     });
 
@@ -60,7 +59,7 @@ describe('ReceiveTask', () => {
       listener
     });
 
-    engine.once('end', (definition) => {
+    engine.once('end', (execution, definition) => {
       expect(definition.getChildState('receive').canceled).to.be.true();
       done();
     });

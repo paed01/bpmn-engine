@@ -337,7 +337,6 @@ describe('UserTask', () => {
       });
       engine.once('end', (def) => {
         expect(def.getOutput()).to.equal({
-          test: 1,
           defaultTaken: true,
           taskOutput: true
         });
@@ -372,13 +371,13 @@ describe('UserTask', () => {
 
       engine.execute({
         listener
-      }, (err, execution) => {
+      }, (err) => {
         if (err) return done(err);
+      });
 
-        execution.once('end', (def) => {
-          expect(def.getOutput().taskInput.task).to.equal('Pål');
-          done();
-        });
+      engine.on('end', (execution) => {
+        expect(execution.getOutput().taskInput.task).to.equal('Pål');
+        done();
       });
     });
 
@@ -405,13 +404,13 @@ describe('UserTask', () => {
 
       engine.execute({
         listener: listener
-      }, (err, execution) => {
+      }, (err) => {
         if (err) return done(err);
+      });
 
-        execution.once('end', (def) => {
-          expect(def.getOutput().taskInput).to.be.undefined();
-          done();
-        });
+      engine.on('end', (execution) => {
+        expect(execution.getOutput().taskInput).to.be.undefined();
+        done();
       });
     });
   });

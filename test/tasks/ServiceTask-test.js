@@ -273,20 +273,19 @@ describe('ServiceTask', () => {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, context) => {
         if (err) return done(err);
-        context.environment.services.getService = () => {
-          return (executionContext, callback) => {
-            callback(null, executionContext.variables.input, 'success');
+        context.environment.addService('getService', () => {
+          return (arg, callback) => {
+            callback(null, arg.variables.input, 'success');
           };
-        };
-        context.environment.variables.input = 1;
+        });
+        context.environment.assignVariables({input: 1});
 
         const task = context.getChildActivityById('serviceTask');
         task.activate();
 
         task.once('end', (activityApi, executionContext) => {
           const output = executionContext.getOutput();
-          expect(output).to.include(['taskOutput']);
-          expect(output.taskOutput).to.equal([1, 'success']);
+          expect(output).to.equal([1, 'success']);
           done();
         });
 
@@ -307,11 +306,11 @@ describe('ServiceTask', () => {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, context) => {
         if (err) return done(err);
-        context.environment.services.getService = (input) => {
+        context.environment.addService('getService', (input) => {
           return (executionContext, callback) => {
             callback(null, input);
           };
-        };
+        });
         context.environment.assignVariables({
           input: 1
         });
@@ -321,8 +320,7 @@ describe('ServiceTask', () => {
 
         task.once('end', (activityApi, executionContext) => {
           const output = executionContext.getOutput();
-          expect(output).to.include(['taskOutput']);
-          expect(output.taskOutput).to.equal([1]);
+          expect(output).to.equal([1]);
           done();
         });
 
@@ -343,11 +341,11 @@ describe('ServiceTask', () => {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, context) => {
         if (err) return done(err);
-        context.environment.services.getService = (input) => {
+        context.environment.addService('getService', (input) => {
           return (executionContext, callback) => {
             callback(null, input);
           };
-        };
+        });
         context.environment.assignVariables({
           input: 1
         });
@@ -357,8 +355,7 @@ describe('ServiceTask', () => {
 
         task.once('end', (activityApi, executionContext) => {
           const output = executionContext.getOutput();
-          expect(output).to.include(['taskOutput']);
-          expect(output.taskOutput).to.equal(['whatever value']);
+          expect(output).to.equal(['whatever value']);
           done();
         });
 
@@ -375,9 +372,9 @@ describe('ServiceTask', () => {
       }, (err, result) => {
         if (err) return done(err);
         context = result;
-        context.environment.services['send-email'] = (emailAddress, callback) => {
+        context.environment.addService('send-email', (emailAddress, callback) => {
           callback(null, 'success');
-        };
+        });
         context.environment.assignVariables({
           emailAddress: 'lisa@example.com'
         });
@@ -388,8 +385,6 @@ describe('ServiceTask', () => {
     it('service task has io', (done) => {
       const task = context.getChildActivityById('sendEmail_1');
       expect(task.io, 'task IO').to.exist();
-      expect(task.io.input).to.exist();
-      expect(task.io.output).to.exist();
       done();
     });
 
@@ -410,10 +405,10 @@ describe('ServiceTask', () => {
       const task = context.getChildActivityById('sendEmail_1');
       let input, inputArg;
 
-      context.environment.services['send-email'] = (emailAddress, callback) => {
+      context.environment.addService('send-email', (emailAddress, callback) => {
         inputArg = emailAddress;
         callback(null, 'success');
-      };
+      });
 
       task.once('start', (activityApi, executionContext) => {
         input = executionContext.getInput();
@@ -437,9 +432,9 @@ describe('ServiceTask', () => {
     it('returns defined output', (done) => {
       const task = context.getChildActivityById('sendEmail_1');
 
-      context.environment.services['send-email'] = (emailAddress, callback) => {
+      context.environment.addService('send-email', (emailAddress, callback) => {
         callback(null, 10);
-      };
+      });
 
       task.once('end', (activityApi, executionContext) => {
         const output = executionContext.getOutput();
@@ -571,7 +566,7 @@ describe('ServiceTask', () => {
 
   describe('engine', () => {
     it('multiple inbound completes process', (done) => {
-      const processXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -596,7 +591,7 @@ describe('ServiceTask', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: processXml,
+        source,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
@@ -628,11 +623,10 @@ describe('ServiceTask', () => {
           api: 'http://example.com'
         }
       });
-      engine.once('end', (def) => {
+      engine.once('end', (execution) => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
-        expect(def.getOutput()).to.equal({
-          api: 'http://example.com',
+        expect(execution.getOutput()).to.equal({
           defaultTaken: true,
           taskOutput: ['successfully executed twice']
         });
