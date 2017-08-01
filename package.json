@@ -32,7 +32,7 @@
     "bpmn 2"
   ],
   "devDependencies": {
-    "camunda-bpmn-moddle": "^0.11.0",
+    "camunda-bpmn-moddle": "^0.12.0",
     "chronokinesis": "^1.3.2",
     "coveralls": "^2.13.1",
     "lab": "^14.1.1",
