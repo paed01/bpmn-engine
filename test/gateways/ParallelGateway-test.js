@@ -12,7 +12,7 @@ const {expect, fail} = Lab.assertions;
 
 describe('ParallelGateway', () => {
   describe('join', () => {
-    const processXml = `
+    const source = `
     <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theProcess" isExecutable="true">
@@ -29,7 +29,7 @@ describe('ParallelGateway', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(processXml, (err, result) => {
+      testHelpers.getContext(source, (err, result) => {
         if (err) return done(err);
         context = result;
         done();
@@ -434,7 +434,7 @@ describe('ParallelGateway', () => {
 
   describe('engine', () => {
     it('should join diverging fork', (done) => {
-      const definitionXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theJoinDivergingForkProcess" isExecutable="true">
@@ -452,21 +452,19 @@ describe('ParallelGateway', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: definitionXml
+        source
       });
-      engine.execute((err, definition) => {
+      engine.execute((err, execution) => {
         if (err) return done(err);
 
-        definition.once('end', () => {
-          expect(definition.getChildState('end').taken, 'end').to.be.true();
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          done();
-        });
+        expect(execution.getChildState('end').taken, 'end').to.be.true();
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
     it('should fork multiple diverging flows', (done) => {
-      const definitionXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -481,24 +479,22 @@ describe('ParallelGateway', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: definitionXml
+        source
       });
-      engine.execute((err, definition) => {
+      engine.execute((err, execution) => {
         if (err) return done(err);
 
-        definition.once('end', () => {
-          expect(definition.getChildState('end1').taken, 'end1').to.be.true();
-          expect(definition.getChildState('end2').taken, 'end2').to.be.true();
+        expect(execution.getChildState('end1').taken, 'end1').to.be.true();
+        expect(execution.getChildState('end2').taken, 'end2').to.be.true();
 
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
 
-          done();
-        });
+        done();
       });
     });
 
     it('should join even if discarded flow', (done) => {
-      const definitionXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -520,25 +516,23 @@ describe('ParallelGateway', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: definitionXml
+        source
       });
       engine.execute({
         variables: {
           input: 51
         }
-      }, (err, definition) => {
+      }, (err, execution) => {
         if (err) return done(err);
 
-        definition.once('end', () => {
-          expect(definition.getChildState('end').taken, 'end').to.be.true();
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          done();
-        });
+        expect(execution.getChildState('end').taken, 'end').to.be.true();
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
     it('should join discarded flow with tasks', (done) => {
-      const definitionXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -564,12 +558,12 @@ describe('ParallelGateway', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: definitionXml
+        source
       });
-      engine.once('end', (def) => {
-        expect(def.getChildState('end').taken, 'end').to.be.true();
-        expect(def.getChildState('task').taken, 'task').to.not.be.true();
-        testHelpers.expectNoLingeringListenersOnDefinition(def);
+      engine.once('end', (execution, definition) => {
+        expect(definition.getChildState('end').taken, 'end').to.be.true();
+        expect(definition.getChildState('task').taken, 'task').to.not.be.true();
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
       engine.execute({
@@ -580,7 +574,7 @@ describe('ParallelGateway', () => {
     });
 
     it('regardless of flow order', (done) => {
-      const definitionXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -606,7 +600,7 @@ describe('ParallelGateway', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: definitionXml
+        source
       });
       engine.execute({
         variables: {
@@ -615,11 +609,9 @@ describe('ParallelGateway', () => {
       }, (err, definition) => {
         if (err) return done(err);
 
-        definition.on('end', () => {
-          expect(definition.getChildState('end').taken, 'end').to.be.true();
-          testHelpers.expectNoLingeringListenersOnDefinition(definition);
-          done();
-        });
+        expect(definition.getChildState('end').taken, 'end').to.be.true();
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
@@ -657,8 +649,8 @@ describe('ParallelGateway', () => {
           input: 50
         }
       });
-      engine.once('end', (def) => {
-        expect(def.getChildState('end').taken, 'end').to.be.true();
+      engine.once('end', (execution, definition) => {
+        expect(definition.getChildState('end').taken, 'end').to.be.true();
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -675,9 +667,9 @@ describe('ParallelGateway', () => {
         }
       });
 
-      engine.once('end', (def) => {
-        expect(def.getChildState('scriptTask1').taken, 'scriptTask1').to.be.true();
-        expect(def.getChildState('scriptTask2').taken, 'scriptTask2').to.be.true();
+      engine.once('end', (execution, definition) => {
+        expect(definition.getChildState('scriptTask1').taken, 'scriptTask1').to.be.true();
+        expect(definition.getChildState('scriptTask2').taken, 'scriptTask2').to.be.true();
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -734,7 +726,7 @@ describe('ParallelGateway', () => {
 
     describe('resume()', () => {
       it('should continue join', (done) => {
-        const definitionXml = `
+        const source = `
         <?xml version="1.0" encoding="UTF-8"?>
           <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           <process id="theProcess" isExecutable="true">
@@ -755,24 +747,20 @@ describe('ParallelGateway', () => {
 
         let state;
         const engine = new Engine({
-          source: definitionXml
+          source
         });
         const listener = new EventEmitter();
         listener.once('wait-task1', (task) => {
           task.signal();
         });
 
-        listener.once('start-join', (activityApi) => {
-          console.log(activityApi.getState())
-
+        listener.once('start-join', () => {
           state = engine.getState();
           engine.stop();
         });
 
         engine.once('end', () => {
           testHelpers.expectNoLingeringListenersOnEngine(engine);
-
-          console.log(state.definitions[0].processes.theProcess)
 
           const listener2 = new EventEmitter();
           listener2.once('wait-task2', (activityApi) => {
