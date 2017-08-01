@@ -10,7 +10,7 @@ const {expect} = Lab.assertions;
 
 describe('InclusiveGateway', () => {
   describe('behavior', () => {
-    const processXml = `
+    const source = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -40,7 +40,7 @@ describe('InclusiveGateway', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(processXml, {
+      testHelpers.getContext(source, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, c) => {
         if (err) return done(err);
@@ -291,7 +291,7 @@ describe('InclusiveGateway', () => {
 
   describe('engine', () => {
     it('should support multiple conditional flows, case 1', (done) => {
-      const processXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -316,7 +316,7 @@ describe('InclusiveGateway', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: processXml
+        source
       });
       engine.execute({
         variables: {
@@ -325,17 +325,15 @@ describe('InclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        execution.on('end', () => {
-          expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.true();
-          expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.true();
-          expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.true();
-          done();
-        });
+        expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.true();
+        expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.true();
+        expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.true();
+        done();
       });
     });
 
     it('should support the default flow in combination with multiple conditional flows, case condition met', (done) => {
-      const processXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -360,7 +358,7 @@ describe('InclusiveGateway', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: processXml
+        source
       });
       engine.execute({
         variables: {
@@ -369,20 +367,18 @@ describe('InclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        execution.once('end', () => {
-          expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.undefined();
-          expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.true();
-          expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.undefined();
+        expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.undefined();
+        expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.true();
+        expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.undefined();
 
-          testHelpers.expectNoLingeringListenersOnEngine(engine);
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
 
-          done();
-        });
+        done();
       });
     });
 
     it('should support the default flow in combination with multiple conditional flows, case no conditions met', (done) => {
-      const processXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -407,7 +403,7 @@ describe('InclusiveGateway', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: processXml
+        source
       });
       engine.execute({
         variables: {
@@ -416,20 +412,18 @@ describe('InclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        execution.once('end', () => {
-          expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.true();
-          expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.undefined();
-          expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.undefined();
+        expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.true();
+        expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.undefined();
+        expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.undefined();
 
-          testHelpers.expectNoLingeringListenersOnEngine(engine);
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
 
-          done();
-        });
+        done();
       });
     });
 
     it('emits error when no conditional flow is taken', (done) => {
-      const definitionXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -452,7 +446,7 @@ describe('InclusiveGateway', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: definitionXml
+        source
       });
       engine.once('error', (err) => {
         expect(err).to.be.an.error(/no conditional flow/i);
@@ -466,8 +460,6 @@ describe('InclusiveGateway', () => {
         variables: {
           input: 61
         }
-      }, (err) => {
-        if (err) return done(err);
       });
     });
   });
