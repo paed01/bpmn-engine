@@ -1,16 +1,16 @@
 'use strict';
 
-const Code = require('code');
+const {Engine} = require('../../lib');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
-const Bpmn = require('../..');
+const {beforeEach, describe, it} = lab;
+const {expect} = Lab.assertions;
 
-lab.experiment('ExclusiveGateway', () => {
-  lab.describe('behavior', () => {
-    const processXml = `
+describe('ExclusiveGateway', () => {
+  describe('behavior', () => {
+    const source = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
@@ -40,8 +40,8 @@ lab.experiment('ExclusiveGateway', () => {
     </definitions>`;
 
     let context;
-    lab.beforeEach((done) => {
-      testHelpers.getContext(processXml, {
+    beforeEach((done) => {
+      testHelpers.getContext(source, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, c) => {
         if (err) return done(err);
@@ -50,7 +50,7 @@ lab.experiment('ExclusiveGateway', () => {
       });
     });
 
-    lab.test('outbound flows are reordered with default flow last', (done) => {
+    it('outbound flows are reordered with default flow last', (done) => {
       const gateway = context.getChildActivityById('decision');
       gateway.activate();
 
@@ -65,7 +65,7 @@ lab.experiment('ExclusiveGateway', () => {
       gateway.inbound[0].take();
     });
 
-    lab.test('variables and services are passed to conditional flow', (done) => {
+    it('variables and services are passed to conditional flow', (done) => {
       context.environment.assignVariables({condition1: true});
 
       const gateway = context.getChildActivityById('decision');
@@ -79,7 +79,7 @@ lab.experiment('ExclusiveGateway', () => {
       gateway.run();
     });
 
-    lab.test('end returns output in callback', (done) => {
+    it('end returns output in callback', (done) => {
       context.environment.assignVariables({condition1: false});
 
       const gateway = context.getChildActivityById('decision');
@@ -101,7 +101,7 @@ lab.experiment('ExclusiveGateway', () => {
       gateway.run();
     });
 
-    lab.test('discards rest outbound if one outbound was taken', (done) => {
+    it('discards rest outbound if one outbound was taken', (done) => {
       context.environment.assignVariables({condition2: true});
 
       const gateway = context.getChildActivityById('decision');
@@ -122,7 +122,7 @@ lab.experiment('ExclusiveGateway', () => {
       gateway.inbound[0].take();
     });
 
-    lab.test('discards all outbound if inbound was discarded', (done) => {
+    it('discards all outbound if inbound was discarded', (done) => {
       const gateway = context.getChildActivityById('decision');
       gateway.activate();
 
@@ -141,8 +141,8 @@ lab.experiment('ExclusiveGateway', () => {
       gateway.inbound[0].discard();
     });
 
-    lab.describe('resume()', () => {
-      lab.test('sets resumed gateway pendingOutbound', (done) => {
+    describe('resume()', () => {
+      it('sets resumed gateway pendingOutbound', (done) => {
         const gateway = context.getChildActivityById('decision');
 
         const activityApi = gateway.activate();
@@ -176,7 +176,7 @@ lab.experiment('ExclusiveGateway', () => {
         gateway.inbound[0].take();
       });
 
-      lab.test('discards rest if one flow was taken', (done) => {
+      it('discards rest if one flow was taken', (done) => {
         context.environment.assignVariables({
           condition1: true,
           condition2: true
@@ -225,7 +225,7 @@ lab.experiment('ExclusiveGateway', () => {
         gateway.inbound[0].take();
       });
 
-      lab.test('takes defaultFlow if no other flows were taken', (done) => {
+      it('takes defaultFlow if no other flows were taken', (done) => {
         const gateway = context.getChildActivityById('decision');
 
         gateway.once('start', (activity) => {
@@ -257,7 +257,7 @@ lab.experiment('ExclusiveGateway', () => {
         gateway.inbound[0].take();
       });
 
-      lab.test('emits error when no conditional flow is taken', (done) => {
+      it('emits error when no conditional flow is taken', (done) => {
         const definition = `
         <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -319,9 +319,9 @@ lab.experiment('ExclusiveGateway', () => {
     });
   });
 
-  lab.describe('engine', () => {
-    lab.test('should support one diverging flow without a condition', (done) => {
-      const processXml = `
+  describe('engine', () => {
+    it('should support one diverging flow without a condition', (done) => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -334,23 +334,18 @@ lab.experiment('ExclusiveGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
-        source: processXml
+      const engine = new Engine({
+        source
       });
-      engine.execute((err, execution) => {
+      engine.execute((err) => {
         if (err) return done(err);
-        execution.once('end', () => {
-          testHelpers.expectNoLingeringListenersOnEngine(engine);
-          done();
-        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
-    lab.test('should support two diverging flows with conditions, case 10', (done) => {
-
-      // case 1: input  = 10 -> the upper sequenceflow is taken
-
-      const processXml = `
+    it('should support two diverging flows with conditions, case 10', (done) => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -372,8 +367,8 @@ lab.experiment('ExclusiveGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
-        source: processXml
+      const engine = new Engine({
+        source
       });
       engine.execute({
         variables: {
@@ -382,17 +377,15 @@ lab.experiment('ExclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        execution.once('end', () => {
-          expect(execution.getChildState('end1').taken).to.be.true();
-          expect(execution.getChildState('end2').taken, 'end2').to.be.undefined();
-          testHelpers.expectNoLingeringListenersOnEngine(engine);
-          done();
-        });
+        expect(execution.getChildState('end1').taken).to.be.true();
+        expect(execution.getChildState('end2').taken, 'end2').to.be.undefined();
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
-    lab.test('should support two diverging flows with conditions, case 100', (done) => {
-      const processXml = `
+    it('should support two diverging flows with conditions, case 100', (done) => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -414,8 +407,8 @@ lab.experiment('ExclusiveGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
-        source: processXml
+      const engine = new Engine({
+        source
       });
       engine.execute({
         variables: {
@@ -424,17 +417,15 @@ lab.experiment('ExclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        execution.once('end', () => {
-          expect(execution.getChildState('end1').taken, 'end1').to.be.undefined();
-          expect(execution.getChildState('end2').taken, 'end2').to.be.true();
-          testHelpers.expectNoLingeringListenersOnEngine(engine);
-          done();
-        });
+        expect(execution.getChildState('end1').taken, 'end1').to.be.undefined();
+        expect(execution.getChildState('end2').taken, 'end2').to.be.true();
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
-    lab.test('should support diverging flows with default, case 1', (done) => {
-      const processXml = `
+    it('should support diverging flows with default, case 1', (done) => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -452,8 +443,8 @@ lab.experiment('ExclusiveGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
-        source: processXml
+      const engine = new Engine({
+        source
       });
       engine.execute({
         variables: {
@@ -462,17 +453,15 @@ lab.experiment('ExclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        execution.once('end', () => {
-          expect(execution.getChildState('end1').taken, 'end1').to.be.true();
-          expect(execution.getChildState('end2').taken, 'end2').to.be.undefined();
-          testHelpers.expectNoLingeringListenersOnEngine(engine);
-          done();
-        });
+        expect(execution.getChildState('end1').taken, 'end1').to.be.true();
+        expect(execution.getChildState('end2').taken, 'end2').to.be.undefined();
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
-    lab.test('should support diverging flows with default, case 2', (done) => {
-      const processXml = `
+    it('should support diverging flows with default, case 2', (done) => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -490,8 +479,8 @@ lab.experiment('ExclusiveGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
-        source: processXml
+      const engine = new Engine({
+        source
       });
       engine.execute({
         variables: {
@@ -500,17 +489,15 @@ lab.experiment('ExclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        execution.once('end', () => {
-          expect(execution.getChildState('end1').taken, 'end1').to.be.undefined();
-          expect(execution.getChildState('end2').taken, 'end2').to.be.true();
-          testHelpers.expectNoLingeringListenersOnEngine(engine);
-          done();
-        });
+        expect(execution.getChildState('end1').taken, 'end1').to.be.undefined();
+        expect(execution.getChildState('end2').taken, 'end2').to.be.true();
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
       });
     });
 
-    lab.test('emits error when no conditional flow is taken', (done) => {
-      const processXml = `
+    it('emits error when no conditional flow is taken', (done) => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -532,12 +519,12 @@ lab.experiment('ExclusiveGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
-        source: processXml
+      const engine = new Engine({
+        source
       });
-      engine.once('error', (err, gateway) => {
+      engine.once('error', (err) => {
         expect(err).to.be.an.error(/no conditional flow/i);
-        expect(gateway).to.include({
+        expect(err.source).to.include({
           id: 'decision'
         });
         testHelpers.expectNoLingeringListenersOnEngine(engine);
@@ -548,13 +535,11 @@ lab.experiment('ExclusiveGateway', () => {
         variables: {
           input: 61
         }
-      }, (err) => {
-        if (err) return done(err);
       });
     });
 
-    lab.test('emits error when no conditional flow is taken on resumed gateway', (done) => {
-      const processXml = `
+    it('emits error when no conditional flow is taken on resumed gateway', (done) => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -576,12 +561,12 @@ lab.experiment('ExclusiveGateway', () => {
         </process>
       </definitions>`;
 
-      const engine = new Bpmn.Engine({
-        source: processXml
+      const engine = new Engine({
+        source
       });
-      engine.once('error', (err, gateway) => {
+      engine.once('error', (err) => {
         expect(err).to.be.an.error(/no conditional flow/i);
-        expect(gateway).to.include({
+        expect(err.source).to.include({
           id: 'decision'
         });
         testHelpers.expectNoLingeringListenersOnEngine(engine);
@@ -592,8 +577,6 @@ lab.experiment('ExclusiveGateway', () => {
         variables: {
           input: 61
         }
-      }, (err) => {
-        if (err) return done(err);
       });
     });
   });
