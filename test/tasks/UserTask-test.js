@@ -416,7 +416,7 @@ describe('UserTask', () => {
   });
 
   describe('with form', () => {
-    const processXml = `
+    const source = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -448,7 +448,7 @@ describe('UserTask', () => {
       });
 
       const engine = new Engine({
-        source: processXml,
+        source,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
@@ -465,7 +465,7 @@ describe('UserTask', () => {
 
     it('getState() returns waiting true', (done) => {
       const engine = new Engine({
-        source: processXml,
+        source,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
@@ -485,7 +485,7 @@ describe('UserTask', () => {
 
     it('getState() returns form state', (done) => {
       const engine = new Engine({
-        source: processXml,
+        source,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
         }
@@ -541,24 +541,23 @@ describe('UserTask', () => {
 
         task.on('wait', (activityApi, executionContext) => {
           const input = executionContext.getInput();
-          const answer = {
-            email: input.email
-          };
-          answer[executionContext.form.getFields()[0].id] = input.index < 2;
+          const form = executionContext.getForm();
 
-          executionContext.signal(answer);
+          form.setFieldValue('yay', input.index < 2);
+
+          executionContext.signal(form.getOutput());
         });
 
         task.once('end', (activityApi, executionContext) => {
           expect(executionContext.getOutput()).to.be.equal([{
             email: 'pal@example.com',
-            yay0: true
+            yay: true
           }, {
             email: 'franz@example.com',
-            yay1: true
+            yay: true
           }, {
             email: 'immanuel@example.com',
-            yay2: false
+            yay: false
           }]);
           done();
         });
@@ -606,24 +605,23 @@ describe('UserTask', () => {
 
         task.on('wait', (activityApi, executionContext) => {
           const input = executionContext.getInput();
-          const answer = {
-            email: input.email
-          };
-          answer[executionContext.form.getFields()[0].id] = input.index < 2;
+          const form = executionContext.getForm();
 
-          executionContext.signal(answer);
+          form.setFieldValue('yay', input.index < 2);
+
+          executionContext.signal(form.getOutput());
         });
 
         task.once('end', (activityApi, executionContext) => {
           expect(executionContext.getOutput()).to.be.equal([{
             email: 'pal@example.com',
-            yay0: true
+            yay: true
           }, {
             email: 'franz@example.com',
-            yay1: true
+            yay: true
           }, {
             email: 'immanuel@example.com',
-            yay2: false
+            yay: false
           }]);
           done();
         });
@@ -638,7 +636,7 @@ describe('UserTask', () => {
 });
 
 function getLoopContext(sequential, callback) {
-  const processXml = `
+  const source = `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -653,13 +651,14 @@ function getLoopContext(sequential, callback) {
             <camunda:inputParameter name="index">\${index}</camunda:inputParameter>
           </camunda:inputOutput>
           <camunda:formData>
-            <camunda:formField id="yay\${index}" type="boolean" />
+            <camunda:formField id="email" type="string" defaultValue="\${email}" />
+            <camunda:formField id="yay" type="boolean" />
           </camunda:formData>
         </extensionElements>
       </userTask>
     </process>
   </definitions>`;
-  testHelpers.getContext(processXml, {
+  testHelpers.getContext(source, {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
   }, (err, context) => {
     if (err) return callback(err);

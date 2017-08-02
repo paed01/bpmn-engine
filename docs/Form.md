@@ -9,7 +9,7 @@ The engine consideres forms as reference only. If task input is to be validated 
 
 - [API](#api)
   - [`activity.form.getFields()`](#activityformgetfields)
-  - [`activity.form.key`](#activityformkey)
+  - [`activity.formKey`](#activityformkey)
 - [Example](#example)
 
 <!-- tocstop -->
@@ -20,17 +20,17 @@ The engine consideres forms as reference only. If task input is to be validated 
 
 Get list of fields.
 
-## `activity.form.key`
+## `activity.formKey`
 
 Form is referenced by key.
 
 # Example
 
 ```javascript
-const BpmnEngine = require('bpmn-engine');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
 
-const definitionXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -38,7 +38,7 @@ const definitionXml = `
     <startEvent id="start">
       <extensionElements>
         <camunda:formData>
-          <camunda:formField id="name" label="Some descriptive label" type="string" />
+          <camunda:formField id="name" label="Some descriptive label for \${variables.noun}" type="string" />
           <camunda:formField id="formKey" type="string" />
         </camunda:formData>
       </extensionElements>
@@ -50,38 +50,44 @@ const definitionXml = `
   </process>
 </definitions>`;
 
-const engine = new BpmnEngine.Engine({
-  source: definitionXml,
+const engine = new Engine({
+  source,
   moddleOptions: {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
   }
 });
 
 const listener = new EventEmitter();
-listener.on('wait', (activity) => {
-  if (activity.form) {
-    if (activity.form.key) {
-      console.log(`activity ${activity.type} <${activity.id}> expects form with key "${activity.form.key}"`);
-      return activity.signal({ key: activity.form.key });
-    } else {
-      console.log(`activity ${activity.type} <${activity.id}> setting form field`);
-      const data = activity.form.getFields().reduce((result, field, idx) => {
-        result[field.id] = `value${idx}`;
-        console.log(`  ${field.id} = ${result[field.id]}`);
-        return result;
-      }, {});
+listener.on('wait', (activityApi) => {
+  const {form, formKey, id, signal, type} = activityApi;
 
-      return activity.signal(data)
-    }
+  if (form) {
+    console.log(`activity ${type} <${id}> setting form field`);
+
+    form.getFields().forEach(({id, get, label}, idx) => {
+      form.setFieldValue(id, `value${idx}`);
+      console.log(`  ${label} <${id}> = ${get()}`);
+    });
+
+    return signal(form.getOutput())
+  } else if (formKey) {
+    console.log(`activity ${type} <${id}> expects form with key "${formKey}"`);
+
+    return signal({ key: formKey });
   }
-  return activity.signal();
+
+
+  return signal();
 });
 
-engine.once('end', (e, def) => {
-  console.log('Completed definition with form input', def.variables);
-})
+engine.once('end', (execution) => {
+  console.log('Completed definition with form input', execution.getOutput());
+});
 
 engine.execute({
-  listener: listener
+  listener,
+  variables: {
+    noun: 'tea'
+  }
 });
 ```

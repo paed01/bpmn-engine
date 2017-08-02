@@ -7,6 +7,7 @@ Changelog
 - Drop support for node v4 and v5
 - `SendTask` message requires output
 - `ParallelGateway` emits `start` on first taken inbound, i.e. discarded inbound are just registered
+- `camunda:formKey` is set as property on activity
 
 ## Additions
 - Support for parallell loop
