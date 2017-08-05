@@ -13,16 +13,16 @@ lab.experiment('Resume task loop', () => {
 
   lab.test('resumes task cardinality loop', (done) => {
     const processXml = `
-<definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
-  <process id="taskLoopProcess" isExecutable="true">
-    <task id="recurring" name="Recurring">
-      <multiInstanceLoopCharacteristics isSequential="true">
-        <loopCardinality xsi:type="tFormalExpression">5</loopCardinality>
-      </multiInstanceLoopCharacteristics>
-    </task>
-  </process>
-</definitions>
+    <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+      <process id="taskLoopProcess" isExecutable="true">
+        <task id="recurring" name="Recurring">
+          <multiInstanceLoopCharacteristics isSequential="true">
+            <loopCardinality xsi:type="tFormalExpression">5</loopCardinality>
+          </multiInstanceLoopCharacteristics>
+        </task>
+      </process>
+    </definitions>
     `;
 
     const engine1 = new Bpmn.Engine({
