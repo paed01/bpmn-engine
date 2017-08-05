@@ -71,7 +71,7 @@ pub.getContext = function(processXml, optionsOrCallback, callback) {
   transformer.transform(processXml, options, (err, definitions, moddleContext) => {
     if (err) return callback(err);
     const ctxh = contextHelper(moddleContext);
-    const context = new Context(ctxh.getExecutableProcessId(), moddleContext);
+    const context = Context(ctxh.getExecutableProcessId(), moddleContext);
     return callback(null, context);
   });
 };
@@ -79,7 +79,7 @@ pub.getContext = function(processXml, optionsOrCallback, callback) {
 pub.cloneContext = function(sourceContext) {
   const Context = require('../../lib/Context');
   const ctxh = contextHelper(sourceContext.moddleContext);
-  return new Context(ctxh.getExecutableProcessId(), sourceContext.moddleContext);
+  return Context(ctxh.getExecutableProcessId(), sourceContext.moddleContext);
 };
 
 pub.getModdleContext = function(processXml, optionsOrCallback, callback) {

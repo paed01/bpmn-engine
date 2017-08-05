@@ -1,72 +1,69 @@
 'use strict';
 
-const Bpmn = require('..');
-const Code = require('code');
+const {transformer} = require('..');
+const ContextHelper = require('../lib/context-helper');
 const factory = require('./helpers/factory');
 const Lab = require('lab');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
+const {before, beforeEach, describe, it} = lab;
+const {expect} = Lab.assertions;
 
-const contextHelper = require('../lib/context-helper');
-
-lab.experiment('context-helper', () => {
-  const transformer = Bpmn.transformer;
-
+describe('context-helper', () => {
   let context;
-  lab.beforeEach((done) => {
+  beforeEach((done) => {
     transformer.transform(factory.valid(), {}, (err, bpmnObject, result) => {
       if (err) return done(err);
-      context = contextHelper(result);
+      context = ContextHelper(result);
       done();
     });
   });
 
-  lab.describe('getOutboundSequenceFlows()', () => {
-    lab.test('returns activity outbound sequence flows', (done) => {
+  describe('getOutboundSequenceFlows()', () => {
+    it('returns activity outbound sequence flows', (done) => {
       const flows = context.getOutboundSequenceFlows('theStart');
       expect(flows).to.have.length(1);
       done();
     });
 
-    lab.test('empty array if non found', (done) => {
+    it('empty array if non found', (done) => {
       const flows = context.getOutboundSequenceFlows('end1');
       expect(flows).to.have.length(0);
       done();
     });
   });
 
-  lab.experiment('getInboundSequenceFlows()', () => {
-    lab.test('returns activity inbound sequence flows', (done) => {
+  describe('getInboundSequenceFlows()', () => {
+    it('returns activity inbound sequence flows', (done) => {
       const flows = context.getInboundSequenceFlows('end2');
       expect(flows).to.have.length(1);
       done();
     });
 
-    lab.test('empty array if non found', (done) => {
+    it('empty array if non found', (done) => {
       const flows = context.getInboundSequenceFlows('theStart');
       expect(flows).to.have.length(0);
       done();
     });
 
-    lab.test('returns inbound for sub process', (done) => {
+    it('returns inbound for sub process', (done) => {
       const processXml = factory.resource('sub-process.bpmn');
       transformer.transform(processXml.toString(), {}, (err, bpmnObject, moddleContext) => {
         if (err) return done(err);
 
-        const flows = contextHelper(moddleContext).getInboundSequenceFlows('subProcess');
+        const flows = ContextHelper(moddleContext).getInboundSequenceFlows('subProcess');
         expect(flows).to.have.length(1);
 
         done();
       });
     });
 
-    lab.test('returns no inbound for main process', (done) => {
+    it('returns no inbound for main process', (done) => {
       const processXml = factory.resource('sub-process.bpmn');
       transformer.transform(processXml.toString(), {}, (err, bpmnObject, moddleContext) => {
         if (err) return done(err);
 
-        const flows = contextHelper(moddleContext).getInboundSequenceFlows('mainProcess');
+        const flows = ContextHelper(moddleContext).getInboundSequenceFlows('mainProcess');
         expect(flows).to.have.length(0);
 
         done();
@@ -75,193 +72,141 @@ lab.experiment('context-helper', () => {
 
   });
 
-  lab.experiment('getDataObjectFromRef()', () => {
+  describe('getDataObjectFromRef()', () => {
     let ctxHelper;
-    lab.before((done) => {
+    before((done) => {
       transformer.transform(factory.userTask(), {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        ctxHelper = contextHelper(result);
+        ctxHelper = ContextHelper(result);
         done();
       });
     });
 
-    lab.test('returns referenced data object', (done) => {
+    it('returns referenced data object', (done) => {
       const dataObject = ctxHelper.getDataObjectFromRef('inputFromUserRef');
       expect(dataObject).to.include(['id', '$type']);
       done();
     });
 
-    lab.test('if found', (done) => {
+    it('if found', (done) => {
       const dataObject = ctxHelper.getDataObjectFromRef('orphanRef');
       expect(dataObject).to.not.exist();
       done();
     });
   });
 
-  lab.experiment('getDataObjectFromAssociation()', () => {
-    let ctxHelper;
-    lab.before((done) => {
-      transformer.transform(factory.userTask(), {}, (err, bpmnObject, result) => {
-        if (err) return done(err);
-        ctxHelper = contextHelper(result);
-        done();
-      });
-    });
-
-    lab.test('returns data by association', (done) => {
-      const dataObject = ctxHelper.getDataObjectFromAssociation('associatedWith');
-      expect(dataObject).to.include(['id', '$type']);
-      expect(dataObject.id).to.equal('inputFromUser');
-      done();
-    });
-
-    lab.test('if found', (done) => {
-      const dataObject = ctxHelper.getDataObjectFromAssociation('non-association');
-      expect(dataObject).to.not.exist();
-      done();
-    });
-
-    lab.test('also works if data object reference is not a reference but the actual data object', (done) => {
-      const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <dataObject id="inputFromUser" />
-    <startEvent id="theStart" />
-    <userTask id="userTask">
-      <ioSpecification id="inputSpec">
-        <dataOutput id="userInput" />
-      </ioSpecification>
-      <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUser" />
-    </userTask>
-    <endEvent id="theEnd" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
-    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
-  </process>
-</definitions>`;
-
-      transformer.transform(processXml, {}, (err, bpmnObject, result) => {
-        if (err) return done(err);
-        const dataObject = contextHelper(result).getDataObjectFromAssociation('associatedWith');
-        expect(dataObject).to.include(['id', '$type']);
-        expect(dataObject.id).to.equal('inputFromUser');
-        done();
-      });
-    });
-  });
-
-  lab.experiment('isTerminationElement()', () => {
+  describe('isTerminationElement()', () => {
     let ctxHelper, moddleContext;
-    lab.before((done) => {
+    before((done) => {
       const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <endEvent id="fatal">
-      <terminateEventDefinition />
-    </endEvent>
-    <endEvent id="theEnd1" />
-    <endEvent id="theEnd2" />
-    <endEvent id="theEnd3" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fatal" />
-    <sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd1" />
-    <sequenceFlow id="flow3" sourceRef="theStart" targetRef="theEnd2" />
-    <sequenceFlow id="flow4" sourceRef="theStart" targetRef="theEnd3" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <endEvent id="fatal">
+            <terminateEventDefinition />
+          </endEvent>
+          <endEvent id="theEnd1" />
+          <endEvent id="theEnd2" />
+          <endEvent id="theEnd3" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="fatal" />
+          <sequenceFlow id="flow2" sourceRef="theStart" targetRef="theEnd1" />
+          <sequenceFlow id="flow3" sourceRef="theStart" targetRef="theEnd2" />
+          <sequenceFlow id="flow4" sourceRef="theStart" targetRef="theEnd3" />
+        </process>
+      </definitions>`;
       transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
         moddleContext = result;
-        ctxHelper = contextHelper(result);
+        ctxHelper = ContextHelper(result);
         done();
       });
     });
 
-    lab.test('returns false if no element passed', (done) => {
+    it('returns false if no element passed', (done) => {
       expect(ctxHelper.isTerminationElement()).to.be.false();
       done();
     });
 
-    lab.test('returns false if no element eventDefinitions', (done) => {
+    it('returns false if no element eventDefinitions', (done) => {
       expect(ctxHelper.isTerminationElement({})).to.be.false();
       done();
     });
-    lab.test('returns false if empty element eventDefinitions', (done) => {
+    it('returns false if empty element eventDefinitions', (done) => {
       expect(ctxHelper.isTerminationElement({
         eventDefinitions: []
       })).to.be.false();
       done();
     });
 
-    lab.test('returns false if empty element eventDefinitions', (done) => {
+    it('returns false if empty element eventDefinitions', (done) => {
       expect(ctxHelper.isTerminationElement(moddleContext.elementsById.theEnd1)).to.be.false();
       done();
     });
 
-    lab.test('returns true if element eventDefinitions contains bpmn:TerminateEventDefinition', (done) => {
+    it('returns true if element eventDefinitions contains bpmn:TerminateEventDefinition', (done) => {
       expect(ctxHelper.isTerminationElement(moddleContext.elementsById.fatal)).to.be.true();
       done();
     });
   });
 
-  lab.experiment('hasInboundSequenceFlows()', () => {
-    lab.test('returns false if no inbound sequenceFlows', (done) => {
+  describe('hasInboundSequenceFlows()', () => {
+    it('returns false if no inbound sequenceFlows', (done) => {
       const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+        </process>
+      </definitions>`;
       transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        expect(contextHelper(result).hasInboundSequenceFlows('theStart')).to.be.false();
+        expect(ContextHelper(result).hasInboundSequenceFlows('theStart')).to.be.false();
         done();
       });
     });
 
-    lab.test('returns true if inbound sequenceFlows', (done) => {
+    it('returns true if inbound sequenceFlows', (done) => {
       const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <endEvent id="theEnd" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <endEvent id="theEnd" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="theEnd" />
+        </process>
+      </definitions>`;
       transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        expect(contextHelper(result).hasInboundSequenceFlows('theEnd')).to.be.true();
+        expect(ContextHelper(result).hasInboundSequenceFlows('theEnd')).to.be.true();
         done();
       });
     });
 
-    lab.test('returns false if no sequenceFlows', (done) => {
+    it('returns false if no sequenceFlows', (done) => {
       const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <endEvent id="theEnd" />
-  </process>
-</definitions>`;
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <endEvent id="theEnd" />
+        </process>
+      </definitions>`;
       transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        expect(contextHelper(result).hasInboundSequenceFlows('theEnd')).to.be.false();
+        expect(ContextHelper(result).hasInboundSequenceFlows('theEnd')).to.be.false();
         done();
       });
     });
   });
 
-  lab.experiment('getActivities()', () => {
-    lab.test('returns only activities bound to element', (done) => {
+  describe('getActivities()', () => {
+    it('returns only activities bound to element', (done) => {
       const processXml = factory.resource('sub-process.bpmn');
       transformer.transform(processXml.toString(), {}, (err, bpmnObject, moddleContext) => {
         if (err) return done(err);
 
-        const ctxHelper = contextHelper(moddleContext);
+        const ctxHelper = ContextHelper(moddleContext);
 
         const forParent = ctxHelper.getActivities('mainProcess');
         expect(forParent).to.have.length(3);
@@ -275,21 +220,21 @@ lab.experiment('context-helper', () => {
     });
   });
 
-  lab.experiment('getSequenceFlowTargetId()', () => {
+  describe('getSequenceFlowTargetId()', () => {
 
-    lab.test('returns target id', (done) => {
+    it('returns target id', (done) => {
       expect(context.getSequenceFlowTargetId('flow1')).to.equal('decision');
       done();
     });
 
-    lab.test('if found', (done) => {
+    it('if found', (done) => {
       expect(context.getSequenceFlowTargetId('nonFoundFlow1')).to.not.exist();
       done();
     });
   });
 
-  lab.experiment('getElementService()', () => {
-    lab.test('returns connector', (done) => {
+  describe('getElementService()', () => {
+    it('returns connector', (done) => {
       const element = {
         $type: 'bpmn:ServiceTask',
         id: 'serviceTask',
@@ -319,7 +264,7 @@ lab.experiment('context-helper', () => {
       done();
     });
 
-    lab.test('returns service name from properties named service', (done) => {
+    it('returns service name from properties named service', (done) => {
       const element = {
         $type: 'bpmn:ServiceTask',
         id: 'serviceTask',
@@ -347,7 +292,7 @@ lab.experiment('context-helper', () => {
       done();
     });
 
-    lab.test('no extensionElements no service', (done) => {
+    it('no extensionElements no service', (done) => {
       const element = {
         $type: 'bpmn:ServiceTask',
         id: 'serviceTask',
@@ -362,7 +307,7 @@ lab.experiment('context-helper', () => {
       done();
     });
 
-    lab.test('returns nothing if property named service is not found', (done) => {
+    it('returns nothing if property named service is not found', (done) => {
       const element = {
         $type: 'bpmn:ServiceTask',
         id: 'serviceTask',
@@ -384,27 +329,27 @@ lab.experiment('context-helper', () => {
       done();
     });
 
-    lab.test('without element returns undefined', (done) => {
+    it('without element returns undefined', (done) => {
       expect(context.getElementService()).to.be.undefined();
       done();
     });
 
-    lab.test('without element extensionElements returns undefined', (done) => {
+    it('without element extensionElements returns undefined', (done) => {
       expect(context.getElementService({})).to.be.undefined();
       done();
     });
   });
 
-  lab.describe('getActivityErrorEventDefinition()', () => {
-    lab.test('returns nothing if no activity', (done) => {
+  describe('getActivityErrorEventDefinition()', () => {
+    it('returns nothing if no activity', (done) => {
       expect(context.getActivityErrorEventDefinition()).to.be.undefined();
       expect(context.getActivityErrorEventDefinition({})).to.be.undefined();
       done();
     });
   });
 
-  lab.describe('getActivityProperties()', () => {
-    lab.test('returns nothing if activity is not found', (done) => {
+  describe('getActivityProperties()', () => {
+    it('returns nothing if activity is not found', (done) => {
       expect(context.getActivityProperties('not-an-activity')).to.be.undefined();
       done();
     });
