@@ -169,6 +169,38 @@ describe('ServiceTask', () => {
 
       task.inbound[0].take();
     });
+
+
+    describe('resume()', () => {
+      it('sets resume flag on service function argument', (done) => {
+        context.environment.addService('postMessage', (arg, next) => {
+          next();
+        });
+
+        const task = context.getChildActivityById('serviceTask');
+
+        task.once('start', (activityApi, executionContext) => {
+          const api = activityApi.getApi(executionContext);
+          const state = api.getState();
+          api.stop();
+
+          const resumeContext = context.clone();
+          resumeContext.environment.addService('postMessage', (arg, next) => {
+            expect(arg.resumed, 'service resumed').to.be.true();
+            next();
+          });
+          const resumeTask = resumeContext.getChildActivityById('serviceTask');
+          resumeTask.on('end', () => {
+            done();
+          });
+
+          resumeTask.activate(state).resume();
+        });
+
+        task.activate().run();
+
+      });
+    });
   });
 
   describe('IO', () => {
