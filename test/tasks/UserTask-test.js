@@ -527,7 +527,9 @@ describe('UserTask', () => {
           waitCount++;
           executionContext.signal(executionContext.id);
         });
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(executionContext.getOutput()).to.be.equal(['task', 'task', 'task']);
           done();
         });
@@ -548,7 +550,9 @@ describe('UserTask', () => {
           executionContext.signal(form.getOutput());
         });
 
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(executionContext.getOutput()).to.be.equal([{
             email: 'pal@example.com',
             yay: true
@@ -563,6 +567,57 @@ describe('UserTask', () => {
         });
 
         task.run();
+      });
+
+      it('resume resumes incomple executions', (done) => {
+        const task = context.getChildActivityById('task');
+
+        let count = 0, state, taskApi;
+        task.once('enter', (activityApi, executionContext) => {
+          taskApi = activityApi.getApi(executionContext);
+        });
+
+        task.on('wait', (activityApi, executionContext) => {
+          const input = executionContext.getInput();
+          const form = executionContext.getForm();
+
+          form.setFieldValue('yay', input.index < 2);
+
+          executionContext.signal(form.getOutput());
+        });
+
+        task.on('start', function startEH() {
+          ++count;
+
+          if (count < 2) return;
+          task.removeListener('start', startEH);
+
+          state = taskApi.getState();
+
+          taskApi.stop();
+
+          task.on('start', () => {
+            ++count;
+            if (count > 4) fail('Too many starts');
+          });
+          task.on('leave', (activityApi, executionContext) => {
+            expect(executionContext.getOutput()).to.be.equal([{
+              email: 'pal@example.com',
+              yay: true
+            }, {
+              email: 'franz@example.com',
+              yay: true
+            }, {
+              email: 'immanuel@example.com',
+              yay: false
+            }]);
+            done();
+          });
+
+          task.activate(state).resume();
+        });
+
+        task.activate().run();
       });
 
     });
@@ -588,7 +643,9 @@ describe('UserTask', () => {
             starts.reverse().forEach((t) => t.signal(t.id));
           }
         });
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           const output = executionContext.getOutput();
           expect(output).to.have.length(3);
           output.forEach((id) => expect(id).to.match(/^task_/i));
@@ -612,7 +669,9 @@ describe('UserTask', () => {
           executionContext.signal(form.getOutput());
         });
 
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(executionContext.getOutput()).to.be.equal([{
             email: 'pal@example.com',
             yay: true

@@ -272,7 +272,6 @@ describe('task loop', () => {
     });
 
     describe('camunda collection expression', () => {
-
       it('loops each item', (done) => {
         const source = `
         <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
@@ -460,7 +459,7 @@ describe('task loop', () => {
 
       task.activate();
 
-      task.on('end', (activityApi, executionContext) => {
+      task.on('leave', (activityApi, executionContext) => {
         const compare = [ [0], [1], [2] ];
         expect(executionContext.getOutput()).to.equal(compare);
         done();
@@ -493,10 +492,136 @@ describe('task loop', () => {
       task.run();
 
     });
+
+    describe('resume', () => {
+      it('resumes from state', (done) => {
+        context.environment.addService('loopTest', (arg, next) => {
+          const idx = arg.index;
+          const tte = 20 - idx * 2;
+          setTimeout(next, tte, null, idx);
+        });
+
+        const task = context.getChildActivityById('recurring');
+
+        let count = 0, state, taskApi;
+        task.once('enter', (activityApi, executionContext) => {
+          taskApi = activityApi.getApi(executionContext);
+        });
+
+        task.on('start', function startEH() {
+          ++count;
+
+          if (count < 2) return;
+          task.removeListener('start', startEH);
+
+          state = taskApi.getState();
+
+          taskApi.stop();
+
+          task.on('start', () => {
+            ++count;
+            if (count > 4) fail('Too many starts');
+          });
+          task.on('leave', () => {
+            expect(count).to.equal(4);
+            done();
+          });
+
+          task.activate(state).resume();
+        });
+
+        task.activate().run();
+      });
+
+      it('only starts incomplete loop items', (done) => {
+        context.environment.addService('loopTest', (executionContext, next) => {
+          const idx = executionContext.index;
+          const tte = 20 - idx * 2;
+          setTimeout(next, tte, null, idx);
+        });
+
+        const task = context.getChildActivityById('recurring');
+
+        let count = 0, state, taskApi;
+        task.once('enter', (activityApi, executionContext) => {
+          taskApi = activityApi.getApi(executionContext);
+        });
+
+        task.on('end', function endEH() {
+          ++count;
+
+          if (count < 2) return;
+          task.removeListener('end', endEH);
+
+          taskApi.stop();
+          state = taskApi.getState();
+
+          expect(state.completed.length, 'completed before resume').to.equal(2);
+
+          const resumeTask = context.clone().getChildActivityById('recurring');
+
+          count = 0;
+          resumeTask.on('start', () => {
+            ++count;
+            if (count > 2) fail('Too many starts');
+          });
+          resumeTask.on('leave', () => {
+            expect(count, 'resumed').to.equal(1);
+            done();
+          });
+
+          resumeTask.activate(state).resume();
+        });
+
+        task.activate().run();
+      });
+
+      it('returns completed result in output', (done) => {
+        context.environment.addService('loopTest', (arg, next) => {
+          const idx = arg.index;
+          const tte = 20 - idx * 2;
+          setTimeout(next, tte, null, idx);
+        });
+
+        const task = context.getChildActivityById('recurring');
+
+        let count = 0, state, taskApi;
+        task.once('enter', (activityApi, executionContext) => {
+          taskApi = activityApi.getApi(executionContext);
+        });
+
+        task.on('end', function endEH() {
+          ++count;
+
+          if (count < 2) return;
+          task.removeListener('end', endEH);
+
+          state = taskApi.getState();
+          taskApi.stop();
+
+          const resumeTask = context.clone().getChildActivityById('recurring');
+
+          count = 0;
+          resumeTask.on('start', () => {
+            ++count;
+            if (count > 3) fail('Too many starts');
+          });
+          resumeTask.on('leave', (activityApi, executionContext) => {
+            expect(executionContext.getOutput()).to.equal([[0], [1], [2]]);
+            done();
+          });
+
+          resumeTask.activate(state).resume();
+        });
+
+        task.activate().run();
+      });
+
+    });
   });
 
   describe('parallell', () => {
-    const processXml = `
+    const source = `
     <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
        xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
       <bpmn:process id="taskLoopProcess" isExecutable="true">
@@ -513,7 +638,7 @@ describe('task loop', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(processXml, {
+      testHelpers.getContext(source, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, c) => {
         if (err) return done(err);
@@ -533,7 +658,7 @@ describe('task loop', () => {
 
       task.activate();
 
-      task.on('end', (activityApi, executionContext) => {
+      task.on('leave', (activityApi, executionContext) => {
         const compare = [ [0], [1], [2] ];
         expect(executionContext.getOutput()).to.equal(compare);
         done();
@@ -560,8 +685,130 @@ describe('task loop', () => {
         done();
       });
       task.run();
+    });
+
+    describe('resume', () => {
+      it('resumes from state', (done) => {
+        context.environment.addService('loopTest', (executionContext, next) => {
+          const idx = executionContext.index;
+          const tte = 20 - idx * 2;
+          setTimeout(next, tte, null, idx);
+        });
+
+        const task = context.getChildActivityById('recurring');
+
+        let count = 0, state, taskApi;
+        task.once('enter', (activityApi, executionContext) => {
+          taskApi = activityApi.getApi(executionContext);
+        });
+
+        task.on('start', function startEH() {
+          ++count;
+
+          if (count < 2) return;
+          task.removeListener('start', startEH);
+
+          state = taskApi.getState();
+
+          taskApi.stop();
+
+          task.on('start', () => {
+            ++count;
+            if (count > 6) fail('Too many starts');
+          });
+          task.on('leave', () => {
+            expect(count).to.equal(5);
+            done();
+          });
+
+          task.activate(state).resume();
+        });
+
+        task.activate().run();
+      });
+
+      it('only starts incomplete loop items', (done) => {
+        context.environment.addService('loopTest', (executionContext, next) => {
+          const idx = executionContext.index;
+          const tte = 20 - idx * 2;
+          setTimeout(next, tte, null, idx);
+        });
+
+        const task = context.getChildActivityById('recurring');
+
+        let count = 0, state, taskApi;
+        task.once('enter', (activityApi, executionContext) => {
+          taskApi = activityApi.getApi(executionContext);
+        });
+
+        task.on('end', function endEH() {
+          ++count;
+
+          if (count < 2) return;
+          task.removeListener('end', endEH);
+
+          state = taskApi.getState();
+          taskApi.stop();
+
+          expect(state.completed.length).to.equal(2);
+
+          count = 0;
+          task.on('start', () => {
+            ++count;
+            if (count > 3) fail('Too many starts');
+          });
+          task.on('leave', () => {
+            expect(count).to.equal(1);
+            done();
+          });
+
+          task.activate(state).resume();
+        });
+
+        task.activate().run();
+      });
+
+      it('returns completed result in output', (done) => {
+        context.environment.addService('loopTest', (executionContext, next) => {
+          const idx = executionContext.index;
+          const tte = 20 - idx * 2;
+          setTimeout(next, tte, null, idx);
+        });
+
+        const task = context.getChildActivityById('recurring');
+
+        let count = 0, state, taskApi;
+        task.once('enter', (activityApi, executionContext) => {
+          taskApi = activityApi.getApi(executionContext);
+        });
+
+        task.on('end', function endEH() {
+          ++count;
+
+          if (count < 1) return;
+          task.removeListener('end', endEH);
+
+          state = taskApi.getState();
+          taskApi.stop();
+
+          const resumeTask = context.clone().getChildActivityById('recurring');
+
+          count = 0;
+          resumeTask.on('start', () => {
+            ++count;
+            if (count > 3) fail('Too many starts');
+          });
+          resumeTask.on('leave', (activityApi, executionContext) => {
+            expect(executionContext.getOutput()).to.equal([[0], [1], [2]]);
+            done();
+          });
+
+          resumeTask.activate(state).resume();
+        });
+
+        task.activate().run();
+      });
 
     });
   });
-
 });

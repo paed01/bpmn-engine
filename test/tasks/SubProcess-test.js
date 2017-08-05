@@ -10,6 +10,10 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect} = Lab.assertions;
 
+const moddleOptions = {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+};
+
 describe('SubProcess', () => {
   describe('events', () => {
     const source = factory.resource('sub-process.bpmn').toString();
@@ -34,7 +38,7 @@ describe('SubProcess', () => {
       subProcess.inbound[0].take();
     });
 
-    it('emits end on completed', (done) => {
+    it('emits end when completed', (done) => {
       const listener = new EventEmitter();
       context.environment.setListener(listener);
 
@@ -53,101 +57,6 @@ describe('SubProcess', () => {
       subProcess.inbound[0].take();
     });
 
-  });
-
-  describe('loop', () => {
-    describe('sequential', () => {
-      let context;
-      beforeEach((done) => {
-        getLoopContext(true, (err, result) => {
-          if (err) return done(err);
-          context = result;
-          done();
-        });
-      });
-
-      it('emits start with the same id', (done) => {
-        const task = context.getChildActivityById('sub-process-task');
-        const starts = [];
-        task.on('start', (activityApi, executionContext) => {
-          starts.push(executionContext.id);
-        });
-        task.once('end', () => {
-          expect(starts).to.be.equal(['sub-process-task', 'sub-process-task', 'sub-process-task']);
-          done();
-        });
-
-        task.run();
-      });
-
-      it('assigns input', (done) => {
-        const listener = new EventEmitter();
-        context.environment.setListener(listener);
-
-        const task = context.getChildActivityById('sub-process-task');
-        const taskApi = task.activate(null, listener);
-
-        const doneTasks = [];
-        listener.on('start-serviceTask', (activityApi) => {
-          doneTasks.push(activityApi.getInput().input);
-        });
-
-        task.once('end', () => {
-          expect(doneTasks).to.equal(['sub labour', 'sub archiving', 'sub shopping']);
-          done();
-        });
-
-        taskApi.run();
-      });
-
-    });
-
-    describe('parallell', () => {
-      let context;
-      beforeEach((done) => {
-        getLoopContext(false, (err, result) => {
-          if (err) return done(err);
-          context = result;
-          done();
-        });
-      });
-
-      it('emits start with different ids', (done) => {
-        const task = context.getChildActivityById('sub-process-task');
-
-        const starts = [];
-        task.on('start', (activityApi, executionContext) => {
-          starts.push(executionContext.id);
-        });
-
-        task.once('end', () => {
-          expect(starts.includes(task.id), 'unique task id').to.be.false();
-          done();
-        });
-
-        task.run();
-      });
-
-      it('assigns loop input to sub task', (done) => {
-        const listener = new EventEmitter();
-        context.environment.setListener(listener);
-
-        const task = context.getChildActivityById('sub-process-task');
-        const taskApi = task.activate();
-
-        const doneTasks = [];
-        listener.on('end-serviceTask', (activityApi) => {
-          doneTasks.push(activityApi.getInput().input);
-        });
-
-        task.once('end', () => {
-          expect(doneTasks).to.equal(['sub labour', 'sub archiving', 'sub shopping']);
-          done();
-        });
-
-        taskApi.run();
-      });
-    });
   });
 
   describe('engine', () => {
@@ -248,9 +157,7 @@ describe('SubProcess', () => {
 
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
       engine.execute({
         services: {
@@ -316,9 +223,7 @@ describe('SubProcess', () => {
 
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
       engine.execute({
         services: {
@@ -374,9 +279,7 @@ describe('SubProcess', () => {
 
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
       engine.execute({
         services: {
@@ -399,10 +302,135 @@ describe('SubProcess', () => {
       });
     });
   });
+
+  describe('loop', () => {
+    describe('sequential', () => {
+      let context;
+      beforeEach((done) => {
+        getLoopContext(true, (err, result) => {
+          if (err) return done(err);
+          context = result;
+          done();
+        });
+      });
+
+      it('emits start with the same id', (done) => {
+        const task = context.getChildActivityById('sub-process-task');
+        const starts = [];
+        task.on('start', (activityApi, executionContext) => {
+          starts.push(executionContext.id);
+        });
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
+          expect(starts).to.be.equal(['sub-process-task', 'sub-process-task', 'sub-process-task']);
+          done();
+        });
+
+        task.run();
+      });
+
+      it('assigns input', (done) => {
+        const listener = new EventEmitter();
+        context.environment.setListener(listener);
+
+        const task = context.getChildActivityById('sub-process-task');
+        const taskApi = task.activate(null, listener);
+
+        const doneTasks = [];
+        listener.on('start-serviceTask', (activityApi) => {
+          doneTasks.push(activityApi.getInput().input);
+        });
+
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
+          expect(doneTasks).to.equal(['sub labour', 'sub archiving', 'sub shopping']);
+          done();
+        });
+
+        taskApi.run();
+      });
+
+      it('resume', (done) => {
+        const listener = new EventEmitter();
+        context.environment.setListener(listener);
+
+        const task = context.getChildActivityById('sub-process-task');
+        const taskApi = task.activate(null, listener);
+
+        const doneTasks = [];
+        listener.on('start-serviceTask', (activityApi) => {
+          doneTasks.push(activityApi.getInput().input);
+        });
+
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
+          expect(doneTasks).to.equal(['sub labour', 'sub archiving', 'sub shopping']);
+          done();
+        });
+
+        taskApi.run();
+      });
+
+    });
+
+    describe('parallell', () => {
+      let context;
+      beforeEach((done) => {
+        getLoopContext(false, (err, result) => {
+          if (err) return done(err);
+          context = result;
+          done();
+        });
+      });
+
+      it('emits start with different ids', (done) => {
+        const task = context.getChildActivityById('sub-process-task');
+
+        const starts = [];
+        task.on('start', (activityApi, executionContext) => {
+          starts.push(executionContext.id);
+        });
+
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
+          expect(starts.includes(task.id), 'unique task id').to.be.false();
+          done();
+        });
+
+        task.run();
+      });
+
+      it('assigns loop input to sub task', (done) => {
+        const listener = new EventEmitter();
+        context.environment.setListener(listener);
+
+        const task = context.getChildActivityById('sub-process-task');
+        const taskApi = task.activate();
+
+        const doneTasks = [];
+        listener.on('end-serviceTask', (activityApi) => {
+          doneTasks.push(activityApi.getInput().input);
+        });
+
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
+          expect(doneTasks).to.equal(['sub labour', 'sub archiving', 'sub shopping']);
+          done();
+        });
+
+        taskApi.run();
+      });
+    });
+  });
 });
 
 function getLoopContext(sequential, callback) {
-  const processXml = `
+  const source = `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -423,9 +451,7 @@ function getLoopContext(sequential, callback) {
     </subProcess>
     </process>
   </definitions>`;
-  testHelpers.getContext(processXml, {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
-  }, (err, context) => {
+  testHelpers.getContext(source, moddleOptions, (err, context) => {
     if (err) return callback(err);
     context.environment.assignVariables({
       prefix: 'sub',

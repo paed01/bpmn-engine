@@ -15,6 +15,10 @@ const {expect, fail} = Lab.assertions;
 
 const bupServiceFn = testHelpers.serviceFn;
 
+const moddleOptions = {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+};
+
 describe('ServiceTask', () => {
   after((done) => {
     testHelpers.serviceFn = bupServiceFn;
@@ -23,10 +27,8 @@ describe('ServiceTask', () => {
 
   describe('behaviour', () => {
     it('stores service if extension name', (done) => {
-      const processXml = factory.resource('service-task.bpmn').toString();
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (cerr, context) => {
+      const source = factory.resource('service-task.bpmn').toString();
+      testHelpers.getContext(source, moddleOptions, (cerr, context) => {
         if (cerr) return done(cerr);
         const task = context.getChildActivityById('serviceTask');
         expect(task).to.include(['service']);
@@ -35,7 +37,7 @@ describe('ServiceTask', () => {
     });
 
     it('stores expression service', (done) => {
-      const processXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
         <process id="theProcess" isExecutable="true">
@@ -43,9 +45,7 @@ describe('ServiceTask', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (cerr, context) => {
+      testHelpers.getContext(source, moddleOptions, (cerr, context) => {
         if (cerr) return done(cerr);
         const task = context.getChildActivityById('serviceTask');
         expect(task).to.include(['service']);
@@ -57,7 +57,7 @@ describe('ServiceTask', () => {
     });
 
     it('emits error if service definition is not found', (done) => {
-      const processXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -65,7 +65,7 @@ describe('ServiceTask', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(processXml, {
+      testHelpers.getContext(source, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (cerr, context) => {
         if (cerr) return done(cerr);
@@ -84,10 +84,8 @@ describe('ServiceTask', () => {
   describe('execute()', () => {
     let context;
     beforeEach((done) => {
-      const processXml = factory.resource('service-task.bpmn').toString();
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, result) => {
+      const source = factory.resource('service-task.bpmn').toString();
+      testHelpers.getContext(source, moddleOptions, (err, result) => {
         if (err) return done(err);
         testHelpers.serviceFn = (message, callback) => {
           callback(null, true);
@@ -120,10 +118,10 @@ describe('ServiceTask', () => {
     });
 
     it('can access and modify variables', (done) => {
-      context.environment.services.postMessage = (message, callback) => {
+      context.environment.addService('postMessage', (message, callback) => {
         message.variables.input = 'wuiiii';
         callback();
-      };
+      });
 
       const task = context.getChildActivityById('serviceTask');
       task.activate();
@@ -137,9 +135,9 @@ describe('ServiceTask', () => {
     });
 
     it('error in callback caught by bound error event', (done) => {
-      context.environment.services.postMessage = (message, callback) => {
+      context.environment.addService('postMessage', (message, callback) => {
         callback(new Error('Failed'));
-      };
+      });
 
       const task = context.getChildActivityById('serviceTask');
       const boundEvent = context.getChildActivityById('errorEvent');
@@ -155,7 +153,7 @@ describe('ServiceTask', () => {
     });
 
     it('times out if bound timeout event if callback is not called within timeout duration', (done) => {
-      context.environment.services.postMessage = () => {};
+      context.environment.addService('postMessage', () => {});
 
       const task = context.getChildActivityById('serviceTask');
       const timeoutEvent = context.getChildActivityById('timerEvent');
@@ -185,9 +183,7 @@ describe('ServiceTask', () => {
         });
 
       const processXml = factory.resource('service-task-io.bpmn').toString();
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, result) => {
+      testHelpers.getContext(processXml, moddleOptions, (err, result) => {
         if (err) return done(err);
         const environment = Environment({
           services: {
@@ -224,23 +220,21 @@ describe('ServiceTask', () => {
 
     it('returns mapped output', (done) => {
       const processXml = factory.resource('service-task-io-types.bpmn').toString();
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, context) => {
+      testHelpers.getContext(processXml, moddleOptions, (err, context) => {
         if (err) return done(err);
 
         context.environment.assignVariables({
           apiPath: 'http://example-2.com',
           input: 2,
         });
-        context.environment.services.get = (arg, next) => {
+        context.environment.addService('get', (arg, next) => {
           next(null, {
             statusCode: 200,
             pathname: '/ignore'
           }, {
             data: arg.input
           });
-        };
+        });
 
         const task = context.getChildActivityById('serviceTask');
         task.once('end', (activityApi, executionContext) => {
@@ -269,9 +263,7 @@ describe('ServiceTask', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, context) => {
+      testHelpers.getContext(processXml, moddleOptions, (err, context) => {
         if (err) return done(err);
         context.environment.addService('getService', () => {
           return (arg, callback) => {
@@ -302,9 +294,7 @@ describe('ServiceTask', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, context) => {
+      testHelpers.getContext(processXml, moddleOptions, (err, context) => {
         if (err) return done(err);
         context.environment.addService('getService', (input) => {
           return (executionContext, callback) => {
@@ -337,9 +327,7 @@ describe('ServiceTask', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, context) => {
+      testHelpers.getContext(processXml, moddleOptions, (err, context) => {
         if (err) return done(err);
         context.environment.addService('getService', (input) => {
           return (executionContext, callback) => {
@@ -487,9 +475,7 @@ describe('ServiceTask', () => {
           data: 4
         });
 
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, processContext) => {
+      testHelpers.getContext(processXml, moddleOptions, (err, processContext) => {
         if (err) return done(err);
         processContext.environment.addService('get', {
           module: 'request',
@@ -534,9 +520,7 @@ describe('ServiceTask', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, processContext) => {
+      testHelpers.getContext(processXml, moddleOptions, (err, processContext) => {
         if (err) return done(err);
         processContext.environment.addService('appendPath', (uri) => {
           return `${uri}/v3/data`;
@@ -592,9 +576,7 @@ describe('ServiceTask', () => {
 
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
 
       const listener = new EventEmitter();
@@ -666,7 +648,9 @@ describe('ServiceTask', () => {
           starts.push(activity.id);
         });
 
-        task.once('end', () => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(starts).to.equal(['task', 'task', 'task']);
           done();
         });
@@ -685,7 +669,9 @@ describe('ServiceTask', () => {
             .reply(input.version < 2 ? 200 : 409, {});
         });
 
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           const output = executionContext.getOutput();
           expect(output.loopResult).to.equal([{
             statusCode: 200,
@@ -717,7 +703,9 @@ describe('ServiceTask', () => {
             });
         });
 
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(executionContext.getOutput().loopResult).to.equal([{
             statusCode: 200,
             body: {
@@ -771,7 +759,9 @@ describe('ServiceTask', () => {
           starts.push(executionContext.id);
         });
 
-        task.once('end', () => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(starts.includes(task.id), 'unique task id').to.be.false();
           done();
         });
@@ -793,7 +783,9 @@ describe('ServiceTask', () => {
             });
         });
 
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(executionContext.getOutput().loopResult).to.equal([{
             statusCode: 200,
             body: {
@@ -830,7 +822,9 @@ describe('ServiceTask', () => {
             });
         });
 
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(executionContext.getOutput().loopResult).to.equal([{
             statusCode: 200,
             body: {
@@ -858,7 +852,7 @@ describe('ServiceTask', () => {
 });
 
 function getLoopContext(isSequential, callback) {
-  const processXml = `
+  const source = `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -890,9 +884,7 @@ function getLoopContext(isSequential, callback) {
       </serviceTask>
     </process>
   </definitions>`;
-  testHelpers.getContext(processXml, {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
-  }, (err, context) => {
+  testHelpers.getContext(source, moddleOptions, (err, context) => {
     if (err) return callback(err);
     context.environment.assignVariables({
       paths: ['/pal', '/franz', '/immanuel']

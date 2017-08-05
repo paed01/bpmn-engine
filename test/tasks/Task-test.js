@@ -9,6 +9,10 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
+const moddleOptions = {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+};
+
 describe('Task', () => {
   describe('behaviour', () => {
     const taskProcessXml = `
@@ -33,9 +37,7 @@ describe('Task', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(taskProcessXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, result) => {
+      testHelpers.getContext(taskProcessXml, moddleOptions, (err, result) => {
         if (err) return done(err);
         context = result;
         done();
@@ -186,7 +188,7 @@ describe('Task', () => {
   });
 
   lab.describe('IO', () => {
-    const taskProcessXml = `
+    const source = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -208,9 +210,7 @@ describe('Task', () => {
 
     let context;
     lab.beforeEach((done) => {
-      testHelpers.getContext(taskProcessXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, result) => {
+      testHelpers.getContext(source, moddleOptions, (err, result) => {
         if (err) return done(err);
         context = result;
         done();
@@ -254,7 +254,7 @@ describe('Task', () => {
 
   lab.describe('engine', () => {
     lab.test('multiple inbound completes process', (done) => {
-      const processXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -279,10 +279,8 @@ describe('Task', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: processXml,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        source,
+        moddleOptions
       });
 
       const listener = new EventEmitter();
@@ -329,7 +327,9 @@ describe('Task', () => {
         task.on('start', (activity) => {
           starts.push(activity.id);
         });
-        task.once('end', () => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(starts).to.be.equal(['task', 'task', 'task']);
           done();
         });
@@ -346,7 +346,9 @@ describe('Task', () => {
           doneTasks.push(execution.getInput().do);
         });
 
-        task.once('end', () => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(doneTasks).to.equal(['labour', 'archiving', 'shopping']);
           done();
         });
@@ -374,7 +376,9 @@ describe('Task', () => {
         task.on('start', (activity, execution) => {
           starts.push(execution.id);
         });
-        task.once('end', () => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(starts.includes(task.id), 'unique task id').to.be.false();
           done();
         });
@@ -391,7 +395,9 @@ describe('Task', () => {
           starts.push(execution.getInput());
         });
 
-        task.once('end', () => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(starts).to.equal([{do: 'labour'}, {do: 'archiving'}, {do: 'shopping'}]);
           done();
         });
@@ -403,7 +409,7 @@ describe('Task', () => {
 });
 
 function getLoopContext(isSequential, callback) {
-  const processXml = `
+  const source = `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -420,9 +426,7 @@ function getLoopContext(isSequential, callback) {
       </task>
     </process>
   </definitions>`;
-  testHelpers.getContext(processXml, {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
-  }, (err, context) => {
+  testHelpers.getContext(source, moddleOptions, (err, context) => {
     if (err) return callback(err);
     context.environment.assignVariables({analogue: ['labour', 'archiving', 'shopping']});
     callback(null, context);

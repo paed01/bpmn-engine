@@ -55,21 +55,21 @@ describe('ManualTask', () => {
   });
 
   describe('signal()', () => {
-    const manualTaskProcessXml = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <process id="theProcess" isExecutable="true">
-      <startEvent id="start" />
-      <manualTask id="task" />
-      <endEvent id="end" />
-      <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
-      <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
-    </process>
-  </definitions>`;
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theProcess" isExecutable="true">
+        <startEvent id="start" />
+        <manualTask id="task" />
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+        <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
+      </process>
+    </definitions>`;
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(manualTaskProcessXml, (err, result) => {
+      testHelpers.getContext(source, (err, result) => {
         if (err) return done(err);
         context = result;
         done();
@@ -109,7 +109,9 @@ describe('ManualTask', () => {
         task.on('wait', (activityApi, executionContext) => {
           executionContext.signal(executionContext.id);
         });
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(executionContext.getOutput()).to.equal(['task', 'task', 'task']);
           done();
         });
@@ -127,7 +129,9 @@ describe('ManualTask', () => {
           activityApi.getApi(executionContext).signal();
         });
 
-        task.once('end', () => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(doneTasks).to.equal(['labour', 'archiving', 'shopping']);
           done();
         });
@@ -157,7 +161,9 @@ describe('ManualTask', () => {
             starts.reverse().forEach((t) => t.signal(t.id));
           }
         });
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           const output = executionContext.getOutput();
           expect(output).to.have.length(3);
           output.forEach((id) => expect(id).to.match(/^task_/i));
@@ -177,7 +183,9 @@ describe('ManualTask', () => {
           activityApi.getApi(executionContext).signal();
         });
 
-        task.once('end', () => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(doneTasks).to.equal(['labour', 'archiving', 'shopping']);
           done();
         });
@@ -190,7 +198,7 @@ describe('ManualTask', () => {
 });
 
 function getLoopContext(sequential, callback) {
-  const processXml = `
+  const source = `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -208,7 +216,7 @@ function getLoopContext(sequential, callback) {
       </manualTask>
     </process>
   </definitions>`;
-  testHelpers.getContext(processXml, {
+  testHelpers.getContext(source, {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
   }, (err, context) => {
     if (err) return callback(err);

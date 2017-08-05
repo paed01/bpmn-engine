@@ -10,9 +10,13 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
+const moddleOptions = {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+};
+
 describe('ScriptTask', () => {
   describe('events', () => {
-    const taskProcessXml = `
+    const source = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theProcess" isExecutable="true">
@@ -32,7 +36,7 @@ describe('ScriptTask', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(taskProcessXml, (err, result) => {
+      testHelpers.getContext(source, (err, result) => {
         if (err) return done(err);
         context = result;
         done();
@@ -64,7 +68,7 @@ describe('ScriptTask', () => {
   });
 
   describe('IO', () => {
-    const taskProcessXml = `
+    const source = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -91,9 +95,7 @@ describe('ScriptTask', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(taskProcessXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, result) => {
+      testHelpers.getContext(source, moddleOptions, (err, result) => {
         if (err) return done(err);
         context = result;
         done();
@@ -170,9 +172,7 @@ describe('ScriptTask', () => {
 
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
 
       const listener = new EventEmitter();
@@ -210,7 +210,7 @@ describe('ScriptTask', () => {
 
   describe('execution', () => {
     it('executes script', (done) => {
-      const processXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -228,7 +228,7 @@ describe('ScriptTask', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(processXml, (cerr, context) => {
+      testHelpers.getContext(source, (cerr, context) => {
         if (cerr) return done(cerr);
         context.environment.variables.input = 1;
 
@@ -245,7 +245,7 @@ describe('ScriptTask', () => {
     });
 
     it('emits error if returned in next function', (done) => {
-      const processXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -263,7 +263,7 @@ describe('ScriptTask', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(processXml, (cerr, context) => {
+      testHelpers.getContext(source, (cerr, context) => {
         if (cerr) return done(cerr);
         const task = context.getChildActivityById('scriptTask');
 
@@ -497,7 +497,7 @@ describe('ScriptTask', () => {
 
   describe('output', () => {
     it('is passed by callback', (done) => {
-      const processXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
@@ -513,7 +513,7 @@ describe('ScriptTask', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: processXml
+        source
       });
       engine.execute();
 
@@ -525,7 +525,7 @@ describe('ScriptTask', () => {
     });
 
     it('with output parameters returns formatted output', (done) => {
-      const processXml = `
+      const source = `
       <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.6.0">
         <process id="Process_1" isExecutable="true">
           <scriptTask id="scriptTask" name="Execute" scriptFormat="JavaScript">
@@ -548,9 +548,7 @@ describe('ScriptTask', () => {
           </scriptTask>
         </process>
       </definitions>`;
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, localContext) => {
+      testHelpers.getContext(source, moddleOptions, (err, localContext) => {
         if (err) return done(err);
 
         localContext.environment.assignVariables({
@@ -592,7 +590,9 @@ describe('ScriptTask', () => {
           starts.push(activity.id);
         });
 
-        task.once('end', () => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(starts).to.equal(['task', 'task', 'task']);
           done();
         });
@@ -604,7 +604,9 @@ describe('ScriptTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(executionContext.getOutput()).to.equal(['Pål', 'Franz', 'Immanuel']);
           done();
         });
@@ -616,7 +618,9 @@ describe('ScriptTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(executionContext.getOutput()).to.equal(['Pål', 'Franz', 'Immanuel']);
           done();
         });
@@ -645,7 +649,9 @@ describe('ScriptTask', () => {
           starts.push(executionContext.id);
         });
 
-        task.once('end', () => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(starts.includes(task.id), 'unique task id').to.be.false();
           done();
         });
@@ -657,7 +663,9 @@ describe('ScriptTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(executionContext.getOutput()).to.equal(['Pål', 'Franz', 'Immanuel']);
           done();
         });
@@ -669,7 +677,9 @@ describe('ScriptTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        task.once('end', (activityApi, executionContext) => {
+        task.on('end', (activityApi, executionContext) => {
+          if (executionContext.isLoopContext) return;
+
           expect(executionContext.getOutput()).to.equal(['Pål', 'Franz', 'Immanuel']);
           done();
         });
@@ -682,7 +692,7 @@ describe('ScriptTask', () => {
 });
 
 function getLoopContext(sequential, callback) {
-  const processXml = `
+  const source = `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -704,9 +714,7 @@ function getLoopContext(sequential, callback) {
       </scriptTask>
     </process>
   </definitions>`;
-  testHelpers.getContext(processXml, {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
-  }, (err, context) => {
+  testHelpers.getContext(source, moddleOptions, (err, context) => {
     if (err) return callback(err);
 
     context.environment.assignVariables({names: ['Pål', 'Franz', 'Immanuel']});
