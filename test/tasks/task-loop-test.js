@@ -494,10 +494,11 @@ describe('task loop', () => {
     });
 
     describe('resume', () => {
-      it('resumes from state', (done) => {
+      it('resumes service task from state', (done) => {
         context.environment.addService('loopTest', (arg, next) => {
           const idx = arg.index;
           const tte = 20 - idx * 2;
+
           setTimeout(next, tte, null, idx);
         });
 
@@ -518,16 +519,32 @@ describe('task loop', () => {
 
           taskApi.stop();
 
-          task.on('start', () => {
+          const resumeContext = context.clone();
+          resumeContext.environment.addService('loopTest', (arg, next) => {
+            const idx = arg.index;
+            const tte = 20 - idx * 2;
+
+            if (idx < 2) {
+              expect(arg.resumed, `service resumed ${idx}`).to.be.true();
+            } else {
+              expect(arg.resumed, `service resumed ${idx}`).to.be.undefined();
+            }
+
+            setTimeout(next, tte, null, idx);
+          });
+
+          const resumeTask = resumeContext.getChildActivityById('recurring');
+
+          resumeTask.on('start', () => {
             ++count;
             if (count > 4) fail('Too many starts');
           });
-          task.on('leave', () => {
+          resumeTask.on('leave', () => {
             expect(count).to.equal(4);
             done();
           });
 
-          task.activate(state).resume();
+          resumeTask.activate(state).resume();
         });
 
         task.activate().run();
@@ -688,7 +705,7 @@ describe('task loop', () => {
     });
 
     describe('resume', () => {
-      it('resumes from state', (done) => {
+      it('resumes service task from state', (done) => {
         context.environment.addService('loopTest', (executionContext, next) => {
           const idx = executionContext.index;
           const tte = 20 - idx * 2;
@@ -712,16 +729,31 @@ describe('task loop', () => {
 
           taskApi.stop();
 
-          task.on('start', () => {
+          const resumeContext = context.clone();
+          resumeContext.environment.addService('loopTest', (arg, next) => {
+            const idx = arg.index;
+            const tte = 20 - idx * 2;
+
+            if (idx < 2) {
+              expect(arg.resumed, `service resumed ${idx}`).to.be.true();
+            } else {
+              expect(arg.resumed, `service resumed ${idx}`).to.be.undefined();
+            }
+
+            setTimeout(next, tte, null, idx);
+          });
+          const resumeTask = resumeContext.getChildActivityById('recurring');
+
+          resumeTask.on('start', () => {
             ++count;
             if (count > 6) fail('Too many starts');
           });
-          task.on('leave', () => {
+          resumeTask.on('leave', () => {
             expect(count).to.equal(5);
             done();
           });
 
-          task.activate(state).resume();
+          resumeTask.activate(state).resume();
         });
 
         task.activate().run();
