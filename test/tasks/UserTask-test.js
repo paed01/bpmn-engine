@@ -185,6 +185,8 @@ describe('UserTask', () => {
           expect(activityApi.getApi(executionApi).getState()).to.equal({
             id: 'task',
             type: 'bpmn:UserTask',
+            entered: undefined,
+            waiting: undefined,
             taken: true
           });
         });
@@ -192,6 +194,8 @@ describe('UserTask', () => {
           expect(activityApi.getApi(executionApi).getState()).to.equal({
             id: 'task',
             type: 'bpmn:UserTask',
+            entered: undefined,
+            waiting: undefined,
             taken: true
           });
           done();

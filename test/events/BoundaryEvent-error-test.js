@@ -171,7 +171,7 @@ describe('Error BoundaryEvent', () => {
 
       event.once('end', (eventApi) => {
         const state = eventApi.getState();
-        expect(state).to.not.include(['entered']);
+        expect(state.entered).to.be.undefined();
         expect(state).to.include({
           taken: true
         });

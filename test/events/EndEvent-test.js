@@ -134,6 +134,7 @@ describe('EndEvent', () => {
           expect(state).to.equal({
             id: 'end',
             type: 'bpmn:EndEvent',
+            entered: undefined,
             taken: true
           });
           done();
@@ -150,6 +151,7 @@ describe('EndEvent', () => {
           expect(state).to.equal({
             id: 'end',
             type: 'bpmn:EndEvent',
+            entered: undefined,
             taken: true
           });
           done();
@@ -295,6 +297,7 @@ describe('EndEvent', () => {
           expect(state).to.equal({
             id: 'fatal',
             type: 'bpmn:EndEvent',
+            entered: undefined,
             terminate: true,
             taken: true
           });
@@ -312,6 +315,7 @@ describe('EndEvent', () => {
           expect(state).to.equal({
             id: 'fatal',
             type: 'bpmn:EndEvent',
+            entered: undefined,
             terminate: true,
             taken: true
           });

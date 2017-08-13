@@ -242,7 +242,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       event.once('end', (activityApi, executionContext) => {
         const eventApi = activityApi.getApi(executionContext);
         const state = eventApi.getState();
-        expect(state).to.not.include(['entered']);
+        expect(state.entered).to.be.undefined();
         expect(state.timeout).to.be.below(1);
         done();
       });
