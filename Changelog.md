@@ -10,7 +10,7 @@ Changelog
 - `camunda:formKey` is set as property on activity
 
 ## Additions
-- Support for parallell loop
+- Support for parallell task loop
 
 # 4.0.0
 
