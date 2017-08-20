@@ -1,9 +1,9 @@
 'use strict';
 
-const EventEmitter = require('events').EventEmitter;
+const {EventEmitter} = require('events');
 const factory = require('./helpers/factory');
 const Lab = require('lab');
-const Definition = require('../lib/mapper').Definition;
+const {Definition} = require('../lib/mapper');
 const testHelpers = require('./helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
@@ -63,7 +63,7 @@ describe('Definition', () => {
     });
   });
 
-  lab.describe('getProcesses()', () => {
+  describe('getProcesses()', () => {
     let definition;
     it('Given definition is initiated with two processes', (done) => {
       testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (merr, moddleContext) => {
@@ -108,7 +108,7 @@ describe('Definition', () => {
     });
   });
 
-  lab.describe('execute()', () => {
+  describe('execute()', () => {
     it('emits error if invalid moddleContext', (done) => {
       testHelpers.getModdleContext(factory.invalid(), (merr, result) => {
         if (merr) return done(merr);
@@ -374,7 +374,7 @@ describe('Definition', () => {
     });
   });
 
-  lab.describe('getState()', () => {
+  describe('getState()', () => {
     const processXml = factory.userTask();
     let moddleContext;
     before((done) => {
@@ -508,7 +508,7 @@ describe('Definition', () => {
     });
   });
 
-  lab.describe('getChildActivityById()', () => {
+  describe('getChildActivityById()', () => {
     let moddleContext;
     before((done) => {
       const processXml = factory.resource('lanes.bpmn');
@@ -538,7 +538,7 @@ describe('Definition', () => {
     });
   });
 
-  lab.describe('signal()', () => {
+  describe('signal()', () => {
     let moddleContext;
     before((done) => {
       testHelpers.getModdleContext(factory.userTask('userTask1'), (err, result) => {
@@ -583,8 +583,8 @@ describe('Definition', () => {
     });
   });
 
-  lab.describe('events', () => {
-    lab.describe('child error', () => {
+  describe('events', () => {
+    describe('child error', () => {
       it('event callback returns error, child, process, and definition', (done) => {
         const source = `
         <?xml version="1.0" encoding="UTF-8"?>
@@ -615,7 +615,7 @@ describe('Definition', () => {
     });
   });
 
-  lab.describe('stop()', () => {
+  describe('stop()', () => {
     let moddleContext;
     before((done) => {
       testHelpers.getModdleContext(factory.userTask(null, 'stopDef'), (err, result) => {
@@ -648,7 +648,7 @@ describe('Definition', () => {
 
   });
 
-  lab.describe('Definition.resume()', () => {
+  describe('Definition.resume()', () => {
     const source = factory.userTask(null, 'resumeDef');
     let moddleContext, state;
     before((done) => {
@@ -791,7 +791,7 @@ describe('Definition', () => {
     });
   });
 
-  lab.describe('getPendingActivities()', () => {
+  describe('getPendingActivities()', () => {
     it('returns executing children', (done) => {
       testHelpers.getModdleContext(factory.valid(), {}, (err, validModdleContext) => {
         if (err) return done(err);

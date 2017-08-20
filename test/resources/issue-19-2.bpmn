@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.7.2">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.9.0">
   <bpmn:process id="issue-19-error-state" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="Start">
       <bpmn:outgoing>SequenceFlow_1ye6wuu</bpmn:outgoing>
@@ -58,7 +58,7 @@
           <camunda:outputParameter name="retry">${true}</camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_1yeoz4y</bpmn:incoming>
+      <bpmn:incoming>toManualDefaultFlow</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_07wpp9a</bpmn:outgoing>
     </bpmn:manualTask>
     <bpmn:sequenceFlow id="toTerminateFlow" name="Yep!" sourceRef="retryGateway" targetRef="terminateEvent">
@@ -76,13 +76,13 @@
     <bpmn:sequenceFlow id="SequenceFlow_17aoq0e" name="Yay!" sourceRef="statusGateway" targetRef="end">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${services.statusCodeOk(variables.statusCode)}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_1yeoz4y" name="Try again" sourceRef="retryGateway" targetRef="waitForSignalTask" />
+    <bpmn:sequenceFlow id="toManualDefaultFlow" name="Try again" sourceRef="retryGateway" targetRef="waitForSignalTask" />
     <bpmn:parallelGateway id="joinGateway" name="">
       <bpmn:incoming>SequenceFlow_1rt4cxf</bpmn:incoming>
       <bpmn:incoming>errorFlow</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1ea996h</bpmn:outgoing>
     </bpmn:parallelGateway>
-    <bpmn:exclusiveGateway id="retryGateway" name="Retried?" default="SequenceFlow_1yeoz4y">
+    <bpmn:exclusiveGateway id="retryGateway" name="Retried?" default="toManualDefaultFlow">
       <bpmn:extensionElements>
         <camunda:inputOutput>
           <camunda:inputParameter name="retried">${variables.retry}</camunda:inputParameter>
@@ -91,7 +91,7 @@
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0pkq4wo</bpmn:incoming>
       <bpmn:outgoing>toTerminateFlow</bpmn:outgoing>
-      <bpmn:outgoing>SequenceFlow_1yeoz4y</bpmn:outgoing>
+      <bpmn:outgoing>toManualDefaultFlow</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_0pkq4wo" name="No..." sourceRef="statusGateway" targetRef="retryGateway" />
   </bpmn:process>
@@ -193,11 +193,11 @@
           <dc:Bounds x="723" y="233.5" width="22" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="SequenceFlow_1yeoz4y_di" bpmnElement="SequenceFlow_1yeoz4y">
+      <bpmndi:BPMNEdge id="SequenceFlow_1yeoz4y_di" bpmnElement="toManualDefaultFlow">
         <di:waypoint xsi:type="dc:Point" x="638" y="444" />
         <di:waypoint xsi:type="dc:Point" x="372" y="444" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="503.25186901857285" y="421" width="46" height="13" />
+          <dc:Bounds x="504" y="421" width="46" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="ParallelGateway_0os8j1e_di" bpmnElement="joinGateway">

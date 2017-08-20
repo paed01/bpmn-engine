@@ -93,8 +93,8 @@ describe('ExclusiveGateway', () => {
         });
 
         expect(gateway.outbound[0].taken, gateway.outbound[0].id).to.be.true();
-        expect(gateway.outbound[1].taken, gateway.outbound[1].id).to.be.false();
-        expect(gateway.outbound[2].taken, gateway.outbound[2].id).to.be.false();
+        expect(gateway.outbound[1].taken, gateway.outbound[1].id).to.be.undefined();
+        expect(gateway.outbound[2].taken, gateway.outbound[2].id).to.be.undefined();
         done();
       });
 
@@ -162,10 +162,10 @@ describe('ExclusiveGateway', () => {
             const resumedGateway = clonedContext.getChildActivityById('decision');
             resumedGateway.id += '-resumed';
 
-            resumedGateway.once('enter', (resumedApi, resumedActivity) => {
-              resumedActivity.stop();
-
-              expect(resumedApi.getState().pendingOutbound).to.equal(['condFlow2', 'defaultFlow']);
+            resumedGateway.once('enter', (resumedApi, activityExecution) => {
+              const api = resumedApi.getApi(activityExecution);
+              api.stop();
+              expect(api.getState().pendingOutbound).to.equal(['condFlow2', 'defaultFlow']);
               done();
             });
 

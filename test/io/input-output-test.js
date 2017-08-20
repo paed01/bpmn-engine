@@ -61,12 +61,14 @@ describe('input/output', () => {
         expect(task).to.include(['io']);
         expect(task.io).to.exist();
 
-        const args = task.io.getOutput([{
+        task.io.setResult([{
           statusCode: 200,
           path: '/api/v4'
         }, {
           data: 1
         }]);
+
+        const args = task.io.getOutput();
         expect(args).to.equal({
           statusCode: 200,
           body: {
@@ -116,11 +118,13 @@ describe('input/output', () => {
         expect(task).to.include(['io']);
         expect(task.io).to.exist();
 
-        const args = task.io.getOutput({
+        task.io.setResult({
           accept: 'No',
           managerEmail: 'boss@example.com',
           timestamp: 1484870400000
         });
+
+        const args = task.io.getOutput();
         expect(args).to.equal({
           accepted: false,
           managerEmail: 'boss@example.com',

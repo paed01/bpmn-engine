@@ -245,8 +245,8 @@ describe('UserTask', () => {
 
       const task = context.getChildActivityById('task');
       task.activate();
-      task.once('start', (activityApi, executionApi) => {
-        expect(executionApi.getInput()).to.equal({
+      task.once('start', (activityApi, executionContext) => {
+        expect(executionContext.getInput()).to.equal({
           input: 'executed'
         });
         done();
@@ -262,12 +262,12 @@ describe('UserTask', () => {
 
       const task = context.getChildActivityById('task');
       task.activate();
-      task.once('wait', (activityApi, executionApi) => {
-        executionApi.signal('me');
+      task.once('wait', (activityApi, executionContext) => {
+        executionContext.signal('me');
       });
 
-      task.once('end', (activityApi, executionApi) => {
-        expect(executionApi.getOutput()).to.equal({
+      task.once('end', (activityApi, executionContext) => {
+        expect(executionContext.getOutput()).to.equal({
           output: 'Signaled who with me'
         });
         done();

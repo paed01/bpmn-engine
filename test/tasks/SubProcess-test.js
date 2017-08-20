@@ -235,14 +235,10 @@ describe('SubProcess', () => {
         if (err) return done(err);
       });
 
-      engine.on('end', (def) => {
-        expect(def.getOutput()).to.equal({
-          taskInput: {
-            errorEvent: {
-              serviceError: 'Expected',
-              message: 'Expected'
-            }
-          }
+      engine.on('end', (execution) => {
+        expect(execution.getOutput()).to.equal({
+          serviceError: 'Expected',
+          message: 'Expected'
         });
         done();
       });

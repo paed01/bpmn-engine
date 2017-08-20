@@ -1,20 +1,24 @@
 'use strict';
 
-const Code = require('code');
+const {Engine} = require('../');
+const {EventEmitter} = require('events');
 const Lab = require('lab');
-const EventEmitter = require('events').EventEmitter;
 const nock = require('nock');
 const testHelpers = require('./helpers/testHelpers');
 const factory = require('./helpers/factory');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
-const Bpmn = require('../');
+const {before, describe, it} = lab;
+const {expect, fail} = Lab.assertions;
 
-lab.experiment('issues', () => {
-  lab.describe('issue #5', () => {
-    lab.test('solution', (done) => {
-      const processXml = `
+const moddleOptions = {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+};
+
+describe('issues', () => {
+  describe('issue #5', () => {
+    it('solution', (done) => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
         <process id="theProcess" isExecutable="true">
@@ -30,22 +34,21 @@ lab.experiment('issues', () => {
                     <camunda:entry key="url"><![CDATA[\${services.getUrl('task1')}]]></camunda:entry>
                   </camunda:map>
                 </camunda:inputParameter>
+                <camunda:outputParameter name="serviceResult">\${result}</camunda:outputParameter>
               </camunda:inputOutput>
             </extensionElements>
           </serviceTask>
         </process>
       </definitions>`;
-      const engine = new Bpmn.Engine({
-        source: processXml,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+      const engine = new Engine({
+        source,
+        moddleOptions
       });
 
       engine.execute({
         services: {
           dummy: (executionContext, serviceCallback) => {
-            serviceCallback(null, ['dummy']);
+            serviceCallback(null, 'dummy');
           },
           getUrl: (path) => {
             return `http://example.com/${path}`;
@@ -54,26 +57,23 @@ lab.experiment('issues', () => {
         variables: {
           emailAddress: 'lisa@example.com'
         }
-      }, (err, instance) => {
+      }, (err) => {
         if (err) return done(err);
-        instance.once('end', () => {
-          expect(instance.variables.taskInput.Task_15g4wm5).to.include([
-            ['dummy']
-          ]);
-          done();
-        });
+      });
+
+      engine.once('end', (execution) => {
+        expect(execution.getOutput().serviceResult).to.equal(['dummy']);
+        done();
       });
     });
   });
 
-  lab.describe('issue #7', () => {
-    lab.test('solution', (done) => {
-      const processXml = factory.resource('issue-7.bpmn');
-      const engine = new Bpmn.Engine({
-        source: processXml,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+  describe('issue #7', () => {
+    it('solution', (done) => {
+      const source = factory.resource('issue-7.bpmn');
+      const engine = new Engine({
+        source,
+        moddleOptions
       });
 
       engine.execute({
@@ -82,19 +82,18 @@ lab.experiment('issues', () => {
             serviceCallback(null, 'success');
           }
         }
-      }, (err, instance) => {
-        if (err) return done(err);
-        instance.once('end', () => {
-          expect(instance.variables.taskInput.Task_0kxsx8j).to.include(['success']);
-          done();
-        });
+      });
+
+      engine.once('end', (execution) => {
+        expect(execution.getOutput().taskInput.Task_0kxsx8j).to.include(['success']);
+        done();
       });
     });
   });
 
-  lab.describe('issue 19 - save state', () => {
+  describe('issue 19 - save state', () => {
 
-    lab.test('make sure there is something to save on listener start events', (done) => {
+    it('make sure there is something to save on listener start events', (done) => {
       const messages = [];
       testHelpers.serviceLog = (message) => {
         messages.push(message);
@@ -104,7 +103,7 @@ lab.experiment('issues', () => {
       };
 
       let state;
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: factory.resource('issue-19.bpmn')
       });
       const listener = new EventEmitter();
@@ -122,7 +121,7 @@ lab.experiment('issues', () => {
 
       engine.once('end', () => {
         const listener2 = new EventEmitter();
-        const engine2 = Bpmn.Engine.resume(state, {
+        const engine2 = Engine.resume(state, {
           listener: listener2
         });
         engine2.once('end', () => {
@@ -137,7 +136,7 @@ lab.experiment('issues', () => {
       });
 
       engine.execute({
-        listener: listener,
+        listener,
         variables: {
           timeout: 100
         },
@@ -156,13 +155,15 @@ lab.experiment('issues', () => {
     });
   });
 
-  lab.describe('issue-19 - on error', () => {
+  describe('issue-19 - on error', () => {
     let services;
-    lab.before((done) => {
+    const source = factory.resource('issue-19-2.bpmn');
+    before((done) => {
       testHelpers.statusCodeOk = (statusCode) => {
         return statusCode === 200;
       };
       testHelpers.extractErrorCode = (errorMessage) => {
+        console.log('LKAJSDLASKLJDJKLASD', errorMessage)
         if (!errorMessage) return;
         const codeMatch = errorMessage.match(/^([A-Z_]+):.+/);
         if (codeMatch) return codeMatch[1];
@@ -186,17 +187,15 @@ lab.experiment('issues', () => {
       done();
     });
 
-    lab.test('completes when returning to request after resume', (done) => {
+    it('completes when returning to request after resume', (done) => {
       testHelpers.statusCodeOk = (statusCode) => {
         return statusCode === 200;
       };
 
       let state;
-      const engine = new Bpmn.Engine({
-        source: factory.resource('issue-19-2.bpmn'),
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+      const engine = new Engine({
+        source,
+        moddleOptions
       });
       const listener = new EventEmitter();
 
@@ -211,8 +210,8 @@ lab.experiment('issues', () => {
 
       engine.once('end', () => {
         const listener2 = new EventEmitter();
-        listener2.once('wait-waitForSignalTask', (task) => {
-          task.signal();
+        listener2.once('wait-waitForSignalTask', (activityApi) => {
+          activityApi.signal();
         });
 
         nock('http://example.com')
@@ -221,11 +220,11 @@ lab.experiment('issues', () => {
             status: 'OK'
           });
 
-        const engine2 = Bpmn.Engine.resume(state, {
+        const engine2 = Engine.resume(state, {
           listener: listener2
         });
-        engine2.once('end', (def) => {
-          expect(def.variables).to.include({
+        engine2.once('end', (execution) => {
+          expect(execution.getOutput()).to.include({
             statusCode: 200,
             body: {
               status: 'OK'
@@ -240,23 +239,21 @@ lab.experiment('issues', () => {
         .reply(502);
 
       engine.execute({
-        listener: listener,
+        listener,
+        services,
         variables: {
           apiUrl: 'http://example.com/api',
           timeout: 'PT0.1S'
-        },
-        services: services
+        }
       });
 
     });
 
-    lab.test('caught error is saved to variables', (done) => {
+    it('caught error is saved to variables', (done) => {
       let state;
-      const engine = new Bpmn.Engine({
-        source: factory.resource('issue-19-2.bpmn'),
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+      const engine = new Engine({
+        source,
+        moddleOptions
       });
       const listener = new EventEmitter();
 
@@ -269,11 +266,14 @@ lab.experiment('issues', () => {
         engine.stop();
       });
 
-      engine.once('end', () => {
+      engine.once('end', (execution) => {
         const listener2 = new EventEmitter();
         listener2.once('wait-waitForSignalTask', (task) => {
           task.signal();
         });
+
+        console.log(JSON.stringify(execution.getOutput(), null, 2))
+        console.log('STOPPED', JSON.stringify(state.definitions[0].processes, null, 2))
 
         nock('http://example.com')
           .get('/api')
@@ -281,11 +281,11 @@ lab.experiment('issues', () => {
             status: 'OK'
           });
 
-        const engine2 = Bpmn.Engine.resume(state, {
+        const engine2 = Engine.resume(state, {
           listener: listener2
         });
-        engine2.once('end', (def) => {
-          expect(def.variables).to.include({
+        engine2.once('end', (execution) => {
+          expect(execution.getOutput()).to.include({
             retry: true,
             errorCode: 'REQ_FAIL',
             requestErrorMessage: 'REQ_FAIL: Error message',
@@ -294,8 +294,8 @@ lab.experiment('issues', () => {
               status: 'OK'
             }
           });
-          expect(def.getChildActivityById('terminateEvent').taken).to.be.false();
-          expect(def.getChildActivityById('end').taken).to.be.true();
+          expect(execution.getChildActivityById('terminateEvent').taken).to.be.false();
+          expect(execution.getChildActivityById('end').taken).to.be.true();
           done();
         });
       });
@@ -305,7 +305,7 @@ lab.experiment('issues', () => {
         .replyWithError(new Error('REQ_FAIL: Error message'));
 
       engine.execute({
-        listener: listener,
+        listener,
         variables: {
           apiUrl: 'http://example.com/api',
           timeout: 'PT0.1S'
@@ -314,9 +314,9 @@ lab.experiment('issues', () => {
       });
     });
 
-    lab.test('takes decision based on error', (done) => {
+    it('takes decision based on error', (done) => {
       let state;
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: factory.resource('issue-19-2.bpmn'),
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -343,7 +343,7 @@ lab.experiment('issues', () => {
           .get('/api')
           .replyWithError(new Error('RETRY_FAIL: Error message'));
 
-        const engine2 = Bpmn.Engine.resume(state, {
+        const engine2 = Engine.resume(state, {
           listener: listener2
         });
         engine2.once('end', (def) => {
@@ -373,8 +373,8 @@ lab.experiment('issues', () => {
     });
   });
 
-  lab.describe('issue 23', () => {
-    lab.test('exclusiveGateway in loop should trigger end event', (done) => {
+  describe('issue 23', () => {
+    it('exclusiveGateway in loop should trigger end event', (done) => {
       const definitionXml2 = `
 <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -407,7 +407,7 @@ lab.experiment('issues', () => {
   </process>
 </definitions>`;
 
-      const engine = new Bpmn.Engine({
+      const engine = new Engine({
         source: definitionXml2,
         moddleOptions: {
           camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -423,7 +423,7 @@ lab.experiment('issues', () => {
       listener.on('start-task1', (a) => {
         taskCount++;
         if (taskCount > 2) {
-          Code.fail(new Error(`Too many <${a.id}> starts`));
+          fail(new Error(`Too many <${a.id}> starts`));
         }
       });
 

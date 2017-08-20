@@ -10,10 +10,14 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
+const moddleOptions = {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+};
+
 describe('Error BoundaryEvent', () => {
 
   describe('behaviour', () => {
-    const processXml = `
+    const source = `
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
       <process id="theProcess" isExecutable="true">
         <startEvent id="start" />
@@ -32,9 +36,7 @@ describe('Error BoundaryEvent', () => {
     let context;
     beforeEach((done) => {
 
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, c) => {
+      testHelpers.getContext(source, moddleOptions, (err, c) => {
         if (err) return done(err);
         context = c;
         context.environment.addService('test', (arg, next) => {
@@ -202,9 +204,7 @@ describe('Error BoundaryEvent', () => {
     it('boundary event is discarded if task completes', (done) => {
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
       const listener = new EventEmitter();
       listener.once('end-errorEvent', (e) => {
@@ -229,9 +229,7 @@ describe('Error BoundaryEvent', () => {
     it('boundary event is discarded if task is canceled', (done) => {
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
       const listener = new EventEmitter();
       listener.once('start-service', (activityApi) => {
@@ -259,9 +257,7 @@ describe('Error BoundaryEvent', () => {
     it('task is discarded on error', (done) => {
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
       const listener = new EventEmitter();
       listener.once('end-service', (e) => {
@@ -317,9 +313,7 @@ describe('Error BoundaryEvent', () => {
     it('completes process if no error', (done) => {
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
 
       const listener = new EventEmitter();
@@ -363,9 +357,7 @@ describe('Error BoundaryEvent', () => {
     it('completes process if error is caught', (done) => {
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
 
       const listener = new EventEmitter();
@@ -399,12 +391,8 @@ describe('Error BoundaryEvent', () => {
         expect(endEventCount, 'end event').to.equal(1);
         expect(execution.getOutput()).to.equal({
           defaultTaken: true,
-          taskInput: {
-            errorEvent: {
-              serviceError: 'successfully caught twice',
-              message: 'successfully caught twice'
-            }
-          }
+          serviceError: 'successfully caught twice',
+          message: 'successfully caught twice'
         });
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
@@ -415,7 +403,7 @@ describe('Error BoundaryEvent', () => {
 
   describe('getState()', () => {
     it('returns remaining entered and attachedTo', (done) => {
-      const processXml = `
+      const source = `
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
         <process id="interruptedProcess" isExecutable="true">
           <serviceTask id="service" camunda:expression="\${services.test}" />
@@ -431,11 +419,9 @@ describe('Error BoundaryEvent', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source: processXml,
         name: 'stopMe',
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        source,
+        moddleOptions
       });
       const listener = new EventEmitter();
       listener.once('start-service', () => {
@@ -476,7 +462,7 @@ describe('Error BoundaryEvent', () => {
 
   describe('resume()', () => {
     it('resumes if not entered yet', (done) => {
-      const processXml = `
+      const source = `
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
         <process id="interruptedProcess" isExecutable="true">
           <serviceTask id="service" camunda:expression="\${services.test}" />
@@ -492,16 +478,14 @@ describe('Error BoundaryEvent', () => {
       </definitions>`;
 
       const engine1 = new Engine({
-        source: processXml,
+        source,
         name: 'stopMe',
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
-      const listener1 = new EventEmitter();
+      const listener = new EventEmitter();
 
       let state;
-      listener1.once('start-service', () => {
+      listener.once('start-service', () => {
         state = engine1.getState();
         engine1.stop();
       });
@@ -523,7 +507,7 @@ describe('Error BoundaryEvent', () => {
       };
 
       engine1.execute({
-        listener: listener1,
+        listener,
         services: {
           test: {
             module: './test/helpers/testHelpers',
