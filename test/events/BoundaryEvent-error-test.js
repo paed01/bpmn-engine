@@ -1,10 +1,11 @@
 'use strict';
 
-const {Engine} = require('../..');
-const {EventEmitter} = require('events');
 const getPropertyValue = require('../../lib/getPropertyValue');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
+const factory = require('../helpers/factory');
+const {Engine} = require('../..');
+const {EventEmitter} = require('events');
 
 const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
@@ -181,6 +182,41 @@ describe('Error BoundaryEvent', () => {
       });
 
       task.inbound[0].take();
+    });
+
+    it('is discarded if other bound event completes', (done) => {
+      const engine = new Engine({
+        source: factory.resource('bound-error-and-timer.bpmn')
+      });
+      const listener = new EventEmitter();
+
+      listener.on('end-errorEvent', ({id}) => {
+        fail(`<${id}> should have been discarded`);
+      });
+
+      let leaveTimerCount = 0;
+      listener.on('leave-timerEvent', ({id}) => {
+        leaveTimerCount++;
+        if (leaveTimerCount > 1) fail(`<${id}> should only leave once`);
+      });
+
+      let leaveErrorCount = 0;
+      listener.on('leave-errorEvent', ({id}) => {
+        leaveErrorCount++;
+        if (leaveErrorCount > 1) fail(`<${id}> should only leave once`);
+      });
+
+      engine.on('end', () => {
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
+      });
+
+      engine.execute({
+        listener,
+        variables: {
+          input: 2
+        }
+      });
     });
   });
 

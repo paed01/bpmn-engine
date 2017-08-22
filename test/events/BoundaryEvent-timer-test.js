@@ -373,6 +373,40 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         });
       });
     });
+
+    it('is discarded if other bound event completes', (done) => {
+      const engine = new Engine({
+        source: factory.resource('bound-error-and-timer.bpmn')
+      });
+      const listener = new EventEmitter();
+
+      listener.on('end-timerEvent', (e) => {
+        fail(`<${e}> should have been discarded`);
+      });
+
+      let leaveTimerCount = 0;
+      listener.on('leave-timerEvent', ({id}) => {
+        leaveTimerCount++;
+        if (leaveTimerCount > 1) fail(`<${id}> should only leave once`);
+      });
+
+      let leaveErrorCount = 0;
+      listener.on('leave-errorEvent', ({id}) => {
+        leaveErrorCount++;
+        if (leaveErrorCount > 1) fail(`<${id}> should only leave once`);
+      });
+
+      engine.on('error', (err) => {
+        expect(err.errorCode).to.equal('404');
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
+      });
+
+      engine.execute({
+        listener
+      });
+    });
+
   });
 
   describe('getState()', () => {
