@@ -1,16 +1,18 @@
 'use strict';
 
-const Code = require('code');
-const {EventEmitter} = require('events');
+const Environment = require('../../lib/Environment');
+const factory = require('../helpers/factory');
 const Lab = require('lab');
 const Process = require('../../lib/activities/Process');
 const testHelpers = require('../helpers/testHelpers');
+const {EventEmitter} = require('events');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
+const {beforeEach, describe, it} = lab;
+const {expect} = Lab.assertions;
 
-lab.experiment('Process', () => {
-  const processXml = `
+describe('Process', () => {
+  const source = `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -30,11 +32,24 @@ lab.experiment('Process', () => {
         </extensionElements>
       </task>
     </process>
+    <process id="theEmptyProcess" isExecutable="true" />
+    <process id="theUncontrolledProcess" isExecutable="true">
+      <userTask id="userTask" />
+      <scriptTask id="task2" scriptFormat="JavaScript">
+        <script>
+          <![CDATA[
+            this.variables.input = 2;
+            next();
+          ]]>
+        </script>
+      </scriptTask>
+    </process>
   </definitions>`;
+
   let moddleContext;
 
-  lab.beforeEach((done) => {
-    testHelpers.getModdleContext(processXml, {
+  beforeEach((done) => {
+    testHelpers.getModdleContext(source, {
       camunda: require('camunda-bpmn-moddle/resources/camunda')
     }, (err, result) => {
       if (err) return done(err);
@@ -43,9 +58,9 @@ lab.experiment('Process', () => {
     });
   });
 
-  lab.describe('events', () => {
-    lab.test('emits start when executed', (done) => {
-      const mainProcess = new Process(moddleContext.elementsById.tinyProcess, moddleContext);
+  describe('behaviour', () => {
+    it('emits start when executed', (done) => {
+      const mainProcess = new Process(moddleContext.elementsById.tinyProcess, moddleContext, new Environment());
 
       mainProcess.once('start', () => {
         done();
@@ -54,8 +69,8 @@ lab.experiment('Process', () => {
       mainProcess.run();
     });
 
-    lab.test('emits start with process execution argument', (done) => {
-      const mainProcess = new Process(moddleContext.elementsById.tinyProcess, moddleContext);
+    it('emits start with process execution argument', (done) => {
+      const mainProcess = new Process(moddleContext.elementsById.tinyProcess, moddleContext, new Environment());
 
       mainProcess.once('start', (p, execution) => {
         expect(mainProcess.id).to.equal(execution.id);
@@ -66,8 +81,8 @@ lab.experiment('Process', () => {
       mainProcess.run();
     });
 
-    lab.test('emits end when completed', (done) => {
-      const mainProcess = new Process(moddleContext.elementsById.tinyProcess, moddleContext);
+    it('emits end when completed', (done) => {
+      const mainProcess = new Process(moddleContext.elementsById.tinyProcess, moddleContext, new Environment());
 
       mainProcess.once('end', () => {
         done();
@@ -76,15 +91,141 @@ lab.experiment('Process', () => {
       mainProcess.run();
     });
 
+    it('calls callback when completed', (done) => {
+      const mainProcess = new Process(moddleContext.elementsById.tinyProcess, moddleContext, new Environment());
+      mainProcess.activate().execute(done);
+    });
+
+    it('can be ran twice', (done) => {
+      const mainProcess = new Process(moddleContext.elementsById.tinyProcess, moddleContext, new Environment());
+
+      let count = 0;
+
+      mainProcess.once('end', () => {
+        mainProcess.once('end', () => {
+          expect(count).to.equal(2);
+          done();
+        });
+        mainProcess.run();
+      });
+
+      mainProcess.on('start', () => ++count);
+
+      mainProcess.run();
+    });
+
+    it('empty process emits start and end', (done) => {
+      const mainProcess = new Process(moddleContext.elementsById.theEmptyProcess, moddleContext, new Environment());
+      let started = false;
+      mainProcess.on('start', () => {
+        started = true;
+      });
+      mainProcess.on('end', () => {
+        expect(started).to.be.true();
+        done();
+      });
+      mainProcess.run();
+    });
+
+    it('ad hoc process starts all without inbound', (done) => {
+      const mainProcess = Process(moddleContext.elementsById.theUncontrolledProcess, moddleContext);
+      const userTask = mainProcess.getChildActivityById('userTask');
+      userTask.once('wait', (activityApi, executionContext) => {
+        const api = activityApi.getApi(executionContext);
+        setTimeout(api.signal.bind(userTask, 'von Rosen'), 50);
+      });
+
+      mainProcess.once('end', (activityApi, executionContext) => {
+        const api = activityApi.getApi(executionContext);
+
+        expect(api.getChildState('task2').taken, 'task2 taken').to.be.true();
+        expect(api.getChildState('userTask').taken, 'userTask taken').to.be.true();
+
+        expect(api.getOutput().taskInput.userTask).to.equal('von Rosen');
+        expect(mainProcess.environment.variables.input).to.equal(2);
+
+        done();
+      });
+      mainProcess.run();
+    });
+
+    it('starts task without inbound and then ends without outbound', (done) => {
+      const processXml = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theUncontrolledProcess" isExecutable="true">
+          <userTask id="task1" />
+          <scriptTask id="task2" scriptFormat="JavaScript">
+            <script>
+              <![CDATA[
+                const self = this;
+                function setContextVariable(callback) {
+                  if (!self.variables.taskInput) {
+                    return callback(new Error('Missing task input'));
+                  }
+
+                  self.variables.userWrote = self.variables.taskInput.task1;
+                  callback();
+                }
+                setContextVariable(next);
+              ]]>
+            </script>
+          </scriptTask>
+          <sequenceFlow id="flow1" sourceRef="task1" targetRef="task2" />
+        </process>
+      </definitions>`;
+
+      testHelpers.getModdleContext(processXml, (cerr, mc) => {
+        if (cerr) return done(cerr);
+        const mainProcess = Process(mc.elementsById.theUncontrolledProcess, mc);
+        const userTask = mainProcess.getChildActivityById('task1');
+        userTask.once('wait', (activityApi, executionContext) => executionContext.signal('von Rosen'));
+
+        mainProcess.once('end', (activityApi, executionContext) => {
+          const api = activityApi.getApi(executionContext);
+          expect(api.getChildState('task1').taken).to.be.true();
+          expect(api.getChildState('task2').taken).to.be.true();
+
+          expect(api.getOutput().taskInput.task1).to.equal('von Rosen');
+          expect(mainProcess.environment.variables.userWrote).to.equal('von Rosen');
+
+          done();
+        });
+        mainProcess.run();
+      });
+    });
+
+    it('multiple end events completes all flows', (done) => {
+      testHelpers.getModdleContext(factory.resource('multiple-endEvents.bpmn').toString(), (cerr, mc) => {
+        if (cerr) return done(cerr);
+
+        const mainProcess = Process(mc.elementsById.multipleEndProcess, mc, new Environment({
+          variables: {
+            input: 0
+          }
+        }));
+
+        mainProcess.once('end', (activityApi, executionContext) => {
+          const api = activityApi.getApi(executionContext);
+          expect(api.getChildState('script1').taken).to.be.true();
+          expect(api.getChildState('script2').taken).to.be.true();
+
+          expect(mainProcess.environment.variables.input, 'iterated input').to.equal(2);
+
+          done();
+        });
+        mainProcess.run();
+      });
+    });
   });
 
-  lab.describe('variables', () => {
-    lab.test('returns variables and services on getInput()', (done) => {
-      const mainProcess = new Process(moddleContext.elementsById.tinyProcess, moddleContext, {
+  describe('io', () => {
+    it('returns variables and services on getInput()', (done) => {
+      const mainProcess = new Process(moddleContext.elementsById.tinyProcess, moddleContext, new Environment({
         variables: {
           input: 1
         }
-      });
+      }));
 
       mainProcess.once('start', (p, executionContext) => {
         expect(executionContext.getInput()).to.include({
@@ -98,16 +239,15 @@ lab.experiment('Process', () => {
 
       mainProcess.run();
     });
-  });
 
-  lab.describe('task input', () => {
-    lab.test('assigns task input to variables taskInput on task id', (done) => {
+    it('assigns task input to variables taskInput on task id', (done) => {
       const listener = new EventEmitter();
-      const mainProcess = new Process(moddleContext.elementsById.waitProcess, moddleContext, {
+      const mainProcess = new Process(moddleContext.elementsById.waitProcess, moddleContext, Environment({
+        listener,
         variables: {
           input: 1
         }
-      }, listener);
+      }));
 
       listener.once('wait', (t) => {
         t.signal({done: true});
@@ -115,13 +255,9 @@ lab.experiment('Process', () => {
 
       mainProcess.once('end', (p, executionContext) => {
         expect(executionContext.getOutput()).to.equal({
-          variables: {
-            input: 1,
-            taskInput: {
-              usertask: {done: true}
-            }
-          },
-          services: {}
+          taskInput: {
+            usertask: {done: true}
+          }
         });
         done();
       });
@@ -129,21 +265,40 @@ lab.experiment('Process', () => {
       mainProcess.run();
     });
 
-    lab.test('assigns task input to variables if task has output', (done) => {
-      const mainProcess = new Process(moddleContext.elementsById.processWithTaskOutput, moddleContext, {
+    it('assigns task input to variables if task has output', (done) => {
+      const mainProcess = new Process(moddleContext.elementsById.processWithTaskOutput, moddleContext, Environment({
         variables: {
           input: 1
         }
-      });
+      }));
 
       mainProcess.once('end', (p, executionContext) => {
         expect(executionContext.getOutput()).to.equal({
-          variables: {
-            input: 1,
-            output: 'Input was 1'
-          },
-          services: {}
+          output: 'Input was 1'
         });
+        done();
+      });
+
+      mainProcess.run();
+    });
+  });
+
+  describe('getState()', () => {
+    it('returns state of processes activities', (done) => {
+      const listener = new EventEmitter();
+      const mainProcess = new Process(moddleContext.elementsById.theUncontrolledProcess, moddleContext, Environment({
+        listener
+      }));
+
+      listener.on('wait-userTask', (activityApi, processExecution) => {
+        const state = processExecution.getState();
+        expect(state.id).to.equal('theUncontrolledProcess');
+        expect(state.entered).to.be.true();
+        expect(state, 'tasks').to.include(['children', 'environment']);
+        expect(state.children.find(c => c.id === 'userTask')).to.include({
+          entered: true
+        });
+        expect(state.children.find(c => c.id === 'task2').entered).to.be.undefined();
         done();
       });
 
