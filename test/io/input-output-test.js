@@ -1,7 +1,7 @@
 'use strict';
 
 const {Engine} = require('../../.');
-const EventEmitter = require('events').EventEmitter;
+const {EventEmitter} = require('events');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');

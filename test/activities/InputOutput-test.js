@@ -1,5 +1,7 @@
 'use strict';
 
+const Environment = require('../../lib/Environment');
+const InputOutput = require('../../lib/io/InputOutput');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 
@@ -7,13 +9,11 @@ const lab = exports.lab = Lab.script();
 const {describe, it} = lab;
 const {expect} = Lab.assertions;
 
-const mapper = require('../../lib/mapper');
-
 describe('Activity InputOutput', () => {
-  describe('ctor', () => {
+  describe('behaviour', () => {
     it('script parameter throws if type is not JavaScript', (done) => {
       function test() {
-        new mapper.ActivityIO({
+        InputOutput({
           $type: 'camunda:InputOutput',
           inputParameters: [{
             $type: 'camunda:inputParameter',
@@ -24,22 +24,24 @@ describe('Activity InputOutput', () => {
               value: 'i in loop'
             }
           }]
-        });
+        }, {});
       }
 
       expect(test).to.throw(Error, /CoffeeScript is unsupported/i);
       done();
     });
 
-    it('no children is ignored', (done) => {
-      const io = new mapper.ActivityIO({
+    it('no parameters are ok', (done) => {
+      const io = new InputOutput({
         $type: 'camunda:InputOutput',
         inputParameters: [],
         outputParameters: []
+      }, {
+        environment: Environment()
       });
 
-      expect(io.input).to.be.empty();
-      expect(io.output).to.be.empty();
+      expect(io.getInput()).to.be.empty();
+      expect(io.getOutput()).to.be.empty();
 
       done();
     });
@@ -48,7 +50,7 @@ describe('Activity InputOutput', () => {
   describe('getInput()', () => {
 
     it('returns static values', (done) => {
-      const io = new mapper.ActivityIO({
+      const io = new InputOutput({
         $type: 'camunda:InputOutput',
         inputParameters: [{
           $type: 'camunda:inputParameter',
@@ -64,6 +66,8 @@ describe('Activity InputOutput', () => {
           name: 'arbval',
           value: '1'
         }]
+      }, {
+        environment: Environment()
       });
 
       expect(io.getInput()).to.only.include({
@@ -73,7 +77,7 @@ describe('Activity InputOutput', () => {
     });
 
     it('returns script values', (done) => {
-      const io = new mapper.ActivityIO({
+      const io = new InputOutput({
         $type: 'camunda:InputOutput',
         inputParameters: [{
           $type: 'camunda:inputParameter',
@@ -89,6 +93,8 @@ describe('Activity InputOutput', () => {
           name: 'arbval',
           value: '1'
         }]
+      }, {
+        environment: Environment()
       });
       expect(io.getInput()).to.only.include({
         message: 'Empty'
@@ -97,7 +103,7 @@ describe('Activity InputOutput', () => {
     });
 
     it('returns script values that address variable', (done) => {
-      const io = new mapper.ActivityIO({
+      const io = new InputOutput({
         $type: 'camunda:InputOutput',
         inputParameters: [{
           $type: 'camunda:inputParameter',
@@ -113,6 +119,8 @@ describe('Activity InputOutput', () => {
           name: 'arbval',
           value: '1'
         }]
+      }, {
+        environment: Environment()
       });
       expect(io.getInput({
         variables: {
@@ -148,7 +156,7 @@ describe('Activity InputOutput', () => {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, context) => {
         if (err) return done(err);
-        context.applyMessage({input: 11, arbval: 11});
+        context.environment.assignVariables({input: 11, arbval: 11});
 
         const task = context.getChildActivityById('task');
         expect(task.io.getInput()).to.include({inputMessage: 11});
@@ -160,7 +168,7 @@ describe('Activity InputOutput', () => {
   describe('getOutput()', () => {
 
     it('returns static values', (done) => {
-      const io = new mapper.ActivityIO({
+      const io = InputOutput({
         $type: 'camunda:InputOutput',
         inputParameters: [{
           $type: 'camunda:inputParameter',
@@ -176,6 +184,8 @@ describe('Activity InputOutput', () => {
           name: 'arbval',
           value: '1'
         }]
+      }, {
+        environment: Environment()
       });
 
       expect(io.getOutput()).to.only.include({
@@ -186,7 +196,7 @@ describe('Activity InputOutput', () => {
     });
 
     it('returns script values', (done) => {
-      const io = new mapper.ActivityIO({
+      const io = new InputOutput({
         $type: 'camunda:InputOutput',
         outputParameters: [{
           $type: 'camunda:outputParameter',
@@ -201,6 +211,8 @@ describe('Activity InputOutput', () => {
           name: 'arbval',
           value: '1'
         }]
+      }, {
+        environment: Environment()
       });
       expect(io.getOutput()).to.only.include({
         message: 'Me too',
@@ -209,8 +221,8 @@ describe('Activity InputOutput', () => {
       done();
     });
 
-    it('returns script values that address variable', (done) => {
-      const io = new mapper.ActivityIO({
+    it('returns script values that address environment property', (done) => {
+      const io = new InputOutput({
         $type: 'camunda:InputOutput',
         outputParameters: [{
           $type: 'camunda:outputParameter',
@@ -225,10 +237,12 @@ describe('Activity InputOutput', () => {
           name: 'arbval',
           value: '1'
         }]
+      }, {
+        environment: Environment({
+          arbval: 10
+        })
       });
-      expect(io.getOutput({
-        arbval: 10
-      })).to.only.include({
+      expect(io.getOutput()).to.only.include({
         message: 'Me too 10',
         arbval: '1'
       });
@@ -236,18 +250,20 @@ describe('Activity InputOutput', () => {
     });
 
     it('empty parameter definition return undefined', (done) => {
-      const io = new mapper.ActivityIO({
+      const io = new InputOutput({
         $type: 'camunda:InputOutput',
         outputParameters: [{
           $type: 'camunda:outputParameter',
           name: 'message',
           definition: {}
         }]
+      }, {
+        environment: Environment({
+          arbval: 10
+        })
       });
 
-      expect(io.getOutput({
-        arbval: 10
-      })).to.only.include({
+      expect(io.getOutput()).to.only.include({
         message: undefined
       });
 
@@ -255,17 +271,17 @@ describe('Activity InputOutput', () => {
     });
 
     it('no parameter definition return undefined', (done) => {
-      const io = new mapper.ActivityIO({
+      const io = new InputOutput({
         $type: 'camunda:InputOutput',
         outputParameters: [{
           $type: 'camunda:outputParameter',
           name: 'message'
         }]
+      }, {
+        environment: Environment()
       });
 
-      expect(io.getOutput({
-        arbval: 10
-      })).to.only.include({
+      expect(io.getOutput()).to.only.include({
         message: undefined
       });
 
@@ -273,7 +289,7 @@ describe('Activity InputOutput', () => {
     });
 
     it('unknown definition type returns undefined', (done) => {
-      const io = new mapper.ActivityIO({
+      const io = new InputOutput({
         $type: 'camunda:InputOutput',
         outputParameters: [{
           $type: 'camunda:outputParameter',
@@ -284,6 +300,10 @@ describe('Activity InputOutput', () => {
             value: '`Me too ${variables.arbval}`;'
           }
         }]
+      }, {
+        environment: Environment({
+          arbval: 10
+        })
       });
 
       expect(io.getOutput({
@@ -321,7 +341,7 @@ describe('Activity InputOutput', () => {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       }, (err, context) => {
         if (err) return done(err);
-        context.applyMessage({input: 11, arbval: 11});
+        context.environment.assignVariables({input: 11, arbval: 11});
 
         const task = context.getChildActivityById('task');
         expect(task.io.getOutput(task.io.getInput())).to.include({message: 22});
