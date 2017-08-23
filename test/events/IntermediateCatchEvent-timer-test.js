@@ -11,7 +11,7 @@ const lab = exports.lab = Lab.script();
 const {afterEach, beforeEach, describe, it} = lab;
 const {expect} = Lab.assertions;
 
-describe('Intermediate Catch Event', () => {
+describe('IntermediateCatchEvent with timer', () => {
   describe('behaviour', () => {
     let context;
     beforeEach((done) => {

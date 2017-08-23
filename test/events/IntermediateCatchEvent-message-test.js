@@ -1,32 +1,33 @@
 'use strict';
 
-const Code = require('code');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
+const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
-const Bpmn = require('../..');
-const expect = Code.expect;
+const {beforeEach, describe, it} = lab;
+const {expect} = Lab.assertions;
 
-lab.experiment('MessageEvent', () => {
-  let definition;
-  lab.before((done) => {
-    const engine = new Bpmn.Engine({
-      source: factory.resource('lanes.bpmn')
+describe('IntermediateCatchEvent with message', () => {
+  describe('behaviour', () => {
+    let context;
+    beforeEach((done) => {
+      const source = factory.resource('lanes.bpmn').toString();
+      testHelpers.getContext(source, {
+        camunda: require('camunda-bpmn-moddle/resources/camunda')
+      }, (err, c) => {
+        if (err) return done(err);
+        context = c;
+        done();
+      });
     });
-    engine.getDefinition((err, def) => {
-      if (err) return done(err);
-      definition = def;
-      done();
-    });
-  });
 
-  lab.describe('inbound', () => {
-    lab.test('does not contain message flow', (done) => {
-      const event = definition.getChildActivityById('intermediate');
+    it('inbound does not contain message flow', (done) => {
+      const event = context.getChildActivityById('intermediate');
       expect(event.inbound.length).to.equal(1);
       expect(event.inbound[0].type).to.equal('bpmn:SequenceFlow');
       done();
     });
   });
+
 });
