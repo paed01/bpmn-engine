@@ -407,6 +407,30 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       });
     });
 
+    it('completes process even if bound event markup appears before task', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="interruptedProcess" isExecutable="true">
+          <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
+            <timerEventDefinition>
+              <timeDuration xsi:type="tFormalExpression">PT0.01S</timeDuration>
+            </timerEventDefinition>
+          </boundaryEvent>
+          <userTask id="dontWaitForMe" />
+        </process>
+      </definitions>`;
+
+      const engine = new Engine({
+        source
+      });
+
+      engine.execute();
+
+      engine.on('end', () => {
+        done();
+      });
+    });
   });
 
   describe('getState()', () => {
@@ -550,6 +574,81 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         listener: listener1
       }, (err) => {
         if (err) return done(err);
+      });
+    });
+
+    it('completes resume even if bound event markup appears before task and task completes', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="interruptedProcess" isExecutable="true">
+          <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
+            <timerEventDefinition>
+              <timeDuration xsi:type="tFormalExpression">PT0.05S</timeDuration>
+            </timerEventDefinition>
+          </boundaryEvent>
+          <userTask id="dontWaitForMe" />
+        </process>
+      </definitions>`;
+
+      const engine = new Engine({
+        source
+      });
+
+      const listener = new EventEmitter();
+
+      let state;
+      listener.once('wait-dontWaitForMe', () => {
+        state = engine.getState();
+        engine.stop();
+      });
+      engine.execute({
+        listener
+      });
+
+      engine.on('end', () => {
+        const listener2 = new EventEmitter();
+
+        listener2.once('wait-dontWaitForMe', (task) => {
+          task.signal('Continue');
+        });
+        Engine.resume(state, {
+          listener: listener2
+        }, done);
+      });
+    });
+
+    it('completes resume even if bound event markup appears before task and timer completes', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="interruptedProcess" isExecutable="true">
+          <boundaryEvent id="timeoutEvent" attachedToRef="dontWaitForMe">
+            <timerEventDefinition>
+              <timeDuration xsi:type="tFormalExpression">PT0.05S</timeDuration>
+            </timerEventDefinition>
+          </boundaryEvent>
+          <userTask id="dontWaitForMe" />
+        </process>
+      </definitions>`;
+
+      const engine = new Engine({
+        source
+      });
+
+      const listener = new EventEmitter();
+
+      let state;
+      listener.once('wait-dontWaitForMe', () => {
+        state = engine.getState();
+        engine.stop();
+      });
+      engine.execute({
+        listener
+      });
+
+      engine.on('end', () => {
+        Engine.resume(state, done);
       });
     });
   });

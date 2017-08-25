@@ -554,5 +554,101 @@ describe('Error BoundaryEvent', () => {
         if (err) return done(err);
       });
     });
+
+    it('completes resume even if bound event markup appears before task and task completes', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="resumeProcess" isExecutable="true">
+          <boundaryEvent id="errorEvent" attachedToRef="service">
+            <errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="serviceError" camunda:errorMessageVariable="message" />
+          </boundaryEvent>
+          <serviceTask id="service" camunda:expression="\${services.test}" />
+        </process>
+        <error id="Error_0w1hljb" name="ServiceError" errorCode="\${message}" />
+      </definitions>`;
+
+      const engine = new Engine({
+        source,
+        moddleOptions
+      });
+
+      const listener = new EventEmitter();
+
+      let state;
+      listener.once('start-service', () => {
+        state = engine.getState();
+        engine.stop();
+      });
+      engine.execute({
+        listener,
+        services: {
+          test: {
+            module: './test/helpers/testHelpers',
+            fnName: 'testBoundError'
+          }
+        }
+      });
+
+      testHelpers.testBoundError = (context, next) => {
+        return next();
+      };
+
+      engine.on('end', () => {
+        Engine.resume(state, done);
+      });
+    });
+
+    it('completes resume even if bound event markup appears before task and timer completes', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="resumeProcess" isExecutable="true">
+          <boundaryEvent id="errorEvent" attachedToRef="service">
+            <errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="serviceError" camunda:errorMessageVariable="message" />
+          </boundaryEvent>
+          <serviceTask id="service" camunda:expression="\${services.test}" />
+        </process>
+        <error id="Error_0w1hljb" name="ServiceError" errorCode="\${message}" />
+      </definitions>`;
+
+      const engine = new Engine({
+        source,
+        moddleOptions
+      });
+
+      const listener = new EventEmitter();
+
+      let state;
+      listener.once('start-service', () => {
+        state = engine.getState();
+        engine.stop();
+      });
+      engine.execute({
+        listener,
+        services: {
+          test: {
+            module: './test/helpers/testHelpers',
+            fnName: 'testBoundError'
+          }
+        }
+      });
+
+      testHelpers.testBoundError = (context, next) => {
+        return next(new Error('EXP: expected'));
+      };
+
+      engine.on('end', () => {
+        Engine.resume(state, (err, execution) => {
+          if (err) return done(err);
+          expect(execution.getOutput()).to.equal({
+            serviceError: 'EXP: expected',
+            message: 'EXP: expected'
+          });
+          done();
+        });
+      });
+    });
+
   });
 });
