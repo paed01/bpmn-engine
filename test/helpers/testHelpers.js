@@ -21,7 +21,7 @@ pub.expectNoLingeringChildListeners = (context) => {
       child.boundEvents.forEach((boundEvent) => {
         if (boundEvent.eventDefinitions) {
           boundEvent.eventDefinitions.forEach((eventDefinition) => {
-            checkListeners(eventDefinition, ['end', 'cancel'], ` on <${id}>/<${boundEvent.id}>`);
+            checkListeners(eventDefinition, eventNames, ` on <${id}>/<${boundEvent.id}>`);
           });
         }
       });

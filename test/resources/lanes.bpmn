@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.7.2">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.9.0">
   <bpmn:collaboration id="Collaboration_051sqjx">
     <bpmn:participant id="Participant_1vfdw5m" name="Main" processRef="mainProcess" />
     <bpmn:participant id="lane2" name="Listener" processRef="participantProcess" />
@@ -52,7 +52,7 @@
       <bpmn:outgoing>SequenceFlow_1wte4yj</bpmn:outgoing>
     </bpmn:task>
     <bpmn:sequenceFlow id="SequenceFlow_1wte4yj" sourceRef="otherTask" targetRef="completeTask" />
-    <bpmn:sequenceFlow id="SequenceFlow_0rsh2z2" sourceRef="completeTask" targetRef="EndEvent_09x95tc" />
+    <bpmn:sequenceFlow id="SequenceFlow_0rsh2z2" sourceRef="completeTask" targetRef="participantEndEvent" />
     <bpmn:task id="completeTask" name="Complete task">
       <bpmn:extensionElements>
         <camunda:inputOutput>
@@ -65,7 +65,7 @@
       <bpmn:incoming>SequenceFlow_1wte4yj</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0rsh2z2</bpmn:outgoing>
     </bpmn:task>
-    <bpmn:endEvent id="EndEvent_09x95tc">
+    <bpmn:endEvent id="participantEndEvent">
       <bpmn:incoming>SequenceFlow_0rsh2z2</bpmn:incoming>
     </bpmn:endEvent>
   </bpmn:process>
@@ -122,7 +122,7 @@
           <dc:Bounds x="316.5" y="215" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="EndEvent_09x95tc_di" bpmnElement="EndEvent_09x95tc">
+      <bpmndi:BPMNShape id="EndEvent_09x95tc_di" bpmnElement="participantEndEvent">
         <dc:Bounds x="719.6703910614525" y="222" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="692.6703910614525" y="258" width="90" height="20" />

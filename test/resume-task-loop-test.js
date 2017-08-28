@@ -1,18 +1,22 @@
 'use strict';
 
-const Code = require('code');
-const EventEmitter = require('events').EventEmitter;
 const Lab = require('lab');
 const testHelpers = require('./helpers/testHelpers');
+const {Engine} = require('../');
+const {EventEmitter} = require('events');
 
-const expect = Code.expect;
 const lab = exports.lab = Lab.script();
-const Bpmn = require('../');
+const {describe, it} = lab;
+const {expect} = Lab.assertions;
 
-lab.experiment('Resume task loop', () => {
+const moddleOptions = {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+};
 
-  lab.test('resumes task cardinality loop', (done) => {
-    const processXml = `
+describe('Resume task loop', () => {
+
+  it('resumes task cardinality loop', (done) => {
+    const source = `
     <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
       <process id="taskLoopProcess" isExecutable="true">
@@ -25,21 +29,16 @@ lab.experiment('Resume task loop', () => {
     </definitions>
     `;
 
-    const engine1 = new Bpmn.Engine({
-      source: processXml,
-      moddleOptions: {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }
+    const engine1 = new Engine({
+      source,
+      moddleOptions
     });
     const listener = new EventEmitter();
-    const options = {
-      listener: listener
-    };
 
     let state;
     let startCount = 0;
-    listener.on('start-recurring', () => {
-      startCount++;
+    listener.on('start-recurring', (activityApi) => {
+      startCount += activityApi.getInput().resumed ? 0 : 1;
 
       if (!state && startCount === 2) {
         state = engine1.getState();
@@ -50,7 +49,7 @@ lab.experiment('Resume task loop', () => {
     engine1.once('end', () => {
       testHelpers.expectNoLingeringListenersOnEngine(engine1);
 
-      const engine2 = Bpmn.Engine.resume(testHelpers.readFromDb(state), {listener: listener}, (err) => {
+      const engine2 = Engine.resume(testHelpers.readFromDb(state), {listener}, (err) => {
         if (err) return done(err);
       });
 
@@ -62,43 +61,37 @@ lab.experiment('Resume task loop', () => {
       });
     });
 
-    engine1.execute(options, (err) => {
-      if (err) return done(err);
+    engine1.execute({
+      listener
     });
   });
 
-  lab.describe('camunda collection expression', () => {
+  describe('camunda collection expression', () => {
 
-    lab.test('resumes task in collection loop', (done) => {
-      const processXml = `
-  <bpmn:definitions id= "Definitions_2" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
-    <bpmn:process id="Process_1" isExecutable="true">
-      <bpmn:serviceTask id="recurring" name="Each item" camunda:expression="\${services.loop}">
-        <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.list}" />
-      </bpmn:serviceTask>
-    </bpmn:process>
-  </bpmn:definitions>
-      `;
+    it('resumes task in collection loop', (done) => {
+      const source = `
+      <bpmn:definitions id= "Definitions_2" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+        <bpmn:process id="Process_1" isExecutable="true">
+          <bpmn:serviceTask id="recurring" name="Each item" camunda:expression="\${services.loop}">
+            <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.list}" />
+          </bpmn:serviceTask>
+        </bpmn:process>
+      </bpmn:definitions>`;
 
+      let sum = 0;
       testHelpers.loopFn = (executionContext, callback) => {
-
-        const prevResult = executionContext.variables.taskInput ? executionContext.variables.taskInput.recurring[0] : -1;
-        if (prevResult === -1) {
-          return callback(null, executionContext.item);
-        }
-        callback(null, prevResult + executionContext.item);
+        sum += executionContext.item;
+        callback(null, sum);
       };
 
-      const engine1 = new Bpmn.Engine({
-        source: processXml,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+      const engine1 = new Engine({
+        source,
+        moddleOptions
       });
-      const listener1 = new EventEmitter();
+      const listener = new EventEmitter();
       const options = {
-        listener: listener1,
+        listener,
         variables: {
           list: [7, 3, 2, 1]
         },
@@ -112,7 +105,7 @@ lab.experiment('Resume task loop', () => {
       };
 
       let state;
-      listener1.once('end-recurring', () => {
+      listener.once('end-recurring', () => {
         state = engine1.getState();
         engine1.stop();
       });
@@ -120,20 +113,16 @@ lab.experiment('Resume task loop', () => {
       engine1.once('end', () => {
         testHelpers.expectNoLingeringListenersOnEngine(engine1);
 
-        const engine2 = Bpmn.Engine.resume(testHelpers.readFromDb(state), (err) => {
-          if (err) return done(err);
-        });
+        const engine2 = Engine.resume(testHelpers.readFromDb(state));
 
-        engine2.once('end', (def) => {
-          expect(def.processes[0].variables.taskInput.recurring[0]).to.equal(13);
+        engine2.once('end', (execution, definitionExecution) => {
+          expect(definitionExecution.getOutput().taskInput.recurring[3]).to.equal([13]);
           done();
         });
 
       });
 
-      engine1.execute(options, (err) => {
-        if (err) return done(err);
-      });
+      engine1.execute(options);
     });
   });
 });

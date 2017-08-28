@@ -35,7 +35,7 @@
       <bpmn:outgoing>SequenceFlow_1rt4cxf</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:endEvent id="end" name="End">
-      <bpmn:incoming>SequenceFlow_17aoq0e</bpmn:incoming>
+      <bpmn:incoming>toEnd-flow</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1rt4cxf" sourceRef="makeRequestService" targetRef="joinGateway" />
     <bpmn:sequenceFlow id="SequenceFlow_1ea996h" name="" sourceRef="joinGateway" targetRef="statusGateway">
@@ -68,12 +68,12 @@
       <bpmn:incoming>toTerminateFlow</bpmn:incoming>
       <bpmn:terminateEventDefinition />
     </bpmn:endEvent>
-    <bpmn:exclusiveGateway id="statusGateway" name="Success?" default="SequenceFlow_0pkq4wo">
+    <bpmn:exclusiveGateway id="statusGateway" name="Success?" default="toRetryGW-flow">
       <bpmn:incoming>SequenceFlow_1ea996h</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_17aoq0e</bpmn:outgoing>
-      <bpmn:outgoing>SequenceFlow_0pkq4wo</bpmn:outgoing>
+      <bpmn:outgoing>toEnd-flow</bpmn:outgoing>
+      <bpmn:outgoing>toRetryGW-flow</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_17aoq0e" name="Yay!" sourceRef="statusGateway" targetRef="end">
+    <bpmn:sequenceFlow id="toEnd-flow" name="Yay!" sourceRef="statusGateway" targetRef="end">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${services.statusCodeOk(variables.statusCode)}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="toManualDefaultFlow" name="Try again" sourceRef="retryGateway" targetRef="waitForSignalTask" />
@@ -89,11 +89,11 @@
           <camunda:outputParameter name="errorCode">${services.extractErrorCode(variables.requestErrorMessage)}</camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_0pkq4wo</bpmn:incoming>
+      <bpmn:incoming>toRetryGW-flow</bpmn:incoming>
       <bpmn:outgoing>toTerminateFlow</bpmn:outgoing>
       <bpmn:outgoing>toManualDefaultFlow</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_0pkq4wo" name="No..." sourceRef="statusGateway" targetRef="retryGateway" />
+    <bpmn:sequenceFlow id="toRetryGW-flow" name="No..." sourceRef="statusGateway" targetRef="retryGateway" />
   </bpmn:process>
   <bpmn:error id="Error_0w1hljb" name="requestError" errorCode="${services.extractErrorCode(result.error)}" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
@@ -186,11 +186,11 @@
           <dc:Bounds x="679" y="268" width="48" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SequenceFlow_17aoq0e_di" bpmnElement="SequenceFlow_17aoq0e">
+      <bpmndi:BPMNEdge id="SequenceFlow_17aoq0e_di" bpmnElement="toEnd-flow">
         <di:waypoint xsi:type="dc:Point" x="688" y="255" />
         <di:waypoint xsi:type="dc:Point" x="780" y="255" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="723" y="233.5" width="22" height="13" />
+          <dc:Bounds x="723" y="234" width="22" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SequenceFlow_1yeoz4y_di" bpmnElement="toManualDefaultFlow">
@@ -212,7 +212,7 @@
           <dc:Bounds x="642" y="477" width="42" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SequenceFlow_0pkq4wo_di" bpmnElement="SequenceFlow_0pkq4wo">
+      <bpmndi:BPMNEdge id="SequenceFlow_0pkq4wo_di" bpmnElement="toRetryGW-flow">
         <di:waypoint xsi:type="dc:Point" x="663" y="280" />
         <di:waypoint xsi:type="dc:Point" x="663" y="419" />
         <bpmndi:BPMNLabel>

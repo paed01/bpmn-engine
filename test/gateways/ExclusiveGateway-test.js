@@ -50,21 +50,6 @@ describe('ExclusiveGateway', () => {
       });
     });
 
-    it('outbound flows are reordered with default flow last', (done) => {
-      const gateway = context.getChildActivityById('decision');
-      gateway.activate();
-
-      gateway.once('enter', (activityApi, activityExecution) => {
-        activityApi.stop();
-
-        expect(gateway.outbound.map((f) => f.id), 'loaded outbound').to.equal(['defaultFlow', 'condFlow1', 'condFlow2']);
-        expect(activityExecution.getState().pendingOutbound, 'execution outbound').to.equal(['condFlow1', 'condFlow2', 'defaultFlow']);
-        done();
-      });
-
-      gateway.inbound[0].take();
-    });
-
     it('variables and services are passed to conditional flow', (done) => {
       context.environment.assignVariables({condition1: true});
 

@@ -1,14 +1,15 @@
 'use strict';
 
-const Code = require('code');
-const EventEmitter = require('events').EventEmitter;
 const factory = require('./helpers/factory');
 const Lab = require('lab');
 const testHelpers = require('./helpers/testHelpers');
 const validation = require('../lib/validation');
+const {EventEmitter} = require('events');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
+const {describe, it} = lab;
+const {expect} = Lab.assertions;
+
 
 const validBpmnDefinition = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -22,36 +23,37 @@ const validBpmnDefinition = `
   </process>
 </definitions>`;
 
-lab.experiment('validation', () => {
-  lab.experiment('moddle context', () => {
+describe('validation', () => {
+  describe('moddle context', () => {
 
-    lab.test('validates', (done) => {
+    it('validates', (done) => {
       testHelpers.getModdleContext(validBpmnDefinition, {}, (err, context) => {
         if (err) return done(err);
         done(validation.validateModdleContext(context)[0]);
       });
     });
 
-    lab.test('is invalid if definitions are missing', (done) => {
+    it('is invalid if definitions are missing', (done) => {
       const warnings = validation.validateModdleContext(null);
       expect(warnings[0]).to.be.an.error();
       done();
     });
 
-    lab.test('or if bpmn-moddle returns warnings in context', (done) => {
-      const bpmnXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="no-end" />
-  </process>
-</definitions>`;
+    it('or if bpmn-moddle returns warnings in context', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="no-end" />
+        </process>
+      </definitions>`;
 
-      testHelpers.getModdleContext(bpmnXml, (err, context) => {
+      testHelpers.getModdleContext(source, (err, context) => {
         if (err) return done(err);
 
         const warnings = validation.validateModdleContext(context);
+
         expect(warnings[0]).to.be.an.error(/no-end/);
         done();
       });
@@ -59,30 +61,30 @@ lab.experiment('validation', () => {
 
   });
 
-  lab.experiment('processes', () => {
-    lab.test('validates', (done) => {
+  describe('processes', () => {
+    it('validates', (done) => {
       testHelpers.getModdleContext(validBpmnDefinition, (err, context) => {
         if (err) return done(err);
         done(validation.validateModdleContext(context)[0]);
       });
     });
 
-    lab.test('process without flowElements', (done) => {
-      const bpmnXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true" />
-</definitions>`;
+    it('process without flowElements', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true" />
+      </definitions>`;
 
-      testHelpers.getModdleContext(bpmnXml, {}, (err, context) => {
+      testHelpers.getModdleContext(source, {}, (err, context) => {
         if (err) return done(err);
         done(validation.validateModdleContext(context)[0]);
       });
     });
   });
 
-  lab.experiment('lanes', () => {
-    lab.test('validates', (done) => {
+  describe('lanes', () => {
+    it('validates', (done) => {
       testHelpers.getModdleContext(factory.resource('lanes.bpmn').toString(), {}, (err, context) => {
         if (err) return done(err);
         done(validation.validateModdleContext(context)[0]);
@@ -90,18 +92,18 @@ lab.experiment('validation', () => {
     });
   });
 
-  lab.experiment('sequenceFlow', () => {
-    lab.test('targetRef is required', (done) => {
-      const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <sequenceFlow id="flow1" sourceRef="theStart" />
-  </process>
-</definitions>`;
+  describe('sequenceFlow', () => {
+    it('targetRef is required', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <sequenceFlow id="flow1" sourceRef="theStart" />
+        </process>
+      </definitions>`;
 
-      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+      testHelpers.getModdleContext(source, {}, (err, context) => {
         if (err) return done(err);
         const warnings = validation.validateModdleContext(context);
         expect(warnings[0]).to.be.an.error(/"targetRef" is required/);
@@ -109,17 +111,17 @@ lab.experiment('validation', () => {
       });
     });
 
-    lab.test('sourceRef is required', (done) => {
-      const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <endEvent id="end" />
-    <sequenceFlow id="flow2" targetRef="end" />
-  </process>
-</definitions>`;
+    it('sourceRef is required', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <endEvent id="end" />
+          <sequenceFlow id="flow2" targetRef="end" />
+        </process>
+      </definitions>`;
 
-      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+      testHelpers.getModdleContext(source, {}, (err, context) => {
         if (err) return done(err);
         const warnings = validation.validateModdleContext(context);
         expect(warnings[0]).to.be.an.error(/"sourceRef" is required/);
@@ -127,20 +129,20 @@ lab.experiment('validation', () => {
       });
     });
 
-    lab.test('accepts missing references if bpmn-moddle warnings are absent, for some reason', (done) => {
-      const bpmnXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="no-end" />
-  </process>
-</definitions>`;
+    it('accepts missing references if bpmn-moddle warnings are absent, for some reason', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="no-end" />
+        </process>
+      </definitions>`;
 
-      testHelpers.getModdleContext(bpmnXml, (err, context) => {
+      testHelpers.getModdleContext(source, (err, context) => {
         if (err) return done(err);
 
-        delete context.warnings;
+        context.warnings = undefined;
 
         const warnings = validation.validateModdleContext(context);
         expect(warnings.length).to.equal(0);
@@ -149,26 +151,25 @@ lab.experiment('validation', () => {
     });
   });
 
-  lab.experiment('Exclusive gateway', () => {
-    lab.test('should not support a single diverging flow with a condition', (done) => {
+  describe('Exclusive gateway', () => {
+    it('should not support a single diverging flow with a condition', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <exclusiveGateway id="decision" />
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+          <sequenceFlow id="flow2" sourceRef="decision" targetRef="end">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+            this.input <= 50
+            ]]></conditionExpression>
+          </sequenceFlow>
+        </process>
+      </definitions>`;
 
-      const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <exclusiveGateway id="decision" />
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
-    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
-      ]]></conditionExpression>
-    </sequenceFlow>
-  </process>
-</definitions>`;
-
-      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+      testHelpers.getModdleContext(source, {}, (err, context) => {
         if (err) return done(err);
         const warnings = validation.validateModdleContext(context);
         expect(warnings[0]).to.be.an.error(/single diverging flow/);
@@ -176,22 +177,22 @@ lab.experiment('validation', () => {
       });
     });
 
-    lab.test('should not support multiple diverging flows without conditions', (done) => {
-      const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <exclusiveGateway id="decision" />
-    <endEvent id="end1" />
-    <endEvent id="end2" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
-    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1" />
-    <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2" />
-  </process>
-</definitions>`;
+    it('should not support multiple diverging flows without conditions', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <exclusiveGateway id="decision" />
+          <endEvent id="end1" />
+          <endEvent id="end2" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+          <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1" />
+          <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2" />
+        </process>
+      </definitions>`;
 
-      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+      testHelpers.getModdleContext(source, {}, (err, context) => {
         if (err) return done(err);
         const warnings = validation.validateModdleContext(context);
         expect(warnings[0]).to.be.an.error(/has no condition/);
@@ -199,26 +200,26 @@ lab.experiment('validation', () => {
       });
     });
 
-    lab.test('should support exclusiveGateway with default flow', (done) => {
-      const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <exclusiveGateway id="decision" default="flow3" />
-    <endEvent id="end1" />
-    <endEvent id="end2" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
-    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
-      ]]></conditionExpression>
-    </sequenceFlow>
-    <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2" />
-  </process>
-</definitions>`;
+    it('should support exclusiveGateway with default flow', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <exclusiveGateway id="decision" default="flow3" />
+          <endEvent id="end1" />
+          <endEvent id="end2" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+          <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+            this.input <= 50
+            ]]></conditionExpression>
+          </sequenceFlow>
+          <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2" />
+        </process>
+      </definitions>`;
 
-      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+      testHelpers.getModdleContext(source, {}, (err, context) => {
         if (err) return done(err);
 
         const warnings = validation.validateModdleContext(context);
@@ -227,30 +228,30 @@ lab.experiment('validation', () => {
       });
     });
 
-    lab.test('should support two diverging flows with conditions', (done) => {
-      const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <exclusiveGateway id="decision" />
-    <endEvent id="end1" />
-    <endEvent id="end2" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
-    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input <= 50
-      ]]></conditionExpression>
-    </sequenceFlow>
-    <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[
-      this.input > 50
-      ]]></conditionExpression>
-    </sequenceFlow>
-  </process>
-</definitions>`;
+    it('should support two diverging flows with conditions', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <exclusiveGateway id="decision" />
+          <endEvent id="end1" />
+          <endEvent id="end2" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+          <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+            this.input <= 50
+            ]]></conditionExpression>
+          </sequenceFlow>
+          <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
+            <conditionExpression xsi:type="tFormalExpression"><![CDATA[
+            this.input > 50
+            ]]></conditionExpression>
+          </sequenceFlow>
+        </process>
+      </definitions>`;
 
-      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+      testHelpers.getModdleContext(source, {}, (err, context) => {
         if (err) return done(err);
 
         const warnings = validation.validateModdleContext(context);
@@ -259,16 +260,16 @@ lab.experiment('validation', () => {
       });
     });
 
-    lab.test('without flows is NOT supported', (done) => {
-      const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <exclusiveGateway id="decision" />
-  </process>
-</definitions>`;
+    it('without flows is NOT supported', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <exclusiveGateway id="decision" />
+        </process>
+      </definitions>`;
 
-      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+      testHelpers.getModdleContext(source, {}, (err, context) => {
         if (err) return done(err);
 
         const warnings = validation.validateModdleContext(context);
@@ -280,17 +281,17 @@ lab.experiment('validation', () => {
   });
 
   lab.describe('serialized bpmn-moddle context', () => {
-    lab.test('returns bpmn-moddle warnings', (done) => {
-      const bpmnXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="no-end" />
-  </process>
-</definitions>`;
+    it('returns bpmn-moddle warnings', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="no-end" />
+        </process>
+      </definitions>`;
 
-      testHelpers.getModdleContext(bpmnXml, (err, context) => {
+      testHelpers.getModdleContext(source, (err, context) => {
         if (err) return done(err);
         const contextFromDb = JSON.parse(testHelpers.serializeModdleContext(context));
         const warnings = validation.validateModdleContext(contextFromDb);
@@ -299,17 +300,17 @@ lab.experiment('validation', () => {
       });
     });
 
-    lab.test('validation is performed', (done) => {
-      const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <sequenceFlow id="flow1" sourceRef="theStart" />
-  </process>
-</definitions>`;
+    it('validation is performed', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="theStart" />
+          <sequenceFlow id="flow1" sourceRef="theStart" />
+        </process>
+      </definitions>`;
 
-      testHelpers.getModdleContext(processXml, {}, (err, context) => {
+      testHelpers.getModdleContext(source, {}, (err, context) => {
         if (err) return done(err);
 
         const contextFromDb = JSON.parse(testHelpers.serializeModdleContext(context));
@@ -322,8 +323,8 @@ lab.experiment('validation', () => {
 
   });
 
-  lab.experiment('execute options', () => {
-    lab.test('undefined options is valid', (done) => {
+  describe('execute options', () => {
+    it('undefined options is valid', (done) => {
       function fn() {
         validation.validateOptions();
       }
@@ -331,7 +332,7 @@ lab.experiment('validation', () => {
       done();
     });
 
-    lab.test('empty options is valid', (done) => {
+    it('empty options is valid', (done) => {
       function fn() {
         validation.validateOptions({});
       }
@@ -339,16 +340,16 @@ lab.experiment('validation', () => {
       done();
     });
 
-    lab.test('unsupported option throws', (done) => {
+    it('arbitratry option is valid', (done) => {
       function fn() {
         validation.validateOptions({unsupported: true});
       }
-      expect(fn).to.throw();
+      expect(fn).to.not.throw();
       done();
     });
 
     lab.describe('listener', () => {
-      lab.test('as EventEmitter is valid', (done) => {
+      it('as EventEmitter is valid', (done) => {
         function fn() {
           validation.validateOptions({
             listener: new EventEmitter()
@@ -358,7 +359,7 @@ lab.experiment('validation', () => {
         done();
       });
 
-      lab.test('with self declared emit function is valid', (done) => {
+      it('with self declared emit function is valid', (done) => {
         function fn() {
           validation.validateOptions({
             listener: {
@@ -370,7 +371,7 @@ lab.experiment('validation', () => {
         done();
       });
 
-      lab.test('without emit function is invalid', (done) => {
+      it('without emit function is invalid', (done) => {
         function fn() {
           validation.validateOptions({
             listener: {}
@@ -382,7 +383,7 @@ lab.experiment('validation', () => {
     });
 
     lab.describe('variables', () => {
-      lab.test('as an object is valid', (done) => {
+      it('as an object is valid', (done) => {
         function fn() {
           validation.validateOptions({
             variables: {}
@@ -392,7 +393,7 @@ lab.experiment('validation', () => {
         done();
       });
 
-      lab.test('as not an object is invalid', (done) => {
+      it('as not an object is invalid', (done) => {
         function fn() {
           validation.validateOptions({
             variables: 'gr'
@@ -404,7 +405,7 @@ lab.experiment('validation', () => {
     });
 
     lab.describe('services', () => {
-      lab.test('with service as a function is valid', (done) => {
+      it('with service as a function is valid', (done) => {
         function fn() {
           validation.validateOptions({
             services: {
@@ -416,7 +417,7 @@ lab.experiment('validation', () => {
         done();
       });
 
-      lab.test('service type require', (done) => {
+      it('service type require', (done) => {
         function fn() {
           validation.validateOptions({
             services: {
@@ -432,7 +433,7 @@ lab.experiment('validation', () => {
         done();
       });
 
-      lab.test('service type global', (done) => {
+      it('service type global', (done) => {
         function fn() {
           validation.validateOptions({
             services: {
@@ -447,7 +448,7 @@ lab.experiment('validation', () => {
         done();
       });
 
-      lab.test('without type', (done) => {
+      it('without type', (done) => {
         function fn() {
           validation.validateOptions({
             services: {
@@ -461,7 +462,7 @@ lab.experiment('validation', () => {
         done();
       });
 
-      lab.test('without service module is invalid', (done) => {
+      it('without service module is invalid', (done) => {
         function fn() {
           validation.validateOptions({
             services: {
@@ -475,7 +476,7 @@ lab.experiment('validation', () => {
         done();
       });
 
-      lab.test('empty service object is valid', (done) => {
+      it('empty service object is valid', (done) => {
         function fn() {
           validation.validateOptions({
             services: {}
@@ -485,7 +486,7 @@ lab.experiment('validation', () => {
         done();
       });
 
-      lab.test('not an object is invalid', (done) => {
+      it('not an object is invalid', (done) => {
         function fn() {
           validation.validateOptions({
             services: function() {}
@@ -495,7 +496,7 @@ lab.experiment('validation', () => {
         done();
       });
 
-      lab.test('service as string is invalid', (done) => {
+      it('service as string is invalid', (done) => {
         function fn() {
           validation.validateOptions({
             services: {
@@ -507,7 +508,7 @@ lab.experiment('validation', () => {
         done();
       });
 
-      lab.test('type not global or require is invalid', (done) => {
+      it('type not global or require is invalid', (done) => {
         function fn() {
           validation.validateOptions({
             services: {
@@ -522,7 +523,7 @@ lab.experiment('validation', () => {
         done();
       });
 
-      lab.test('services undefined is valid', (done) => {
+      it('services undefined is valid', (done) => {
         function fn() {
           validation.validateOptions({
             services: undefined
@@ -532,7 +533,7 @@ lab.experiment('validation', () => {
         done();
       });
 
-      lab.test('service undefined is invalid', (done) => {
+      it('service undefined is invalid', (done) => {
         function fn() {
           validation.validateOptions({
             services: {
@@ -543,12 +544,6 @@ lab.experiment('validation', () => {
         expect(fn).to.throw(Error, /is undefined/);
         done();
       });
-    });
-  });
-
-  lab.describe('ScriptTask', () => {
-    lab.test('scriptFormat not javascript returns validation error', (done) => {
-      done(new Error('Fail'));
     });
   });
 });

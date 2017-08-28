@@ -1,20 +1,20 @@
 'use strict';
 
-const Code = require('code');
-const EventEmitter = require('events').EventEmitter;
 const factory = require('./helpers/factory');
 const Lab = require('lab');
-const testHelper = require('./helpers/testHelpers');
+const testHelpers = require('./helpers/testHelpers');
+const {Engine} = require('../');
+const {EventEmitter} = require('events');
 
 const lab = exports.lab = Lab.script();
-const Bpmn = require('../');
-const expect = Code.expect;
+const {describe, it} = lab;
+const {expect} = Lab.assertions;
 
-lab.experiment('Lanes', () => {
+describe('Lanes', () => {
   const source = factory.resource('lanes.bpmn');
 
-  lab.test('main process stores outbound messageFlows', (done) => {
-    const engine = new Bpmn.Engine({
+  it('main process stores outbound messageFlows', (done) => {
+    const engine = new Engine({
       source,
       moddleOptions: {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -29,9 +29,9 @@ lab.experiment('Lanes', () => {
     });
   });
 
-  lab.test('completes process', (done) => {
+  it('completes process', (done) => {
     const listener = new EventEmitter();
-    const engine = new Bpmn.Engine({
+    const engine = new Engine({
       source,
       moddleOptions: {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -39,7 +39,7 @@ lab.experiment('Lanes', () => {
     });
 
     engine.once('end', () => {
-      testHelper.expectNoLingeringListenersOnEngine(engine);
+      testHelpers.expectNoLingeringListenersOnEngine(engine);
       done();
     });
 
@@ -53,9 +53,9 @@ lab.experiment('Lanes', () => {
     });
   });
 
-  lab.test('participant startEvent receives and stores message on process context', (done) => {
+  it('participant startEvent receives and stores message on process context', (done) => {
     const listener = new EventEmitter();
-    const engine = new Bpmn.Engine({
+    const engine = new Engine({
       source,
       moddleOptions: {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
@@ -69,20 +69,20 @@ lab.experiment('Lanes', () => {
       });
     });
 
-    engine.once('end', () => {
-      const participant = engine.definitions[0].processes.find((p) => p.id === 'participantProcess');
-
-      expect(participant.environment.variables).to.include({
-        input: 0,
-        message: 'Done! Aswell!',
-        arbval: '10'
-      });
-
-      const mainProcess = engine.definitions[0].processes.find((p) => p.id === 'mainProcess');
-      expect(mainProcess.environment.getOutput()).to.include({
+    listener.once('end-mainEndEvent', (activityApi, processExecution) => {
+      expect(processExecution.getOutput()).to.include({
         message: 'I\'m done'
       });
+    });
 
+    listener.once('end-participantEndEvent', (activityApi, processExecution) => {
+      expect(processExecution.getOutput()).to.include({
+        message: 'Done! Aswell!'
+      });
+    });
+
+    engine.once('end', (execution, definitionExecution) => {
+      expect(definitionExecution.getOutput()).to.include(['arbval', 'message', 'taskInput']);
       done();
     });
 

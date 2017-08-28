@@ -1,51 +1,50 @@
 'use strict';
 
-const Code = require('code');
 const Lab = require('lab');
-
-const lab = exports.lab = Lab.script();
-const expect = Code.expect;
-
 const scriptHelper = require('../lib/script-helper');
 
-lab.experiment('script-helper', () => {
-  lab.describe('isJavascript()', () => {
-    lab.test('returns true if JavaScript', (done) => {
+const lab = exports.lab = Lab.script();
+const {describe, it} = lab;
+const {expect, fail} = Lab.assertions;
+
+describe('script-helper', () => {
+  describe('isJavascript()', () => {
+    it('returns true if JavaScript', (done) => {
       expect(scriptHelper.isJavascript('JavaScript')).to.be.true();
       done();
     });
 
-    lab.test('returns false if not JavaScript', (done) => {
+    it('returns false if not JavaScript', (done) => {
       expect(scriptHelper.isJavascript('c#')).to.be.false();
       done();
     });
 
-    lab.test('is case insensitive', (done) => {
+    it('is case insensitive', (done) => {
       expect(scriptHelper.isJavascript('javascript')).to.be.true();
       done();
     });
   });
 
-  lab.describe('#parse', () => {
-    lab.test('takes filename and script string and returns contextified script', (done) => {
+  describe('#parse', () => {
+    it('takes filename and script string and returns contextified script', (done) => {
       expect(scriptHelper.parse.bind(null, 'unit-test.js', 'i = 1')).to.not.throw();
       done();
     });
 
-    lab.test('unless it has a syntax error', (done) => {
+    it('unless it has a syntax error', (done) => {
       expect(scriptHelper.parse.bind(null, 'unit-test.js', 'function (')).to.throw(SyntaxError, /unexpected token/i);
       done();
     });
   });
 
-  lab.describe('#execute', () => {
-    lab.test('takes parsed script and returns result', (done) => {
+  describe('#execute', () => {
+    it('takes parsed script and returns result', (done) => {
       const script = scriptHelper.parse('unit-test.js', 'true');
       expect(scriptHelper.execute(script)).to.equal(true);
       done();
     });
 
-    lab.test('takes parsed script and variables and returns result', (done) => {
+    it('takes parsed script and variables and returns result', (done) => {
       const script = scriptHelper.parse('unit-test.js', 'variables.i;');
       expect(scriptHelper.execute(script, {
         variables: {
@@ -55,7 +54,7 @@ lab.experiment('script-helper', () => {
       done();
     });
 
-    lab.test('throws if execution fails', (done) => {
+    it('throws if execution fails', (done) => {
       const script = scriptHelper.parse('unit-test.js', 'variables.i.j;');
 
       try {
@@ -70,7 +69,7 @@ lab.experiment('script-helper', () => {
       done();
     });
 
-    lab.test('passes variables as context object', (done) => {
+    it('passes variables as context object', (done) => {
       const script = scriptHelper.parse('unit-test.js', 'variables.i = 1; variables.i;');
       const context = {
         variables: {
@@ -84,50 +83,53 @@ lab.experiment('script-helper', () => {
       done();
     });
 
-    lab.test('takes message as third argument', (done) => {
+    it('third argument can be used as callback', (done) => {
+      const script = scriptHelper.parse('unit-test.js', 'next()');
+      scriptHelper.execute(script, null, done);
+    });
+  });
+
+
+  describe('executeWithMessage()', () => {
+    it('takes message as third argument', (done) => {
       const script = scriptHelper.parse('unit-test.js', 'i');
       const message = {
         i: true
       };
-      expect(scriptHelper.execute(script, null, message)).to.be.true();
+      expect(scriptHelper.executeWithMessage(script, null, message)).to.be.true();
       done();
     });
 
-    lab.test('message is a shallow copy', (done) => {
+    it('message is a shallow copy', (done) => {
       const script = scriptHelper.parse('unit-test.js', 'i = false; i;');
       const message = {
         i: true
       };
-      expect(scriptHelper.execute(script, null, message)).to.be.false();
+      expect(scriptHelper.executeWithMessage(script, null, message)).to.be.false();
       expect(message.i).to.be.true();
       done();
     });
 
 
-    lab.test('fourth argument is callback and is passed as next to script', (done) => {
+    it('fourth argument is callback and is passed as next to script', (done) => {
       const script = scriptHelper.parse('unit-test.js', 'next()');
       const message = {
         i: true
       };
-      scriptHelper.execute(script, null, message, done);
+      scriptHelper.executeWithMessage(script, null, message, done);
     });
 
-    lab.test('next has to be called or the script will not finish', (done) => {
+    it('next has to be called or the script will not finish', (done) => {
       const script = scriptHelper.parse('unit-test.js', 'i = false;');
       const message = {
         i: true
       };
-      scriptHelper.execute(script, null, message, () => {
-        Code.fail('next was not supposed to be called');
+      scriptHelper.executeWithMessage(script, null, message, () => {
+        fail('next was not supposed to be called');
       });
       setTimeout(() => {
         done();
       }, 10);
-    });
-
-    lab.test('third argument can be used as callback', (done) => {
-      const script = scriptHelper.parse('unit-test.js', 'next()');
-      scriptHelper.execute(script, null, done);
     });
   });
 });

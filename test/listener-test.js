@@ -1,16 +1,16 @@
 'use strict';
 
-const Code = require('code');
-const Lab = require('lab');
+const {Engine} = require('../');
 const {EventEmitter} = require('events');
+const Lab = require('lab');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
-const Bpmn = require('../');
+const {describe, it} = lab;
+const {expect} = Lab.assertions;
 
-lab.experiment('listener', () => {
-  lab.test('emits expected event sequence', (done) => {
-    const processXml = `<?xml version="1.0" encoding="UTF-8"?>
+describe('listener emits expected event sequence', () => {
+  it('for simple process', (done) => {
+    const source = `<?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL">
       <process id="theProcess" isExecutable="true">
         <startEvent id="start" name="Start" />
@@ -33,43 +33,47 @@ lab.experiment('listener', () => {
       });
     });
 
-    const engine = new Bpmn.Engine({
-      source: processXml
+    const engine = new Engine({
+      source
     });
     engine.execute({
       listener
-    }, (err, instance) => {
-      if (err) return done(err);
-      instance.getProcesses()[0].context.sequenceFlows.forEach((flow) => {
+    });
+
+    engine.once('start', (execution, definitionExecution) => {
+      definitionExecution.processes[0].context.sequenceFlows.forEach((flow) => {
         flow.on('taken', (f) => {
           eventSequence.push(`taken-${f.id}`);
         });
       });
-
-      instance.once('end', () => {
-        expect(eventSequence).to.equal(['enter-start',
-          'start-start',
-          'end-start',
-          'taken-flow1',
-          'enter-task',
-          'start-task',
-          'wait-task',
-          'leave-start',
-          'end-task',
-          'taken-flow2',
-          'enter-end',
-          'start-end',
-          'leave-task',
-          'end-end',
-          'leave-end'
-        ]);
-        done();
-      });
+    });
+    engine.once('end', () => {
+      expect(eventSequence).to.equal([
+        'enter-theProcess',
+        'start-theProcess',
+        'enter-start',
+        'start-start',
+        'end-start',
+        'enter-task',
+        'start-task',
+        'wait-task',
+        'taken-flow1',
+        'leave-start',
+        'end-task',
+        'enter-end',
+        'start-end',
+        'end-end',
+        'taken-flow2',
+        'leave-task',
+        'leave-end'
+      ]);
+      done();
     });
   });
 
-  lab.test('emits expected event sequence for a parallel gateway fork and join', (done) => {
-    const processXml = `<?xml version="1.0" encoding="UTF-8"?>
+  it('for a parallel gateway fork and join', (done) => {
+    const source =
+    `<?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL">
       <process id="theProcess" isExecutable="true">
         <startEvent id="start" />
@@ -95,50 +99,52 @@ lab.experiment('listener', () => {
       });
     });
 
-    const engine = new Bpmn.Engine({
-      source: processXml
+    const engine = new Engine({
+      source
     });
     engine.execute({
       listener
-    }, (err, instance) => {
-      if (err) return done(err);
-      instance.getProcesses()[0].context.sequenceFlows.forEach((flow) => {
+    });
+
+    engine.once('start', (execution, definitionExecution) => {
+      definitionExecution.processes[0].context.sequenceFlows.forEach((flow) => {
         flow.on('taken', (f) => {
           eventSequence.push(`taken-${f.id}`);
         });
       });
-
-      instance.once('end', () => {
-        expect(eventSequence).to.equal([
-          'enter-start',
-          'start-start',
-          'end-start',
-          'taken-flow1',
-          'enter-fork',
-          'start-fork',
-          'leave-start',
-          'taken-flow2',
-          'enter-join',
-          'start-join',
-          'taken-flow3',
-          'start-join',
-          'end-fork',
-          'taken-flow4',
-          'enter-end',
-          'start-end',
-          'leave-fork',
-          'end-end',
-          'end-join',
-          'leave-end',
-          'leave-join',
-        ]);
-        done();
-      });
+    });
+    engine.once('end', () => {
+      expect(eventSequence).to.equal([
+        'enter-theProcess',
+        'start-theProcess',
+        'enter-start',
+        'start-start',
+        'end-start',
+        'enter-fork',
+        'start-fork',
+        'taken-flow1',
+        'leave-start',
+        'enter-join',
+        'start-join',
+        'taken-flow2',
+        'start-join',
+        'end-join',
+        'taken-flow3',
+        'end-fork',
+        'enter-end',
+        'start-end',
+        'end-end',
+        'taken-flow4',
+        'leave-join',
+        'leave-fork',
+        'leave-end'
+      ]);
+      done();
     });
   });
 
-  lab.test('emits expected event sequence for a exclusive gateway', (done) => {
-    const processXml = `<?xml version="1.0" encoding="UTF-8"?>
+  it('for a exclusive gateway', (done) => {
+    const source = `<?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theProcess" isExecutable="true">
         <startEvent id="start" />
@@ -166,52 +172,51 @@ lab.experiment('listener', () => {
       });
     });
 
-    const engine = new Bpmn.Engine({
-      source: processXml
+    const engine = new Engine({
+      source
     });
     engine.execute({
       listener
-    }, (err, instance) => {
-      if (err) return done(err);
-      instance.getProcesses()[0].context.sequenceFlows.forEach((flow) => {
+    });
+
+    engine.once('start', (execution, definitionExecution) => {
+      definitionExecution.processes[0].context.sequenceFlows.forEach((flow) => {
         flow.on('taken', (f) => {
           eventSequence.push(`taken-${f.id}`);
         });
-        flow.on('discarded', (f) => {
-          eventSequence.push(`discarded-${f.id}`);
-        });
       });
+    });
 
-      instance.once('end', () => {
-        expect(eventSequence).to.equal([
-          'enter-start',
-          'start-start',
-          'end-start',
-          'taken-flow1',
-          'enter-decision',
-          'start-decision',
-          'leave-start',
-          'discarded-flow2',
-          'enter-join',
-          'taken-flow3',
-          'start-join',
-          'end-decision',
-          'taken-flow4',
-          'enter-end',
-          'start-end',
-          'leave-decision',
-          'end-end',
-          'end-join',
-          'leave-end',
-          'leave-join'
-        ]);
-        done();
-      });
+    engine.once('end', () => {
+      expect(eventSequence).to.equal([
+        'enter-theProcess',
+        'start-theProcess',
+        'enter-start',
+        'start-start',
+        'end-start',
+        'enter-decision',
+        'start-decision',
+        'end-decision',
+        'taken-flow1',
+        'leave-start',
+        'enter-join',
+        'start-join',
+        'end-join',
+        'taken-flow3',
+        'leave-decision',
+        'enter-end',
+        'start-end',
+        'end-end',
+        'taken-flow4',
+        'leave-join',
+        'leave-end'
+      ]);
+      done();
     });
   });
 
-  lab.test('emits expected event sequence for an inclusive gateway', (done) => {
-    const processXml = `<?xml version="1.0" encoding="UTF-8"?>
+  it('for an inclusive gateway', (done) => {
+    const source = `<?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theProcess" isExecutable="true">
         <startEvent id="start" />
@@ -242,8 +247,8 @@ lab.experiment('listener', () => {
       });
     });
 
-    const engine = new Bpmn.Engine({
-      source: processXml
+    const engine = new Engine({
+      source
     });
     engine.execute({
       listener,
@@ -253,9 +258,10 @@ lab.experiment('listener', () => {
       services: {
         checksum: (sum, compare) => Number(compare) > sum
       }
-    }, (err, instance) => {
-      if (err) return done(err);
-      instance.getProcesses()[0].context.sequenceFlows.forEach((flow) => {
+    });
+
+    engine.once('start', (execution, definitionExecution) => {
+      definitionExecution.processes[0].context.sequenceFlows.forEach((flow) => {
         flow.on('taken', (f) => {
           eventSequence.push(`taken-${f.id}`);
         });
@@ -263,39 +269,41 @@ lab.experiment('listener', () => {
           eventSequence.push(`discarded-${f.id}`);
         });
       });
+    });
 
-      instance.once('end', () => {
-        expect(eventSequence).to.equal([
-          'enter-start',
-          'start-start',
-          'end-start',
-          'taken-flow1',
-          'enter-decisions',
-          'start-decisions',
-          'leave-start',
-          'taken-flow2',
-          'enter-join',
-          'start-join',
-          'taken-flow3',
-          'start-join',
-          'discarded-flow4',
-          'end-decisions',
-          'taken-flow5',
-          'enter-end',
-          'start-end',
-          'leave-decisions',
-          'end-end',
-          'end-join',
-          'leave-end',
-          'leave-join',
-        ]);
-        done();
-      });
+    engine.once('end', () => {
+      expect(eventSequence).to.equal([
+        'enter-theProcess',
+        'start-theProcess',
+        'enter-start',
+        'start-start',
+        'end-start',
+        'enter-decisions',
+        'start-decisions',
+        'end-decisions',
+        'taken-flow1',
+        'leave-start',
+        'enter-join',
+        'start-join',
+        'taken-flow2',
+        'start-join',
+        'taken-flow3',
+        'end-join',
+        'discarded-flow4',
+        'leave-decisions',
+        'enter-end',
+        'start-end',
+        'end-end',
+        'taken-flow5',
+        'leave-join',
+        'leave-end'
+      ]);
+      done();
     });
   });
 
-  lab.test('emits expected event sequence for a discarded parallel join gateway', (done) => {
-    const processXml = `<?xml version="1.0" encoding="UTF-8"?>
+  it('for a discarded parallel join gateway', (done) => {
+    const source = `<?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theProcess" isExecutable="true">
         <startEvent id="start" />
@@ -329,14 +337,15 @@ lab.experiment('listener', () => {
       });
     });
 
-    const engine = new Bpmn.Engine({
-      source: processXml
+    const engine = new Engine({
+      source
     });
     engine.execute({
       listener
-    }, (err, instance) => {
-      if (err) return done(err);
-      instance.getProcesses()[0].context.sequenceFlows.forEach((flow) => {
+    });
+
+    engine.once('start', (execution, definitionExecution) => {
+      definitionExecution.processes[0].context.sequenceFlows.forEach((flow) => {
         flow.on('taken', (f) => {
           eventSequence.push(`taken-${f.id}`);
         });
@@ -344,38 +353,40 @@ lab.experiment('listener', () => {
           eventSequence.push(`discarded-${f.id}`);
         });
       });
+    });
 
-      instance.once('end', () => {
-        expect(eventSequence).to.equal([
-          'enter-start',
-          'start-start',
-          'end-start',
-          'taken-flow1',
-          'enter-decision',
-          'start-decision',
-          'leave-start',
-          'discarded-flow2',
-          'enter-join',
-          'discarded-flow3',
-          'taken-flow4',
-          'enter-end',
-          'start-end',
-          'leave-join',
-          'discarded-flow5',
-          'enter-terminate',
-          'end-end',
-          'end-decision',
-          'leave-terminate',
-          'leave-end',
-          'leave-decision'
-        ]);
-        done();
-      });
+    engine.once('end', () => {
+      expect(eventSequence).to.equal([
+        'enter-theProcess',
+        'start-theProcess',
+        'enter-start',
+        'start-start',
+        'end-start',
+        'enter-decision',
+        'start-decision',
+        'end-decision',
+        'taken-flow1',
+        'leave-start',
+        'enter-join',
+        'discarded-flow2',
+        'leave-join',
+        'discarded-flow3',
+        'enter-end',
+        'start-end',
+        'end-end',
+        'taken-flow4',
+        'enter-terminate',
+        'leave-terminate',
+        'discarded-flow5',
+        'leave-decision',
+        'leave-end'
+      ]);
+      done();
     });
   });
 
-  lab.test('emits expected event sequence for a discarded parallel fork gateway', (done) => {
-    const processXml = `<?xml version="1.0" encoding="UTF-8"?>
+  it('for a discarded parallel fork gateway', (done) => {
+    const source = `<?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theProcess" isExecutable="true">
         <startEvent id="start" />
@@ -408,14 +419,15 @@ lab.experiment('listener', () => {
       });
     });
 
-    const engine = new Bpmn.Engine({
-      source: processXml
+    const engine = new Engine({
+      source
     });
     engine.execute({
       listener
-    }, (err, instance) => {
-      if (err) return done(err);
-      instance.getProcesses()[0].context.sequenceFlows.forEach((flow) => {
+    });
+
+    engine.once('start', (execution, definitionExecution) => {
+      definitionExecution.processes[0].context.sequenceFlows.forEach((flow) => {
         flow.on('taken', (f) => {
           eventSequence.push(`taken-${f.id}`);
         });
@@ -423,35 +435,37 @@ lab.experiment('listener', () => {
           eventSequence.push(`discarded-${f.id}`);
         });
       });
+    });
 
-      instance.once('end', () => {
-        expect(eventSequence).to.equal([
-          'enter-start',
-          'start-start',
-          'end-start',
-          'taken-flow1',
-          'enter-decision',
-          'start-decision',
-          'leave-start',
-          'discarded-flow2',
-          'enter-fork',
-          'taken-flow3',
-          'enter-end',
-          'start-end',
-          'leave-fork',
-          'discarded-flow4',
-          'enter-end2',
-          'discarded-flow5',
-          'enter-terminate',
-          'end-end',
-          'end-decision',
-          'leave-end2',
-          'leave-terminate',
-          'leave-end',
-          'leave-decision'
-        ]);
-        done();
-      });
+    engine.once('end', () => {
+      expect(eventSequence).to.equal([
+        'enter-theProcess',
+        'start-theProcess',
+        'enter-start',
+        'start-start',
+        'end-start',
+        'enter-decision',
+        'start-decision',
+        'end-decision',
+        'taken-flow1',
+        'leave-start',
+        'enter-fork',
+        'leave-fork',
+        'discarded-flow2',
+        'enter-end',
+        'start-end',
+        'end-end',
+        'taken-flow3',
+        'enter-end2',
+        'leave-end2',
+        'discarded-flow4',
+        'enter-terminate',
+        'leave-terminate',
+        'discarded-flow5',
+        'leave-decision',
+        'leave-end'
+      ]);
+      done();
     });
   });
 });

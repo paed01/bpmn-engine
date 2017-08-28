@@ -163,7 +163,6 @@ describe('issues', () => {
         return statusCode === 200;
       };
       testHelpers.extractErrorCode = (errorMessage) => {
-        console.log('LKAJSDLASKLJDJKLASD', errorMessage)
         if (!errorMessage) return;
         const codeMatch = errorMessage.match(/^([A-Z_]+):.+/);
         if (codeMatch) return codeMatch[1];
@@ -266,14 +265,11 @@ describe('issues', () => {
         engine.stop();
       });
 
-      engine.once('end', (execution) => {
+      engine.once('end', () => {
         const listener2 = new EventEmitter();
         listener2.once('wait-waitForSignalTask', (task) => {
           task.signal();
         });
-
-        console.log(JSON.stringify(execution.getOutput(), null, 2))
-        console.log('STOPPED', JSON.stringify(state.definitions[0].processes, null, 2))
 
         nock('http://example.com')
           .get('/api')
@@ -284,8 +280,8 @@ describe('issues', () => {
         const engine2 = Engine.resume(state, {
           listener: listener2
         });
-        engine2.once('end', (execution) => {
-          expect(execution.getOutput()).to.include({
+        engine2.once('end', (execution2, definitionExecution) => {
+          expect(execution2.getOutput()).to.include({
             retry: true,
             errorCode: 'REQ_FAIL',
             requestErrorMessage: 'REQ_FAIL: Error message',
@@ -294,8 +290,8 @@ describe('issues', () => {
               status: 'OK'
             }
           });
-          expect(execution.getChildActivityById('terminateEvent').taken).to.be.false();
-          expect(execution.getChildActivityById('end').taken).to.be.true();
+          expect(definitionExecution.getChildState('terminateEvent').taken).to.be.undefined();
+          expect(definitionExecution.getChildState('end').taken).to.be.true();
           done();
         });
       });
@@ -317,10 +313,8 @@ describe('issues', () => {
     it('takes decision based on error', (done) => {
       let state;
       const engine = new Engine({
-        source: factory.resource('issue-19-2.bpmn'),
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        source,
+        moddleOptions
       });
       const listener = new EventEmitter();
 
@@ -335,8 +329,8 @@ describe('issues', () => {
 
       engine.once('end', () => {
         const listener2 = new EventEmitter();
-        listener2.once('wait-waitForSignalTask', (task) => {
-          task.signal();
+        listener2.once('wait-waitForSignalTask', (activityApi) => {
+          activityApi.signal();
         });
 
         nock('http://example.com')
@@ -346,14 +340,14 @@ describe('issues', () => {
         const engine2 = Engine.resume(state, {
           listener: listener2
         });
-        engine2.once('end', (def) => {
-          expect(def.variables).to.include({
+        engine2.once('end', (execution, definitionExecution) => {
+          expect(definitionExecution.getOutput()).to.include({
             retry: true,
             errorCode: 'RETRY_FAIL',
             requestErrorMessage: 'RETRY_FAIL: Error message'
           });
-          expect(def.getChildActivityById('terminateEvent').taken).to.be.true();
-          expect(def.getChildActivityById('end').taken).to.be.false();
+          expect(definitionExecution.getChildState('terminateEvent').taken).to.be.true();
+          expect(definitionExecution.getChildState('end').taken).to.be.undefined();
           done();
         });
       });
@@ -363,58 +357,56 @@ describe('issues', () => {
         .replyWithError(new Error('REQ_FAIL: Error message'));
 
       engine.execute({
-        listener: listener,
+        listener,
         variables: {
           apiUrl: 'http://example.com/api',
           timeout: 'PT0.1S'
         },
-        services: services
+        services
       });
     });
   });
 
   describe('issue 23', () => {
     it('exclusiveGateway in loop should trigger end event', (done) => {
-      const definitionXml2 = `
-<?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-  <process id="issue-23" isExecutable="true">
-    <startEvent id="start" />
-    <task id="task1" />
-    <task id="task2">
-      <extensionElements>
-        <camunda:InputOutput>
-          <camunda:outputParameter name="tookDecision">\${variables.decision}</camunda:outputParameter>
-        </camunda:InputOutput>
-      </extensionElements>
-    </task>
-    <exclusiveGateway id="decision" default="flow4">
-      <extensionElements>
-        <camunda:InputOutput>
-          <camunda:outputParameter name="decision">\${true}</camunda:outputParameter>
-        </camunda:InputOutput>
-      </extensionElements>
-    </exclusiveGateway>
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="start" targetRef="task1" />
-    <sequenceFlow id="flow2" sourceRef="task1" targetRef="task2" />
-    <sequenceFlow id="flow3" sourceRef="task2" targetRef="decision" />
-    <sequenceFlow id="flow4" sourceRef="decision" targetRef="task1" />
-    <sequenceFlow id="flow5" sourceRef="decision" targetRef="end">
-      <conditionExpression xsi:type="tFormalExpression">\${variables.tookDecision}</conditionExpression>
-    </sequenceFlow>
-  </process>
-</definitions>`;
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="issue-23" isExecutable="true">
+          <startEvent id="start" />
+          <task id="task1" />
+          <task id="task2">
+            <extensionElements>
+              <camunda:InputOutput>
+                <camunda:outputParameter name="tookDecision">\${variables.decision}</camunda:outputParameter>
+              </camunda:InputOutput>
+            </extensionElements>
+          </task>
+          <exclusiveGateway id="decision" default="flow4">
+            <extensionElements>
+              <camunda:InputOutput>
+                <camunda:outputParameter name="decision">\${true}</camunda:outputParameter>
+              </camunda:InputOutput>
+            </extensionElements>
+          </exclusiveGateway>
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="start" targetRef="task1" />
+          <sequenceFlow id="flow2" sourceRef="task1" targetRef="task2" />
+          <sequenceFlow id="flow3" sourceRef="task2" targetRef="decision" />
+          <sequenceFlow id="flow4" sourceRef="decision" targetRef="task1" />
+          <sequenceFlow id="flow5" sourceRef="decision" targetRef="end">
+            <conditionExpression xsi:type="tFormalExpression">\${variables.tookDecision}</conditionExpression>
+          </sequenceFlow>
+        </process>
+      </definitions>`;
 
       const engine = new Engine({
-        source: definitionXml2,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        source,
+        moddleOptions
       });
-      engine.once('end', (def) => {
-        expect(def.getChildActivityById('end').taken).to.be.true();
+      engine.once('end', (execution, definitionExecution) => {
+        expect(definitionExecution.getChildState('end').taken).to.be.true();
         done();
       });
 
@@ -428,7 +420,7 @@ describe('issues', () => {
       });
 
       engine.execute({
-        listener: listener
+        listener
       });
     });
   });

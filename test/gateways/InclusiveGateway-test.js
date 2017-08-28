@@ -49,19 +49,6 @@ describe('InclusiveGateway', () => {
       });
     });
 
-    it('outbound flows are reordered with default flow last', (done) => {
-      const gateway = context.getChildActivityById('decisions');
-      gateway.activate();
-
-      gateway.once('enter', (activity, activityExecution) => {
-        expect(gateway.outbound.map((f) => f.id), 'loaded outbound').to.equal(['defaultFlow', 'condFlow1', 'condFlow2']);
-        expect(activityExecution.getState().pendingOutbound, 'reordered outbound').to.equal(['condFlow1', 'condFlow2', 'defaultFlow']);
-        done();
-      });
-
-      gateway.inbound[0].take();
-    });
-
     it('variables and services are passed to conditional flow', (done) => {
       context.environment.assignVariables({condition1: true});
 
@@ -177,9 +164,9 @@ describe('InclusiveGateway', () => {
             const resumedGatewayApi = resumedGateway.activate(state);
             resumedGatewayApi.id += '-resumed';
 
-            resumedGateway.once('enter', (g, resumedActivity) => {
-              resumedActivity.stop();
-              expect(resumedActivity.getState().pendingOutbound).to.equal(['condFlow2', 'defaultFlow']);
+            resumedGateway.once('enter', (activityApi, activityExecution) => {
+              activityExecution.stop();
+              expect(activityApi.getState().pendingOutbound).to.equal(['condFlow2', 'defaultFlow']);
               done();
             });
 
