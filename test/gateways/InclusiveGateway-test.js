@@ -159,7 +159,7 @@ describe('InclusiveGateway', () => {
               pendingOutbound: ['condFlow2', 'defaultFlow']
             });
 
-            const clonedContext = testHelpers.cloneContext(context);
+            const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('decisions');
             const resumedGatewayApi = resumedGateway.activate(state);
             resumedGatewayApi.id += '-resumed';
@@ -206,14 +206,15 @@ describe('InclusiveGateway', () => {
               pendingOutbound: ['condFlow2', 'defaultFlow']
             });
 
-            const clonedContext = testHelpers.cloneContext(context);
+            const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('decisions');
             const resumedGatewayApi = resumedGateway.activate(state);
             resumedGatewayApi.id += '-resumed';
 
             resumedGateway.once('leave', (g) => {
               const defaultFlow = g.outbound.find((f) => f.isDefault);
-              expect(defaultFlow.taken, defaultFlow.id).to.be.true();
+              expect(defaultFlow.discarded, defaultFlow.id).to.be.true();
+              expect(defaultFlow.taken, defaultFlow.id).to.be.undefined();
 
               expect(flowSequence).to.equal(['taken-condFlow1', 'taken-condFlow2', 'discarded-defaultFlow']);
 
@@ -252,7 +253,7 @@ describe('InclusiveGateway', () => {
               pendingOutbound: ['condFlow2', 'defaultFlow']
             });
 
-            const clonedContext = testHelpers.cloneContext(context);
+            const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('decisions');
             const resumedGatewayApi = resumedGateway.activate(state);
             resumedGatewayApi.id += '-resumed';

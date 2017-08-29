@@ -6,10 +6,21 @@ const contextHelper = require('../../lib/context-helper');
 const expect = require('lab').expect;
 const transformer = require('../../lib/transformer');
 
-const pub = {};
 const eventNames = ['enter', 'start', 'wait', 'end', 'cancel', 'catch', 'error', 'leave', 'message'];
 
-pub.expectNoLingeringChildListeners = (context) => {
+module.exports = {
+  expectNoLingeringChildListeners,
+  expectNoLingeringListeners,
+  expectNoLingeringListenersOnDefinition,
+  expectNoLingeringListenersOnEngine,
+  getContext,
+  getModdleContext,
+  readFromDb,
+  serializeModdleContext,
+  serviceFn
+};
+
+function expectNoLingeringChildListeners(context) {
   Object.keys(context.children).forEach((id) => {
     debug(`check listeners of <${id}>`);
     const child = context.children[id];
@@ -32,25 +43,25 @@ pub.expectNoLingeringChildListeners = (context) => {
     debug(`check listeners of flow <${flow.id}>`);
     checkListeners(flow, ['taken', 'message', 'discarded', 'looped'], '');
   });
-};
+}
 
-pub.expectNoLingeringListenersOnDefinition = (definition) => {
+function expectNoLingeringListenersOnDefinition(definition) {
   definition.getProcesses().forEach((p) => {
     checkListeners(p, eventNames, ` on process <${p.id}>`);
-    pub.expectNoLingeringListeners(p);
+    expectNoLingeringListeners(p);
   });
-};
+}
 
-pub.expectNoLingeringListenersOnEngine = (engine) => {
+function expectNoLingeringListenersOnEngine(engine) {
   engine.definitions.forEach((d) => {
     checkListeners(d, eventNames, ` on definition <${d.id}>`);
-    pub.expectNoLingeringListenersOnDefinition(d);
+    expectNoLingeringListenersOnDefinition(d);
   });
-};
+}
 
-pub.expectNoLingeringListeners = (instance) => {
-  return pub.expectNoLingeringChildListeners(instance.context);
-};
+function expectNoLingeringListeners(instance) {
+  return expectNoLingeringChildListeners(instance.context);
+}
 
 function checkListeners(child, names, scope) {
   names.forEach((name) => {
@@ -59,7 +70,7 @@ function checkListeners(child, names, scope) {
   });
 }
 
-pub.getContext = function(processXml, optionsOrCallback, callback) {
+function getContext(processXml, optionsOrCallback, callback) {
   let options = {};
   if (typeof optionsOrCallback === 'function') {
     callback = optionsOrCallback;
@@ -74,15 +85,9 @@ pub.getContext = function(processXml, optionsOrCallback, callback) {
     const context = Context(ctxh.getExecutableProcessId(), moddleContext);
     return callback(null, context);
   });
-};
+}
 
-pub.cloneContext = function(sourceContext) {
-  const Context = require('../../lib/Context');
-  const ctxh = contextHelper(sourceContext.moddleContext);
-  return Context(ctxh.getExecutableProcessId(), sourceContext.moddleContext);
-};
-
-pub.getModdleContext = function(processXml, optionsOrCallback, callback) {
+function getModdleContext(processXml, optionsOrCallback, callback) {
   if (!callback) {
     callback = optionsOrCallback;
     optionsOrCallback = {};
@@ -93,23 +98,21 @@ pub.getModdleContext = function(processXml, optionsOrCallback, callback) {
   bpmnModdle.fromXML(Buffer.isBuffer(processXml) ? processXml.toString() : processXml, (err, definitions, moddleContext) => {
     return callback(err, moddleContext);
   });
-};
+}
 
 // Place holder to service test
-pub.serviceFn = (message, callback) => {
+function serviceFn(message, callback) {
   callback(null, {
     service: true
   });
-};
+}
 
-pub.readFromDb = (state) => {
+function readFromDb(state) {
   const savedState = JSON.stringify(state);
   const loadedState = JSON.parse(savedState);
   return loadedState;
-};
+}
 
-pub.serializeModdleContext = (moddleContext) => {
+function serializeModdleContext(moddleContext) {
   return JSON.stringify(contextHelper(moddleContext).clone());
-};
-
-module.exports = pub;
+}

@@ -1,6 +1,5 @@
 'use strict';
 
-// const EndEvent = require('../../lib/events/EndEvent');
 const Environment = require('../../lib/Environment');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
@@ -193,7 +192,7 @@ describe('Activity', () => {
         const api = activityApi.getApi(activityExecution);
         const state = api.getState();
 
-        const newContext = testHelpers.cloneContext(context);
+        const newContext = context.clone();
         const taskToResume = newContext.getChildActivityById('end');
 
         expect(taskToResume.activate(state).getState().canceled).to.be.true();
@@ -255,7 +254,7 @@ describe('Activity', () => {
         const api = activityApi.getApi(activityExecution);
         const state = api.getState();
 
-        const newContext = testHelpers.cloneContext(context);
+        const newContext = context.clone(new Environment());
         const taskToResume = newContext.getChildActivityById('end');
 
         expect(taskToResume.activate(state).getState().taken).to.be.true();

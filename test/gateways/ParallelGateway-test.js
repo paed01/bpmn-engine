@@ -169,7 +169,7 @@ describe('ParallelGateway', () => {
             pendingInbound: ['flow3']
           });
 
-          const clonedContext = testHelpers.cloneContext(context);
+          const clonedContext = context.clone();
           const resumedGateway = clonedContext.getChildActivityById('join');
           resumedGateway.id += '-resumed';
 
@@ -199,7 +199,7 @@ describe('ParallelGateway', () => {
             pendingInbound: ['flow3']
           });
 
-          const clonedContext = testHelpers.cloneContext(context);
+          const clonedContext = context.clone();
           const resumedGateway = clonedContext.getChildActivityById('join');
 
           resumedGateway.id += '-resumed';
@@ -233,7 +233,7 @@ describe('ParallelGateway', () => {
             discardedInbound: ['flow2']
           });
 
-          const clonedContext = testHelpers.cloneContext(context);
+          const clonedContext = context.clone();
           const resumedGateway = clonedContext.getChildActivityById('join');
 
           resumedGateway.id += '-resumed';
@@ -267,7 +267,7 @@ describe('ParallelGateway', () => {
             pendingInbound: ['flow3']
           });
 
-          const clonedContext = testHelpers.cloneContext(context);
+          const clonedContext = context.clone();
           const resumedGateway = clonedContext.getChildActivityById('join');
 
           resumedGateway.id += '-resumed';
@@ -406,7 +406,7 @@ describe('ParallelGateway', () => {
               pendingOutbound: ['flow3']
             });
 
-            const clonedContext = testHelpers.cloneContext(context);
+            const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('fork');
 
             const takenFlows = [];
