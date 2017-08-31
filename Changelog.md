@@ -4,6 +4,7 @@ Changelog
 # 5.0.0
 
 ## Breaking changes
+- Engine `execute` callback is called when execution completes
 - Drop support for node v4 and v5
 - `SendTask` message requires output
 - `ParallelGateway` emits `start` on first taken inbound, i.e. discarded inbound are just registered
