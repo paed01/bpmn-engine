@@ -219,7 +219,7 @@ describe('EndEvent', () => {
       done();
     });
 
-    it('and have terminate flag', (done) => {
+    it.skip('and have terminate flag', (done) => {
       const element = context.getChildActivityById('fatal');
       expect(element.terminate).to.be.true();
       done();
