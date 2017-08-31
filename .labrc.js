@@ -1,11 +1,17 @@
 'use strict';
 
+module.exports = {
+  timeout: 1000,
+  verbose: true,
+  'coverage-exclude': ['scripts']
+};
+
 require('nock').enableNetConnect(/(localhost|127\.0\.0\.1):\d+/);
 
 if (process.env.UNNECESSARY) {
   const Unnecessary = require("unnecessary");
   const unnecessary = new Unnecessary({
-    excludeDirs: ["tmp"],
+    excludeDirs: ["tmp", "scripts"],
     excludeFiles: [
       "generate-api-toc.js"
     ]
@@ -27,8 +33,3 @@ function log(unnecessary) {
     console.log(`  \x1b[33m${file}\x1b[0m`);
   });
 }
-
-module.exports = {
-  timeout: 1000,
-  verbose: true
-};
