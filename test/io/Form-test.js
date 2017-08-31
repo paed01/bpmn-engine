@@ -137,38 +137,7 @@ describe('Forms', () => {
       </process>
     </definitions>`;
 
-    it('before init returns form fields', (done) => {
-      const engine = new Engine({
-        source,
-        moddleOptions
-      });
-
-      const listener = new EventEmitter();
-      listener.once('wait-start', (activityApi, instance) => {
-        engine.stop();
-
-        const task = instance.getChildActivityById('task');
-
-        const state = task.form.getState();
-        expect(state).to.include(['fields']);
-        expect(state.fields).to.have.length(2);
-        expect(state.fields[0]).to.only.include(['id', 'label', 'valueType']);
-        expect(state.fields[1]).to.only.include(['id', 'label', 'valueType']);
-
-        expect(state.fields[0]).to.equal({
-          id: 'surname',
-          label: 'Surname',
-          valueType: 'string'
-        });
-        done();
-      });
-
-      engine.execute({
-        listener
-      });
-    });
-
-    it('after init returns form fields', (done) => {
+    it('returns form fields', (done) => {
       const engine = new Engine({
         source,
         moddleOptions

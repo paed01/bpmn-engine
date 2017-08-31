@@ -92,7 +92,7 @@ describe('validation', () => {
     });
   });
 
-  describe('sequenceFlow', () => {
+  describe('SequenceFlow', () => {
     it('targetRef is required', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
@@ -278,6 +278,27 @@ describe('validation', () => {
       });
     });
 
+  });
+
+  describe('BoundaryEvent', () => {
+    it('has warnings if attachedToRef is not found', (done) => {
+      const source = `
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <task id="task" />
+          <boundaryEvent id="boundEvent" attachedToRef="undefined-task">
+            <errorEventDefinition />
+          </boundaryEvent>
+        </process>
+      </definitions>`;
+
+      testHelpers.getModdleContext(source, (err, moddleContext) => {
+        if (err) return done(err);
+        const warnings = validation.validateModdleContext(moddleContext);
+        expect(warnings.length).to.equal(1);
+        done();
+      });
+    });
   });
 
   lab.describe('serialized bpmn-moddle context', () => {

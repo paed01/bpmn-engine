@@ -1,0 +1,5 @@
+{
+  "name": "Node bpmn-engine",
+  "uri": "http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn",
+  "prefix": "js"
+}

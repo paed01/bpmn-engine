@@ -778,10 +778,10 @@ describe('ServiceTask', () => {
 
         nock('http://example.com')
           .get('/api/pal?version=0')
-          .delay(50)
+          .delay(20)
           .reply(200, {})
           .get('/api/franz?version=1')
-          .delay(30)
+          .delay(10)
           .reply(200, {})
           .get('/api/immanuel?version=2')
           .reply(409, {});

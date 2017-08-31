@@ -709,7 +709,7 @@ function getLoopContext(sequential, callback) {
           </camunda:inputOutput>
         </extensionElements>
         <script><![CDATA[
-          setTimeout(next, 50 - invertTimout * 10, null, name);
+          setTimeout(next, 25 - invertTimout * 5, null, name);
         ]]></script>
       </scriptTask>
     </process>

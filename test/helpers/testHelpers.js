@@ -4,6 +4,7 @@ const BpmnModdle = require('bpmn-moddle');
 const debug = require('debug')('bpmn-engine:test');
 const contextHelper = require('../../lib/context-helper');
 const expect = require('lab').expect;
+const getOptionsAndCallback = require('../../lib/getOptionsAndCallback');
 const transformer = require('../../lib/transformer');
 
 const eventNames = ['enter', 'start', 'wait', 'end', 'cancel', 'catch', 'error', 'leave', 'message'];
@@ -70,13 +71,8 @@ function checkListeners(child, names, scope) {
   });
 }
 
-function getContext(processXml, optionsOrCallback, callback) {
-  let options = {};
-  if (typeof optionsOrCallback === 'function') {
-    callback = optionsOrCallback;
-  } else {
-    options = optionsOrCallback;
-  }
+function getContext(processXml, optionsOrCallback, cb) {
+  const [options, callback] = getOptionsAndCallback(optionsOrCallback, cb);
 
   const Context = require('../../lib/Context');
   transformer.transform(processXml, options, (err, definitions, moddleContext) => {
@@ -87,13 +83,10 @@ function getContext(processXml, optionsOrCallback, callback) {
   });
 }
 
-function getModdleContext(processXml, optionsOrCallback, callback) {
-  if (!callback) {
-    callback = optionsOrCallback;
-    optionsOrCallback = {};
-  }
+function getModdleContext(processXml, optionsOrCallback, cb) {
+  const [options, callback] = getOptionsAndCallback(optionsOrCallback, cb);
 
-  const bpmnModdle = new BpmnModdle(optionsOrCallback);
+  const bpmnModdle = new BpmnModdle(options);
 
   bpmnModdle.fromXML(Buffer.isBuffer(processXml) ? processXml.toString() : processXml, (err, definitions, moddleContext) => {
     return callback(err, moddleContext);
