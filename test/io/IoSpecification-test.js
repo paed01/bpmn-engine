@@ -124,6 +124,25 @@ describe('IoSpecification', () => {
       task.activate().run();
     });
 
+    it('set output value is ignored if no output reference', (done) => {
+      const task = context.getChildActivityById('task2');
+
+      task.on('wait', (activityApi, executionContext) => {
+        executionContext.io.setOutputValue('no-ref', 'save me');
+
+        const api = activityApi.getApi(executionContext);
+        api.signal();
+      });
+
+      task.on('end', (activityApi, executionContext) => {
+        const api = activityApi.getApi(executionContext);
+        expect(api.getOutput()).to.be.empty();
+        done();
+      });
+
+      task.activate().run();
+    });
+
     it('environment variables are set on end', (done) => {
       const engine = new Engine({
         source
@@ -159,6 +178,168 @@ describe('IoSpecification', () => {
         });
         done();
       });
+    });
+  });
+
+  it('activity output only', (done) => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theProcess" isExecutable="true">
+        <dataObjectReference id="inputFromUserRef" dataObjectRef="inputFromUser" />
+        <dataObject id="inputFromUser" />
+        <startEvent id="theStart" />
+        <userTask id="userTask">
+          <ioSpecification id="inputSpec">
+            <dataOutput id="userInput" />
+          </ioSpecification>
+          <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUserRef" />
+        </userTask>
+        <endEvent id="theEnd" />
+        <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+        <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+      </process>
+    </definitions>`;
+
+    const engine = new Engine({
+      source
+    });
+
+    const listener = new EventEmitter();
+    listener.on('wait-userTask', (activityApi) => {
+      expect(activityApi.getInput()).to.equal({});
+      activityApi.signal('no input');
+    });
+
+    engine.execute({listener}, (err, execution) => {
+      if (err) done(err);
+      expect(execution.getOutput()).to.equal({
+        inputFromUser: 'no input'
+      });
+      done();
+    });
+  });
+
+  it('activity input only - ignores output', (done) => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theProcess" isExecutable="true">
+        <dataObjectReference id="inputToUserRef" dataObjectRef="userInfo" />
+        <dataObject id="userInfo" />
+        <startEvent id="theStart" />
+        <userTask id="userTask">
+          <ioSpecification id="inputSpec">
+            <dataInput id="userInput" name="info" />
+          </ioSpecification>
+          <dataInputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputToUserRef" />
+        </userTask>
+        <endEvent id="theEnd" />
+        <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+        <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+      </process>
+    </definitions>`;
+
+    const engine = new Engine({
+      source
+    });
+
+    const listener = new EventEmitter();
+    listener.on('wait-userTask', (activityApi) => {
+      expect(activityApi.getInput()).to.equal({
+        info: 'this is how'
+      });
+      activityApi.signal('no input');
+    });
+
+    engine.execute({
+      listener,
+      variables: {
+        userInfo: 'this is how'
+      }
+    }, (err, execution) => {
+      if (err) done(err);
+      expect(execution.getOutput()).to.equal({});
+      done();
+    });
+  });
+
+  it('no data objects effectively ignores io', (done) => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theProcess" isExecutable="true">
+        <startEvent id="theStart" />
+        <userTask id="userTask">
+          <ioSpecification id="inputSpec">
+            <dataInput id="userInput" name="info" value="lkJH">user info</dataInput>
+          </ioSpecification>
+        </userTask>
+        <endEvent id="theEnd" />
+        <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+        <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+      </process>
+    </definitions>`;
+
+    const engine = new Engine({
+      source
+    });
+
+    const listener = new EventEmitter();
+    listener.on('wait-userTask', (activityApi) => {
+      expect(activityApi.getInput()).to.equal({});
+      activityApi.signal('no input');
+    });
+
+    engine.execute({
+      listener,
+      variables: {
+        userInfo: 'this is how'
+      }
+    }, (err, execution) => {
+      if (err) done(err);
+      expect(execution.getOutput()).to.equal({});
+      done();
+    });
+  });
+
+  it('association missing target', (done) => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theProcess" isExecutable="true">
+        <startEvent id="theStart" />
+        <userTask id="userTask">
+          <ioSpecification id="inputSpec">
+            <dataInput id="userInput" name="info" />
+          </ioSpecification>
+          <dataInputAssociation id="associatedWith" sourceRef="userInput" />
+        </userTask>
+        <endEvent id="theEnd" />
+        <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+        <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+      </process>
+    </definitions>`;
+
+    const engine = new Engine({
+      source
+    });
+
+    const listener = new EventEmitter();
+    listener.on('wait-userTask', (activityApi) => {
+      expect(activityApi.getInput()).to.equal({});
+      activityApi.signal('no input');
+    });
+
+    engine.execute({
+      listener,
+      variables: {
+        userInfo: 'this is how'
+      }
+    }, (err, execution) => {
+      if (err) done(err);
+      expect(execution.getOutput()).to.equal({});
+      done();
     });
   });
 });

@@ -1,11 +1,11 @@
 <!-- version -->
-# 4.1.0 API Reference
+# 5.0.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
 
 - [Engine](#engine)
-  - [`new Engine([options])`](#new-engineoptions)
+  - [`Engine([options])`](#engineoptions)
     - [`execute([options[, callback]])`](#executeoptions-callback)
       - [Execution `listener`](#execution-listener)
       - [Execution `variables`](#execution-variables)
@@ -25,10 +25,6 @@
 - [Validation](#validation)
   - [`validateModdleContext(moddleContext)`](#validatemoddlecontextmoddlecontext)
   - [`validateOptions(executeOptions)`](#validateoptionsexecuteoptions)
-- [Loops](#loops)
-  - [Cardinality loop](#cardinality-loop)
-  - [Conditional loop](#conditional-loop)
-  - [Collection loop](#collection-loop)
 - [Expressions](#expressions)
 
 <!-- tocstop -->
@@ -37,7 +33,7 @@
 
 The engine. Executes passed BPMN definitions.
 
-## `new Engine([options])`
+## `Engine([options])`
 
 Creates a new Engine object where:
 
@@ -79,9 +75,9 @@ Execute definition with:
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
+const {Engine} = require('bpmn-engine');
 
-const processXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -100,15 +96,14 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
-  source: processXml
+const engine = new Engine({
+  name: 'first',
+  source
 });
 
 engine.execute((err, definition) => {
   if (err) throw err;
-  definition.once('end', () => {
-    console.log('completed')
-  });
+  console.log('completed')
 });
 ```
 
@@ -458,10 +453,10 @@ Returns boolean, `true` if signal was approved and `false` otherwise.
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
 
-const processXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -473,8 +468,8 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
-  source: processXml
+const engine = new Engine({
+  source
 });
 const listener = new EventEmitter();
 
@@ -500,10 +495,10 @@ Stop execution. The instance is terminated.
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
 
-const processXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -515,8 +510,8 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
-  source: processXml
+const engine = new Engine({
+  source
 });
 const listener = new EventEmitter();
 
@@ -543,16 +538,21 @@ Resume execution function with previously saved engine state.
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
 
 // Retrieve saved state
 const state = db.getState('some-random-id', (err, state) => {
   if (err) return console.log(err.message);
 
-  const engine = Bpmn.Engine.resume(state);
+  console.log(state)
+
+  const engine = Engine.resume(state);
   engine.on('end', () => {
     console.log('resumed instance completed');
+  });
+  engine.on('error', (err) => {
+    console.error('failed with', err);
   });
 });
 ```
@@ -599,7 +599,7 @@ Basically a wrapper around [`bpmn-moddle.fromXml`][2].
   - `moddleContext`: Bpmn moddle context
 
 ```javascript
-const Bpmn = require('bpmn-engine');
+const {Engine, transformer} = require('bpmn-engine');
 
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -613,17 +613,18 @@ const processXml = `
   </process>
 </definitions>`;
 
-Bpmn.transformer.transform(processXml, {
+transformer.transform(processXml, {
   camunda: require('camunda-bpmn-moddle/resources/camunda')
 }, (err, def, moddleContext) => {
-  const engine = new Bpmn.Engine({
+  const engine = Engine({
+    name: 'initiateWithModdleContext',
     moddleContext: moddleContext
   });
 
   engine.execute((err, instance) => {
     if (err) throw err;
 
-    console.log('Definition started with process', instance.mainProcess.id);
+    console.log('Definition completed with process', instance.mainProcess.id);
   });
 });
 ```
@@ -639,8 +640,8 @@ Validate moddle context to ensure that it is executable. Returns list of error i
 - `moddleContext`: Moddle context object
 
 ```javascript
-const Bpmn = require('bpmn-engine');
-const EventEmitter = require('events').EventEmitter;
+const {transformer, validation} = require('bpmn-engine');
+const {EventEmitter} = require('events');
 
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -657,10 +658,10 @@ const processXml = `
   </process>
 </definitions>`;
 
-Bpmn.transformer.transform(processXml, {
+transformer.transform(processXml, {
   camunda: require('camunda-bpmn-moddle/resources/camunda')
 }, (err, def, moddleContext) => {
-  console.log(Bpmn.validation.validateModdleContext(moddleContext));
+  console.log(validation.validateModdleContext(moddleContext));
 });
 ```
 

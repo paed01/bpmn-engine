@@ -72,28 +72,6 @@ describe('context-helper', () => {
 
   });
 
-  describe('getDataObjectFromRef()', () => {
-    let ctxHelper;
-    before((done) => {
-      transformer.transform(factory.userTask(), {}, (err, bpmnObject, result) => {
-        if (err) return done(err);
-        ctxHelper = ContextHelper(result);
-        done();
-      });
-    });
-
-    it('returns referenced data object', (done) => {
-      const dataObject = ctxHelper.getDataObjectFromRef('inputFromUserRef');
-      expect(dataObject).to.include(['id', '$type']);
-      done();
-    });
-
-    it('if found', (done) => {
-      const dataObject = ctxHelper.getDataObjectFromRef('orphanRef');
-      expect(dataObject).to.not.exist();
-      done();
-    });
-  });
   describe('hasInboundSequenceFlows()', () => {
     it('returns false if no inbound sequenceFlows', (done) => {
       const processXml = `
@@ -287,6 +265,52 @@ describe('context-helper', () => {
   describe('getActivityProperties()', () => {
     it('returns nothing if activity is not found', (done) => {
       expect(context.getActivityProperties('not-an-activity')).to.be.undefined();
+      done();
+    });
+  });
+
+  describe('io', () => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theProcess" isExecutable="true">
+        <dataObjectReference id="inputToUserRef" dataObjectRef="userInfo" />
+        <dataObjectReference id="globalRef" dataObjectRef="global" />
+        <dataObject id="userInfo" />
+        <dataObject id="global" />
+        <dataObject id="noref" />
+        <userTask id="userTask">
+          <ioSpecification id="inputSpec">
+            <dataInput id="userInput" name="info" />
+          </ioSpecification>
+          <dataInputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputToUserRef" />
+        </userTask>
+      </process>
+    </definitions>`;
+
+    let contextHelper;
+    before((done) => {
+      transformer.transform(source, {}, (err, bpmnObject, result) => {
+        if (err) return done(err);
+        contextHelper = ContextHelper(result);
+        done();
+      });
+    });
+
+    it('getDataObjects() returns dataObjects that have references', (done) => {
+      const data = contextHelper.getDataObjects();
+      expect(data.length).to.equal(2);
+      expect(data[0].id).to.equal('userInfo');
+      expect(data[1].id).to.equal('global');
+      done();
+    });
+
+    it('getDataObjectReferences() returns associations and data object references', (done) => {
+      const data = contextHelper.getDataObjectReferences();
+      expect(data.dataInputAssociations.length).to.equal(2);
+      expect(data.dataOutputAssociations.length).to.equal(0);
+      expect(data.dataObjectRefs.length).to.equal(2);
+
       done();
     });
   });
