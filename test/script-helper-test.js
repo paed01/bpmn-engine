@@ -23,9 +23,14 @@ describe('script-helper', () => {
       expect(scriptHelper.isJavascript('javascript')).to.be.true();
       done();
     });
+
+    it('returns false if undefined', (done) => {
+      expect(scriptHelper.isJavascript()).to.be.false();
+      done();
+    });
   });
 
-  describe('#parse', () => {
+  describe('parse()', () => {
     it('takes filename and script string and returns contextified script', (done) => {
       expect(scriptHelper.parse.bind(null, 'unit-test.js', 'i = 1')).to.not.throw();
       done();
@@ -37,7 +42,7 @@ describe('script-helper', () => {
     });
   });
 
-  describe('#execute', () => {
+  describe('execute()', () => {
     it('takes parsed script and returns result', (done) => {
       const script = scriptHelper.parse('unit-test.js', 'true');
       expect(scriptHelper.execute(script)).to.equal(true);
@@ -110,7 +115,6 @@ describe('script-helper', () => {
       done();
     });
 
-
     it('fourth argument is callback and is passed as next to script', (done) => {
       const script = scriptHelper.parse('unit-test.js', 'next()');
       const message = {
@@ -131,5 +135,22 @@ describe('script-helper', () => {
         done();
       }, 10);
     });
+
+    it('non-object message without callback throws', (done) => {
+      const script = scriptHelper.parse('unit-test.js', 'next()');
+      const message = 'me';
+      expect(() => scriptHelper.executeWithMessage(script, null, message)).to.throw();
+      done();
+    });
+
+    it('non-object message with callback return error', (done) => {
+      const script = scriptHelper.parse('unit-test.js', 'next()');
+      const message = 'me';
+      scriptHelper.executeWithMessage(script, null, message, (err) => {
+        expect(err).to.be.an.error();
+        done();
+      });
+    });
+
   });
 });
