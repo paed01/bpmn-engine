@@ -198,12 +198,12 @@ lab.experiment('expressions', () => {
       done();
     });
 
-    lab.test('expression \${true} return true', (done) => {
+    lab.test('expression ${true} return true', (done) => {
       expect(expressions('${true}')).to.be.true();
       done();
     });
 
-    lab.test('expression \${false} return false', (done) => {
+    lab.test('expression ${false} return false', (done) => {
       expect(expressions('${false}')).to.be.false();
       done();
     });
