@@ -9,6 +9,10 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect} = Lab.assertions;
 
+const moddleOptions = {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+};
+
 describe('StartEvent', () => {
   describe('behaviour', () => {
     const processXml = `
@@ -30,9 +34,7 @@ describe('StartEvent', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, c) => {
+      testHelpers.getContext(processXml, moddleOptions, (err, c) => {
         if (err) return done(err);
         context = c;
         done();
@@ -126,9 +128,7 @@ describe('StartEvent', () => {
 
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
 
       engine.once('end', () => {
@@ -143,9 +143,7 @@ describe('StartEvent', () => {
     it('getState() returns waiting true', (done) => {
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
 
       const listener = new EventEmitter();
@@ -206,9 +204,7 @@ describe('StartEvent', () => {
     it('assigns output to environment variables', (done) => {
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
 
       const listener = new EventEmitter();
