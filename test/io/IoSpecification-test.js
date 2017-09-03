@@ -1,9 +1,9 @@
 'use strict';
 
-const {Engine} = require('../../.');
-const EventEmitter = require('events').EventEmitter;
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
+const {Engine} = require('../../.');
+const {EventEmitter} = require('events');
 
 const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
@@ -318,6 +318,44 @@ describe('IoSpecification', () => {
         <endEvent id="theEnd" />
         <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
         <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+      </process>
+    </definitions>`;
+
+    const engine = new Engine({
+      source
+    });
+
+    const listener = new EventEmitter();
+    listener.on('wait-userTask', (activityApi) => {
+      expect(activityApi.getInput()).to.equal({});
+      activityApi.signal('no input');
+    });
+
+    engine.execute({
+      listener,
+      variables: {
+        userInfo: 'this is how'
+      }
+    }, (err, execution) => {
+      if (err) done(err);
+      expect(execution.getOutput()).to.equal({});
+      done();
+    });
+  });
+
+  it('getInput() dataObjectReference missing target returns empty input', (done) => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theProcess" isExecutable="true">
+        <dataObjectReference id="userInfoRef" />
+        <dataObject id="userInfo" />
+        <userTask id="userTask">
+          <ioSpecification id="inputSpec">
+            <dataInput id="infoToUser" name="info" />
+          </ioSpecification>
+          <dataInputAssociation id="associatedWith" sourceRef="infoToUser" targetRef="userInfoRef" />
+        </userTask>
       </process>
     </definitions>`;
 
