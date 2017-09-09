@@ -8,6 +8,10 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect} = Lab.assertions;
 
+const moddleOptions = {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+};
+
 describe('ExclusiveGateway', () => {
   describe('behavior', () => {
     const source = `
@@ -41,9 +45,7 @@ describe('ExclusiveGateway', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(source, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, c) => {
+      testHelpers.getContext(source, moddleOptions, (err, c) => {
         if (err) return done(err);
         context = c;
         done();
@@ -130,27 +132,29 @@ describe('ExclusiveGateway', () => {
       it('sets resumed gateway pendingOutbound', (done) => {
         const gateway = context.getChildActivityById('decision');
 
-        const activityApi = gateway.activate();
+        gateway.activate();
 
-        gateway.once('start', () => {
+        gateway.once('start', (activityApi, activityExecution) => {
+
           gateway.outbound[1].once('discarded', () => {
-            activityApi.stop();
+            const api = activityApi.getApi(activityExecution);
+            api.stop();
 
-            const state = activityApi.getState();
+            const state = api.getState();
 
             expect(state).to.include({
               discardedOutbound: ['condFlow1'],
-              pendingOutbound: ['condFlow2', 'defaultFlow']
+              pendingOutbound: ['defaultFlow', 'condFlow2']
             });
 
             const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('decision');
             resumedGateway.id += '-resumed';
 
-            resumedGateway.once('enter', (resumedApi, activityExecution) => {
-              const api = resumedApi.getApi(activityExecution);
-              api.stop();
-              expect(api.getState().pendingOutbound).to.equal(['condFlow2', 'defaultFlow']);
+            resumedGateway.once('enter', (resumedActivityApi, resumedActivityExecution) => {
+              const resumedApi = resumedActivityApi.getApi(resumedActivityExecution);
+              resumedApi.stop();
+              expect(resumedApi.getState().pendingOutbound).to.equal(['defaultFlow', 'condFlow2']);
               done();
             });
 
@@ -179,22 +183,23 @@ describe('ExclusiveGateway', () => {
           });
         });
 
-        gateway.once('start', (activity) => {
+        gateway.once('start', (activityApi, activityExecution) => {
           gateway.outbound[1].once('taken', () => {
-            activity.stop();
+            const api = activityApi.getApi(activityExecution);
+            api.stop();
 
-            const state = activity.getState();
+            const state = api.getState();
 
             expect(state).to.include({
-              pendingOutbound: ['condFlow2', 'defaultFlow']
+              pendingOutbound: ['defaultFlow', 'condFlow2']
             });
 
             const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('decision');
             resumedGateway.id += '-resumed';
 
-            resumedGateway.once('leave', (resumedGatewayApi) => {
-              const defaultFlow = resumedGatewayApi.outbound.find((f) => f.isDefault);
+            resumedGateway.once('leave', () => {
+              const defaultFlow = resumedGateway.outbound.find((f) => f.isDefault);
               expect(defaultFlow.discarded, defaultFlow.id).to.be.true();
               expect(defaultFlow.taken, defaultFlow.id).to.be.undefined();
 
@@ -214,23 +219,24 @@ describe('ExclusiveGateway', () => {
       it('takes defaultFlow if no other flows were taken', (done) => {
         const gateway = context.getChildActivityById('decision');
 
-        gateway.once('start', (activity) => {
+        gateway.once('start', (activityApi, activityExecution) => {
           gateway.outbound[1].once('discarded', () => {
-            activity.stop();
+            const api = activityApi.getApi(activityExecution);
+            api.stop();
 
-            const state = activity.getState();
+            const state = api.getState();
 
             expect(state).to.include({
               discardedOutbound: ['condFlow1'],
-              pendingOutbound: ['condFlow2', 'defaultFlow']
+              pendingOutbound: ['defaultFlow', 'condFlow2']
             });
 
             const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('decision');
             resumedGateway.id += '-resumed';
 
-            resumedGateway.once('end', (g) => {
-              const defaultFlow = g.outbound.find((f) => f.isDefault);
+            resumedGateway.once('end', (resumedActivityApi) => {
+              const defaultFlow = resumedActivityApi.outbound.find((f) => f.isDefault);
               expect(defaultFlow.taken, defaultFlow.id).to.be.true();
               done();
             });
@@ -266,9 +272,7 @@ describe('ExclusiveGateway', () => {
           </process>
         </definitions>`;
 
-        testHelpers.getContext(definition, {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }, (getErr, testContext) => {
+        testHelpers.getContext(definition, moddleOptions, (getErr, testContext) => {
           if (getErr) return done(getErr);
 
           const gateway = testContext.getChildActivityById('decision');

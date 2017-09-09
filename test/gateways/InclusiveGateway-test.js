@@ -147,16 +147,17 @@ describe('InclusiveGateway', () => {
 
         const gateway = context.getChildActivityById('decisions');
 
-        gateway.on('start', (activity) => {
+        gateway.on('start', (activityApi, activityExecution) => {
 
           gateway.outbound[1].once('discarded', () => {
-            activity.stop();
+            const api = activityApi.getApi(activityExecution);
+            api.stop();
 
-            const state = activity.getState();
+            const state = api.getState();
 
             expect(state).to.include({
               discardedOutbound: ['condFlow1'],
-              pendingOutbound: ['condFlow2', 'defaultFlow']
+              pendingOutbound: ['defaultFlow', 'condFlow2']
             });
 
             const clonedContext = context.clone();
@@ -164,9 +165,11 @@ describe('InclusiveGateway', () => {
             const resumedGatewayApi = resumedGateway.activate(state);
             resumedGatewayApi.id += '-resumed';
 
-            resumedGateway.once('enter', (activityApi, activityExecution) => {
-              activityExecution.stop();
-              expect(activityApi.getState().pendingOutbound).to.equal(['condFlow2', 'defaultFlow']);
+            resumedGateway.once('enter', (resumedActivityApi, resumedActivityExecution) => {
+              const resumedApi = resumedActivityApi.getApi(resumedActivityExecution);
+              resumedApi.stop();
+
+              expect(resumedApi.getState().pendingOutbound).to.equal(['defaultFlow', 'condFlow2']);
               done();
             });
 
@@ -196,14 +199,15 @@ describe('InclusiveGateway', () => {
           });
         });
 
-        gateway.once('start', (activity) => {
+        gateway.once('start', (activityApi, activityExecution) => {
           gateway.outbound[1].once('taken', () => {
-            activity.stop();
+            const api = activityApi.getApi(activityExecution);
+            api.stop();
 
-            const state = activity.getState();
+            const state = api.getState();
 
             expect(state).to.include({
-              pendingOutbound: ['condFlow2', 'defaultFlow']
+              pendingOutbound: ['defaultFlow', 'condFlow2']
             });
 
             const clonedContext = context.clone();
@@ -242,16 +246,12 @@ describe('InclusiveGateway', () => {
           });
         });
 
-        gateway.once('start', (activity) => {
+        gateway.once('start', (activityApi, activityExecution) => {
           gateway.outbound[1].once('discarded', () => {
-            activity.stop();
+            const api = activityApi.getApi(activityExecution);
+            api.stop();
 
-            const state = activity.getState();
-
-            expect(state).to.include({
-              discardedOutbound: ['condFlow1'],
-              pendingOutbound: ['condFlow2', 'defaultFlow']
-            });
+            const state = api.getState();
 
             const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('decisions');
