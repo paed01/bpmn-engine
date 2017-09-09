@@ -9,6 +9,10 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
+const moddleOptions = {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+};
+
 describe('UserTask', () => {
   describe('behaviour', () => {
     const taskProcessXml = `
@@ -33,9 +37,7 @@ describe('UserTask', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(taskProcessXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, result) => {
+      testHelpers.getContext(taskProcessXml, moddleOptions, (err, result) => {
         if (err) return done(err);
         context = result;
         done();
@@ -143,8 +145,8 @@ describe('UserTask', () => {
 
         task.activate();
 
-        task.once('wait', (activityApi, executionApi) => {
-          executionApi.signal();
+        task.once('wait', (activityApi, executionContext) => {
+          executionContext.signal();
         });
         task.once('leave', () => {
           done();
@@ -229,9 +231,7 @@ describe('UserTask', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(taskProcessXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, result) => {
+      testHelpers.getContext(taskProcessXml, moddleOptions, (err, result) => {
         if (err) return done(err);
         context = result;
         done();
@@ -312,9 +312,7 @@ describe('UserTask', () => {
 
       const engine = new Engine({
         source: processXml,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
 
       const listener = new EventEmitter();
@@ -453,9 +451,7 @@ describe('UserTask', () => {
 
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
 
       engine.once('end', () => {
@@ -470,9 +466,7 @@ describe('UserTask', () => {
     it('getState() returns waiting true', (done) => {
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
 
       const listener = new EventEmitter();
@@ -490,9 +484,7 @@ describe('UserTask', () => {
     it('getState() returns form state', (done) => {
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
 
       const listener = new EventEmitter();
@@ -691,11 +683,8 @@ describe('UserTask', () => {
 
         task.run();
       });
-
-
     });
   });
-
 });
 
 function getLoopContext(sequential, callback) {
@@ -721,9 +710,7 @@ function getLoopContext(sequential, callback) {
       </userTask>
     </process>
   </definitions>`;
-  testHelpers.getContext(source, {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
-  }, (err, context) => {
+  testHelpers.getContext(source, moddleOptions, (err, context) => {
     if (err) return callback(err);
     context.environment.assignVariables({boardMembers: ['pal@example.com', 'franz@example.com', 'immanuel@example.com']});
     callback(null, context);
