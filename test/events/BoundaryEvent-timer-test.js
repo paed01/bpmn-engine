@@ -12,6 +12,10 @@ const lab = exports.lab = Lab.script();
 const {afterEach, beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
+const moddleOptions = {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+};
+
 describe('BoundaryEvent with TimerEventDefinition', () => {
 
   describe('behaviour', () => {
@@ -36,9 +40,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(source, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, c) => {
+      testHelpers.getContext(source, (err, c) => {
         if (err) return done(err);
         context = c;
         done();
@@ -50,24 +52,15 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       const event = context.getChildActivityById('timeoutEvent');
       const eventApi = event.activate();
 
-      const boundEvents = eventApi.getEvents();
+      const boundEvents = eventApi.getEventDefinitions();
       expect(boundEvents).to.have.length(1);
 
       expect(boundEvents[0]).to.include({
         id: 'timeoutEvent',
         type: 'bpmn:TimerEventDefinition',
-        duration: 'PT0.1S',
-        cancelActivity: true
+        duration: 'PT0.1S'
       });
 
-      done();
-    });
-
-    it('has property cancelActivity true', (done) => {
-      const event = context.getChildActivityById('timeoutEvent');
-      expect(event).to.include({
-        cancelActivity: true
-      });
       done();
     });
 
@@ -104,6 +97,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
           startedAt,
           timeout: 100,
           duration: 100,
+          taken: undefined,
           entered: true
         });
         eventApi.stop();
@@ -127,9 +121,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, context2) => {
+      testHelpers.getContext(processXml, moddleOptions, (err, context2) => {
         if (err) return done(err);
 
         context2.environment.assignVariables({
@@ -243,7 +235,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         const eventApi = activityApi.getApi(executionContext);
         const state = eventApi.getState();
         expect(state.entered).to.be.undefined();
-        expect(state.timeout).to.be.below(1);
+        expect(state.timeout).to.be.undefined();
         done();
       });
 
@@ -282,10 +274,9 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       });
 
       engine.execute({
-        listener: listener
+        listener
       }, (err) => {
         if (err) return done(err);
-
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -305,9 +296,8 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
           calledEnds.push(e.id);
         });
 
-        listener.once('end-boundaryEvent', (activity, execution) => {
+        listener.once('leave-boundaryEvent', (activity, execution) => {
           calledEnds.push(activity.id);
-
           execution.signal('userTask');
         });
 
@@ -315,7 +305,6 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
           listener: listener
         }, (err) => {
           if (err) return done(err);
-
           expect(calledEnds).to.include(['userTask', 'boundaryEvent']);
           testHelpers.expectNoLingeringListenersOnEngine(engine);
           done();
@@ -396,8 +385,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         if (leaveErrorCount > 1) fail(`<${id}> should only leave once`);
       });
 
-      engine.on('error', (err) => {
-        expect(err.errorCode).to.equal('404');
+      engine.on('error', () => {
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -687,9 +675,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
     it('completes process if no timeout', (done) => {
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
 
       const listener = new EventEmitter();
@@ -733,9 +719,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
     it('completes process if timed out', (done) => {
       const engine = new Engine({
         source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        moddleOptions
       });
 
       const listener = new EventEmitter();
@@ -754,20 +738,24 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       engine.execute({
         listener,
         services: {
-          get: () => {
+          get: (defaultTaken) => {
+            if (!defaultTaken) {
+              return function (ctx, next) {
+                console.log(ctx)
+                next();
+              };
+            }
             return function() {};
           }
         },
         variables: {
+          defaultTaken: false,
           api: 'http://example.com'
         }
       });
-      engine.once('end', (def) => {
+      engine.once('end', () => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
-        expect(def.getOutput()).to.equal({
-          defaultTaken: true
-        });
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
