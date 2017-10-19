@@ -15,7 +15,7 @@ const moddleOptions = {
 
 describe('StartEvent', () => {
   describe('behaviour', () => {
-    const processXml = `
+    const source = `
     <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
@@ -34,7 +34,7 @@ describe('StartEvent', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(processXml, moddleOptions, (err, c) => {
+      testHelpers.getContext(source, moddleOptions, (err, c) => {
         if (err) return done(err);
         context = c;
         done();
@@ -131,7 +131,11 @@ describe('StartEvent', () => {
         moddleOptions
       });
 
-      engine.once('end', () => {
+      engine.once('end', (exection) => {
+        expect(exection.getOutput()).to.equal({
+          formfield1: 1,
+          formfield2: 2
+        });
         done();
       });
 
@@ -171,8 +175,8 @@ describe('StartEvent', () => {
       listener.once('wait-start', (event) => {
         engine.stop();
         const state = event.getState();
-        expect(state).to.include(['form']);
-        expect(state.form).to.include(['fields']);
+        expect(state.io).to.include(['form']);
+        expect(state.io.form).to.include(['fields']);
         done();
       });
 
@@ -182,26 +186,111 @@ describe('StartEvent', () => {
     });
   });
 
-  describe('MessageEventDefinition', () => {
+  describe('with formKey', () => {
     const source = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
       <process id="theProcess" isExecutable="true">
-        <startEvent id="start">
-          <messageEventDefinition />
-          <extensionElements>
-            <camunda:InputOutput>
-              <camunda:outputParameter name="signal">\${signal}</camunda:outputParameter>
-            </camunda:InputOutput>
-          </extensionElements>
-        </startEvent>
+        <startEvent id="start" camunda:formKey="startForm" />
         <endEvent id="end" />
         <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
       </process>
     </definitions>`;
 
+    it('requires signal to start', (done) => {
+      const listener = new EventEmitter();
+
+      listener.once('wait-start', (activityApi) => {
+        expect(activityApi.getState().waiting).to.be.true();
+        activityApi.signal({
+          formfield1: 1,
+          formfield2: 2
+        });
+      });
+
+      const engine = new Engine({
+        source,
+        moddleOptions
+      });
+
+      engine.once('end', (execution) => {
+        expect(execution.getOutput()).to.equal({
+          formfield1: 1,
+          formfield2: 2
+        });
+        done();
+      });
+
+      engine.execute({
+        listener
+      });
+    });
+  });
+
+  describe('with MessageEventDefinition', () => {
     it('assigns output to environment variables', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="start">
+            <messageEventDefinition />
+          </startEvent>
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
+        </process>
+      </definitions>`;
+
+      const engine = new Engine({
+        source,
+        moddleOptions
+      });
+
+      const listener = new EventEmitter();
+      listener.once('wait-start', (activityApi) => {
+        activityApi.signal({signal: 'START'});
+      });
+
+      listener.once('end-start', (activityApi) => {
+        expect(activityApi.getOutput()).to.equal({signal: 'START'});
+      });
+
+      engine.execute({
+        listener
+      });
+      engine.once('end', (exection) => {
+        expect(exection.getOutput()).to.equal({
+          taskInput: {
+            start: {
+              signal: 'START'
+            }
+          }
+        });
+        done();
+      });
+    });
+
+    it('and input/output assigns output to environment variables', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="start">
+            <messageEventDefinition />
+            <extensionElements>
+              <camunda:InputOutput>
+                <camunda:outputParameter name="signal">\${signal}</camunda:outputParameter>
+              </camunda:InputOutput>
+            </extensionElements>
+          </startEvent>
+          <endEvent id="end" />
+          <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
+        </process>
+      </definitions>`;
+
       const engine = new Engine({
         source,
         moddleOptions

@@ -51,8 +51,7 @@ describe('IntermediateCatchEvent with timer', () => {
       expect(boundEvents[0]).to.include({
         id: 'timeoutEvent',
         type: 'bpmn:TimerEventDefinition',
-        duration: 'PT0.01S',
-        cancelActivity: true
+        duration: 'PT0.01S'
       });
 
       done();
