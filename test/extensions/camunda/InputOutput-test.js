@@ -1,9 +1,9 @@
 'use strict';
 
-const Environment = require('../../lib/Environment');
-const InputOutput = require('../../lib/io/InputOutput');
+const Environment = require('../../../lib/Environment');
+const InputOutput = require('../../../lib/extensions/camunda/InputOutput');
 const Lab = require('lab');
-const testHelpers = require('../helpers/testHelpers');
+const testHelpers = require('../../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const {describe, it} = lab;
@@ -24,7 +24,9 @@ describe('Activity InputOutput', () => {
               value: 'i in loop'
             }
           }]
-        }, {});
+        }, {
+          environment: Environment()
+        });
       }
 
       expect(test).to.throw(Error, /CoffeeScript is unsupported/i);
@@ -40,15 +42,15 @@ describe('Activity InputOutput', () => {
         environment: Environment()
       });
 
-      expect(io.getInput()).to.be.empty();
-      expect(io.getOutput()).to.be.empty();
+      const activatedIo = io.activate({}, {});
+      expect(activatedIo.getInput()).to.be.empty();
+      expect(activatedIo.getOutput()).to.be.empty();
 
       done();
     });
   });
 
   describe('getInput()', () => {
-
     it('returns static values', (done) => {
       const io = new InputOutput({
         $type: 'camunda:InputOutput',
@@ -70,7 +72,8 @@ describe('Activity InputOutput', () => {
         environment: Environment()
       });
 
-      expect(io.getInput()).to.only.include({
+      const activatedIo = io.activate({}, {});
+      expect(activatedIo.getInput()).to.only.include({
         taskinput: 'Empty'
       });
       done();
@@ -96,7 +99,8 @@ describe('Activity InputOutput', () => {
       }, {
         environment: Environment()
       });
-      expect(io.getInput()).to.only.include({
+      const activatedIo = io.activate({}, {});
+      expect(activatedIo.getInput()).to.only.include({
         message: 'Empty'
       });
       done();
@@ -122,11 +126,11 @@ describe('Activity InputOutput', () => {
       }, {
         environment: Environment()
       });
-      expect(io.getInput({
+      expect(io.activate({}, {
         variables: {
           arbval: 10
         }
-      })).to.only.include({
+      }).getInput()).to.only.include({
         message: 'Me too 10'
       });
       done();
@@ -159,8 +163,14 @@ describe('Activity InputOutput', () => {
         context.environment.assignVariables({input: 11, arbval: 11});
 
         const task = context.getChildActivityById('task');
-        expect(task.io.getInput()).to.include({inputMessage: 11});
-        done();
+
+        task.once('start', (activityApi, activityExecution) => {
+          const api = activityApi.getApi(activityExecution);
+          expect(api.getInput()).to.equal({inputMessage: 11});
+          done();
+        });
+
+        task.run();
       });
     });
   });
@@ -188,7 +198,7 @@ describe('Activity InputOutput', () => {
         environment: Environment()
       });
 
-      expect(io.getOutput()).to.only.include({
+      expect(io.activate({}, {}).getOutput()).to.only.include({
         message: 'I\'m done',
         arbval: '1'
       });
@@ -214,14 +224,14 @@ describe('Activity InputOutput', () => {
       }, {
         environment: Environment()
       });
-      expect(io.getOutput()).to.only.include({
+      expect(io.activate({}, {}).getOutput()).to.only.include({
         message: 'Me too',
         arbval: '1'
       });
       done();
     });
 
-    it('returns script values that address environment property', (done) => {
+    it('returns script values that context property', (done) => {
       const io = new InputOutput({
         $type: 'camunda:InputOutput',
         outputParameters: [{
@@ -230,7 +240,7 @@ describe('Activity InputOutput', () => {
           definition: {
             $type: 'camunda:script',
             scriptFormat: 'JavaScript',
-            value: '`Me too ${arbval}`;'
+            value: '`Me too ${variables.arbval}`;'
           }
         }, {
           $type: 'camunda:outputParameter',
@@ -242,14 +252,18 @@ describe('Activity InputOutput', () => {
           arbval: 10
         })
       });
-      expect(io.getOutput()).to.only.include({
+      expect(io.activate({}, {
+        variables: {
+          arbval: 10
+        }
+      }).getOutput()).to.only.include({
         message: 'Me too 10',
         arbval: '1'
       });
       done();
     });
 
-    it('empty parameter definition return undefined', (done) => {
+    it('empty parameter definition returns empty', (done) => {
       const io = new InputOutput({
         $type: 'camunda:InputOutput',
         outputParameters: [{
@@ -263,14 +277,12 @@ describe('Activity InputOutput', () => {
         })
       });
 
-      expect(io.getOutput()).to.only.include({
-        message: undefined
-      });
+      expect(io.activate({}, {}).getOutput()).to.be.empty();
 
       done();
     });
 
-    it('no parameter definition return undefined', (done) => {
+    it('no parameter definition returns empty', (done) => {
       const io = new InputOutput({
         $type: 'camunda:InputOutput',
         outputParameters: [{
@@ -281,14 +293,12 @@ describe('Activity InputOutput', () => {
         environment: Environment()
       });
 
-      expect(io.getOutput()).to.only.include({
-        message: undefined
-      });
+      expect(io.activate({}, {}).getOutput()).to.be.empty();
 
       done();
     });
 
-    it('unknown definition type returns undefined', (done) => {
+    it('unknown definition type returns empty', (done) => {
       const io = new InputOutput({
         $type: 'camunda:InputOutput',
         outputParameters: [{
@@ -306,13 +316,11 @@ describe('Activity InputOutput', () => {
         })
       });
 
-      expect(io.getOutput({
+      expect(io.activate({}, {
         variables: {
           arbval: 10
         }
-      })).to.only.include({
-        message: undefined
-      });
+      }).getOutput()).to.be.empty();
 
       done();
     });
@@ -344,8 +352,12 @@ describe('Activity InputOutput', () => {
         context.environment.assignVariables({input: 11, arbval: 11});
 
         const task = context.getChildActivityById('task');
-        expect(task.io.getOutput(task.io.getInput())).to.include({message: 22});
-        done();
+        task.once('end', (activityApi, activityExecution) => {
+          const api = activityApi.getApi(activityExecution);
+          expect(api.getOutput()).to.equal({message: 22});
+          done();
+        });
+        task.run();
       });
     });
   });

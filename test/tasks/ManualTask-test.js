@@ -106,13 +106,16 @@ describe('ManualTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
 
+        const waits = [];
         task.on('wait', (activityApi, executionContext) => {
-          executionContext.signal(executionContext.id);
+          if (waits.length > 5) fail('too many waits');
+          waits.push(executionContext.id);
+
+          executionContext.signal();
         });
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
-
-          expect(executionContext.getOutput()).to.equal(['task', 'task', 'task']);
+          expect(waits).to.equal(['task', 'task', 'task']);
           done();
         });
 
@@ -155,8 +158,13 @@ describe('ManualTask', () => {
         const task = context.getChildActivityById('task');
 
         const starts = [];
+        const waits = [];
         task.on('wait', (activityApi, executionContext) => {
+          if (waits.length > 5) fail('too many waits');
+
+          waits.push(executionContext.id);
           starts.push(executionContext);
+
           if (starts.length === 3) {
             starts.reverse().forEach((t) => t.signal(t.id));
           }
@@ -164,10 +172,10 @@ describe('ManualTask', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          const output = executionContext.getOutput();
-          expect(output).to.have.length(3);
-          output.forEach((id) => expect(id).to.match(/^task_/i));
-          expect(output.includes(task.id), 'unique task id').to.be.false();
+          expect(waits).to.have.length(3);
+          waits.forEach((id) => expect(id).to.match(/^task_/i));
+          expect(waits.includes(task.id), 'unique task id').to.be.false();
+
           done();
         });
 

@@ -82,7 +82,7 @@ describe('Resume task loop', () => {
       let sum = 0;
       testHelpers.loopFn = (executionContext, callback) => {
         sum += executionContext.item;
-        callback(null, sum);
+        callback(null, {sum});
       };
 
       const engine1 = new Engine({
@@ -116,7 +116,7 @@ describe('Resume task loop', () => {
         const engine2 = Engine.resume(testHelpers.readFromDb(state));
 
         engine2.once('end', (execution, definitionExecution) => {
-          expect(definitionExecution.getOutput().taskInput.recurring[3]).to.equal([13]);
+          expect(definitionExecution.getOutput().taskInput.recurring[3][0].sum).to.equal(13);
           done();
         });
 

@@ -16,7 +16,7 @@ const moddleOptions = {
 };
 
 describe('issues', () => {
-  describe('issue #5', () => {
+  describe('issue #5 - the type map always are passed as undefined', () => {
     it('solution', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
@@ -57,8 +57,6 @@ describe('issues', () => {
         variables: {
           emailAddress: 'lisa@example.com'
         }
-      }, (err) => {
-        if (err) return done(err);
       });
 
       engine.once('end', (execution) => {
@@ -68,7 +66,7 @@ describe('issues', () => {
     });
   });
 
-  describe('issue #7', () => {
+  describe('issue #7 - moddleOptions broken extension properties', () => {
     it('solution', (done) => {
       const source = factory.resource('issue-7.bpmn');
       const engine = new Engine({

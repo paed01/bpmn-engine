@@ -140,22 +140,23 @@ describe('Resume execution', () => {
         </boundaryEvent>
       </process>
     </definitions>`;
-    const engine1 = new Engine({
+    const engine = new Engine({
       source,
       name: 'stopMe'
     });
-    const listener1 = new EventEmitter();
+    const listener = new EventEmitter();
 
     let state;
-    listener1.once('wait-dontWaitForMe', () => {
+    listener.once('wait-dontWaitForMe', () => {
       setTimeout(() => {
-        state = engine1.getState();
-        engine1.stop();
-      }, 10);
+        state = engine.getState();
+        engine.stop();
+      }, 25);
     });
 
-    engine1.once('end', () => {
+    engine.once('end', () => {
       const timeout = state.definitions[0].processes.interruptedProcess.children.find(c => c.id === 'timeoutEvent').timeout;
+
       expect(timeout).to.be.between(0, 99);
 
       const startedAt = new Date();
@@ -166,8 +167,8 @@ describe('Resume execution', () => {
       });
     });
 
-    engine1.execute({
-      listener: listener1
+    engine.execute({
+      listener
     });
   });
 
@@ -234,11 +235,7 @@ describe('Resume execution', () => {
 
       Engine.resume(testHelpers.readFromDb(state), {
         listener: listener2
-      }, (err, resumedDefinition) => {
-        if (err) return done(err);
-        expect(resumedDefinition.getChildState('errorEvent').taken).to.be.true();
-        done();
-      });
+      }, done);
     });
 
     engine1.execute({

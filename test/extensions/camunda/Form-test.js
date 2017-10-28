@@ -1,12 +1,13 @@
 'use strict';
 
-const {Engine} = require('../../.');
-const {EventEmitter} = require('events');
-const factory = require('../helpers/factory');
+const factory = require('../../helpers/factory');
 const Lab = require('lab');
+const testHelpers = require('../../helpers/testHelpers');
+const {Engine} = require('../../../.');
+const {EventEmitter} = require('events');
 
 const lab = exports.lab = Lab.script();
-const {describe, it} = lab;
+const {beforeEach, describe, it} = lab;
 const {expect} = Lab.assertions;
 
 const moddleOptions = {
@@ -14,6 +15,158 @@ const moddleOptions = {
 };
 
 describe('Forms', () => {
+  describe('behaviour', () => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <process id="theProcess" isExecutable="true">
+        <startEvent id="start">
+          <extensionElements>
+            <camunda:formData />
+          </extensionElements>
+        </startEvent>
+        <userTask id="task">
+          <extensionElements>
+            <camunda:formData>
+              <camunda:formField id="input" label="\${variables.label}" defaultValue="\${input}" />
+            </camunda:formData>
+            <camunda:InputOutput>
+              <camunda:inputParameter name="input">\${variables.input}</camunda:inputParameter>
+            </camunda:InputOutput>
+          </extensionElements>
+        </userTask>
+        <userTask id="task2">
+          <extensionElements>
+            <camunda:formData>
+              <camunda:formField id="input" label="\${variables.label}" />
+            </camunda:formData>
+          </extensionElements>
+        </userTask>
+      </process>
+    </definitions>`;
+
+    let context;
+    beforeEach((done) => {
+      testHelpers.getContext(source, moddleOptions, (err, result) => {
+        if (err) return done(err);
+        context = result;
+        done();
+      });
+    });
+
+    it('has access to variables and activity input when assigning label and default value', (done) => {
+      const activity = context.getChildActivityById('task');
+      context.environment.set('input', 1);
+      context.environment.set('label', 'field label');
+
+      activity.on('enter', (activityApi, activityExecution) => {
+        const form = activityExecution.getForm();
+        const field = form.getField('input');
+
+        expect(field.label, 'label').to.equal('field label');
+        expect(field.get(), 'value').to.equal(1);
+        done();
+      });
+
+      activity.activate().run();
+    });
+
+    it('assigned field value is returned in form output', (done) => {
+      const activity = context.getChildActivityById('task');
+      context.environment.set('input', -1);
+      context.environment.set('label', 'field label');
+
+      activity.on('wait', (activityApi, executionContext) => {
+        const api = activityApi.getApi(executionContext);
+        const fields = api.form.getFields();
+        fields.forEach(({set}, idx) => set(idx * 10));
+        api.signal();
+      });
+
+      activity.on('end', (activityApi, executionContext) => {
+        const api = activityApi.getApi(executionContext);
+        expect(api.form.getOutput()).to.equal({
+          input: 0
+        });
+        done();
+      });
+
+      activity.activate().run();
+    });
+
+    it('without fields ignores form', (done) => {
+      const activity = context.getChildActivityById('start');
+      expect(activity.form).to.be.undefined();
+      activity.on('enter', (activityApi, executionContext) => {
+        const activeForm = executionContext.getForm();
+        expect(activeForm).to.be.undefined();
+        done();
+      });
+      activity.activate().run();
+    });
+
+    it('setFieldValue() of unknown field is ignored', (done) => {
+      const activity = context.getChildActivityById('task');
+      context.environment.set('input', 1);
+
+      activity.on('enter', (activityApi, executionContext) => {
+        const activeForm = executionContext.getForm();
+        activeForm.setFieldValue('arb', 2);
+        expect(activeForm.getOutput()).to.equal({input: 1});
+        done();
+      });
+
+      activity.activate().run();
+    });
+
+    it('reset() resets fields to default value', (done) => {
+      const activity = context.getChildActivityById('task');
+      context.environment.set('input', 1);
+
+      activity.on('enter', (activityApi, executionContext) => {
+        const activeForm = executionContext.getForm();
+        activeForm.setFieldValue('input', 2);
+      });
+
+      activity.on('wait', (activityApi, executionContext) => {
+        const api = activityApi.getApi(executionContext);
+        api.form.reset();
+        api.signal();
+      });
+
+      activity.on('end', (activityApi, executionContext) => {
+        const api = activityApi.getApi(executionContext);
+        expect(api.form.getOutput()).to.equal({
+          input: 1
+        });
+        done();
+      });
+
+      activity.activate().run();
+    });
+
+    it('assigns form output to environment if activity has default io', (done) => {
+      const activity = context.getChildActivityById('task2');
+
+      activity.on('wait', (activityApi, executionContext) => {
+        const api = activityApi.getApi(executionContext);
+        api.form.setFieldValue('input', 2);
+        api.signal();
+      });
+
+      activity.on('leave', (activityApi, executionContext) => {
+        executionContext.save();
+        expect(context.environment.getOutput()).to.equal({
+          input: 2
+        });
+        done();
+      });
+
+      activity.activate().run();
+    });
+  });
+
   describe('with default value', () => {
     it('returns value from expression', (done) => {
       const source = `
@@ -32,7 +185,6 @@ describe('Forms', () => {
           <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
         </process>
       </definitions>`;
-
 
       const listener = new EventEmitter();
 
@@ -60,6 +212,11 @@ describe('Forms', () => {
 
   describe('start form', () => {
     it('waits for start', (done) => {
+      const engine = new Engine({
+        source: factory.resource('forms.bpmn'),
+        moddleOptions
+      });
+
       const listener = new EventEmitter();
 
       listener.once('wait-start', (activityApi) => {
@@ -69,10 +226,9 @@ describe('Forms', () => {
           defaultValue: new Date('2017-02-05')
         });
 
-        const reply = {};
-        reply[fields[0].id] = new Date('2017-02-06');
+        fields[0].set(new Date('2017-02-06'));
 
-        activityApi.signal(reply);
+        activityApi.signal();
       });
 
       listener.once('wait-userTask', (activityApi) => {
@@ -88,9 +244,11 @@ describe('Forms', () => {
         activityApi.signal(reply);
       });
 
-      const engine = new Engine({
-        source: factory.resource('forms.bpmn'),
-        moddleOptions
+      engine.execute({
+        listener,
+        variables: {
+          now: new Date('2017-02-05')
+        }
       });
 
       engine.once('end', (execution) => {
@@ -98,13 +256,6 @@ describe('Forms', () => {
           startDate: new Date('2017-02-07')
         });
         done();
-      });
-
-      engine.execute({
-        listener,
-        variables: {
-          now: new Date('2017-02-05')
-        }
       });
     });
   });
@@ -119,7 +270,7 @@ describe('Forms', () => {
           <extensionElements>
             <camunda:formData>
               <camunda:formField id="formfield1" label="FormField1" type="string" />
-              <camunda:formField id="formfield2" type="long" />
+              <camunda:formField id="formfield2" label="FormField2" type="long" />
             </camunda:formData>
           </extensionElements>
         </startEvent>
@@ -146,7 +297,7 @@ describe('Forms', () => {
       const listener = new EventEmitter();
       listener.once('wait-start', (activityApi) => {
         engine.stop();
-        const state = activityApi.form.getState();
+        const state = activityApi.getState().io.form;
         expect(state).to.include(['fields']);
         expect(state.fields).to.have.length(2);
         expect(state.fields[0]).to.only.include(['id', 'label', 'valueType']);
@@ -296,83 +447,36 @@ describe('Forms', () => {
       });
     });
 
-  });
+    it('resume fields ignores missing state', (done) => {
+      testHelpers.getContext(source, moddleOptions, (err, context) => {
+        if (err) return done(err);
 
-  describe('formKey', () => {
-    it('start event emits wait', (done) => {
-      const source = `
-      <?xml version="1.0" encoding="UTF-8"?>
-      <definitions id="testFormKey" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-        <process id="theProcess" isExecutable="true">
-          <startEvent id="start" camunda:formKey="form1" />
-        </process>
-      </definitions>`;
+        const activity = context.getChildActivityById('task');
+        let state;
+        activity.once('wait', (activityApi, executionContext) => {
+          const api = activityApi.getApi(executionContext);
+          api.form.setFieldValue('surname', 'Edman');
+          state = api.getState();
 
-      const engine = new Engine({
-        source,
-        moddleOptions
-      });
+          state.io.form.fields.splice(1, 1);
+          state.io.form.fields.push({
+            id: 'arb'
+          });
+          api.stop();
 
-      const listener = new EventEmitter();
-      listener.once('wait-start', (activityApi) => {
-        activityApi.signal({ key: activityApi.formKey });
-      });
+          activity.on('wait', (resumedActivityApi, resumedExecutionContext) => {
+            const resumedApi = resumedActivityApi.getApi(resumedExecutionContext);
 
-      engine.once('end', (execution) => {
-        expect(execution.getOutput()).to.equal({
-          key: 'form1'
+            expect(resumedApi.form.getFieldValue('arb')).to.be.undefined();
+            expect(resumedApi.form.getFieldValue('surname')).to.equal('Edman');
+
+            done();
+          });
+
+          activity.activate(state).resume();
         });
-        done();
-      });
 
-      engine.execute({
-        listener,
-        variables: {}
-      });
-    });
-
-    it('sets key value with expression', (done) => {
-      const source = `
-      <?xml version="1.0" encoding="UTF-8"?>
-      <definitions id="testFormKey" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-        <process id="theProcess" isExecutable="true">
-          <startEvent id="start" camunda:formKey="\${variables.inputForm}" />
-          <userTask id="task" camunda:formKey="\${variables.inputForm}" />
-          <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
-        </process>
-      </definitions>`;
-
-      const engine = new Engine({
-        source,
-        moddleOptions
-      });
-
-      const listener = new EventEmitter();
-      listener.once('wait-start', (activityApi) => {
-        expect(activityApi.formKey).to.equal('form1');
-        activityApi.signal({ inputForm: 'form2' });
-      });
-      listener.once('wait-task', (activityApi) => {
-        activityApi.signal({ key: activityApi.formKey });
-      });
-
-      engine.once('end', (execution) => {
-        expect(execution.getOutput()).to.equal({
-          inputForm: 'form2',
-          taskInput: {
-            task: {key: 'form2'}
-          }
-        });
-        done();
-      });
-
-      engine.execute({
-        listener,
-        variables: {
-          inputForm: 'form1'
-        }
+        activity.activate().run();
       });
     });
   });

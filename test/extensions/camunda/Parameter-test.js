@@ -1,52 +1,58 @@
 'use strict';
 
-const Code = require('code');
+const Environment = require('../../../lib/Environment');
 const Lab = require('lab');
+const Parameter = require('../../../lib/extensions/camunda/Parameter');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
+const {describe, it} = lab;
+const {expect} = Lab.assertions;
 
-const parameter = require('../lib/parameter');
-
-lab.experiment('parameter', () => {
-  lab.describe('list', () => {
-    lab.test('returns array', (done) => {
-      const parm = parameter({
+describe('Parameter', () => {
+  describe('list', () => {
+    it('input returns array', (done) => {
+      const parm = Parameter({
         $type: 'camunda:inputParameter',
-        name: 'listing',
+        name: 'list',
         definition: {
           $type: 'camunda:list',
           items: [{
             value: '${listing}'
           }]
         }
+      }, {
+        resolveExpression: function(expr) {
+          if (expr === '${listing}') return 1;
+        }
       });
 
-      expect(parm.getInputValue({listing: 1})).to.equal([1]);
+      expect(parm.activate({
+        listing: 1
+      }).get()).to.equal([1]);
 
       done();
     });
 
-    lab.test('returns named value if no items are supplied', (done) => {
-      const parm = parameter({
+    it('input returns named value if no items are supplied', (done) => {
+      const parm = Parameter({
         $type: 'camunda:inputParameter',
         name: 'listing',
         definition: {
           $type: 'camunda:list'
         }
-      });
+      }, Environment());
 
-      expect(parm.getInputValue({listing: 1})).to.equal(1);
+      expect(parm.activate({listing: 1}).get()).to.equal(1);
 
       done();
     });
   });
 
-  lab.describe('map', () => {
-    lab.test('returns object', (done) => {
-      const parm = parameter({
+  describe('map', () => {
+    it('returns object', (done) => {
+      const parm = Parameter({
         $type: 'camunda:inputParameter',
-        name: 'listing',
+        name: 'map',
         definition: {
           $type: 'camunda:map',
           entries: [{
@@ -54,23 +60,27 @@ lab.experiment('parameter', () => {
             value: '${listing}'
           }]
         }
+      }, {
+        resolveExpression: function(expr) {
+          if (expr === '${listing}') return 1;
+        }
       });
 
-      expect(parm.getInputValue({listing: 1})).to.equal({value: 1});
+      expect(parm.activate({listing: 1}).get()).to.equal({value: 1});
 
       done();
     });
 
-    lab.test('returns named value if no entries are supplied', (done) => {
-      const parm = parameter({
+    it('returns named value if no entries are supplied', (done) => {
+      const parm = Parameter({
         $type: 'camunda:inputParameter',
         name: 'listing',
         definition: {
           $type: 'camunda:map'
         }
-      });
+      }, {});
 
-      expect(parm.getInputValue({listing: 1})).to.equal(1);
+      expect(parm.activate({listing: 1}).get()).to.equal(1);
 
       done();
     });

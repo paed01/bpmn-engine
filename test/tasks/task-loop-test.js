@@ -188,7 +188,7 @@ describe('task loop', () => {
           <bpmn:process id="taskLoopProcess" isExecutable="true">
             <bpmn:userTask id="recurring" name="Recurring">
               <bpmn:multiInstanceLoopCharacteristics isSequential="true">
-                <bpmn:completionCondition xsi:type="bpmn:tFormalExpression"><![CDATA[result && result[index].input > 3]]></bpmn:completionCondition>
+                <bpmn:completionCondition xsi:type="bpmn:tFormalExpression"><![CDATA[typeof result !== 'undefined' && result[index].input > 3]]></bpmn:completionCondition>
               </bpmn:multiInstanceLoopCharacteristics>
             </bpmn:userTask>
           </bpmn:process>
@@ -283,6 +283,8 @@ describe('task loop', () => {
               <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.input}" />
               <bpmn:extensionElements>
                 <camunda:inputOutput>
+                  <camunda:inputParameter name="item">\${item}</camunda:inputParameter>
+                  <camunda:inputParameter name="sum">\${item}</camunda:inputParameter>
                   <camunda:outputParameter name="sum">\${result[-1][0]}</camunda:outputParameter>
                 </camunda:inputOutput>
               </bpmn:extensionElements>
@@ -481,6 +483,10 @@ describe('task loop', () => {
         startCount++;
       });
 
+      task.on('end', (activityApi, activityExecution) => {
+        if (activityExecution.isLoopContext) return;
+        fail('Should have been stopped');
+      });
       task.on('leave', () => {
         expect(startCount).to.equal(2);
         done();
@@ -687,14 +693,18 @@ describe('task loop', () => {
 
       const task = context.getChildActivityById('recurring');
       const errorEvent = context.getChildActivityById('errorEvent');
-      const errorEventApi = errorEvent.activate();
 
       task.activate();
+      errorEvent.activate();
 
-      task.on('leave', () => {
-        expect(errorEventApi.getState().taken).to.be.true();
+      task.on('end', (activityApi, activityExecution) => {
+        if (activityExecution.isLoopContext) return;
+        fail('Should have been stopped');
+      });
+      errorEvent.on('end', () => {
         done();
       });
+
       task.run();
     });
 

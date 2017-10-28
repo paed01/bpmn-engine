@@ -60,7 +60,7 @@ pub.userTask = (userTaskId, definitionId) => {
           <inputSet id="inputSet_1">
             <dataInputRefs>input_1</dataInputRefs>
           </inputSet>
-          <dataOutput id="userInput" />
+          <dataOutput id="userInput" name="input" />
         </ioSpecification>
         <dataInputAssociation id="associatedInput" sourceRef="input_1" targetRef="globalInputRef" />
         <dataOutputAssociation id="associatedOutput" sourceRef="userInput" targetRef="inputFromUserRef" />

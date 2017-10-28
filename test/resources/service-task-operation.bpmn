@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions id="ServiceTaskOperation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://schema.omg.org/spec/BPMN/2.0">
+  <bpmn:itemDefinition id="itemDefinition1" >
+  </bpmn:itemDefinition>
+  <bpmn:itemDefinition id="itemDefinition2">
+  </bpmn:itemDefinition>
+  <bpmn:message id="inputMessage" name="input message" structureRef="itemDefinition1"></bpmn:message>
+  <bpmn:message id="outputMessage" name="output message" structureRef="itemDefinition2"></bpmn:message>
+  <bpmn:interface id="myInterface">
+    <bpmn:operation id="serviceOperation" name="myMethod">
+      <bpmn:inMessageRef>inputMessage</bpmn:inMessageRef>
+      <bpmn:outMessageRef>outputMessage</bpmn:outMessageRef>
+    </bpmn:operation>
+  </bpmn:interface>
+  <bpmn:process id="Process_1">
+    <bpmn:startEvent id="start" />
+    <bpmn:serviceTask id="servicetask" implementation="Other" operationRef="serviceOperation" />
+    <bpmn:userTask id="usertask" />
+    <bpmn:endEvent id="end" name="end" />
+    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="servicetask" />
+    <bpmn:sequenceFlow id="flow2" sourceRef="ServiceTask" targetRef="usertask" />
+    <bpmn:sequenceFlow id="flow3" sourceRef="usertask" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

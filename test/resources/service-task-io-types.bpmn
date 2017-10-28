@@ -48,8 +48,9 @@
           <camunda:outputParameter name="statusCode">${result[0].statusCode}</camunda:outputParameter>
           <camunda:outputParameter name="body">${result[1]}</camunda:outputParameter>
         </camunda:inputOutput>
-        <camunda:connector>        <camunda:connectorId>get</camunda:connectorId>
-</camunda:connector>
+        <camunda:connector>
+          <camunda:connectorId>get</camunda:connectorId>
+        </camunda:connector>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0jnd1g6</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1jgxkq2</bpmn:outgoing>

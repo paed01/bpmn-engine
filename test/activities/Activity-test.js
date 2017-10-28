@@ -7,8 +7,6 @@ const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../..');
 const {EventEmitter} = require('events');
 
-const Process = require('../../lib/activities/Process');
-
 const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect} = Lab.assertions;
@@ -16,18 +14,10 @@ const {expect} = Lab.assertions;
 describe('Activity', () => {
   const processXml = `
   <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <process id="theProcess" isExecutable="true">
       <startEvent id="start" name="Start" />
-      <userTask id="task">
-        <extensionElements>
-          <camunda:properties>
-            <camunda:property name="me" value="too" />
-            <camunda:property name="resolved" value="\${variables.boolval}" />
-            <camunda:property name="serviceval" value="\${services.negate(variables.boolval)}" />
-          </camunda:properties>
-        </extensionElements>
-      </userTask>
+      <userTask id="task" />
       <endEvent id="end" />
       <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
       <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
@@ -36,9 +26,7 @@ describe('Activity', () => {
 
   let context;
   beforeEach((done) => {
-    testHelpers.getContext(processXml, {
-      camunda: require('camunda-bpmn-moddle/resources/camunda')
-    }, (cerr, result) => {
+    testHelpers.getContext(processXml, (cerr, result) => {
       if (cerr) return done(cerr);
       context = result;
       done();
@@ -200,31 +188,6 @@ describe('Activity', () => {
       });
 
       activity.run();
-    });
-  });
-
-  describe('properties', () => {
-    it('are exposed when process loads activity', (done) => {
-      const instance = Process(context.moddleContext.elementsById.theProcess, context.moddleContext, Environment({
-        services: {
-          negate: (val) => {
-            return !val;
-          }
-        },
-        variables: {
-          boolval: true
-        }
-      }));
-
-      const task = instance.getChildActivityById('task');
-
-      expect(task.properties).to.equal({
-        me: 'too',
-        resolved: true,
-        serviceval: false
-      });
-
-      done();
     });
   });
 

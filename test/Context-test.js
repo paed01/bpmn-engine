@@ -113,7 +113,7 @@ describe('Context', () => {
 
     it('returns default if IO type not mapped', (done) => {
       const context = new Context('mainProcess', moddleContext);
-      expect(context.getActivityExtensions('task').io.isDefault).to.be.true();
+      expect(context.getActivityExtensions('task').ios).to.have.length(0);
       done();
     });
   });

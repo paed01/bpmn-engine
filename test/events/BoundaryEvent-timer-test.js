@@ -445,7 +445,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       listener.once('wait-dontWaitForMe', () => {
         setTimeout(() => {
           engine.stop();
-        }, 10);
+        }, 25);
       });
 
       engine.execute({
@@ -740,8 +740,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         services: {
           get: (defaultTaken) => {
             if (!defaultTaken) {
-              return function (ctx, next) {
-                console.log(ctx)
+              return function(ctx, next) {
                 next();
               };
             }

@@ -144,11 +144,12 @@ describe('ScriptTask', () => {
           <scriptTask id="task" scriptFormat="Javascript">
             <script>
               <![CDATA[
-                next(null, variables.defaultTaken);
+                next(null, defaultTaken);
               ]]>
             </script>
             <extensionElements>
               <camunda:inputOutput>
+                <camunda:inputParameter name="defaultTaken">\${variables.defaultTaken}</camunda:inputParameter>
                 <camunda:outputParameter name="taskOutput">\${result}</camunda:outputParameter>
               </camunda:inputOutput>
             </extensionElements>
@@ -177,10 +178,10 @@ describe('ScriptTask', () => {
 
       const listener = new EventEmitter();
       let startCount = 0;
-      listener.on('start-task', (activity) => {
+      listener.on('start-task', (activityApi) => {
         startCount++;
         if (startCount > 2) {
-          fail(`<${activity.id}> Too many starts`);
+          fail(`<${activityApi.id}> Too many starts`);
         }
       });
       let endEventCount = 0;
@@ -218,7 +219,7 @@ describe('ScriptTask', () => {
           <scriptTask id="scriptTask" scriptFormat="Javascript">
             <script>
               <![CDATA[
-                next(null, {input: this.variables.input});
+                next(null, {input: variables.input});
               ]]>
             </script>
           </scriptTask>
@@ -230,13 +231,14 @@ describe('ScriptTask', () => {
 
       testHelpers.getContext(source, (cerr, context) => {
         if (cerr) return done(cerr);
-        context.environment.variables.input = 1;
+        context.environment.set('input', 1);
 
         const task = context.getChildActivityById('scriptTask');
         task.activate();
 
         task.once('end', (activityApi, executionContext) => {
-          expect(executionContext.getOutput()).to.equal({input: 1});
+          const api = activityApi.getApi(executionContext);
+          expect(api.getOutput()).to.equal({input: 1});
           done();
         });
 
@@ -600,28 +602,28 @@ describe('ScriptTask', () => {
         task.run();
       });
 
-      it('emits end with output', (done) => {
+      it('emits end when completed', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
-
-          expect(executionContext.getOutput()).to.equal(['Pål', 'Franz', 'Immanuel']);
           done();
         });
 
         task.run();
       });
 
-      it('getOutput() returns result from loop', (done) => {
+      it('getOutput() on end returns result from loop', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(executionContext.getOutput()).to.equal(['Pål', 'Franz', 'Immanuel']);
+          expect(executionContext.getOutput()).to.equal({
+            result: [{name: 'Pål'}, {name: 'Franz'}, {name: 'Immanuel'}]
+          });
           done();
         });
 
@@ -665,8 +667,6 @@ describe('ScriptTask', () => {
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
-
-          expect(executionContext.getOutput()).to.equal(['Pål', 'Franz', 'Immanuel']);
           done();
         });
 
@@ -680,7 +680,10 @@ describe('ScriptTask', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(executionContext.getOutput()).to.equal(['Pål', 'Franz', 'Immanuel']);
+          expect(executionContext.getOutput()).to.equal({
+            result: [{name: 'Pål'}, {name: 'Franz'}, {name: 'Immanuel'}]
+          });
+
           done();
         });
 
@@ -706,10 +709,11 @@ function getLoopContext(sequential, callback) {
             <camunda:inputParameter name="invertTimout">\${index}</camunda:inputParameter>
             <camunda:inputParameter name="name">\${item}</camunda:inputParameter>
             <camunda:inputParameter name="setTimeout">\${services.setTimeout}</camunda:inputParameter>
+            <camunda:outputParameter name="result">\${result}</camunda:outputParameter>
           </camunda:inputOutput>
         </extensionElements>
         <script><![CDATA[
-          setTimeout(next, 25 - invertTimout * 5, null, name);
+          setTimeout(next, 25 - invertTimout * 5, null, {name});
         ]]></script>
       </scriptTask>
     </process>

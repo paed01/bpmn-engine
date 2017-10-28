@@ -10,6 +10,10 @@ const lab = exports.lab = Lab.script();
 const {before, beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
+const moddleOptions = {
+  camunda: require('camunda-bpmn-moddle/resources/camunda')
+};
+
 describe('Definition', () => {
   describe('new Definition()', () => {
     let moddleContext;
@@ -553,7 +557,7 @@ describe('Definition', () => {
       const listener = new EventEmitter();
 
       listener.once('wait-userTask1', (task) => {
-        expect(definition.signal(task.id, 'it´s me')).to.be.true();
+        expect(definition.signal(task.id, {input: 'it´s me'})).to.be.true();
       });
 
       definition.once('end', () => {
@@ -588,18 +592,17 @@ describe('Definition', () => {
       it('event callback returns error, child, process, and definition', (done) => {
         const source = `
         <?xml version="1.0" encoding="UTF-8"?>
-        <definitions id="testError" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <definitions id="testError" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           <process id="theProcess" isExecutable="true">
-            <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" />
+            <serviceTask id="serviceTask" name="Get" implementation="\${services.get}" />
           </process>
         </definitions>`;
 
-        testHelpers.getModdleContext(source, {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }, (err, moddleContext) => {
+        testHelpers.getModdleContext(source, null, (err, moddleContext) => {
           if (err) return done(err);
 
           const definition = new Definition(moddleContext);
+
           definition.once('error', (childErr, processExecution) => {
             testHelpers.expectNoLingeringListenersOnDefinition(definition);
             expect(childErr).to.be.an.error();
@@ -648,7 +651,7 @@ describe('Definition', () => {
 
   });
 
-  describe('Definition.resume()', () => {
+  describe('resume()', () => {
     const source = factory.userTask(null, 'resumeDef');
     let moddleContext, state;
     before((done) => {
@@ -658,6 +661,7 @@ describe('Definition', () => {
         done();
       });
     });
+
     beforeEach((done) => {
       const listener = new EventEmitter();
       const definition = new Definition(moddleContext);
@@ -844,9 +848,7 @@ describe('Definition', () => {
           </userTask>
         </process>
       </definitions>`;
-      testHelpers.getModdleContext(source, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, moddleContext) => {
+      testHelpers.getModdleContext(source, moddleOptions, (err, moddleContext) => {
         if (err) return done(err);
 
         const listener = new EventEmitter();

@@ -256,9 +256,7 @@ describe('UserTask', () => {
     });
 
     it('event argument getOutput() on end returns output parameter value based on signal and input parameters', (done) => {
-      context.environment.assignVariables({
-        message: 'who'
-      });
+      context.environment.set('message', 'who');
 
       const task = context.getChildActivityById('task');
       task.activate();
@@ -491,8 +489,8 @@ describe('UserTask', () => {
       listener.once('wait-task', (event) => {
         engine.stop();
         const state = event.getState();
-        expect(state).to.include(['form']);
-        expect(state.form).to.include(['fields']);
+        expect(state.io).to.include(['form']);
+        expect(state.io.form).to.include(['fields']);
         done();
       });
 
@@ -517,16 +515,20 @@ describe('UserTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        let waitCount = 0;
+        const waits = [];
         task.on('wait', (activityApi, executionContext) => {
-          if (waitCount > 5) fail('too many waits');
-          waitCount++;
-          executionContext.signal(executionContext.id);
+          if (waits.length > 5) fail('too many waits');
+          waits.push(executionContext.id);
+
+          const api = activityApi.getApi(executionContext);
+          api.form.setFieldValue('yay', true);
+
+          executionContext.signal();
         });
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(executionContext.getOutput()).to.be.equal(['task', 'task', 'task']);
+          expect(waits).to.equal(['task', 'task', 'task']);
           done();
         });
 
@@ -538,18 +540,19 @@ describe('UserTask', () => {
         task.activate();
 
         task.on('wait', (activityApi, executionContext) => {
+
           const input = executionContext.getInput();
           const form = executionContext.getForm();
 
           form.setFieldValue('yay', input.index < 2);
 
-          executionContext.signal(form.getOutput());
+          executionContext.signal();
         });
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(executionContext.getOutput()).to.be.equal([{
+          expect(executionContext.getOutput().result).to.equal([{
             email: 'pal@example.com',
             yay: true
           }, {
@@ -597,7 +600,7 @@ describe('UserTask', () => {
             if (count > 4) fail('Too many starts');
           });
           task.on('leave', (activityApi, executionContext) => {
-            expect(executionContext.getOutput()).to.be.equal([{
+            expect(executionContext.getOutput().result).to.equal([{
               email: 'pal@example.com',
               yay: true
             }, {
@@ -633,19 +636,26 @@ describe('UserTask', () => {
         task.activate();
 
         const starts = [];
+        const waits = [];
         task.on('wait', (activityApi, executionContext) => {
+          if (waits.length > 5) fail('too many waits');
+
           starts.push(executionContext);
+          waits.push(executionContext.id);
+
+          const api = activityApi.getApi(executionContext);
+          api.form.setFieldValue('yay', true);
+
           if (starts.length === 3) {
-            starts.reverse().forEach((t) => t.signal(t.id));
+            starts.reverse().forEach((t) => t.signal());
           }
         });
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          const output = executionContext.getOutput();
-          expect(output).to.have.length(3);
-          output.forEach((id) => expect(id).to.match(/^task_/i));
-          expect(output.includes(task.id), 'unique task id').to.be.false();
+          expect(waits).to.have.length(3);
+          waits.forEach((id) => expect(id).to.match(/^task_/i));
+          expect(waits.includes(task.id), 'unique task id').to.be.false();
           done();
         });
 
@@ -668,7 +678,7 @@ describe('UserTask', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(executionContext.getOutput()).to.be.equal([{
+          expect(executionContext.getOutput().result).to.equal([{
             email: 'pal@example.com',
             yay: true
           }, {
@@ -701,6 +711,7 @@ function getLoopContext(sequential, callback) {
           <camunda:inputOutput>
             <camunda:inputParameter name="email">\${item}</camunda:inputParameter>
             <camunda:inputParameter name="index">\${index}</camunda:inputParameter>
+            <camunda:outputParameter name="result">\${result}</camunda:outputParameter>
           </camunda:inputOutput>
           <camunda:formData>
             <camunda:formField id="email" type="string" defaultValue="\${email}" />

@@ -138,7 +138,6 @@ describe('Error BoundaryEvent', () => {
 
       event.once('catch', (error, activity, executionContext) => {
         const output = executionContext.getOutput();
-
         expect(output.serviceError, 'errorCodeVariable').to.equal('FAIL');
         expect(output.message, 'errorMessageVariable').to.equal('FAIL');
         done();
