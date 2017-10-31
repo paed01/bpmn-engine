@@ -18,7 +18,7 @@ lab.experiment('Resume task loop', () => {
   <process id="taskLoopProcess" isExecutable="true">
     <task id="recurring" name="Recurring">
       <multiInstanceLoopCharacteristics isSequential="true">
-        <loopCardinality xsi:type="tFormalExpression">5</loopCardinality>
+        <loopCardinality xsi:type="tFormalExpression">8</loopCardinality>
       </multiInstanceLoopCharacteristics>
     </task>
   </process>
@@ -57,7 +57,7 @@ lab.experiment('Resume task loop', () => {
       engine2.once('end', () => {
         testHelpers.expectNoLingeringListenersOnEngine(engine2);
 
-        expect(startCount).to.equal(5);
+        expect(startCount).to.equal(8);
         done();
       });
     });
@@ -100,7 +100,7 @@ lab.experiment('Resume task loop', () => {
       const options = {
         listener: listener1,
         variables: {
-          list: [7, 3, 2, 1]
+          list: [9, 8, 7, 6, 5, 4, 3, 2, 1]
         },
         services: {
           loop: {
@@ -125,7 +125,7 @@ lab.experiment('Resume task loop', () => {
         });
 
         engine2.once('end', (def) => {
-          expect(def.processes[0].variables.taskInput.recurring[0]).to.equal(13);
+          expect(def.processes[0].variables.taskInput.recurring[0]).to.equal(45);
           done();
         });
 
