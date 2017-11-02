@@ -381,14 +381,14 @@ lab.experiment('task loop', () => {
             }
           },
           variables: {
-            input: [1, 2, 3, 7]
+            input: [1, 2, 3, 7, 9]
           }
         }, (err, instance) => {
           if (err) return done(err);
 
           instance.once('end', () => {
-            expect(startCount).to.equal(4);
-            expect(instance.variables.sum).to.equal(13);
+            expect(startCount).to.equal(5);
+            expect(instance.variables.sum).to.equal(22);
             testHelpers.expectNoLingeringListenersOnDefinition(instance);
             done();
           });
@@ -431,7 +431,7 @@ lab.experiment('task loop', () => {
 
               const result = prevResult + executionContext.item;
 
-              if (result > 2) {
+              if (result > 6) {
                 return callback(new Error('Too much'));
               }
 
@@ -439,13 +439,13 @@ lab.experiment('task loop', () => {
             }
           },
           variables: {
-            input: [1, 2, 3, 7]
+            input: [1, 2, 3, 7, 9]
           }
         }, (err, instance) => {
           if (err) return done(err);
 
           instance.once('end', () => {
-            expect(startCount).to.equal(2);
+            expect(startCount).to.equal(4);
             testHelpers.expectNoLingeringListenersOnDefinition(instance);
             done();
           });
