@@ -23,8 +23,7 @@ describe('task loop', () => {
   describe('sequential', () => {
     it('on recurring task error the loop breaks', (done) => {
       const source = `
-      <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+      <bpmn:definitions id="definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
         <bpmn:process id="taskLoopProcess" isExecutable="true">
           <bpmn:scriptTask id="recurring" name="Recurring" scriptFormat="JavaScript">
             <bpmn:multiInstanceLoopCharacteristics isSequential="true">
@@ -71,7 +70,7 @@ describe('task loop', () => {
     describe('cardinality', () => {
       it('loops script task until cardinality is reached', (done) => {
         const source = `
-        <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        <bpmn:definitions id="definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
           <bpmn:process id="taskLoopProcess" isExecutable="true">
             <bpmn:scriptTask id="recurring" name="Recurring" scriptFormat="JavaScript">
@@ -115,7 +114,7 @@ describe('task loop', () => {
 
       it('loops task until cardinality is reached', (done) => {
         const source = `
-        <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        <bpmn:definitions id="Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
           <bpmn:process id="taskLoopProcess" isExecutable="true">
             <bpmn:task id="recurring" name="Recurring">
@@ -149,7 +148,7 @@ describe('task loop', () => {
 
       it('loops task until cardinality as expression is reached', (done) => {
         const source = `
-        <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        <bpmn:definitions id="Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
           <bpmn:process id="taskLoopProcess" isExecutable="true">
             <bpmn:task id="recurring" name="Recurring">
@@ -189,7 +188,7 @@ describe('task loop', () => {
 
       it('loops user task until condition is met', (done) => {
         const source = `
-        <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        <bpmn:definitions id="Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
           <bpmn:process id="taskLoopProcess" isExecutable="true">
             <bpmn:userTask id="recurring" name="Recurring">
@@ -227,7 +226,7 @@ describe('task loop', () => {
 
       it('loops service task until condition expression is met', (done) => {
         const source = `
-        <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
           <process id="taskLoopProcess" isExecutable="true">
             <serviceTask id="recurring" name="Recurring" implementation="\${services.iterate}">
@@ -282,7 +281,7 @@ describe('task loop', () => {
     describe('collection expression', () => {
       it('loops each item', (done) => {
         const source = `
-        <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
+        <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
           <process id="Process_1" isExecutable="true">
             <serviceTask id="recurring" name="Each item" implementation="\${services.loop}">
               <multiInstanceLoopCharacteristics isSequential="true" js:collection="\${variables.input}" />
@@ -325,7 +324,7 @@ describe('task loop', () => {
 
       it('breaks loop if error is returned in callback', (done) => {
         const source = `
-        <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
+        <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
           <process id="Process_1" isExecutable="true">
             <serviceTask id="recurring" name="Each item" implementation="\${services.loop}">
               <multiInstanceLoopCharacteristics isSequential="true" js:collection="\${variables.input}" js:elementVariable="value" />
@@ -374,7 +373,7 @@ describe('task loop', () => {
   describe('combination', () => {
     it('with condition and cardinality loops script task until condition is met', (done) => {
       const source = `
-      <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+      <bpmn:definitions id="Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
         <bpmn:process id="taskLoopProcess" isExecutable="true">
           <bpmn:scriptTask id="recurring" name="Recurring" scriptFormat="JavaScript">
@@ -420,7 +419,7 @@ describe('task loop', () => {
 
   describe('sequential', () => {
     const processXml = `
-    <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+    <bpmn:definitions id="definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
       <bpmn:process id="taskLoopProcess" isExecutable="true">
         <bpmn:serviceTask id="recurring" name="Recurring" implementation="\${services.loopTest}">
           <bpmn:multiInstanceLoopCharacteristics isSequential="true">
@@ -637,7 +636,7 @@ describe('task loop', () => {
 
   describe('parallell', () => {
     const source = `
-    <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+    <bpmn:definitions id="definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
       <bpmn:process id="taskLoopProcess" isExecutable="true">
         <bpmn:serviceTask id="recurring" name="Recurring" implementation="\${services.loopTest}">
           <bpmn:multiInstanceLoopCharacteristics isSequential="false">
@@ -846,7 +845,7 @@ describe('task loop', () => {
   describe('resume', () => {
     it('resumes task cardinality loop', (done) => {
       const source = `
-      <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="taskLoopProcess" isExecutable="true">
           <task id="recurring" name="Recurring">
             <multiInstanceLoopCharacteristics isSequential="true">
@@ -894,7 +893,7 @@ describe('task loop', () => {
 
     it('resumes task in sequential collection loop', (done) => {
       const source = `
-      <definitions id= "Definitions_2" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
+      <definitions id="Definitions_2" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
         <process id="Process_1" isExecutable="true">
           <serviceTask id="recurring" name="Each item" implementation="\${services.loop}">
             <multiInstanceLoopCharacteristics isSequential="true" js:collection="\${variables.list}" />
