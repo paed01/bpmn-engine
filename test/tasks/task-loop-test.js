@@ -9,10 +9,6 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
-const moddleOptions = {
-  camunda: require('camunda-bpmn-moddle/resources/camunda')
-};
-
 const extensions = {
   js: {
     moddleOptions: require('../resources/js-bpmn-moddle.json')
@@ -238,8 +234,7 @@ describe('task loop', () => {
         </definitions>`;
 
         const engine = new Engine({
-          source,
-          moddleOptions
+          source
         });
         const listener = new EventEmitter();
 
@@ -434,7 +429,7 @@ describe('task loop', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(processXml, moddleOptions, (err, c) => {
+      testHelpers.getContext(processXml, (err, c) => {
         if (err) return done(err);
         context = c;
         done();
@@ -651,7 +646,7 @@ describe('task loop', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(source, moddleOptions, (err, c) => {
+      testHelpers.getContext(source, (err, c) => {
         if (err) return done(err);
         context = c;
         done();

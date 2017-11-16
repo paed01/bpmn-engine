@@ -17,13 +17,6 @@ describe('Task', () => {
       <process id="theProcess" isExecutable="true">
         <startEvent id="start" />
         <task id="task" />
-       <!--   <extensionElements>
-            <camunda:inputOutput>
-              <camunda:inputParameter name="input">\${variables.message}</camunda:inputParameter>
-              <camunda:outputParameter name="output">Signaled \${input} with \${result}</camunda:outputParameter>
-            </camunda:inputOutput>
-          </extensionElements>
-        </task> -->
         <endEvent id="end" />
         <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
         <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
@@ -299,8 +292,7 @@ describe('Task', () => {
 function getLoopContext(isSequential, callback) {
   const source = `
   <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <process id="sequentialLoopProcess" isExecutable="true">
       <task id="task">
         <multiInstanceLoopCharacteristics isSequential="${isSequential}">

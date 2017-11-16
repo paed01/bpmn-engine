@@ -10,10 +10,6 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect} = Lab.assertions;
 
-const moddleOptions = {
-  camunda: require('camunda-bpmn-moddle/resources/camunda')
-};
-
 describe('SubProcess', () => {
   describe('events', () => {
     const source = factory.resource('sub-process.bpmn').toString();
@@ -212,8 +208,7 @@ describe('SubProcess', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source,
-        moddleOptions
+        source
       });
       engine.execute({
         services: {

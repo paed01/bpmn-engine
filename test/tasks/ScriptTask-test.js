@@ -10,10 +10,6 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
-const moddleOptions = {
-  camunda: require('camunda-bpmn-moddle/resources/camunda')
-};
-
 describe('ScriptTask', () => {
   describe('events', () => {
     const source = `
@@ -93,8 +89,7 @@ describe('ScriptTask', () => {
       </definitions>`;
 
       const engine = new Engine({
-        source,
-        moddleOptions
+        source
       });
 
       const listener = new EventEmitter();
