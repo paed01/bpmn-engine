@@ -10,16 +10,16 @@ const {expect, fail} = Lab.assertions;
 describe('ManualTask', () => {
   describe('events', () => {
     const manualTaskProcessXml = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <process id="theProcess" isExecutable="true">
-      <startEvent id="start" />
-      <manualTask id="task" />
-      <endEvent id="end" />
-      <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
-      <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
-    </process>
-  </definitions>`;
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theProcess" isExecutable="true">
+        <startEvent id="start" />
+        <manualTask id="task" />
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+        <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
+      </process>
+    </definitions>`;
 
     let context;
     beforeEach((done) => {
@@ -122,20 +122,18 @@ describe('ManualTask', () => {
         task.run();
       });
 
-      it('assigns input', (done) => {
+      it('signal sets output', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        const doneTasks = [];
         task.on('wait', (activityApi, executionContext) => {
-          doneTasks.push(executionContext.getInput().do);
-          activityApi.getApi(executionContext).signal();
+          const {index, variables} = executionContext.getInputContext();
+          activityApi.getApi(executionContext).signal(variables.analogue[index]);
         });
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
-
-          expect(doneTasks).to.equal(['labour', 'archiving', 'shopping']);
+          expect(executionContext.getOutput()).to.equal(['labour', 'archiving', 'shopping']);
           done();
         });
 
@@ -182,19 +180,17 @@ describe('ManualTask', () => {
         task.run();
       });
 
-      it('assigns input', (done) => {
+      it('signal assigns output', (done) => {
         const task = context.getChildActivityById('task');
 
-        const doneTasks = [];
         task.on('wait', (activityApi, executionContext) => {
-          doneTasks.push(executionContext.getInput().do);
-          activityApi.getApi(executionContext).signal();
+          const {index, variables} = executionContext.getInputContext();
+          activityApi.getApi(executionContext).signal(variables.analogue[index]);
         });
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
-
-          expect(doneTasks).to.equal(['labour', 'archiving', 'shopping']);
+          expect(executionContext.getOutput()).to.equal(['labour', 'archiving', 'shopping']);
           done();
         });
 
@@ -208,25 +204,16 @@ describe('ManualTask', () => {
 function getLoopContext(sequential, callback) {
   const source = `
   <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <process id="sequentialLoopProcess" isExecutable="true">
       <manualTask id="task">
-        <multiInstanceLoopCharacteristics isSequential="${sequential}" camunda:collection="\${variables.analogue}">
-          <loopCardinality>5</loopCardinality>
+        <multiInstanceLoopCharacteristics isSequential="${sequential}">
+          <loopCardinality>\${variables.analogue.length}</loopCardinality>
         </multiInstanceLoopCharacteristics>
-        <extensionElements>
-          <camunda:inputOutput>
-            <camunda:inputParameter name="do">\${item}</camunda:inputParameter>
-            <camunda:inputParameter name="index">\${index}</camunda:inputParameter>
-          </camunda:inputOutput>
-        </extensionElements>
       </manualTask>
     </process>
   </definitions>`;
-  testHelpers.getContext(source, {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
-  }, (err, context) => {
+  testHelpers.getContext(source, (err, context) => {
     if (err) return callback(err);
     context.environment.variables.analogue = ['labour', 'archiving', 'shopping'];
     callback(null, context);

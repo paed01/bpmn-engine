@@ -484,14 +484,7 @@ describe('Definition', () => {
       listener.on('wait-userTask', () => {
         const state = definition.getState();
         expect(state.processes[state.entryPointId].environment, `<${definition.entryPointId}> variables`).to.include({
-          variables: {
-            input: 1
-          },
-          services: {
-            request: {
-              module: 'request'
-            }
-          }
+          output: {}
         });
         done();
       });
@@ -667,7 +660,7 @@ describe('Definition', () => {
       const definition = new Definition(moddleContext);
       listener.on('wait-userTask', () => {
         state = definition.getState();
-        state.processes.theProcess.environment.variables.input = 'resumed';
+        state.processes.theProcess.environment.variables = {input: 'resumed'};
         definition.stop();
       });
       definition.once('end', () => {

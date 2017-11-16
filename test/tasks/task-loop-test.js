@@ -13,6 +13,12 @@ const moddleOptions = {
   camunda: require('camunda-bpmn-moddle/resources/camunda')
 };
 
+const extensions = {
+  js: {
+    moddleOptions: require('../resources/js-bpmn-moddle.json')
+  }
+};
+
 describe('task loop', () => {
   describe('sequential', () => {
     it('on recurring task error the loop breaks', (done) => {
@@ -73,10 +79,10 @@ describe('task loop', () => {
                 <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">7</bpmn:loopCardinality>
               </bpmn:multiInstanceLoopCharacteristics>
               <bpmn:script><![CDATA[
-                variables.input += variables.items[index];
+                output.sum = output.sum > 0 ? output.sum : 0;
+                output.sum += variables.items[index];
                 next()
-                ]]>
-              </bpmn:script>
+              ]]></bpmn:script>
             </bpmn:scriptTask>
           </bpmn:process>
         </bpmn:definitions>`;
@@ -101,7 +107,7 @@ describe('task loop', () => {
 
         engine.once('end', (execution, definition) => {
           expect(startCount, 'number of start').to.equal(7);
-          expect(definition.environment.variables.input).to.equal(42);
+          expect(definition.environment.output.sum).to.equal(42);
           testHelpers.expectNoLingeringListenersOnEngine(engine);
           done();
         });
@@ -222,9 +228,9 @@ describe('task loop', () => {
       it('loops service task until condition expression is met', (done) => {
         const source = `
         <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
           <process id="taskLoopProcess" isExecutable="true">
-            <serviceTask id="recurring" name="Recurring" camunda:expression="\${services.iterate}">
+            <serviceTask id="recurring" name="Recurring" implementation="\${services.iterate}">
               <multiInstanceLoopCharacteristics isSequential="true">
                 <completionCondition xsi:type="tFormalExpression">\${services.condition(variables.input)}</completionCondition>
               </multiInstanceLoopCharacteristics>
@@ -273,28 +279,20 @@ describe('task loop', () => {
 
     });
 
-    describe('camunda collection expression', () => {
+    describe('collection expression', () => {
       it('loops each item', (done) => {
         const source = `
-        <bpmn:definitions id= "Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
-          <bpmn:process id="Process_1" isExecutable="true">
-            <bpmn:serviceTask id="recurring" name="Each item" camunda:expression="\${services.loop}">
-              <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.input}" />
-              <bpmn:extensionElements>
-                <camunda:inputOutput>
-                  <camunda:inputParameter name="item">\${item}</camunda:inputParameter>
-                  <camunda:inputParameter name="sum">\${item}</camunda:inputParameter>
-                  <camunda:outputParameter name="sum">\${result[-1][0]}</camunda:outputParameter>
-                </camunda:inputOutput>
-              </bpmn:extensionElements>
-            </bpmn:serviceTask>
-          </bpmn:process>
-        </bpmn:definitions>`;
+        <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
+          <process id="Process_1" isExecutable="true">
+            <serviceTask id="recurring" name="Each item" implementation="\${services.loop}">
+              <multiInstanceLoopCharacteristics isSequential="true" js:collection="\${variables.input}" />
+            </serviceTask>
+          </process>
+        </definitions>`;
 
         const engine = new Engine({
           source,
-          moddleOptions
+          extensions
         });
         const listener = new EventEmitter();
 
@@ -327,11 +325,10 @@ describe('task loop', () => {
 
       it('breaks loop if error is returned in callback', (done) => {
         const source = `
-        <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+        <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
           <process id="Process_1" isExecutable="true">
-            <serviceTask id="recurring" name="Each item" camunda:expression="\${services.loop}">
-              <multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.input}" />
+            <serviceTask id="recurring" name="Each item" implementation="\${services.loop}">
+              <multiInstanceLoopCharacteristics isSequential="true" js:collection="\${variables.input}" js:elementVariable="value" />
             </serviceTask>
             <boundaryEvent id="errorEvent" attachedToRef="recurring">
               <errorEventDefinition />
@@ -341,7 +338,7 @@ describe('task loop', () => {
 
         const engine = new Engine({
           source,
-          moddleOptions
+          extensions
         });
         const listener = new EventEmitter();
 
@@ -354,7 +351,7 @@ describe('task loop', () => {
           listener,
           services: {
             loop: (executionContext, callback) => {
-              if (executionContext.item > 1) {
+              if (executionContext.value > 1) {
                 return callback(new Error('Too much'));
               }
 
@@ -423,10 +420,9 @@ describe('task loop', () => {
 
   describe('sequential', () => {
     const processXml = `
-    <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-       xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
+    <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
       <bpmn:process id="taskLoopProcess" isExecutable="true">
-        <bpmn:serviceTask id="recurring" name="Recurring" camunda:expression="\${services.loopTest}">
+        <bpmn:serviceTask id="recurring" name="Recurring" implementation="\${services.loopTest}">
           <bpmn:multiInstanceLoopCharacteristics isSequential="true">
             <bpmn:loopCardinality>3</bpmn:loopCardinality>
           </bpmn:multiInstanceLoopCharacteristics>
@@ -641,10 +637,9 @@ describe('task loop', () => {
 
   describe('parallell', () => {
     const source = `
-    <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-       xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
+    <bpmn:definitions id= "definitions" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
       <bpmn:process id="taskLoopProcess" isExecutable="true">
-        <bpmn:serviceTask id="recurring" name="Recurring" camunda:expression="\${services.loopTest}">
+        <bpmn:serviceTask id="recurring" name="Recurring" implementation="\${services.loopTest}">
           <bpmn:multiInstanceLoopCharacteristics isSequential="false">
             <bpmn:loopCardinality>3</bpmn:loopCardinality>
           </bpmn:multiInstanceLoopCharacteristics>
@@ -851,8 +846,7 @@ describe('task loop', () => {
   describe('resume', () => {
     it('resumes task cardinality loop', (done) => {
       const source = `
-      <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+      <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="taskLoopProcess" isExecutable="true">
           <task id="recurring" name="Recurring">
             <multiInstanceLoopCharacteristics isSequential="true">
@@ -900,27 +894,26 @@ describe('task loop', () => {
 
     it('resumes task in sequential collection loop', (done) => {
       const source = `
-      <definitions id= "Definitions_2" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+      <definitions id= "Definitions_2" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
         <process id="Process_1" isExecutable="true">
-          <serviceTask id="recurring" name="Each item" camunda:expression="\${services.loop}">
-            <multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.list}" />
+          <serviceTask id="recurring" name="Each item" implementation="\${services.loop}">
+            <multiInstanceLoopCharacteristics isSequential="true" js:collection="\${variables.list}" />
           </serviceTask>
         </process>
       </definitions>`;
 
-      testHelpers.loopFn = (argContext, callback) => {
-        const prevResult = argContext.variables.prevResult || -1;
+      let prevResult = -1;
+      testHelpers.loopFn = (inputContext, callback) => {
         if (prevResult === -1) {
-          argContext.variables.prevResult = argContext.item;
-          return callback(null, argContext.item);
+          prevResult = inputContext.item;
+          return callback(null, inputContext.item);
         }
-        callback(null, argContext.variables.prevResult += argContext.item);
+        callback(null, prevResult += inputContext.item);
       };
 
       const engine1 = new Engine({
         source,
-        moddleOptions
+        extensions
       });
       const listener = new EventEmitter();
       const options = {
@@ -945,8 +938,7 @@ describe('task loop', () => {
 
       engine1.once('end', () => {
         testHelpers.expectNoLingeringListenersOnEngine(engine1);
-
-        const engine2 = Engine.resume(testHelpers.readFromDb(state));
+        const engine2 = Engine.resume(testHelpers.readFromDb(state), {extensions});
 
         engine2.once('end', (def) => {
           expect(def.getOutput().taskInput.recurring).to.equal([

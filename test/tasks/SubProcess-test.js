@@ -145,19 +145,16 @@ describe('SubProcess', () => {
     it('emits error if sub task fails', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
-      <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-            targetNamespace="http://bpmn.io/schema/bpmn">
+      <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="mainProcess" isExecutable="true">
           <subProcess id="subProcess" name="Wrapped">
-            <serviceTask id="subServiceTask" name="Put" camunda:expression="\${services.throw}" />
+            <serviceTask id="subServiceTask" name="Put" implementation="\${services.throw}" />
           </subProcess>
         </process>
       </definitions>`;
 
       const engine = new Engine({
-        source,
-        moddleOptions
+        source
       });
       engine.execute({
         services: {
@@ -176,21 +173,16 @@ describe('SubProcess', () => {
     it('returns error in execute callback', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
-      <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-            targetNamespace="http://bpmn.io/schema/bpmn">
+      <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="mainProcess" isExecutable="true">
           <subProcess id="subProcess" name="Wrapped">
-            <serviceTask id="subServiceTask" name="Put" camunda:expression="\${services.throw}" />
+            <serviceTask id="subServiceTask" name="Put" implementation="\${services.throw}" />
           </subProcess>
         </process>
       </definitions>`;
 
       const engine = new Engine({
-        source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        source
       });
       engine.execute({
         services: {
@@ -207,15 +199,13 @@ describe('SubProcess', () => {
     it('catches error if bound error event is attached', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
-      <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-            targetNamespace="http://bpmn.io/schema/bpmn">
+      <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="mainProcess" isExecutable="true">
           <subProcess id="subProcess" name="Wrapped">
-            <serviceTask id="subServiceTask" name="Put" camunda:expression="\${services.throw}" />
+            <serviceTask id="subServiceTask" name="Put" implementation="\${services.throw}" />
           </subProcess>
           <boundaryEvent id="errorEvent" attachedToRef="subProcess">
-            <errorEventDefinition errorRef="Error_def" camunda:errorCodeVariable="serviceError" camunda:errorMessageVariable="message" />
+            <errorEventDefinition errorRef="Error_def" />
           </boundaryEvent>
         </process>
         <error id="Error_def" name="SubProcessError" errorCode="\${message}" />
@@ -236,63 +226,9 @@ describe('SubProcess', () => {
       });
 
       engine.on('end', (execution) => {
-        expect(execution.getOutput()).to.equal({
-          serviceError: 'Expected',
-          message: 'Expected'
-        });
-        done();
-      });
-    });
-  });
-
-  describe('IO', () => {
-    it('transfers input to context variables', (done) => {
-      const source = `
-      <?xml version="1.0" encoding="UTF-8"?>
-      <bpmn:definitions id="Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-            targetNamespace="http://bpmn.io/schema/bpmn">
-        <bpmn:process id="mainProcess" isExecutable="true">
-          <bpmn:subProcess id="subProcess" name="Wrapped">
-            <bpmn:extensionElements>
-              <camunda:inputOutput>
-                <camunda:inputParameter name="api">\${variables.apiPath}</camunda:inputParameter>
-                <camunda:inputParameter name="serviceFn">\${services.put}</camunda:inputParameter>
-                <camunda:outputParameter name="result">\${variables.result}</camunda:outputParameter>
-              </camunda:inputOutput>
-            </bpmn:extensionElements>
-            <bpmn:serviceTask id="subServiceTask" name="Put" camunda:expression="\${serviceFn()}">
-              <bpmn:extensionElements>
-                <camunda:inputOutput>
-                  <camunda:inputParameter name="uri">\${variables.api}</camunda:inputParameter>
-                  <camunda:outputParameter name="result">\${result[0]}</camunda:outputParameter>
-                </camunda:inputOutput>
-              </bpmn:extensionElements>
-            </bpmn:serviceTask>
-          </bpmn:subProcess>
-        </bpmn:process>
-      </bpmn:definitions>`;
-
-      const engine = new Engine({
-        source,
-        moddleOptions
-      });
-      engine.execute({
-        services: {
-          put: () => {
-            return (uri, next) => {
-              next(null, 1);
-            };
-          }
-        },
-        variables: {
-          apiPath: 'https://api.example.com/v1'
-        }
-      });
-
-      engine.once('end', (execution) => {
-        expect(execution.getOutput()).to.equal({
-          result: 1
+        expect(execution.getOutput().taskInput.errorEvent).to.equal({
+          errorCode: 'Expected',
+          errorMessage: 'Expected'
         });
         done();
       });
@@ -334,21 +270,22 @@ describe('SubProcess', () => {
         const taskApi = task.activate(null, listener);
 
         const doneTasks = [];
-        listener.on('start-serviceTask', (activityApi) => {
-          doneTasks.push(activityApi.getInput().input);
+        listener.on('end-serviceTask', (activityApi) => {
+          doneTasks.push(activityApi.getInput().item);
         });
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(doneTasks).to.equal(['sub labour', 'sub archiving', 'sub shopping']);
+          expect(doneTasks).to.equal(['labour', 'archiving', 'shopping']);
+
           done();
         });
 
         taskApi.run();
       });
 
-      it('resume', (done) => {
+      it.skip('resume', (done) => {
         const listener = new EventEmitter();
         context.environment.setListener(listener);
 
@@ -356,14 +293,14 @@ describe('SubProcess', () => {
         const taskApi = task.activate(null, listener);
 
         const doneTasks = [];
-        listener.on('start-serviceTask', (activityApi) => {
-          doneTasks.push(activityApi.getInput().input);
+        listener.on('end-serviceTask', (activityApi) => {
+          doneTasks.push(activityApi.getInput().item);
         });
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(doneTasks).to.equal(['sub labour', 'sub archiving', 'sub shopping']);
+          expect(doneTasks).to.equal(['labour', 'archiving', 'shopping']);
           done();
         });
 
@@ -409,13 +346,13 @@ describe('SubProcess', () => {
 
         const doneTasks = [];
         listener.on('end-serviceTask', (activityApi) => {
-          doneTasks.push(activityApi.getInput().input);
+          doneTasks.push(activityApi.getInput().item);
         });
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(doneTasks).to.equal(['sub labour', 'sub archiving', 'sub shopping']);
+          expect(doneTasks).to.equal(['labour', 'archiving', 'shopping']);
           done();
         });
 
@@ -428,34 +365,26 @@ describe('SubProcess', () => {
 function getLoopContext(sequential, callback) {
   const source = `
   <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <process id="sequentialLoopProcess" isExecutable="true">
     <subProcess id="sub-process-task" name="Wrapped">
-      <multiInstanceLoopCharacteristics isSequential="${sequential}" camunda:collection="\${variables.inputList}">
-        <loopCardinality>5</loopCardinality>
+      <multiInstanceLoopCharacteristics isSequential="${sequential}">
+        <loopCardinality>\${variables.inputList.length}</loopCardinality>
       </multiInstanceLoopCharacteristics>
-
-      <serviceTask id="serviceTask" name="Put" camunda:expression="\${services.loop}">
-        <extensionElements>
-          <camunda:inputOutput>
-            <camunda:inputParameter name="input">\${variables.prefix} \${item}</camunda:inputParameter>
-            <camunda:outputParameter name="result">\${result[0]}</camunda:outputParameter>
-          </camunda:inputOutput>
-        </extensionElements>
-      </serviceTask>
+      <serviceTask id="serviceTask" name="Put" implementation="\${services.loop(variables.inputList,index)}" />
     </subProcess>
     </process>
   </definitions>`;
-  testHelpers.getContext(source, moddleOptions, (err, context) => {
+  testHelpers.getContext(source, (err, context) => {
     if (err) return callback(err);
-    context.environment.assignVariables({
-      prefix: 'sub',
-      inputList: ['labour', 'archiving', 'shopping']
-    });
+    context.environment.set('prefix', 'sub');
+    context.environment.set('inputList', ['labour', 'archiving', 'shopping']);
 
-    context.environment.addService('loop', (input, next) => {
-      next(null, input);
+    context.environment.addService('loop', function getLoop(list, idx) {
+      this.setInputValue('item', list[idx]);
+      return function loop(inputContext, next) {
+        next(null, list[idx]);
+      };
     });
 
     callback(null, context);

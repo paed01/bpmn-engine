@@ -69,11 +69,46 @@ describe('task activity', () => {
     });
 
     it('multiple multiple completes process', (done) => {
+      const source = `
+      <bpmn:definitions id="Definitions_1" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+        <bpmn:process id="Process_1" isExecutable="true">
+          <bpmn:startEvent id="StartEvent_1">
+            <bpmn:outgoing>SequenceFlow_0q2oaww</bpmn:outgoing>
+          </bpmn:startEvent>
+          <bpmn:task id="task" name="Task">
+            <bpmn:incoming>SequenceFlow_0q2oaww</bpmn:incoming>
+            <bpmn:incoming>default-flow-2</bpmn:incoming>
+            <bpmn:incoming>default-flow-1</bpmn:incoming>
+            <bpmn:outgoing>taskflow-1</bpmn:outgoing>
+          </bpmn:task>
+          <bpmn:sequenceFlow id="SequenceFlow_0q2oaww" sourceRef="StartEvent_1" targetRef="task" />
+          <bpmn:exclusiveGateway id="decision-1" default="default-flow-1">
+            <bpmn:incoming>taskflow-1</bpmn:incoming>
+            <bpmn:outgoing>condflow-1</bpmn:outgoing>
+            <bpmn:outgoing>default-flow-1</bpmn:outgoing>
+          </bpmn:exclusiveGateway>
+          <bpmn:sequenceFlow id="taskflow-1" sourceRef="task" targetRef="decision-1" />
+          <bpmn:exclusiveGateway id="decision-2" default="default-flow-2">
+            <bpmn:incoming>condflow-1</bpmn:incoming>
+            <bpmn:outgoing>condflow-2</bpmn:outgoing>
+            <bpmn:outgoing>default-flow-2</bpmn:outgoing>
+          </bpmn:exclusiveGateway>
+          <bpmn:sequenceFlow id="condflow-1" sourceRef="decision-1" targetRef="decision-2">
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">\${output.taskInput.decision-1.taken}</bpmn:conditionExpression>
+          </bpmn:sequenceFlow>
+          <bpmn:endEvent id="end">
+            <bpmn:incoming>condflow-2</bpmn:incoming>
+          </bpmn:endEvent>
+          <bpmn:sequenceFlow id="condflow-2" sourceRef="decision-2" targetRef="end">
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">\${output.taskInput.decision-2.taken}</bpmn:conditionExpression>
+          </bpmn:sequenceFlow>
+          <bpmn:sequenceFlow id="default-flow-2" sourceRef="decision-2" targetRef="task" />
+          <bpmn:sequenceFlow id="default-flow-1" sourceRef="decision-1" targetRef="task" />
+        </bpmn:process>
+      </bpmn:definitions>`;
+
       const engine = new Engine({
-        source: factory.resource('multiple-multiple-inbound.bpmn'),
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        source
       });
 
       const listener = new EventEmitter();
@@ -85,14 +120,16 @@ describe('task activity', () => {
         }
       });
 
+      listener.on('start', (activity) => {
+        if (activity.type !== 'bpmn:ExclusiveGateway') return;
+
+        activity.signal({
+          taken: true
+        });
+      });
+
       engine.once('end', (execution, definitionExecution) => {
         expect(taskCount, 'start tasks').to.equal(3);
-        expect(definitionExecution.getOutput()).to.equal({
-          tookCondition1: true,
-          tookCondition2: true,
-          condition1: true,
-          condition2: true
-        });
         expect(definitionExecution.getChildState('end').taken).to.be.true();
         done();
       });

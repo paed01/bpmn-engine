@@ -1,34 +1,23 @@
 'use strict';
 
-const {Engine} = require('../../lib');
-const {EventEmitter} = require('events');
+const factory = require('../helpers/factory');
 const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
+const {Engine} = require('../../lib');
+const {EventEmitter} = require('events');
 
 const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
-const moddleOptions = {
-  camunda: require('camunda-bpmn-moddle/resources/camunda')
-};
-
 describe('UserTask', () => {
   describe('behaviour', () => {
-    const taskProcessXml = `
+    const source = `
     <?xml version="1.0" encoding="UTF-8"?>
-    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theProcess" isExecutable="true">
         <startEvent id="start" />
-        <userTask id="task">
-          <extensionElements>
-            <camunda:inputOutput>
-              <camunda:inputParameter name="input">\${variables.message}</camunda:inputParameter>
-              <camunda:outputParameter name="output">Signaled \${input} with \${result}</camunda:outputParameter>
-            </camunda:inputOutput>
-          </extensionElements>
-        </userTask>
+        <userTask id="task" />
         <endEvent id="end" />
         <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
         <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
@@ -37,7 +26,7 @@ describe('UserTask', () => {
 
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(taskProcessXml, moddleOptions, (err, result) => {
+      testHelpers.getContext(source, (err, result) => {
         if (err) return done(err);
         context = result;
         done();
@@ -209,29 +198,9 @@ describe('UserTask', () => {
   });
 
   describe('IO', () => {
-    const taskProcessXml = `
-    <?xml version="1.0" encoding="UTF-8"?>
-    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-      <process id="theProcess" isExecutable="true">
-        <startEvent id="start" />
-        <userTask id="task">
-          <extensionElements>
-            <camunda:inputOutput>
-              <camunda:inputParameter name="input">\${variables.message}</camunda:inputParameter>
-              <camunda:outputParameter name="output">Signaled \${input} with \${result}</camunda:outputParameter>
-            </camunda:inputOutput>
-          </extensionElements>
-        </userTask>
-        <endEvent id="end" />
-        <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
-        <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
-      </process>
-    </definitions>`;
-
     let context;
     beforeEach((done) => {
-      testHelpers.getContext(taskProcessXml, moddleOptions, (err, result) => {
+      testHelpers.getContext(factory.userTask('task'), (err, result) => {
         if (err) return done(err);
         context = result;
         done();
@@ -239,15 +208,13 @@ describe('UserTask', () => {
     });
 
     it('event argument getInput() on start returns input parameters', (done) => {
-      context.environment.assignVariables({
-        message: 'executed'
-      });
+      context.environment.set('input', 'von Knaus');
 
       const task = context.getChildActivityById('task');
       task.activate();
       task.once('start', (activityApi, executionContext) => {
         expect(executionContext.getInput()).to.equal({
-          input: 'executed'
+          Surname: 'von Knaus'
         });
         done();
       });
@@ -255,18 +222,18 @@ describe('UserTask', () => {
       task.inbound[0].take();
     });
 
-    it('event argument getOutput() on end returns output parameter value based on signal and input parameters', (done) => {
-      context.environment.set('message', 'who');
+    it('event argument getOutput() on end returns output parameter value based on signal', (done) => {
+      context.environment.set('input', 'who');
 
       const task = context.getChildActivityById('task');
       task.activate();
       task.once('wait', (activityApi, executionContext) => {
-        executionContext.signal('me');
+        executionContext.signal({input: 'me'});
       });
 
       task.once('end', (activityApi, executionContext) => {
         expect(executionContext.getOutput()).to.equal({
-          output: 'Signaled who with me'
+          userInput: 'me'
         });
         done();
       });
@@ -277,40 +244,25 @@ describe('UserTask', () => {
 
   describe('engine', () => {
     it('multiple inbound completes process', (done) => {
-      const processXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
-      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="testProcess" isExecutable="true">
           <startEvent id="start" />
-          <userTask id="task">
-            <extensionElements>
-              <camunda:inputOutput>
-                <camunda:inputParameter name="input">\${variables.defaultTaken}</camunda:inputParameter>
-                <camunda:outputParameter name="taskOutput">\${result}</camunda:outputParameter>
-              </camunda:inputOutput>
-            </extensionElements>
-          </userTask>
-          <exclusiveGateway id="decision" default="flow3">
-            <extensionElements>
-              <camunda:inputOutput>
-                <camunda:outputParameter name="defaultTaken">\${true}</camunda:outputParameter>
-              </camunda:inputOutput>
-            </extensionElements>
-          </exclusiveGateway>
+          <userTask id="task" />
+          <exclusiveGateway id="decision" default="flow3" />
           <endEvent id="end" />
           <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
           <sequenceFlow id="flow2" sourceRef="task" targetRef="decision" />
           <sequenceFlow id="flow3" sourceRef="decision" targetRef="task" />
           <sequenceFlow id="flow4" sourceRef="decision" targetRef="end">
-            <conditionExpression xsi:type="tFormalExpression">\${variables.defaultTaken}</conditionExpression>
+            <conditionExpression xsi:type="tFormalExpression">\${output.taskInput.decision.defaultTaken}</conditionExpression>
           </sequenceFlow>
         </process>
       </definitions>`;
 
       const engine = new Engine({
-        source: processXml,
-        moddleOptions
+        source
       });
 
       const listener = new EventEmitter();
@@ -321,26 +273,25 @@ describe('UserTask', () => {
           fail(`<${activity.id}> Too many starts`);
         }
       });
+
       listener.on('wait-task', (activityApi) => {
-        activityApi.signal(activityApi.getInput().input);
+        activityApi.signal();
       });
+
+      listener.on('start-decision', (activityApi) => {
+        activityApi.signal({defaultTaken: true});
+      });
+
       let endEventCount = 0;
       listener.on('start-end', () => {
         endEventCount++;
       });
 
       engine.execute({
-        listener,
-        variables: {
-          test: 1
-        }
+        listener
       });
-      engine.once('end', (def) => {
-        expect(def.getOutput()).to.equal({
-          defaultTaken: true,
-          taskOutput: true
-        });
 
+      engine.once('end', () => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
         testHelpers.expectNoLingeringListenersOnEngine(engine);
@@ -415,91 +366,6 @@ describe('UserTask', () => {
     });
   });
 
-  describe('with form', () => {
-    const source = `
-    <?xml version="1.0" encoding="UTF-8"?>
-    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-      <process id="theProcess" isExecutable="true">
-        <startEvent id="start" />
-        <userTask id="task">
-          <extensionElements>
-            <camunda:formData>
-              <camunda:formField id="formfield1" label="FormField1" type="string" />
-              <camunda:formField id="formfield2" type="long" />
-            </camunda:formData>
-          </extensionElements>
-          </userTask>
-        <endEvent id="end" />
-        <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
-        <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
-      </process>
-    </definitions>`;
-
-    it('requires signal to complete', (done) => {
-      const listener = new EventEmitter();
-
-      listener.once('wait-task', (activityApi) => {
-        expect(activityApi.getState().waiting).to.be.true();
-        activityApi.signal({
-          formfield1: 1,
-          formfield2: 2
-        });
-      });
-
-      const engine = new Engine({
-        source,
-        moddleOptions
-      });
-
-      engine.once('end', () => {
-        done();
-      });
-
-      engine.execute({
-        listener: listener
-      });
-    });
-
-    it('getState() returns waiting true', (done) => {
-      const engine = new Engine({
-        source,
-        moddleOptions
-      });
-
-      const listener = new EventEmitter();
-      listener.once('wait-task', (event) => {
-        engine.stop();
-        expect(event.getState()).to.include({ waiting: true });
-        done();
-      });
-
-      engine.execute({
-        listener: listener
-      });
-    });
-
-    it('getState() returns form state', (done) => {
-      const engine = new Engine({
-        source,
-        moddleOptions
-      });
-
-      const listener = new EventEmitter();
-      listener.once('wait-task', (event) => {
-        engine.stop();
-        const state = event.getState();
-        expect(state.io).to.include(['form']);
-        expect(state.io.form).to.include(['fields']);
-        done();
-      });
-
-      engine.execute({
-        listener: listener
-      });
-    });
-  });
-
   describe('loop', () => {
     describe('sequential', () => {
       let context;
@@ -519,49 +385,10 @@ describe('UserTask', () => {
         task.on('wait', (activityApi, executionContext) => {
           if (waits.length > 5) fail('too many waits');
           waits.push(executionContext.id);
-
-          const api = activityApi.getApi(executionContext);
-          api.form.setFieldValue('yay', true);
-
           executionContext.signal();
         });
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
-
-          expect(waits).to.equal(['task', 'task', 'task']);
-          done();
-        });
-
-        task.run();
-      });
-
-      it('assigns input to form', (done) => {
-        const task = context.getChildActivityById('task');
-        task.activate();
-
-        task.on('wait', (activityApi, executionContext) => {
-
-          const input = executionContext.getInput();
-          const form = executionContext.getForm();
-
-          form.setFieldValue('yay', input.index < 2);
-
-          executionContext.signal();
-        });
-
-        task.on('end', (activityApi, executionContext) => {
-          if (executionContext.isLoopContext) return;
-
-          expect(executionContext.getOutput().result).to.equal([{
-            email: 'pal@example.com',
-            yay: true
-          }, {
-            email: 'franz@example.com',
-            yay: true
-          }, {
-            email: 'immanuel@example.com',
-            yay: false
-          }]);
           done();
         });
 
@@ -576,13 +403,10 @@ describe('UserTask', () => {
           taskApi = activityApi.getApi(executionContext);
         });
 
+        const waits = [];
         task.on('wait', (activityApi, executionContext) => {
-          const input = executionContext.getInput();
-          const form = executionContext.getForm();
-
-          form.setFieldValue('yay', input.index < 2);
-
-          executionContext.signal(form.getOutput());
+          waits.push(executionContext.id);
+          executionContext.signal();
         });
 
         task.on('start', function startEH() {
@@ -592,24 +416,14 @@ describe('UserTask', () => {
           task.removeListener('start', startEH);
 
           state = taskApi.getState();
-
           taskApi.stop();
 
           task.on('start', () => {
             ++count;
             if (count > 4) fail('Too many starts');
           });
-          task.on('leave', (activityApi, executionContext) => {
-            expect(executionContext.getOutput().result).to.equal([{
-              email: 'pal@example.com',
-              yay: true
-            }, {
-              email: 'franz@example.com',
-              yay: true
-            }, {
-              email: 'immanuel@example.com',
-              yay: false
-            }]);
+          task.on('leave', () => {
+            expect(waits).to.have.length(3);
             done();
           });
 
@@ -643,9 +457,6 @@ describe('UserTask', () => {
           starts.push(executionContext);
           waits.push(executionContext.id);
 
-          const api = activityApi.getApi(executionContext);
-          api.form.setFieldValue('yay', true);
-
           if (starts.length === 3) {
             starts.reverse().forEach((t) => t.signal());
           }
@@ -667,27 +478,11 @@ describe('UserTask', () => {
         task.activate();
 
         task.on('wait', (activityApi, executionContext) => {
-          const input = executionContext.getInput();
-          const form = executionContext.getForm();
-
-          form.setFieldValue('yay', input.index < 2);
-
-          executionContext.signal(form.getOutput());
+          executionContext.signal();
         });
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
-
-          expect(executionContext.getOutput().result).to.equal([{
-            email: 'pal@example.com',
-            yay: true
-          }, {
-            email: 'franz@example.com',
-            yay: true
-          }, {
-            email: 'immanuel@example.com',
-            yay: false
-          }]);
           done();
         });
 
@@ -700,30 +495,15 @@ describe('UserTask', () => {
 function getLoopContext(sequential, callback) {
   const source = `
   <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <process id="parallellLoopProcess" isExecutable="true">
       <userTask id="task">
-        <multiInstanceLoopCharacteristics isSequential="${sequential}" camunda:collection="\${variables.boardMembers}">
-          <loopCardinality>5</loopCardinality>
+        <multiInstanceLoopCharacteristics isSequential="${sequential}">
+          <loopCardinality>3</loopCardinality>
         </multiInstanceLoopCharacteristics>
-        <extensionElements>
-          <camunda:inputOutput>
-            <camunda:inputParameter name="email">\${item}</camunda:inputParameter>
-            <camunda:inputParameter name="index">\${index}</camunda:inputParameter>
-            <camunda:outputParameter name="result">\${result}</camunda:outputParameter>
-          </camunda:inputOutput>
-          <camunda:formData>
-            <camunda:formField id="email" type="string" defaultValue="\${email}" />
-            <camunda:formField id="yay" type="boolean" />
-          </camunda:formData>
-        </extensionElements>
       </userTask>
     </process>
   </definitions>`;
-  testHelpers.getContext(source, moddleOptions, (err, context) => {
-    if (err) return callback(err);
-    context.environment.assignVariables({boardMembers: ['pal@example.com', 'franz@example.com', 'immanuel@example.com']});
-    callback(null, context);
-  });
+
+  testHelpers.getContext(source, callback);
 }

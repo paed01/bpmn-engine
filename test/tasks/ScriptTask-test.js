@@ -67,106 +67,27 @@ describe('ScriptTask', () => {
     });
   });
 
-  describe('IO', () => {
-    const source = `
-    <?xml version="1.0" encoding="UTF-8"?>
-    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-      <process id="theProcess" isExecutable="true">
-        <startEvent id="start" />
-        <scriptTask id="task" scriptFormat="Javascript">
-          <script>
-            <![CDATA[
-              next(null, input);
-            ]]>
-          </script>
-          <extensionElements>
-            <camunda:inputOutput>
-              <camunda:inputParameter name="input">\${variables.message}</camunda:inputParameter>
-              <camunda:outputParameter name="output">Input was \${result}</camunda:outputParameter>
-            </camunda:inputOutput>
-          </extensionElements>
-        </scriptTask>
-        <endEvent id="end" />
-        <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
-        <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
-      </process>
-    </definitions>`;
-
-    let context;
-    beforeEach((done) => {
-      testHelpers.getContext(source, moddleOptions, (err, result) => {
-        if (err) return done(err);
-        context = result;
-        done();
-      });
-    });
-
-    it('event argument getInput() on start returns input parameters', (done) => {
-      context.environment.variables.message = 'executed';
-
-      const task = context.getChildActivityById('task');
-      task.activate();
-      task.once('start', (activityApi, executionContext) => {
-        expect(executionContext.getInput()).to.equal({
-          input: 'executed'
-        });
-        done();
-      });
-
-      task.inbound[0].take();
-    });
-
-    it('event argument getOutput() on end returns output parameter value based on input parameters', (done) => {
-      context.environment.variables.message = 'exec';
-
-      const task = context.getChildActivityById('task');
-      task.activate();
-      task.once('end', (activity, execution) => {
-        expect(execution.getOutput()).to.equal({
-          output: 'Input was exec'
-        });
-        done();
-      });
-
-      task.inbound[0].take();
-    });
-  });
-
   describe('engine', () => {
     it('multiple inbound completes process', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
-      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="testProcess" isExecutable="true">
           <startEvent id="start" />
           <scriptTask id="task" scriptFormat="Javascript">
             <script>
               <![CDATA[
-                next(null, defaultTaken);
+                next(null, output.taskInput && output.taskInput.decision.defaultTaken);
               ]]>
             </script>
-            <extensionElements>
-              <camunda:inputOutput>
-                <camunda:inputParameter name="defaultTaken">\${variables.defaultTaken}</camunda:inputParameter>
-                <camunda:outputParameter name="taskOutput">\${result}</camunda:outputParameter>
-              </camunda:inputOutput>
-            </extensionElements>
           </scriptTask>
-          <exclusiveGateway id="decision" default="flow3">
-            <extensionElements>
-              <camunda:inputOutput>
-                <camunda:outputParameter name="defaultTaken">\${true}</camunda:outputParameter>
-              </camunda:inputOutput>
-            </extensionElements>
-          </exclusiveGateway>
+          <exclusiveGateway id="decision" default="flow3" />
           <endEvent id="end" />
           <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
           <sequenceFlow id="flow2" sourceRef="task" targetRef="decision" />
           <sequenceFlow id="flow3" sourceRef="decision" targetRef="task" />
           <sequenceFlow id="flow4" sourceRef="decision" targetRef="end">
-            <conditionExpression xsi:type="tFormalExpression">\${variables.defaultTaken}</conditionExpression>
+            <conditionExpression xsi:type="tFormalExpression">\${output.taskInput.decision.defaultTaken}</conditionExpression>
           </sequenceFlow>
         </process>
       </definitions>`;
@@ -184,6 +105,11 @@ describe('ScriptTask', () => {
           fail(`<${activityApi.id}> Too many starts`);
         }
       });
+
+      listener.once('start-decision', (activityApi) => {
+        activityApi.signal({defaultTaken: true});
+      });
+
       let endEventCount = 0;
       listener.on('start-end', () => {
         endEventCount++;
@@ -196,9 +122,9 @@ describe('ScriptTask', () => {
         }
       });
       engine.once('end', (def) => {
-        expect(def.getOutput()).to.equal({
-          defaultTaken: true,
-          taskOutput: true
+        expect(def.getOutput().taskInput).to.equal({
+          decision: {defaultTaken: true},
+          task: true
         });
 
         expect(startCount, 'task starts').to.equal(2);
@@ -519,56 +445,9 @@ describe('ScriptTask', () => {
       });
       engine.execute();
 
-      engine.once('end', (exec, def) => {
+      engine.once('end', (exec) => {
         expect(exec.getOutput().taskInput.scriptTask).to.equal({output: 1});
-        expect(def.environment.variables.stopLoop).to.equal(true);
         done();
-      });
-    });
-
-    it('with output parameters returns formatted output', (done) => {
-      const source = `
-      <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.6.0">
-        <process id="Process_1" isExecutable="true">
-          <scriptTask id="scriptTask" name="Execute" scriptFormat="JavaScript">
-            <extensionElements>
-              <camunda:inputOutput>
-                <camunda:inputParameter name="apiPath">\${variables.apiPath}</camunda:inputParameter>
-                <camunda:inputParameter name="input">\${variables.input}</camunda:inputParameter>
-                <camunda:inputParameter name="path">/api/v8</camunda:inputParameter>
-                <camunda:outputParameter name="calledApi">\${api}</camunda:outputParameter>
-                <camunda:outputParameter name="result"></camunda:outputParameter>
-              </camunda:inputOutput>
-            </extensionElements>
-            <incoming>SequenceFlow_1jgxkq2</incoming>
-            <outgoing>SequenceFlow_040np9m</outgoing>
-            <script><![CDATA[
-            next(null, {
-              api: apiPath + path,
-              result: input
-            })]]></script>
-          </scriptTask>
-        </process>
-      </definitions>`;
-      testHelpers.getContext(source, moddleOptions, (err, localContext) => {
-        if (err) return done(err);
-
-        localContext.environment.assignVariables({
-          apiPath: 'http://example-2.com',
-          input: 8
-        });
-
-        const task = localContext.getChildActivityById('scriptTask');
-
-        task.once('end', (activityApi, executionContext) => {
-          expect(executionContext.getOutput()).to.equal({
-            calledApi: 'http://example-2.com/api/v8',
-            result: 8
-          });
-          done();
-        });
-
-        task.run();
       });
     });
   });
@@ -588,13 +467,14 @@ describe('ScriptTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
         const starts = [];
-        task.on('start', (activity) => {
+        task.on('start', (activity, activityExecution) => {
+          const input = activityExecution.getInputContext();
+          activityExecution.getIo().setInputValue('name', input.variables.names.shift());
           starts.push(activity.id);
         });
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
-
           expect(starts).to.equal(['task', 'task', 'task']);
           done();
         });
@@ -605,6 +485,11 @@ describe('ScriptTask', () => {
       it('emits end when completed', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
+
+        task.on('start', (activity, activityExecution) => {
+          const input = activityExecution.getInputContext();
+          activityExecution.getIo().setInputValue('name', input.variables.names.shift());
+        });
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
@@ -618,12 +503,15 @@ describe('ScriptTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
 
+        task.on('start', (activity, activityExecution) => {
+          const input = activityExecution.getInputContext();
+          activityExecution.getIo().setInputValue('name', input.variables.names.shift());
+        });
+
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(executionContext.getOutput()).to.equal({
-            result: [{name: 'Pål'}, {name: 'Franz'}, {name: 'Immanuel'}]
-          });
+          expect(executionContext.getOutput()).to.equal([{name: 'Pål'}, {name: 'Franz'}, {name: 'Immanuel'}]);
           done();
         });
 
@@ -647,12 +535,14 @@ describe('ScriptTask', () => {
         task.activate();
 
         const starts = [];
-        task.on('start', (activityApi, executionContext) => {
-          starts.push(executionContext.id);
+        task.on('start', (activityApi, activityExecution) => {
+          const input = activityExecution.getInputContext();
+          activityExecution.getIo().setInputValue('name', input.variables.names.shift());
+          starts.push(activityExecution.id);
         });
 
-        task.on('end', (activityApi, executionContext) => {
-          if (executionContext.isLoopContext) return;
+        task.on('end', (activityApi, activityExecution) => {
+          if (activityExecution.isLoopContext) return;
 
           expect(starts.includes(task.id), 'unique task id').to.be.false();
           done();
@@ -665,8 +555,13 @@ describe('ScriptTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        task.on('end', (activityApi, executionContext) => {
-          if (executionContext.isLoopContext) return;
+        task.on('start', (activityApi, activityExecution) => {
+          const input = activityExecution.getInputContext();
+          activityExecution.getIo().setInputValue('name', input.variables.names.shift());
+        });
+
+        task.on('end', (activityApi, activityExecution) => {
+          if (activityExecution.isLoopContext) return;
           done();
         });
 
@@ -677,12 +572,15 @@ describe('ScriptTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
 
-        task.on('end', (activityApi, executionContext) => {
-          if (executionContext.isLoopContext) return;
+        task.on('start', (activityApi, activityExecution) => {
+          const input = activityExecution.getInputContext();
+          activityExecution.getIo().setInputValue('name', input.variables.names.shift());
+        });
 
-          expect(executionContext.getOutput()).to.equal({
-            result: [{name: 'Pål'}, {name: 'Franz'}, {name: 'Immanuel'}]
-          });
+        task.on('end', (activityApi, activityExecution) => {
+          if (activityExecution.isLoopContext) return;
+
+          expect(activityExecution.getOutput()).to.equal([{name: 'Pål'}, {name: 'Franz'}, {name: 'Immanuel'}]);
 
           done();
         });
@@ -697,31 +595,22 @@ describe('ScriptTask', () => {
 function getLoopContext(sequential, callback) {
   const source = `
   <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <process id="sequentialLoopProcess" isExecutable="true">
       <scriptTask id="task" scriptFormat="javascript">
-        <multiInstanceLoopCharacteristics isSequential="${sequential}" camunda:collection="\${variables.names}">
-          <loopCardinality>5</loopCardinality>
+        <multiInstanceLoopCharacteristics isSequential="${sequential}">
+          <loopCardinality>\${variables.names.length}</loopCardinality>
         </multiInstanceLoopCharacteristics>
-        <extensionElements>
-          <camunda:inputOutput>
-            <camunda:inputParameter name="invertTimout">\${index}</camunda:inputParameter>
-            <camunda:inputParameter name="name">\${item}</camunda:inputParameter>
-            <camunda:inputParameter name="setTimeout">\${services.setTimeout}</camunda:inputParameter>
-            <camunda:outputParameter name="result">\${result}</camunda:outputParameter>
-          </camunda:inputOutput>
-        </extensionElements>
         <script><![CDATA[
-          setTimeout(next, 25 - invertTimout * 5, null, {name});
+          services.setTimeout(next, 25 - index * 5, null, {name});
         ]]></script>
       </scriptTask>
     </process>
   </definitions>`;
-  testHelpers.getContext(source, moddleOptions, (err, context) => {
+  testHelpers.getContext(source, (err, context) => {
     if (err) return callback(err);
 
-    context.environment.assignVariables({names: ['Pål', 'Franz', 'Immanuel']});
+    context.environment.set('names', ['Pål', 'Franz', 'Immanuel']);
     context.environment.addService('setTimeout', setTimeout);
 
     return callback(null, context);

@@ -9,7 +9,7 @@
     "url": "git://github.com/paed01/bpmn-engine"
   },
   "engines": {
-    "node": ">=6"
+    "node": ">=8"
   },
   "files": [
     "API.md",
@@ -37,12 +37,12 @@
     "coveralls": "^3.0.0",
     "lab": "^14.3.1",
     "markdown-toc": "^1.2.0",
-    "nock": "^9.0.22",
+    "nock": "^9.1.0",
     "request": "^2.83.0",
     "unnecessary": "^1.3.3"
   },
   "dependencies": {
-    "bpmn-moddle": "^0.14.0",
+    "bpmn-moddle": "^0.14.1",
     "debug": "^3.1.0",
     "iso8601-duration": "^1.1.1"
   },
