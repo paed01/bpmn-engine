@@ -11,20 +11,16 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
-const moddleOptions = {
-  camunda: require('camunda-bpmn-moddle/resources/camunda')
-};
-
 describe('Error BoundaryEvent', () => {
 
   describe('behaviour', () => {
     const source = `
-    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theProcess" isExecutable="true">
         <startEvent id="start" />
-        <serviceTask id="service" camunda:expression="\${services.test}" />
+        <serviceTask id="service" implementation="\${services.test}" />
         <boundaryEvent id="errorEvent" attachedToRef="service">
-          <errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="serviceError" camunda:errorMessageVariable="message" />
+          <errorEventDefinition errorRef="Error_0w1hljb" />
         </boundaryEvent>
         <endEvent id="end" />
         <sequenceFlow id="flow0" sourceRef="start" targetRef="service" />
@@ -35,25 +31,8 @@ describe('Error BoundaryEvent', () => {
     </definitions>`;
 
     let context;
-    beforeEach((done) => {
-
-      testHelpers.getContext(source, moddleOptions, (err, c) => {
-        if (err) return done(err);
-        context = c;
-        context.environment.addService('test', (arg, next) => {
-          next();
-        });
-
-        done();
-      });
-    });
-
-    it.skip('has property cancelActivity true', (done) => {
-      const event = context.getChildActivityById('errorEvent');
-      expect(event).to.include({
-        cancelActivity: true
-      });
-      done();
+    beforeEach(async () => {
+      context = await testHelpers.context(source);
     });
 
     it('loads event definitions on activate', (done) => {
@@ -138,8 +117,8 @@ describe('Error BoundaryEvent', () => {
 
       event.once('catch', (error, activity, executionContext) => {
         const output = executionContext.getOutput();
-        expect(output.serviceError, 'errorCodeVariable').to.equal('FAIL');
-        expect(output.message, 'errorMessageVariable').to.equal('FAIL');
+        expect(output.errorCode, 'errorCode').to.equal('FAIL');
+        expect(output.errorMessage, 'errorMessage').to.equal('FAIL');
         done();
       });
 
@@ -147,6 +126,10 @@ describe('Error BoundaryEvent', () => {
     });
 
     it('discards outbound when attachedTo completes', (done) => {
+      context.environment.addService('test', (arg, next) => {
+        next();
+      });
+
       const task = context.getChildActivityById('service');
       const event = context.getChildActivityById('errorEvent');
       task.activate();
@@ -159,7 +142,7 @@ describe('Error BoundaryEvent', () => {
       task.run();
     });
 
-    it('discards attachedTo if completed', (done) => {
+    it('discards attachedTo if error event is taken', (done) => {
       context.environment.addService('test', (arg, next) => {
         next(new Error('FAIL'));
       });
@@ -233,12 +216,12 @@ describe('Error BoundaryEvent', () => {
 
   describe('engine', () => {
     const source = `
-    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theProcess" isExecutable="true">
         <startEvent id="start" />
-        <serviceTask id="service" camunda:expression="\${services.test}" />
+        <serviceTask id="service" implementation="\${services.test}" />
         <boundaryEvent id="errorEvent" attachedToRef="service">
-          <errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="serviceError" camunda:errorMessageVariable="message" />
+          <errorEventDefinition errorRef="Error_0w1hljb" />
         </boundaryEvent>
         <endEvent id="end" />
         <sequenceFlow id="flow0" sourceRef="start" targetRef="service" />
@@ -250,8 +233,7 @@ describe('Error BoundaryEvent', () => {
 
     it('boundary event is discarded if task completes', (done) => {
       const engine = new Engine({
-        source,
-        moddleOptions
+        source
       });
       const listener = new EventEmitter();
       listener.once('end-errorEvent', (e) => {
@@ -275,8 +257,7 @@ describe('Error BoundaryEvent', () => {
 
     it('boundary event is discarded if task is canceled', (done) => {
       const engine = new Engine({
-        source,
-        moddleOptions
+        source
       });
       const listener = new EventEmitter();
       listener.once('start-service', (activityApi) => {
@@ -303,8 +284,7 @@ describe('Error BoundaryEvent', () => {
 
     it('task is discarded on error', (done) => {
       const engine = new Engine({
-        source,
-        moddleOptions
+        source
       });
       const listener = new EventEmitter();
       listener.once('end-service', (e) => {
@@ -330,28 +310,21 @@ describe('Error BoundaryEvent', () => {
   describe('attachedTo multiple inbound', () => {
     const source = `
     <?xml version="1.0" encoding="UTF-8"?>
-    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="testProcess" isExecutable="true">
         <startEvent id="start" />
-        <serviceTask id="task" name="Get" camunda:expression="\${services.get(variables.defaultTaken)}" camunda:resultVariable="taskOutput" />
+        <serviceTask id="task" name="Get" implementation="\${services.get(output.taskInput.decision.defaultTaken)}" />
         <boundaryEvent id="errorEvent" attachedToRef="task">
-          <errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="serviceError" camunda:errorMessageVariable="message" />
+          <errorEventDefinition errorRef="Error_0w1hljb" />
         </boundaryEvent>
-        <exclusiveGateway id="decision" default="flow4">
-          <extensionElements>
-            <camunda:inputOutput>
-              <camunda:outputParameter name="defaultTaken">\${true}</camunda:outputParameter>
-            </camunda:inputOutput>
-          </extensionElements>
-        </exclusiveGateway>
+        <exclusiveGateway id="decision" default="flow4" />
         <endEvent id="end" />
         <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
         <sequenceFlow id="flow2" sourceRef="task" targetRef="decision" />
         <sequenceFlow id="flow3" sourceRef="errorEvent" targetRef="decision" />
         <sequenceFlow id="flow4" sourceRef="decision" targetRef="task" />
         <sequenceFlow id="flow5" sourceRef="decision" targetRef="end">
-          <conditionExpression xsi:type="tFormalExpression">\${variables.defaultTaken}</conditionExpression>
+          <conditionExpression xsi:type="tFormalExpression">\${output.taskInput.decision.defaultTaken}</conditionExpression>
         </sequenceFlow>
       </process>
       <error id="Error_0w1hljb" name="ServiceError" errorCode="\${message}" />
@@ -359,8 +332,7 @@ describe('Error BoundaryEvent', () => {
 
     it('completes process if no error', (done) => {
       const engine = new Engine({
-        source,
-        moddleOptions
+        source
       });
 
       const listener = new EventEmitter();
@@ -371,6 +343,11 @@ describe('Error BoundaryEvent', () => {
           fail(`<${activity.id}> Too many starts`);
         }
       });
+
+      listener.on('start-decision', (activityApi) => {
+        activityApi.signal({defaultTaken: true});
+      });
+
       let endEventCount = 0;
       listener.on('start-end', () => {
         endEventCount++;
@@ -393,8 +370,10 @@ describe('Error BoundaryEvent', () => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
         expect(execution.getOutput()).to.equal({
-          defaultTaken: true,
-          taskOutput: ['successfully executed twice']
+          taskInput: {
+            decision: {defaultTaken: true},
+            task: ['successfully executed twice']
+          }
         });
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
@@ -403,8 +382,7 @@ describe('Error BoundaryEvent', () => {
 
     it('completes process if error is caught', (done) => {
       const engine = new Engine({
-        source,
-        moddleOptions
+        source
       });
 
       const listener = new EventEmitter();
@@ -415,6 +393,11 @@ describe('Error BoundaryEvent', () => {
           fail(`<${activity.id}> Too many starts`);
         }
       });
+
+      listener.on('start-decision', (activityApi) => {
+        activityApi.signal({defaultTaken: true});
+      });
+
       let endEventCount = 0;
       listener.on('start-end', () => {
         endEventCount++;
@@ -438,9 +421,15 @@ describe('Error BoundaryEvent', () => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
         expect(execution.getOutput()).to.equal({
-          defaultTaken: true,
-          serviceError: 'successfully caught twice',
-          message: 'successfully caught twice'
+          taskInput: {
+            errorEvent: {
+              errorCode: 'successfully caught twice',
+              errorMessage: 'successfully caught twice'
+            },
+            decision: {
+              defaultTaken: true
+            }
+          }
         });
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
@@ -452,11 +441,11 @@ describe('Error BoundaryEvent', () => {
   describe('getState()', () => {
     it('returns remaining entered and attachedTo', (done) => {
       const source = `
-      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="interruptedProcess" isExecutable="true">
-          <serviceTask id="service" camunda:expression="\${services.test}" />
+          <serviceTask id="service" implementation="\${services.test}" />
           <boundaryEvent id="errorEvent" attachedToRef="service">
-            <errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="serviceError" camunda:errorMessageVariable="message" />
+            <errorEventDefinition errorRef="Error_0w1hljb" />
           </boundaryEvent>
           <endEvent id="end1" />
           <endEvent id="end2" />
@@ -468,8 +457,7 @@ describe('Error BoundaryEvent', () => {
 
       const engine = new Engine({
         name: 'stopMe',
-        source,
-        moddleOptions
+        source
       });
       const listener = new EventEmitter();
       listener.once('start-service', () => {
@@ -511,11 +499,11 @@ describe('Error BoundaryEvent', () => {
   describe('resume()', () => {
     it('resumes if not entered yet', (done) => {
       const source = `
-      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="interruptedProcess" isExecutable="true">
-          <serviceTask id="service" camunda:expression="\${services.test}" />
+          <serviceTask id="service" implementation="\${services.test}" />
           <boundaryEvent id="errorEvent" attachedToRef="service">
-            <errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="serviceError" camunda:errorMessageVariable="message" />
+            <errorEventDefinition errorRef="Error_0w1hljb" />
           </boundaryEvent>
           <endEvent id="end1" />
           <endEvent id="end2" />
@@ -526,9 +514,8 @@ describe('Error BoundaryEvent', () => {
       </definitions>`;
 
       const engine1 = new Engine({
-        source,
         name: 'stopMe',
-        moddleOptions
+        source,
       });
       const listener = new EventEmitter();
 
@@ -570,19 +557,18 @@ describe('Error BoundaryEvent', () => {
     it('completes resume even if bound event markup appears before task and task completes', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
-      <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="resumeProcess" isExecutable="true">
           <boundaryEvent id="errorEvent" attachedToRef="service">
-            <errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="serviceError" camunda:errorMessageVariable="message" />
+            <errorEventDefinition errorRef="Error_0w1hljb" />
           </boundaryEvent>
-          <serviceTask id="service" camunda:expression="\${services.test}" />
+          <serviceTask id="service" implementation="\${services.test}" />
         </process>
         <error id="Error_0w1hljb" name="ServiceError" errorCode="\${message}" />
       </definitions>`;
 
       const engine = new Engine({
-        source,
-        moddleOptions
+        source
       });
 
       const listener = new EventEmitter();
@@ -614,19 +600,18 @@ describe('Error BoundaryEvent', () => {
     it('completes resume even if bound event markup appears before task and timer completes', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
-      <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="resumeProcess" isExecutable="true">
           <boundaryEvent id="errorEvent" attachedToRef="service">
-            <errorEventDefinition errorRef="Error_0w1hljb" camunda:errorCodeVariable="serviceError" camunda:errorMessageVariable="message" />
+            <errorEventDefinition errorRef="Error_0w1hljb" />
           </boundaryEvent>
-          <serviceTask id="service" camunda:expression="\${services.test}" />
+          <serviceTask id="service" implementation="\${services.test}" />
         </process>
         <error id="Error_0w1hljb" name="ServiceError" errorCode="\${message}" />
       </definitions>`;
 
       const engine = new Engine({
-        source,
-        moddleOptions
+        source
       });
 
       const listener = new EventEmitter();
@@ -653,9 +638,9 @@ describe('Error BoundaryEvent', () => {
       engine.on('end', () => {
         Engine.resume(state, (err, execution) => {
           if (err) return done(err);
-          expect(execution.getOutput()).to.equal({
-            serviceError: 'EXP: expected',
-            message: 'EXP: expected'
+          expect(execution.getOutput().taskInput.errorEvent).to.equal({
+            errorCode: 'EXP: expected',
+            errorMessage: 'EXP: expected'
           });
           done();
         });
