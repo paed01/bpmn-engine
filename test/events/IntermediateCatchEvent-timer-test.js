@@ -14,8 +14,8 @@ const {expect} = Lab.assertions;
 describe('IntermediateCatchEvent with timer', () => {
   describe('behaviour', () => {
     let context;
-    beforeEach((done) => {
-      const processXml = `
+    beforeEach(async () => {
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="interruptedProcess" isExecutable="true">
@@ -31,13 +31,7 @@ describe('IntermediateCatchEvent with timer', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, c) => {
-        if (err) return done(err);
-        context = c;
-        done();
-      });
+      context = await testHelpers.context(source);
     });
     afterEach(ck.reset);
 
@@ -110,9 +104,7 @@ describe('IntermediateCatchEvent with timer', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(source, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, context2) => {
+      testHelpers.getContext(source, (err, context2) => {
         if (err) return done(err);
 
         context2.environment.assignVariables({

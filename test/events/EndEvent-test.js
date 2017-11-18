@@ -11,32 +11,19 @@ const {expect, fail} = Lab.assertions;
 
 describe('EndEvent', () => {
   describe('behaviour', () => {
-    const processXml = `
+    const source = `
     <?xml version="1.0" encoding="UTF-8"?>
-      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theProcess" isExecutable="true">
         <startEvent id="start" />
-        <endEvent id="end">
-          <extensionElements>
-            <camunda:InputOutput>
-              <camunda:inputParameter name="data">\${variables.statusCode}</camunda:inputParameter>
-            </camunda:InputOutput>
-          </extensionElements>
-        </endEvent>
+        <endEvent id="end" />
         <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
       </process>
     </definitions>`;
 
     let context;
-    beforeEach((done) => {
-      testHelpers.getContext(processXml, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, c) => {
-        if (err) return done(err);
-        context = c;
-        done();
-      });
+    beforeEach(async () => {
+      context = await testHelpers.context(source);
     });
 
     it('has inbound', (done) => {
@@ -49,22 +36,6 @@ describe('EndEvent', () => {
       const event = context.getChildActivityById('end');
       expect(event.io).to.exist();
       done();
-    });
-
-    it('exection getInput() returns io input', (done) => {
-      context.environment.assignVariables({statusCode: 200});
-
-      const event = context.getChildActivityById('end');
-      event.once('end', (activity, executionContext) => {
-        expect(executionContext.getInput()).to.equal({
-          data: 200
-        });
-
-        done();
-      });
-
-      event.activate();
-      event.inbound[0].take();
     });
 
     it('emits events in expected sequence', (done) => {
@@ -183,14 +154,8 @@ describe('EndEvent', () => {
     </definitions>`;
 
     let context;
-    beforeEach((done) => {
-      testHelpers.getContext(source, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, c) => {
-        if (err) return done(err);
-        context = c;
-        done();
-      });
+    beforeEach(async () => {
+      context = await testHelpers.context(source);
     });
 
     it('should terminate process', (done) => {

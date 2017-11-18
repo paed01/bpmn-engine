@@ -15,7 +15,7 @@
         "type": "String"
       }
     ]
-  },{
+  }, {
     "name": "Output",
     "superClass": ["Element"]
   }, {
@@ -30,6 +30,20 @@
       },
       {
         "name": "elementVariable",
+        "isAttr": true,
+        "type": "String"
+      }
+    ]
+  }, {
+    "name": "FormSupported",
+    "isAbstract": true,
+    "extends": [
+      "bpmn:StartEvent",
+      "bpmn:UserTask"
+    ],
+    "properties": [
+      {
+        "name": "formKey",
         "isAttr": true,
         "type": "String"
       }
