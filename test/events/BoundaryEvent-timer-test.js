@@ -12,15 +12,11 @@ const lab = exports.lab = Lab.script();
 const {afterEach, beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
-const moddleOptions = {
-  camunda: require('camunda-bpmn-moddle/resources/camunda')
-};
-
 describe('BoundaryEvent with TimerEventDefinition', () => {
 
   describe('behaviour', () => {
     let context;
-    beforeEach((done) => {
+    beforeEach(async () => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -40,11 +36,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(source, (err, c) => {
-        if (err) return done(err);
-        context = c;
-        done();
-      });
+      context = await testHelpers.context(source);
     });
     afterEach(ck.reset);
 
@@ -108,7 +100,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
     });
 
     it('resolves duration expression when executed', (done) => {
-      const processXml = `
+      const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions id="timeout" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="interruptedProcess" isExecutable="true">
@@ -121,7 +113,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(processXml, moddleOptions, (err, context2) => {
+      testHelpers.getContext(source, (err, context2) => {
         if (err) return done(err);
 
         context2.environment.assignVariables({
@@ -644,38 +636,30 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
   describe('attachedTo multiple inbound', () => {
     const source = `
     <?xml version="1.0" encoding="UTF-8"?>
-    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="testProcess" isExecutable="true">
         <startEvent id="start" />
-        <serviceTask id="task" name="Get" camunda:expression="\${services.get(variables.defaultTaken)}" camunda:resultVariable="taskOutput" />
+        <serviceTask id="task" name="Get" implementation="\${services.get(output.taskInput.decision.defaultTaken)}" />
         <boundaryEvent id="timeoutEvent" attachedToRef="task">
           <timerEventDefinition>
             <timeDuration xsi:type="tFormalExpression">PT0.05S</timeDuration>
           </timerEventDefinition>
         </boundaryEvent>
-        <exclusiveGateway id="decision" default="flow4">
-          <extensionElements>
-            <camunda:inputOutput>
-              <camunda:outputParameter name="defaultTaken">\${true}</camunda:outputParameter>
-            </camunda:inputOutput>
-          </extensionElements>
-        </exclusiveGateway>
+        <exclusiveGateway id="decision" default="flow4" />
         <endEvent id="end" />
         <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
         <sequenceFlow id="flow2" sourceRef="task" targetRef="decision" />
         <sequenceFlow id="flow3" sourceRef="timeoutEvent" targetRef="decision" />
         <sequenceFlow id="flow4" sourceRef="decision" targetRef="task" />
         <sequenceFlow id="flow5" sourceRef="decision" targetRef="end">
-          <conditionExpression xsi:type="tFormalExpression">\${variables.defaultTaken}</conditionExpression>
+          <conditionExpression xsi:type="tFormalExpression">\${output.taskInput.decision.defaultTaken}</conditionExpression>
         </sequenceFlow>
       </process>
     </definitions>`;
 
     it('completes process if no timeout', (done) => {
       const engine = new Engine({
-        source,
-        moddleOptions
+        source
       });
 
       const listener = new EventEmitter();
@@ -686,6 +670,11 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
           fail(`<${activity.id}> Too many starts`);
         }
       });
+
+      listener.on('start-decision', (activityApi) => {
+        activityApi.signal({defaultTaken: true});
+      });
+
       let endEventCount = 0;
       listener.on('start-end', () => {
         endEventCount++;
@@ -707,9 +696,9 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       engine.once('end', (execution) => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
-        expect(execution.getOutput()).to.equal({
-          defaultTaken: true,
-          taskOutput: ['successfully executed twice']
+        expect(execution.getOutput().taskInput).to.equal({
+          decision: {defaultTaken: true},
+          task: ['successfully executed twice']
         });
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
@@ -718,8 +707,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
 
     it('completes process if timed out', (done) => {
       const engine = new Engine({
-        source,
-        moddleOptions
+        source
       });
 
       const listener = new EventEmitter();
@@ -730,6 +718,11 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
           fail(`<${activity.id}> Too many starts`);
         }
       });
+
+      listener.on('start-decision', (activityApi) => {
+        activityApi.signal({defaultTaken: true});
+      });
+
       let endEventCount = 0;
       listener.on('start-end', () => {
         endEventCount++;
