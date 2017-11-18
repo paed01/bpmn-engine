@@ -8,52 +8,35 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect} = Lab.assertions;
 
-const moddleOptions = {
-  camunda: require('camunda-bpmn-moddle/resources/camunda')
-};
-
 describe('ExclusiveGateway', () => {
   describe('behavior', () => {
     const source = `
     <?xml version="1.0" encoding="UTF-8"?>
-    <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
+    <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="mainProcess" isExecutable="true">
         <startEvent id="start" />
-        <exclusiveGateway id="decision" default="defaultFlow">
-          <extensionElements>
-            <camunda:InputOutput>
-              <camunda:inputParameter name="takeCondition1">\${variables.condition1}</camunda:inputParameter>
-              <camunda:inputParameter name="takeCondition2">\${variables.condition2}</camunda:inputParameter>
-              <camunda:outputParameter name="enteredDecision">Yes</camunda:outputParameter>
-            </camunda:InputOutput>
-          </extensionElements>
-        </exclusiveGateway>
+        <exclusiveGateway id="decision" default="defaultFlow" />
         <endEvent id="end1" />
         <endEvent id="end2" />
         <endEvent id="end3" />
         <sequenceFlow id="flow1" sourceRef="start" targetRef="decision" />
         <sequenceFlow id="defaultFlow" sourceRef="decision" targetRef="end2" />
         <sequenceFlow id="condFlow1" sourceRef="decision" targetRef="end1">
-          <conditionExpression xsi:type="tFormalExpression">\${takeCondition1}</conditionExpression>
+          <conditionExpression xsi:type="tFormalExpression">\${variables.condition1}</conditionExpression>
         </sequenceFlow>
         <sequenceFlow id="condFlow2" sourceRef="decision" targetRef="end3">
-          <conditionExpression xsi:type="tFormalExpression">\${takeCondition2}</conditionExpression>
+          <conditionExpression xsi:type="tFormalExpression">\${variables.condition2}</conditionExpression>
         </sequenceFlow>
       </process>
     </definitions>`;
 
     let context;
-    beforeEach((done) => {
-      testHelpers.getContext(source, moddleOptions, (err, c) => {
-        if (err) return done(err);
-        context = c;
-        done();
-      });
+    beforeEach(async () => {
+      context = await testHelpers.context(source);
     });
 
     it('variables and services are passed to conditional flow', (done) => {
-      context.environment.assignVariables({condition1: true});
+      context.environment.set('condition1', true);
 
       const gateway = context.getChildActivityById('decision');
       const activityApi = gateway.activate();
@@ -66,30 +49,8 @@ describe('ExclusiveGateway', () => {
       gateway.run();
     });
 
-    it('end returns output in callback', (done) => {
-      context.environment.assignVariables({condition1: false});
-
-      const gateway = context.getChildActivityById('decision');
-      gateway.activate();
-
-      gateway.once('end', (activityApi, activityExecution) => {
-        const output = activityExecution.getOutput();
-
-        expect(output).to.equal({
-          enteredDecision: 'Yes'
-        });
-
-        expect(gateway.outbound[0].taken, gateway.outbound[0].id).to.be.true();
-        expect(gateway.outbound[1].taken, gateway.outbound[1].id).to.be.undefined();
-        expect(gateway.outbound[2].taken, gateway.outbound[2].id).to.be.undefined();
-        done();
-      });
-
-      gateway.run();
-    });
-
     it('discards rest outbound if one outbound was taken', (done) => {
-      context.environment.assignVariables({condition2: true});
+      context.environment.set('condition2', true);
 
       const gateway = context.getChildActivityById('decision');
       gateway.activate();
@@ -166,10 +127,8 @@ describe('ExclusiveGateway', () => {
       });
 
       it('discards rest if one flow was taken', (done) => {
-        context.environment.assignVariables({
-          condition1: true,
-          condition2: true
-        });
+        context.environment.set('condition1', true);
+        context.environment.set('condition2', true);
 
         const gateway = context.getChildActivityById('decision');
 
@@ -272,7 +231,7 @@ describe('ExclusiveGateway', () => {
           </process>
         </definitions>`;
 
-        testHelpers.getContext(definition, moddleOptions, (getErr, testContext) => {
+        testHelpers.getContext(definition, (getErr, testContext) => {
           if (getErr) return done(getErr);
 
           const gateway = testContext.getChildActivityById('decision');

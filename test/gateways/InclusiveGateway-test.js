@@ -12,25 +12,17 @@ describe('InclusiveGateway', () => {
   describe('behavior', () => {
     const source = `
     <?xml version="1.0" encoding="UTF-8"?>
-    <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://bpmn.io/schema/bpmn">
+    <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="mainProcess" isExecutable="true">
         <startEvent id="start" />
-        <inclusiveGateway id="decisions" default="defaultFlow">
-          <extensionElements>
-            <camunda:InputOutput>
-              <camunda:inputParameter name="takeCondition1">\${variables.condition1}</camunda:inputParameter>
-              <camunda:outputParameter name="enteredDecision">Yes</camunda:outputParameter>
-            </camunda:InputOutput>
-          </extensionElements>
-        </inclusiveGateway>
+        <inclusiveGateway id="decisions" default="defaultFlow" />
         <endEvent id="end1" />
         <endEvent id="end2" />
         <endEvent id="end3" />
         <sequenceFlow id="flow1" sourceRef="start" targetRef="decisions" />
         <sequenceFlow id="defaultFlow" sourceRef="decisions" targetRef="end2" />
         <sequenceFlow id="condFlow1" sourceRef="decisions" targetRef="end1">
-          <conditionExpression xsi:type="tFormalExpression">\${takeCondition1}</conditionExpression>
+          <conditionExpression xsi:type="tFormalExpression">\${variables.condition1}</conditionExpression>
         </sequenceFlow>
         <sequenceFlow id="condFlow2" sourceRef="decisions" targetRef="end3">
           <conditionExpression xsi:type="tFormalExpression">\${variables.condition2}</conditionExpression>
@@ -39,18 +31,12 @@ describe('InclusiveGateway', () => {
     </definitions>`;
 
     let context;
-    beforeEach((done) => {
-      testHelpers.getContext(source, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, c) => {
-        if (err) return done(err);
-        context = c;
-        done();
-      });
+    beforeEach(async () => {
+      context = await testHelpers.context(source);
     });
 
     it('variables and services are passed to conditional flow', (done) => {
-      context.environment.assignVariables({condition1: true});
+      context.environment.set('condition1', true);
 
       const gateway = context.getChildActivityById('decisions');
       gateway.activate();
@@ -62,24 +48,8 @@ describe('InclusiveGateway', () => {
       gateway.inbound[0].take();
     });
 
-    it('end returns output in callback', (done) => {
-      context.environment.assignVariables({condition1: false});
-
-      const gateway = context.getChildActivityById('decisions');
-      gateway.activate();
-
-      gateway.once('end', (activity, executionContext) => {
-        expect(executionContext.getOutput()).to.equal({
-          enteredDecision: 'Yes'
-        });
-        done();
-      });
-
-      gateway.inbound[0].take();
-    });
-
     it('discards default outbound if one outbound was taken', (done) => {
-      context.environment.assignVariables({condition2: true});
+      context.environment.set('condition2', true);
 
       const gateway = context.getChildActivityById('decisions');
       gateway.activate();
@@ -143,7 +113,7 @@ describe('InclusiveGateway', () => {
 
     describe('resume()', () => {
       it('sets resumed gateway pendingOutbound', (done) => {
-        context.environment.assignVariables({condition2: true});
+        context.environment.set('condition2', true);
 
         const gateway = context.getChildActivityById('decisions');
 
@@ -182,10 +152,8 @@ describe('InclusiveGateway', () => {
       });
 
       it('discards defaultFlow if other flows were taken', (done) => {
-        context.environment.assignVariables({
-          condition1: true,
-          condition2: true
-        });
+        context.environment.set('condition1', true);
+        context.environment.set('condition2', true);
 
         const gateway = context.getChildActivityById('decisions');
 
@@ -410,7 +378,7 @@ describe('InclusiveGateway', () => {
       });
     });
 
-    it('emits error when no conditional flow is taken', (done) => {
+    it('emits error when no flow was taken', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
         <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">

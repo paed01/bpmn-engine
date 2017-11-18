@@ -28,12 +28,8 @@ describe('ParallelGateway', () => {
     </definitions>`;
 
     let context;
-    beforeEach((done) => {
-      testHelpers.getContext(source, (err, result) => {
-        if (err) return done(err);
-        context = result;
-        done();
-      });
+    beforeEach(async () => {
+      context = await testHelpers.context(source);
     });
 
     it('should have pending inbound on start', (done) => {
@@ -294,7 +290,7 @@ describe('ParallelGateway', () => {
   });
 
   describe('fork', () => {
-    const processXml = `
+    const source = `
     <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theProcess" isExecutable="true">
@@ -310,12 +306,8 @@ describe('ParallelGateway', () => {
     </definitions>`;
 
     let context;
-    beforeEach((done) => {
-      testHelpers.getContext(processXml, (err, c) => {
-        if (err) return done(err);
-        context = c;
-        done();
-      });
+    beforeEach(async () => {
+      context = await testHelpers.context(source);
     });
 
     it('emits start before first outbound is taken', (done) => {

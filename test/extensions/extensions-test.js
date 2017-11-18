@@ -8,7 +8,7 @@ const lab = exports.lab = Lab.script();
 const {describe, it} = lab;
 const {expect} = Lab.assertions;
 
-const moddleOptions = require('../resources/js-bpmn-moddle.json')
+const moddleOptions = require('../resources/js-bpmn-moddle.json');
 
 describe('engine extensions', () => {
   const source = `

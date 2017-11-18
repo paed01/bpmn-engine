@@ -10,6 +10,7 @@ const transformer = require('../../lib/transformer');
 const eventNames = ['enter', 'start', 'wait', 'end', 'cancel', 'catch', 'error', 'leave', 'message'];
 
 module.exports = {
+  context,
   expectNoLingeringChildListeners,
   expectNoLingeringListeners,
   expectNoLingeringListenersOnDefinition,
@@ -21,10 +22,10 @@ module.exports = {
   serviceFn
 };
 
-function expectNoLingeringChildListeners(context) {
-  Object.keys(context.children).forEach((id) => {
+function expectNoLingeringChildListeners(scope) {
+  Object.keys(scope.children).forEach((id) => {
     debug(`check listeners of <${id}>`);
-    const child = context.children[id];
+    const child = scope.children[id];
 
     checkListeners(child, eventNames, '');
 
@@ -78,8 +79,20 @@ function getContext(processXml, optionsOrCallback, cb) {
   transformer.transform(processXml, options, (err, definitions, moddleContext) => {
     if (err) return callback(err);
     const ctxh = contextHelper(moddleContext);
-    const context = Context(ctxh.getExecutableProcessId(), moddleContext);
-    return callback(null, context);
+    const ctx = Context(ctxh.getExecutableProcessId(), moddleContext);
+    return callback(null, ctx);
+  });
+}
+
+function context(source, options) {
+  const Context = require('../../lib/Context');
+  return new Promise((resolve, reject) => {
+    transformer.transform(source, options, (err, definitions, moddleContext) => {
+      if (err) return reject(err);
+      const ctxh = contextHelper(moddleContext);
+      const ctx = Context(ctxh.getExecutableProcessId(), moddleContext);
+      return resolve(ctx);
+    });
   });
 }
 

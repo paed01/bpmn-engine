@@ -1,23 +1,22 @@
 'use strict';
 
-const Code = require('code');
+const getPropertyValue = require('../lib/getPropertyValue');
 const Lab = require('lab');
 
 const lab = exports.lab = Lab.script();
-const expect = Code.expect;
+const {describe, it} = lab;
+const {expect} = Lab.assertions;
 
-const getPropertyValue = require('../lib/getPropertyValue');
-
-lab.experiment('getPropertyValue', () => {
-  lab.describe('property path', () => {
-    lab.test('returns object value', (done) => {
+describe('getPropertyValue', () => {
+  describe('property path', () => {
+    it('returns object value', (done) => {
       expect(getPropertyValue({
         a: 1
       }, 'a')).to.equal(1);
       done();
     });
 
-    lab.test('returns object value', (done) => {
+    it('returns object value', (done) => {
       expect(getPropertyValue({
         a: {
           b: [1]
@@ -26,7 +25,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns undefined if value is not found', (done) => {
+    it('returns undefined if value is not found', (done) => {
       expect(getPropertyValue({
         a: {
           b: [1]
@@ -35,12 +34,28 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns undefined if source is null', (done) => {
+    it('returns 0 value', (done) => {
+      expect(getPropertyValue({
+        a: 0
+      }, 'a')).to.equal(0);
+      done();
+    });
+
+    it('returns expected value if nested property is 0', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: [0]
+        }
+      }, 'a.b[0]')).to.equal(0);
+      done();
+    });
+
+    it('returns undefined if source is null', (done) => {
       expect(getPropertyValue(null, 'a.b[1]')).to.be.undefined();
       done();
     });
 
-    lab.test('returns length of array', (done) => {
+    it('returns length of array', (done) => {
       expect(getPropertyValue({
         a: {
           b: [1]
@@ -49,7 +64,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns named property value', (done) => {
+    it('returns named property value', (done) => {
       expect(getPropertyValue({
         a: {
           'b-c': 1
@@ -58,7 +73,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('path beginning with named property returns value', (done) => {
+    it('path beginning with named property returns value', (done) => {
       expect(getPropertyValue({
         'a-c': {
           b: 1
@@ -68,8 +83,8 @@ lab.experiment('getPropertyValue', () => {
     });
   });
 
-  lab.describe('array', () => {
-    lab.test('returns value at index', (done) => {
+  describe('array', () => {
+    it('returns value at index', (done) => {
       expect(getPropertyValue({
         a: {
           b: [1, 2, 3]
@@ -79,7 +94,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns length', (done) => {
+    it('returns length', (done) => {
       expect(getPropertyValue({
         a: {
           b: [1, 2, 3]
@@ -88,7 +103,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns named value', (done) => {
+    it('returns named value', (done) => {
       const list = [1, 2, 3];
       list.arb = 10;
       expect(getPropertyValue({
@@ -99,7 +114,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns list item property', (done) => {
+    it('returns list item property', (done) => {
       const list = [{c: 1}, {c: 2}, {c: 3}];
       expect(getPropertyValue({
         a: {
@@ -119,7 +134,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns undefined if out of bounds', (done) => {
+    it('returns undefined if out of bounds', (done) => {
       expect(getPropertyValue({
         a: {
           b: [1, 2, 3]
@@ -128,7 +143,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns from last if negative index', (done) => {
+    it('returns from last if negative index', (done) => {
       expect(getPropertyValue({
         a: {
           b: [1, 2, 3]
@@ -147,7 +162,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('-0 returns first item', (done) => {
+    it('-0 returns first item', (done) => {
       expect(getPropertyValue({
         a: {
           b: [1, 2, 3]
@@ -156,7 +171,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns undefined value if negative index is out of bounds', (done) => {
+    it('returns undefined value if negative index is out of bounds', (done) => {
       expect(getPropertyValue({
         a: {
           b: [1, 2, 3]
@@ -165,7 +180,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns undefined value if negative index has trailing spaces', (done) => {
+    it('returns undefined value if negative index has trailing spaces', (done) => {
       expect(getPropertyValue({
         a: {
           b: [1, 2, 3]
@@ -174,7 +189,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns undefined value if negative index has preceding spaces', (done) => {
+    it('returns undefined value if negative index has preceding spaces', (done) => {
       expect(getPropertyValue({
         a: {
           b: [1, 2, 3]
@@ -183,7 +198,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns undefined value if negative index has any spaces', (done) => {
+    it('returns undefined value if negative index has any spaces', (done) => {
       expect(getPropertyValue({
         a: {
           b: [1, 2, 3]
@@ -192,7 +207,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns chained index', (done) => {
+    it('returns chained index', (done) => {
       expect(getPropertyValue({
         a: [[1], [2], [3, 4]]
       }, 'a[-1][0]')).to.equal(3);
@@ -200,8 +215,8 @@ lab.experiment('getPropertyValue', () => {
     });
   });
 
-  lab.describe('function', () => {
-    lab.test('returns function result', (done) => {
+  describe('function', () => {
+    it('returns function result', (done) => {
       expect(getPropertyValue({
         f: () => {
           return 3;
@@ -210,16 +225,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns result with arguments', (done) => {
-      expect(getPropertyValue({
-        f: (input) => {
-          return input;
-        }
-      }, 'f(3)')).to.equal('3');
-      done();
-    });
-
-    lab.test('returns result with arguments addressing other property', (done) => {
+    it('returns result with arguments addressing other property', (done) => {
       expect(getPropertyValue({
         a: 4,
         f: (input) => {
@@ -229,7 +235,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns result with arguments addressing chained property', (done) => {
+    it('returns result with arguments addressing chained property', (done) => {
       expect(getPropertyValue({
         a: {
           b: 5
@@ -241,7 +247,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns result with multiple arguments', (done) => {
+    it('returns result with multiple arguments', (done) => {
       expect(getPropertyValue({
         a: {
           b: 5
@@ -253,7 +259,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('result with quoted argument', (done) => {
+    it('result with quoted argument', (done) => {
       expect(getPropertyValue({
         a: {
           b: 5
@@ -265,7 +271,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('result returns boolean result', (done) => {
+    it('result returns boolean result', (done) => {
       expect(getPropertyValue({
         a: {
           b: 5
@@ -277,7 +283,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('result returns boolean false', (done) => {
+    it('result returns boolean false', (done) => {
       expect(getPropertyValue({
         a: {
           b: 5
@@ -289,7 +295,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('returns undefined function not found', (done) => {
+    it('returns undefined function not found', (done) => {
       expect(getPropertyValue({
         f: () => {
           return 3;
@@ -298,7 +304,7 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-    lab.test('without arguments get entire context as argument', (done) => {
+    it('without arguments get entire context as argument', (done) => {
       expect(getPropertyValue({
         a: {
           b: 3
@@ -310,31 +316,66 @@ lab.experiment('getPropertyValue', () => {
       done();
     });
 
-  });
-
-  lab.describe('default value', () => {
-    lab.test('undefined returns default value', (done) => {
-      expect(getPropertyValue(undefined, 'input', 1)).to.equal(1);
+    it('integer constant', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: 5
+        },
+        f: (input) => {
+          return input;
+        }
+      }, 'f(3)')).to.equal(3);
       done();
     });
 
-    lab.test('no match returns default value', (done) => {
-      expect(getPropertyValue({a: 1}, '\n', 2)).to.equal(2);
+    it('float constant', (done) => {
+      expect(getPropertyValue({
+        a: {
+          b: 5
+        },
+        f: (input) => {
+          return input;
+        }
+      }, 'f(3.1)')).to.equal(3.1);
+      done();
+    });
+
+    it('function with argument resolved to 0 returns expected result', (done) => {
+      expect(getPropertyValue({
+        a: 0,
+        f: function scopedFn(a) {
+          return a;
+        }
+      }, 'f(a)')).to.equal(0);
       done();
     });
   });
 
-  lab.describe('bad context object', () => {
-    lab.test('string', (done) => {
+  describe('function scope', () => {
+    it('function scope can address this', (done) => {
+      expect(getPropertyValue({
+        a: 1,
+        f: function scopedFn() {
+          return this.b;
+        }
+      }, 'f()', {
+        b: 2
+      })).to.equal(2);
+      done();
+    });
+  });
+
+  describe('bad context object', () => {
+    it('string', (done) => {
       expect(getPropertyValue('string', 'input')).to.be.undefined();
       done();
     });
-    lab.test('null', (done) => {
+    it('null', (done) => {
       expect(getPropertyValue(null, 'input')).to.be.undefined();
       done();
     });
 
-    lab.test('boolean true', (done) => {
+    it('boolean true', (done) => {
       expect(getPropertyValue(true, 'input')).to.be.undefined();
       done();
     });
