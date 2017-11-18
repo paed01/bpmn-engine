@@ -15,12 +15,8 @@ describe('SubProcess', () => {
     const source = factory.resource('sub-process.bpmn').toString();
     let context;
 
-    beforeEach((done) => {
-      testHelpers.getContext(source, (err, result) => {
-        if (err) return done(err);
-        context = result;
-        done();
-      });
+    beforeEach(async () => {
+      context = await testHelpers.context(source);
     });
 
     it('emits start on inbound taken', (done) => {
@@ -99,7 +95,6 @@ describe('SubProcess', () => {
         expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.undefined();
         expect(definition.getChildState('subProcess').entered, 'subProcess entered').to.be.undefined();
         expect(definition.getChildState('subProcess').cancelled, 'subProcess canceled').to.be.true();
-
         testHelpers.expectNoLingeringListenersOnDefinition(definition);
         testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
         done();

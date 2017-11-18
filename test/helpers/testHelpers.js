@@ -25,6 +25,7 @@ module.exports = {
 function expectNoLingeringChildListeners(scope) {
   Object.keys(scope.children).forEach((id) => {
     debug(`check listeners of <${id}>`);
+
     const child = scope.children[id];
 
     checkListeners(child, eventNames, '');
@@ -41,7 +42,7 @@ function expectNoLingeringChildListeners(scope) {
     }
   });
 
-  context.sequenceFlows.forEach((flow) => {
+  scope.sequenceFlows.forEach((flow) => {
     debug(`check listeners of flow <${flow.id}>`);
     checkListeners(flow, ['taken', 'message', 'discarded', 'looped'], '');
   });
