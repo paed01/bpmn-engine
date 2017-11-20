@@ -233,7 +233,7 @@ describe('UserTask', () => {
 
       task.once('end', (activityApi, executionContext) => {
         expect(executionContext.getOutput()).to.equal({
-          userInput: 'me'
+          input: 'me'
         });
         done();
       });

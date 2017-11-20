@@ -14,8 +14,7 @@ const {expect} = Lab.assertions;
 describe('Process', () => {
   const source = `
   <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <process id="tinyProcess" isExecutable="true">
       <task id="vips" />
     </process>
@@ -23,13 +22,17 @@ describe('Process', () => {
       <userTask id="usertask" />
     </process>
     <process id="processWithTaskOutput" isExecutable="true">
+      <dataObjectReference id="inputRef" dataObjectRef="input" />
+      <dataObjectReference id="outputRef" dataObjectRef="output" />
+      <dataObject id="output" />
+      <dataObject id="input" />
       <task id="task">
-        <extensionElements>
-          <camunda:inputOutput>
-            <camunda:inputParameter name="input">\${variables.input}</camunda:inputParameter>
-            <camunda:outputParameter name="output">Input was \${input}</camunda:outputParameter>
-          </camunda:inputOutput>
-        </extensionElements>
+        <dataInputAssociation id="associatedInputWith" sourceRef="taskInput" targetRef="inputRef" />
+        <ioSpecification id="inputSpec">
+          <dataInput id="taskInput" name="hello" />
+          <dataOutput id="taskOutput" name="bye" />
+        </ioSpecification>
+        <dataOutputAssociation id="associatedOutputWith" sourceRef="taskOutput" targetRef="outputRef" />
       </task>
     </process>
     <process id="theEmptyProcess" isExecutable="true" />
@@ -47,15 +50,8 @@ describe('Process', () => {
   </definitions>`;
 
   let moddleContext;
-
-  beforeEach((done) => {
-    testHelpers.getModdleContext(source, {
-      camunda: require('camunda-bpmn-moddle/resources/camunda')
-    }, (err, result) => {
-      if (err) return done(err);
-      moddleContext = result;
-      done();
-    });
+  beforeEach(async () => {
+    moddleContext = await testHelpers.moddleContext(source);
   });
 
   describe('behaviour', () => {
@@ -266,11 +262,16 @@ describe('Process', () => {
     });
 
     it('assigns task input to variables if task has output', (done) => {
-      const mainProcess = new Process(moddleContext.elementsById.processWithTaskOutput, moddleContext, Environment({
+      const mainProcess = Process(moddleContext.elementsById.processWithTaskOutput, moddleContext, Environment({
         variables: {
           input: 1
         }
       }));
+
+      const task = mainProcess.getChildActivityById('task');
+      task.on('start', (activityApi, executionContext) => {
+        executionContext.setOutputValue('bye', 'Input was 1');
+      });
 
       mainProcess.once('end', (p, executionContext) => {
         expect(executionContext.getOutput()).to.equal({

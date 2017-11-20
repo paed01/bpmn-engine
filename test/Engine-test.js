@@ -64,22 +64,11 @@ describe('Engine', () => {
       done();
     });
 
-    it('takes moddleOptions as option', (done) => {
-      const engine = new Bpmn.Engine({
-        source: factory.valid(),
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
-      });
-      expect(engine.moddleOptions).to.exist();
-      done();
-    });
-
     it('accepts source as Buffer', (done) => {
-      const buff = new Buffer(factory.valid());
+      const source = new Buffer(factory.valid());
       const engine = new Bpmn.Engine({
         name: 'source from buffer',
-        source: buff
+        source
       });
       engine.execute((err) => {
         expect(err).to.not.exist();
@@ -91,7 +80,7 @@ describe('Engine', () => {
       const source = () => {};
       expect(() => {
         new Bpmn.Engine({
-          source: source
+          source
         });
       }).to.throw();
       done();
@@ -260,18 +249,15 @@ describe('Engine', () => {
     it('emits error if execution fails', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
-      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
-          <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" />
+          <serviceTask id="serviceTask" name="Get" implementation="\${services.get}" />
         </process>
       </definitions>`;
 
       const engine = new Bpmn.Engine({
-        source,
         name: 'end test',
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        source,
       });
       engine.once('error', (err) => {
         expect(err).to.be.an.error('Inner error');
@@ -651,9 +637,7 @@ describe('Engine', () => {
 
     it('adds definition with moddleOptions', (done) => {
       const engine = new Bpmn.Engine();
-      engine.addDefinitionBySource(factory.valid(), {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      });
+      engine.addDefinitionBySource(factory.valid());
 
       engine.getDefinitions((err) => {
         if (err) return done(err);
@@ -683,8 +667,7 @@ describe('Engine', () => {
     it('without waiting task is ignored', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
-      <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="singleUserTask" isExecutable="true">
           <task id="task" />
         </process>
@@ -702,8 +685,7 @@ describe('Engine', () => {
     it('with non-existing activity id is ignored', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
-      <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="singleUserTask" isExecutable="true">
           <userTask id="userTask" />
         </process>
@@ -724,20 +706,12 @@ describe('Engine', () => {
   describe('getPendingActivities()', () => {
     const source = `
     <?xml version="1.0" encoding="UTF-8"?>
-    <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theWaitingGame" isExecutable="true">
         <startEvent id="start" />
         <parallelGateway id="fork" />
         <userTask id="userTask1" />
-        <userTask id="userTask2">
-          <extensionElements>
-            <camunda:formData>
-              <camunda:formField id="surname" label="Surname" type="string" />
-              <camunda:formField id="givenName" label="Given name" type="string" />
-            </camunda:formData>
-          </extensionElements>
-        </userTask>
+        <userTask id="userTask2" />
         <task id="task" />
         <parallelGateway id="join" />
         <endEvent id="end" />
@@ -756,10 +730,7 @@ describe('Engine', () => {
     it('given an engine', (done) => {
       engine = new Bpmn.Engine({
         name: 'get pending',
-        source,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        source
       });
       done();
     });

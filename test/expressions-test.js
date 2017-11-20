@@ -154,7 +154,7 @@ lab.experiment('expressions', () => {
             return statusCode;
           }
         }
-      })).to.equal('200');
+      })).to.equal(200);
       done();
     });
 

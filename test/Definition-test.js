@@ -10,18 +10,15 @@ const lab = exports.lab = Lab.script();
 const {before, beforeEach, describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
-const moddleOptions = {
-  camunda: require('camunda-bpmn-moddle/resources/camunda')
+const extensions = {
+  js: require('./resources/JsExtension')
 };
 
 describe('Definition', () => {
   describe('new Definition()', () => {
     let moddleContext;
-    before((done) => {
-      testHelpers.getModdleContext(factory.valid('testingCtor'), (err, result) => {
-        moddleContext = result;
-        done(err);
-      });
+    before(async () => {
+      moddleContext = await testHelpers.moddleContext(factory.valid('testingCtor'));
     });
 
     it('throws without arguments', (done) => {
@@ -823,30 +820,22 @@ describe('Definition', () => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
         <process id="parallellLoopProcess" isExecutable="true">
           <userTask id="task">
-            <multiInstanceLoopCharacteristics isSequential="false" camunda:collection="\${variables.boardMembers}">
+            <multiInstanceLoopCharacteristics isSequential="false" js:collection="\${variables.boardMembers}">
               <loopCardinality>5</loopCardinality>
             </multiInstanceLoopCharacteristics>
-            <extensionElements>
-              <camunda:inputOutput>
-                <camunda:inputParameter name="email">\${item}</camunda:inputParameter>
-                <camunda:inputParameter name="index">\${index}</camunda:inputParameter>
-              </camunda:inputOutput>
-              <camunda:formData>
-                <camunda:formField id="yay\${index}" type="boolean" />
-              </camunda:formData>
-            </extensionElements>
           </userTask>
         </process>
       </definitions>`;
-      testHelpers.getModdleContext(source, moddleOptions, (err, moddleContext) => {
+      testHelpers.getModdleContext(source, {js: extensions.js.moddleOptions}, (err, moddleContext) => {
         if (err) return done(err);
 
         const listener = new EventEmitter();
         const definition = new Definition(moddleContext, {
           listener,
+          extensions,
           variables: {
             boardMembers: ['pal@example.com', 'franz@example.com', 'immanuel@example.com']
           }

@@ -15,10 +15,7 @@ describe('Lanes', () => {
 
   it('main process stores outbound messageFlows', (done) => {
     const engine = new Engine({
-      source,
-      moddleOptions: {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }
+      source
     });
     engine.getDefinitions((err, definitions) => {
       if (err) return done(err);
@@ -32,10 +29,7 @@ describe('Lanes', () => {
   it('completes process', (done) => {
     const listener = new EventEmitter();
     const engine = new Engine({
-      source,
-      moddleOptions: {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }
+      source
     });
 
     engine.once('end', () => {
@@ -55,11 +49,21 @@ describe('Lanes', () => {
 
   it('participant startEvent receives and stores message on process context', (done) => {
     const listener = new EventEmitter();
-    const engine = new Engine({
-      source,
-      moddleOptions: {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }
+    const engine = Engine({
+      source
+    });
+
+    listener.on('start-task1', (activityApi) => {
+      activityApi.signal({
+        message: 'I\'m done',
+        arbval: '10'
+      });
+    });
+
+    listener.on('start-completeTask', (activityApi) => {
+      activityApi.signal({
+        message: 'Done aswell'
+      });
     });
 
     listener.once('end-messageStartEvent', (activityApi) => {
@@ -69,20 +73,20 @@ describe('Lanes', () => {
       });
     });
 
-    listener.once('end-mainEndEvent', (activityApi, processExecution) => {
-      expect(processExecution.getOutput()).to.include({
+    listener.once('end-participantEndEvent', (activityApi, processExecution) => {
+      expect(processExecution.getOutput().taskInput.messageStartEvent).to.include({
         message: 'I\'m done'
       });
     });
 
-    listener.once('end-participantEndEvent', (activityApi, processExecution) => {
-      expect(processExecution.getOutput()).to.include({
-        message: 'Done! Aswell!'
+    listener.once('end-mainEndEvent', (activityApi, processExecution) => {
+      expect(processExecution.getOutput().taskInput.intermediate).to.include({
+        message: 'Done aswell'
       });
     });
 
     engine.once('end', (execution, definitionExecution) => {
-      expect(definitionExecution.getOutput()).to.include(['arbval', 'message', 'taskInput']);
+      expect(definitionExecution.getOutput()).to.include(['taskInput']);
       done();
     });
 

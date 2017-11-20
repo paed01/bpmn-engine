@@ -9,6 +9,10 @@ const lab = exports.lab = Lab.script();
 const {beforeEach, describe, it} = lab;
 const {expect} = Lab.assertions;
 
+const moddleOptions = {
+  js: require('../resources/js-bpmn-moddle.json')
+};
+
 describe('IoSpecification', () => {
   it('activity output only', (done) => {
     const source = `
@@ -299,7 +303,7 @@ describe('IoSpecification', () => {
       task.on('end', (activityApi, executionContext) => {
         const api = activityApi.getApi(executionContext);
         expect(api.getOutput()).to.equal({
-          surnameInput: 'von Rosen'
+          surname: 'von Rosen'
         });
         done();
       });
@@ -379,5 +383,158 @@ describe('IoSpecification', () => {
         done();
       });
     });
+  });
+
+  describe('loop', () => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions id="testIoSpec" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
+      <process id="theProcess" isExecutable="true">
+        <dataObjectReference id="inputRef" dataObjectRef="input" />
+        <dataObjectReference id="staticRef" dataObjectRef="static" />
+        <dataObjectReference id="ageRef" dataObjectRef="age" />
+        <dataObjectReference id="givenNameRef" dataObjectRef="givenName" />
+        <dataObject id="input" />
+        <dataObject id="static" />
+        <dataObject id="age" />
+        <dataObject id="givenName" />
+        <userTask id="task-io-loop">
+          <multiInstanceLoopCharacteristics isSequential="false" js:collection="\${variables.list}">
+            <completionCondition xsi:type="tFormalExpression">\${services.condition(index)}</completionCondition>
+            <loopCardinality xsi:type="tFormalExpression">3</loopCardinality>
+          </multiInstanceLoopCharacteristics>
+          <ioSpecification id="inputSpec2">
+            <dataInput id="input_item" name="item" />
+            <dataInput id="input_index" name="index" />
+            <dataInput id="input_age" name="age" />
+            <dataOutput id="givenNameField" name="field_givename" />
+            <dataOutput id="ageField" name="field_age" />
+            <outputSet id="outputSet_2">
+              <dataOutputRefs>givenNameField</dataOutputRefs>
+              <dataOutputRefs>ageField</dataOutputRefs>
+            </outputSet>
+          </ioSpecification>
+          <dataInputAssociation id="associatedInput_3" sourceRef="input_age" targetRef="ageRef" />
+          <dataOutputAssociation id="associatedOutput_2" sourceRef="givenNameField" targetRef="givenNameRef" />
+          <dataOutputAssociation id="associatedOutput_3" sourceRef="ageField" targetRef="inputRef" />
+        </userTask>
+      </process>
+    </definitions>`;
+
+    let context;
+    beforeEach(async () => {
+      context = await testHelpers.context(source, moddleOptions);
+    });
+
+    it('io is loop aware', (done) => {
+      context.environment.set('input', 1);
+      context.environment.set('static', 2);
+      context.environment.set('list', [{
+        item: 'a'
+      }, {
+        item: 'b'
+      }]);
+
+      const activity = context.getChildActivityById('task-io-loop');
+      activity.on('wait', (activityApi, activityExecution) => {
+        const api = activityApi.getApi(activityExecution);
+        expect(activityExecution.getIo().isLoopContext).to.be.true();
+        api.signal();
+      });
+
+      activity.on('end', (activityApi, activityExecution) => {
+        const api = activityApi.getApi(activityExecution);
+        if (!api.loop) return;
+        done();
+      });
+
+      activity.activate().run();
+    });
+
+    it('resolves input per iteration', (done) => {
+      const list = [{
+        item: 'a'
+      }, {
+        item: 'b'
+      }, {
+        item: 'c'
+      }, {
+        item: 'd'
+      }];
+      context.environment.set('age', 1);
+      context.environment.set('surname', 'von Rosen');
+      context.environment.set('list', list);
+
+      const activity = context.getChildActivityById('task-io-loop');
+      activity.on('wait', (activityApi, activityExecution) => {
+        const api = activityApi.getApi(activityExecution);
+
+        const input = api.getInput();
+
+        expect(input).to.include({
+          age: 1,
+          index: input.index,
+          item: list[input.index]
+        });
+        api.signal();
+      });
+
+      activity.on('end', (activityApi, activityExecution) => {
+        const api = activityApi.getApi(activityExecution);
+        if (!api.loop) return;
+        done();
+      });
+
+      activity.activate().run();
+    });
+
+    it('ioSpecification saves result on iteration end', (done) => {
+      const list = [{
+        item: 'a'
+      }, {
+        item: 'b'
+      }, {
+        item: 'c'
+      }, {
+        item: 'd'
+      }];
+
+      context.environment.set('list', list);
+
+      const activity = context.getChildActivityById('task-io-loop');
+      activity.on('wait', (activityApi, activityExecution) => {
+        const api = activityApi.getApi(activityExecution);
+        const {index} = api.getInput();
+        api.signal({
+          field_item: `item ${index}`,
+          field_age: index,
+          field_givename: `Jr ${index}`
+        });
+      });
+
+      activity.on('end', (activityApi, activityExecution) => {
+        if (activityExecution.isLoopContext) {
+          const {index} = activityExecution.getInput();
+          expect(activityExecution.getOutput()).to.equal({
+            field_givename: `Jr ${index}`,
+            field_age: index
+          });
+        }
+      });
+
+      activity.on('leave', (activityApi, activityExecution) => {
+        activityExecution.save();
+        expect(context.environment.getOutput()).to.equal({
+          givenName: [ 'Jr 0', 'Jr 1', 'Jr 2' ],
+          input: [ 0, 1, 2 ]
+        });
+
+        done();
+      });
+
+      activity.activate().run();
+    });
+
   });
 });

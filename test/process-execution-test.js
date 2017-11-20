@@ -35,16 +35,13 @@ describe('process execution', () => {
     it('returns error in callback on child error', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
-      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="tinyProcess" isExecutable="true">
-          <serviceTask id="task" camunda:expression="\${services.fn}" />
+          <serviceTask id="task" implementation="\${services.fn}" />
         </process>
       </definitions>`;
 
-      testHelpers.getContext(source, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (cerr, context) => {
+      testHelpers.getContext(source, (cerr, context) => {
         if (cerr) return done(cerr);
         context.environment.addService('fn', (arg1, next) => {
           next(new Error('Test err'));
@@ -94,9 +91,7 @@ describe('process execution', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(source, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (cerr, context) => {
+      testHelpers.getContext(source, (cerr, context) => {
         if (cerr) return done(cerr);
 
         const task = context.getChildActivityById('task');

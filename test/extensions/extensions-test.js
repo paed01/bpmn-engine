@@ -39,7 +39,7 @@ describe('engine extensions', () => {
       extensions
     });
 
-    engine.getDefinition((err) => {
+    engine.execute((err) => {
       if (err) return done(err);
       expect(initExtensions).to.be.true();
       done();
@@ -62,7 +62,7 @@ describe('engine extensions', () => {
       extensions
     });
 
-    engine.getDefinition((err) => {
+    engine.execute((err) => {
       if (err) return done(err);
       expect(extensionArgs).to.have.length(2);
       expect(extensionArgs[0].$type).to.equal('bpmn:Task');

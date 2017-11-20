@@ -9,15 +9,15 @@ const lab = exports.lab = Lab.script();
 const {describe, it} = lab;
 const {expect} = Lab.assertions;
 
-const moddleOptions = {
-  camunda: require('camunda-bpmn-moddle/resources/camunda')
+const extensions = {
+  js: require('./resources/JsExtension')
 };
 
 describe('Resume task loop', () => {
 
   it('resumes task cardinality loop', (done) => {
     const source = `
-    <definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
       <process id="taskLoopProcess" isExecutable="true">
         <task id="recurring" name="Recurring">
@@ -26,12 +26,10 @@ describe('Resume task loop', () => {
           </multiInstanceLoopCharacteristics>
         </task>
       </process>
-    </definitions>
-    `;
+    </definitions>`;
 
     const engine1 = new Engine({
-      source,
-      moddleOptions
+      source
     });
     const listener = new EventEmitter();
 
@@ -66,15 +64,14 @@ describe('Resume task loop', () => {
     });
   });
 
-  describe('camunda collection expression', () => {
+  describe('collection expression', () => {
 
     it('resumes task in collection loop', (done) => {
       const source = `
-      <bpmn:definitions id= "Definitions_2" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
+      <bpmn:definitions id="Definitions_2" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
         <bpmn:process id="Process_1" isExecutable="true">
-          <bpmn:serviceTask id="recurring" name="Each item" camunda:expression="\${services.loop}">
-            <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.list}" />
+          <bpmn:serviceTask id="recurring" name="Each item" implementation="\${services.loop}">
+            <bpmn:multiInstanceLoopCharacteristics isSequential="true" js:collection="\${variables.list}" />
           </bpmn:serviceTask>
         </bpmn:process>
       </bpmn:definitions>`;
@@ -87,7 +84,7 @@ describe('Resume task loop', () => {
 
       const engine1 = new Engine({
         source,
-        moddleOptions
+        extensions
       });
       const listener = new EventEmitter();
       const options = {

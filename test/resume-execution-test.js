@@ -11,10 +11,6 @@ const lab = exports.lab = Lab.script();
 const {describe, it} = lab;
 const {expect, fail} = Lab.assertions;
 
-const moddleOptions = {
-  camunda: require('camunda-bpmn-moddle/resources/camunda')
-};
-
 describe('Resume execution', () => {
 
   it('starts with stopped task', (done) => {
@@ -67,8 +63,8 @@ describe('Resume execution', () => {
 
   it('resumes stopped subprocess', (done) => {
     const engine1 = new Engine({
+      name: 'stopMe',
       source: factory.resource('mother-of-all.bpmn'),
-      name: 'stopMe'
     });
     const listener1 = new EventEmitter();
 
@@ -396,10 +392,10 @@ describe('Resume execution', () => {
   it('resumes with moddle options', (done) => {
     const source = `
     <?xml version="1.0" encoding="UTF-8"?>
-    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <process id="theProcess" isExecutable="true">
         <userTask id="userTask" />
-        <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.get}" camunda:resultVariable="output" />
+        <serviceTask id="serviceTask" name="Get" implementation="\${services.get}" />
         <sequenceFlow id="flow1" sourceRef="userTask" targetRef="serviceTask" />
       </process>
     </definitions>`;
@@ -414,8 +410,7 @@ describe('Resume execution', () => {
     };
 
     const engine1 = new Engine({
-      source,
-      moddleOptions
+      source
     });
     const listener1 = new EventEmitter();
     const options = {
@@ -447,73 +442,11 @@ describe('Resume execution', () => {
         listener: listener2
       }, (err, resumedDefinition) => {
         if (err) return done(err);
-        expect(resumedDefinition.getOutput().output[0]).to.include(['statusCode', 'body']);
+        expect(resumedDefinition.getOutput().taskInput.serviceTask[0]).to.include(['statusCode', 'body']);
         done();
       });
     });
 
     engine1.execute(options);
-  });
-
-  lab.describe('with form', () => {
-    const source = `
-    <?xml version="1.0" encoding="UTF-8"?>
-    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-      <process id="theProcess" isExecutable="true">
-        <startEvent id="start">
-          <extensionElements>
-            <camunda:formData>
-              <camunda:formField id="formfield1" label="FormField1" type="string" />
-              <camunda:formField id="formfield2" type="long" />
-            </camunda:formData>
-          </extensionElements>
-          </startEvent>
-        <endEvent id="end" />
-        <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
-      </process>
-    </definitions>`;
-
-    let state;
-    it('given a StartEvent with form and a saved state', (done) => {
-      const listener = new EventEmitter();
-
-      listener.once('wait', () => {
-        state = engine.getState();
-        engine.stop();
-      });
-
-      const engine = new Engine({
-        source,
-        moddleOptions
-      });
-
-      engine.once('end', () => {
-        done();
-      });
-
-      engine.execute({
-        listener
-      });
-    });
-
-    it('completes when resumed and signaled', (done) => {
-      const listener = new EventEmitter();
-
-      listener.once('wait', (activityApi) => {
-        activityApi.signal({
-          formfield1: 'a',
-          formfield2: 1
-        });
-      });
-
-      const engine = Engine.resume(state, {
-        listener: listener
-      });
-
-      engine.once('end', () => {
-        done();
-      });
-    });
   });
 });

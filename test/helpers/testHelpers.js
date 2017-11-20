@@ -17,6 +17,7 @@ module.exports = {
   expectNoLingeringListenersOnEngine,
   getContext,
   getModdleContext,
+  moddleContext,
   readFromDb,
   serializeModdleContext,
   serviceFn
@@ -77,10 +78,10 @@ function getContext(processXml, optionsOrCallback, cb) {
   const [options, callback] = getOptionsAndCallback(optionsOrCallback, cb);
 
   const Context = require('../../lib/Context');
-  transformer.transform(processXml, options, (err, definitions, moddleContext) => {
+  transformer.transform(processXml, options, (err, definitions, moddleCtx) => {
     if (err) return callback(err);
-    const ctxh = contextHelper(moddleContext);
-    const ctx = Context(ctxh.getExecutableProcessId(), moddleContext);
+    const ctxh = contextHelper(moddleCtx);
+    const ctx = Context(ctxh.getExecutableProcessId(), moddleCtx);
     return callback(null, ctx);
   });
 }
@@ -88,11 +89,22 @@ function getContext(processXml, optionsOrCallback, cb) {
 function context(source, options) {
   const Context = require('../../lib/Context');
   return new Promise((resolve, reject) => {
-    transformer.transform(source, options, (err, definitions, moddleContext) => {
+    transformer.transform(source, options, (err, definitions, moddleCtx) => {
       if (err) return reject(err);
-      const ctxh = contextHelper(moddleContext);
-      const ctx = Context(ctxh.getExecutableProcessId(), moddleContext);
+      const ctxh = contextHelper(moddleCtx);
+      const ctx = Context(ctxh.getExecutableProcessId(), moddleCtx);
       return resolve(ctx);
+    });
+  });
+}
+
+function moddleContext(source, options) {
+  const bpmnModdle = new BpmnModdle(options);
+
+  return new Promise((resolve, reject) => {
+    bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source, (err, definitions, moddleCtx) => {
+      if (err) return reject(err);
+      resolve(moddleCtx);
     });
   });
 }
@@ -102,8 +114,8 @@ function getModdleContext(processXml, optionsOrCallback, cb) {
 
   const bpmnModdle = new BpmnModdle(options);
 
-  bpmnModdle.fromXML(Buffer.isBuffer(processXml) ? processXml.toString() : processXml, (err, definitions, moddleContext) => {
-    return callback(err, moddleContext);
+  bpmnModdle.fromXML(Buffer.isBuffer(processXml) ? processXml.toString() : processXml, (err, definitions, moddleCtx) => {
+    return callback(err, moddleCtx);
   });
 }
 
@@ -120,6 +132,6 @@ function readFromDb(state) {
   return loadedState;
 }
 
-function serializeModdleContext(moddleContext) {
-  return JSON.stringify(contextHelper(moddleContext).clone());
+function serializeModdleContext(moddleCtx) {
+  return JSON.stringify(contextHelper(moddleCtx).clone());
 }
