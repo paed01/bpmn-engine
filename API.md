@@ -1,5 +1,5 @@
 <!-- version -->
-# 5.0.0 API Reference
+# 5.0.0-rc1 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -41,17 +41,17 @@ Creates a new Engine object where:
   - `source`: Bpmn definition source as String or Buffer
   - `moddleContext`: Optional parsed moddle context object
   - `name`: Optional name of engine,
-  - `moddleOptions`: Optional moddle parse options
+  - [`extensions`](/docs/Extensions.md): Optional moddle parse extensions
 
 Options `source` and `context` are mutually exclusive.
 
 Moddle options must be used if an extension is required when parsing BPMN-source. The object will be passed on to the constructor of `bpmn-moddle`. See [camunda-bpmn-moddle][1] for example.
 
 ```javascript
-const Bpmn = require('bpmn-engine');
+const {Engine} = require('bpmn-engine');
 const fs = require('fs');
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   source: fs.readFileSync('./test/resources/mother-of-all.bpmn'),
   moddleOptions: {
     camunda: require('camunda-bpmn-moddle/resources/camunda')

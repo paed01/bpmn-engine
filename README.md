@@ -46,7 +46,7 @@ The following elements are tested and supported.
   - [Loop](/docs/TaskLoop.md): Sequential and parallell
     - Cardinality, integer or expression
     - Condition, script or expression
-    - Collection (camunda expression)
+    - Collection (extension expression)
   - [Service](/docs/ServiceTask.md)
   - SubProcess
   - Script: javascript only
@@ -58,7 +58,7 @@ The following elements are tested and supported.
   - Exclusive
   - Inclusive
   - Parallel: join and fork
-- [Form](/docs/Form.md)
+- Form
 
 # Process modeller
 
