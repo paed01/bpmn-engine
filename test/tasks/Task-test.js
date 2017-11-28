@@ -24,12 +24,8 @@ describe('Task', () => {
     </definitions>`;
 
     let context;
-    beforeEach((done) => {
-      testHelpers.getContext(source, (err, result) => {
-        if (err) return done(err);
-        context = result;
-        done();
-      });
+    beforeEach(async () => {
+      context = await testHelpers.context(source);
     });
 
     describe('activate()', () => {
@@ -126,57 +122,63 @@ describe('Task', () => {
 
         task.inbound[0].take();
       });
+
+
+      it('can be stopped on start', (done) => {
+        const engine = Engine({
+          source
+        });
+
+        const listener = new EventEmitter();
+        listener.on('start-task', () => {
+          engine.stop();
+        });
+        listener.once('end-task', () => {
+          fail('should have been stopped');
+        });
+        engine.execute({listener}, done);
+      });
+    });
+
+    describe('resume', () => {
+      it('can be stopped on start', (done) => {
+        const engine = Engine({
+          source
+        });
+
+        const listener = new EventEmitter();
+        let state;
+        listener.on('start-task', () => {
+          engine.stop();
+        });
+        listener.once('end-task', () => {
+          fail('should have been stopped');
+        });
+        engine.execute({listener}, resume);
+
+        function resume(err) {
+          if (err) return done(err);
+
+          state = engine.getState();
+
+          const resumeListener = new EventEmitter();
+          const resumedExecution = Engine.resume(state, {listener: resumeListener}, done);
+
+          resumeListener.on('start-task', () => {
+            resumedExecution.stop();
+          });
+          resumeListener.once('end-task', () => {
+            fail('should have been stopped');
+          });
+
+
+        }
+      });
     });
   });
 
-  lab.describe('events', () => {
-    const taskProcessXml = `
-    <?xml version="1.0" encoding="UTF-8"?>
-    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-      <process id="theProcess" isExecutable="true">
-        <startEvent id="start" />
-        <task id="task" />
-        <endEvent id="end" />
-        <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
-        <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
-      </process>
-    </definitions>`;
-
-    let context;
-    lab.beforeEach((done) => {
-      testHelpers.getContext(taskProcessXml, (err, result) => {
-        if (err) return done(err);
-        context = result;
-        done();
-      });
-    });
-
-    lab.test('emits start on taken inbound', (done) => {
-      const task = context.getChildActivityById('task');
-      task.activate();
-      task.once('start', () => {
-        done();
-      });
-
-      task.inbound[0].take();
-    });
-
-    lab.test('leaves on discarded inbound', (done) => {
-      const task = context.getChildActivityById('task');
-      task.activate();
-      task.once('start', () => {
-        fail('No start should happen');
-      });
-      task.once('leave', () => {
-        done();
-      });
-
-      task.inbound[0].discard();
-    });
-  });
-
-  lab.describe('engine', () => {
-    lab.test('multiple inbound completes process', (done) => {
+  describe('engine', () => {
+    it('multiple inbound completes process', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -228,10 +230,10 @@ describe('Task', () => {
     });
   });
 
-  lab.describe('loop', () => {
-    lab.describe('sequential', () => {
+  describe('loop', () => {
+    describe('sequential', () => {
       let context;
-      lab.beforeEach((done) => {
+      beforeEach((done) => {
         getLoopContext(true, (err, result) => {
           if (err) return done(err);
           context = result;
@@ -239,7 +241,7 @@ describe('Task', () => {
         });
       });
 
-      lab.test('emits start with the same id', (done) => {
+      it('emits start with the same id', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 
@@ -258,9 +260,9 @@ describe('Task', () => {
       });
     });
 
-    lab.describe('parallell', () => {
+    describe('parallell', () => {
       let context;
-      lab.beforeEach((done) => {
+      beforeEach((done) => {
         getLoopContext(false, (err, result) => {
           if (err) return done(err);
           context = result;
@@ -268,7 +270,7 @@ describe('Task', () => {
         });
       });
 
-      lab.test('emits start with different ids', (done) => {
+      it('emits start with different ids', (done) => {
         const task = context.getChildActivityById('task');
         task.activate();
 

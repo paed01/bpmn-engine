@@ -8,7 +8,7 @@ Changelog
 - Node version >= 8 is supported
 - `SendTask` message requires output
 - `ParallelGateway` emits `start` on first taken inbound, i.e. discarded inbound are just registered
-- Extensions are not loaded by default
+- Extensions are moved to separate project
 
 ## Additions
 - Support for parallell task loop

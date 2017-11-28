@@ -142,7 +142,7 @@ describe('Error BoundaryEvent', () => {
       task.run();
     });
 
-    it('discards attachedTo if error event is taken', (done) => {
+    it('discards attachedTo if error is caught', (done) => {
       context.environment.addService('test', (arg, next) => {
         next(new Error('FAIL'));
       });
@@ -178,7 +178,7 @@ describe('Error BoundaryEvent', () => {
       task.inbound[0].take();
     });
 
-    it.skip('is discarded if other bound event completes', (done) => {
+    it('is discarded if other bound event completes', (done) => {
       const engine = new Engine({
         source: factory.resource('bound-error-and-timer.bpmn')
       });
@@ -209,6 +209,41 @@ describe('Error BoundaryEvent', () => {
         listener,
         variables: {
           input: 2
+        }
+      });
+    });
+
+    it('discards task without outbound', (done) => {
+      const src = `
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <serviceTask id="service" implementation="\${services.test}" />
+          <boundaryEvent id="errorEvent" attachedToRef="service">
+            <errorEventDefinition />
+          </boundaryEvent>
+        </process>
+      </definitions>`;
+
+      const engine = new Engine({
+        source: src
+      });
+      const listener = new EventEmitter();
+
+      listener.on('end-service', ({id}) => {
+        fail(`<${id}> should have been discarded`);
+      });
+
+      engine.on('end', () => {
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
+      });
+
+      engine.execute({
+        listener,
+        services: {
+          test: (arg, next) => {
+            next(new Error('Boom'));
+          }
         }
       });
     });

@@ -694,10 +694,7 @@ describe('ParallelGateway', () => {
 
     it('completes process with succeeding joins', (done) => {
       const engine = new Engine({
-        source: factory.resource('succeeding-joins.bpmn'),
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        }
+        source: factory.resource('succeeding-joins.bpmn')
       });
 
       const listener = new EventEmitter();

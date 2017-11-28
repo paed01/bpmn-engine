@@ -11,15 +11,8 @@ const {expect} = Lab.assertions;
 describe('IntermediateCatchEvent with message', () => {
   describe('behaviour', () => {
     let context;
-    beforeEach((done) => {
-      const source = factory.resource('lanes.bpmn').toString();
-      testHelpers.getContext(source, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
-      }, (err, c) => {
-        if (err) return done(err);
-        context = c;
-        done();
-      });
+    beforeEach(async () => {
+      context = await testHelpers.context(factory.resource('lanes.bpmn').toString());
     });
 
     it('inbound does not contain message flow', (done) => {
