@@ -753,5 +753,24 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       });
     });
 
+    it('completes simple single task process if not timed out', (done) => {
+      const engine = new Engine({
+        source: factory.resource('simple-task.bpmn')
+      });
+
+      const listener = new EventEmitter();
+      listener.on('end-boundaryEvent', (api) => {
+        fail(`<${api.id}> should have been stopped`);
+      });
+      engine.execute({
+        listener
+      });
+      engine.once('end', () => {
+        setTimeout(() => {
+          testHelpers.expectNoLingeringListenersOnEngine(engine);
+          done();
+        }, 200);
+      });
+    });
   });
 });
