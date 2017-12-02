@@ -3,6 +3,8 @@ Examples
 
 <!-- toc -->
 
+- [Define service](#define-service)
+  - [Expression](#expression)
 - [Execute](#execute)
 - [Listen for events](#listen-for-events)
 - [Exclusive gateway](#exclusive-gateway)
@@ -14,13 +16,19 @@ Examples
 
 <!-- tocstop -->
 
+# Define service
+
+How to reference service function.
+
+## Expression
+
 # Execute
 ```javascript
-const Bpmn = require('bpmn-engine');
+const {Engine} = require('bpmn-engine');
 
 const id = Math.floor(Math.random() * 10000);
 
-const processXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess2" isExecutable="true">
@@ -36,17 +44,17 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   name: 'execution example',
-  source: processXml
+  source
 });
 
 engine.execute({
   variables: {
     id: id
   }
-}, (err, definition) => {
-  console.log('Bpmn definition definition started with id', definition.getProcesses()[0].context.variables.id);
+}, (err, execution) => {
+  console.log('Execution completed with id', execution);
 });
 ```
 
@@ -55,10 +63,10 @@ engine.execute({
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
 
-const processXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -67,7 +75,7 @@ const processXml = `
     <startEvent id="theStart" />
     <userTask id="userTask">
       <ioSpecification id="inputSpec">
-        <dataOutput id="userInput" />
+        <dataOutput id="userInput" name="sirname" />
       </ioSpecification>
       <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUserRef" />
     </userTask>
@@ -77,10 +85,11 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   name: 'listen example',
-  source: processXml
+  source
 });
+
 const listener = new EventEmitter();
 
 listener.once('wait-userTask', (task) => {
@@ -93,12 +102,12 @@ listener.on('taken', (flow) => {
   console.log(`flow <${flow.id}> was taken`);
 });
 
-engine.once('end', (definition) => {
-  console.log(`User sirname is ${definition.variables.inputFromUser.sirname}`);
+engine.once('end', (execution) => {
+  console.log(`User sirname is ${execution.getOutput().inputFromUser}`);
 });
 
 engine.execute({
-  listener: listener
+  listener
 }, (err, instance) => {
   if (err) throw err;
 });
@@ -111,9 +120,10 @@ An exclusive gateway will receive the available process variables as `this.varia
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
 
-const processXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -135,20 +145,27 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   name: 'exclusive gateway example',
-  source: processXml
+  source
 });
 
-engine.once('end', (definition) => {
-  if (definition.getChildActivityById('end1').taken) throw new Error('<end1> was not supposed to be taken, check your input');
-  console.log('TAKEN end2', definition.getChildActivityById('end2').taken);
+const listener = new EventEmitter();
+
+listener.on('start-end1', (api) => {
+  throw new Error(`<${api.id}> was not supposed to be taken, check your input`);
 });
+listener.on('start-end2', (api) => console.log(`<${api.id}> correct decision was taken`));
 
 engine.execute({
+  listener,
   variables: {
     input: 51
   }
+});
+
+engine.on('end', () => {
+  console.log('completed');
 });
 ```
 
@@ -163,9 +180,9 @@ The `next` callback takes the following arguments:
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
+const {Engine} = require('bpmn-engine');
 
-const processXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -191,9 +208,9 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   name: 'script task example',
-  source: processXml
+  source
 });
 
 engine.execute({
@@ -205,13 +222,9 @@ engine.execute({
       module: 'request'
     }
   }
-}, (err, execution) => {
-  if (err) throw err;
-
-  execution.once('end', () => {
-    console.log('Script task modification:', execution.variables.scriptTaskCompleted);
-    console.log('Script task output:', execution.variables.taskInput.scriptTask.result);
-  });
+});
+engine.on('end', (execution) => {
+  console.log('Output:', execution.getOutput());
 });
 ```
 
@@ -222,10 +235,10 @@ User tasks waits for signal to complete. The signal function can be called on th
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
 
-const processXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -234,7 +247,7 @@ const processXml = `
     <startEvent id="theStart" />
     <userTask id="userTask">
       <ioSpecification id="inputSpec">
-        <dataOutput id="userInput" />
+        <dataOutput id="userInput" name="sirname" />
       </ioSpecification>
       <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUserRef" />
     </userTask>
@@ -244,26 +257,24 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   name: 'user task example 1',
-  source: processXml
+  source
 });
+
 const listener = new EventEmitter();
 
-listener.once('wait-userTask', (child, instance) => {
-  instance.signal(child.activity.id, {
+listener.once('wait-userTask', (activityApi, processInstance) => {
+  processInstance.signal(activityApi.id, {
     sirname: 'von Rosen'
   });
 });
 
 engine.execute({
-  listener: listener
-}, (err, instance) => {
+  listener
+}, (err, execution) => {
   if (err) throw err;
-
-  instance.once('end', () => {
-    console.log(`User sirname is ${instance.variables.inputFromUser.sirname}`);
-  });
+  console.log(`User sirname is ${execution.getOutput().inputFromUser}`);
 });
 ```
 
@@ -272,10 +283,10 @@ Since, Imho, the data flow in bpmn2 is overcomplex the input is stored as `taskI
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
 
-const processXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -287,27 +298,25 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   name: 'script task example',
-  source: processXml
+  source
 });
 
 const listener = new EventEmitter();
 
-listener.once('wait-userTask', (child, instance) => {
-  instance.signal(child.activity.id, {
+listener.once('wait-userTask', (activityApi, processInstance) => {
+  processInstance.signal(activityApi.id, {
     sirname: 'von Rosen'
   });
 });
 
 engine.execute({
-  listener: listener
-}, (err, instance) => {
+  listener
+}, (err, execution) => {
   if (err) throw err;
 
-  instance.once('end', () => {
-    console.log(`User sirname is ${instance.variables.taskInput.userTask.sirname}`);
-  });
+  console.log(`User sirname is ${execution.getOutput().taskInput.userTask.sirname}`);
 });
 ```
 
@@ -325,7 +334,7 @@ A service task will receive the data available on the process instance. The sign
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
+const {Engine} = require('bpmn-engine');
 const request = require('request');
 
 const services = require('../test/helpers/testHelpers');
@@ -339,30 +348,21 @@ services.getRequest = (message, callback) => {
   });
 };
 
-const processXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
   <startEvent id="theStart" />
-  <serviceTask id="serviceTask">
-    <extensionElements>
-      <camunda:properties>
-        <camunda:property name="service" value="getRequest" />
-      </camunda:properties>
-    </extensionElements>
-  </serviceTask>
+  <serviceTask id="serviceTask" implementation="\${services.getRequest}" />
   <endEvent id="theEnd" />
   <sequenceFlow id="flow1" sourceRef="theStart" targetRef="serviceTask" />
   <sequenceFlow id="flow2" sourceRef="serviceTask" targetRef="theEnd" />
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   name: 'service task example 1',
-  source: processXml,
-  moddleOptions: {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
-  }
+  source
 });
 
 engine.execute({
@@ -378,101 +378,26 @@ engine.execute({
 }, (err, execution) => {
   if (err) throw err;
 
-  execution.once('end', () => {
-    console.log('Service task output:', execution.variables.taskInput.serviceTask);
-  });
+  console.log('Service task output:', execution.getOutput().taskInput.serviceTask);
 });
 ```
 
 or if arguments must be passed, then `inputParameter` `arguments` must be defined. The result is an array with arguments from the service callback where first error argument is omitted.
 
 ```javascript
-const Bpmn = require('bpmn-engine');
+const {Engine} = require('bpmn-engine');
 
-const processXml = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <process id="Process_1" isExecutable="true">
-      <startEvent id="start">
-        <outgoing>flow1</outgoing>
-      </startEvent>
-      <sequenceFlow id="flow1" sourceRef="start" targetRef="serviceTask" />
-      <endEvent id="end">
-        <incoming>flow2</incoming>
-      </endEvent>
-      <sequenceFlow id="flow2" sourceRef="serviceTask" targetRef="end" />
-      <serviceTask id="serviceTask" name="Get">
-        <extensionElements>
-          <camunda:inputOutput>
-            <camunda:inputParameter name="uri">
-              <camunda:script scriptFormat="JavaScript">variables.apiPath</camunda:script>
-            </camunda:inputParameter>
-            <camunda:outputParameter name="result">
-              <camunda:script scriptFormat="JavaScript"><![CDATA[
-'use strict';
-var result = {
-  statusCode: result[0].statusCode,
-  body: result[0].statusCode === 200 ? JSON.parse(result[1]) : undefined
-};
-result;
-              ]]>
-              </camunda:script>
-            </camunda:outputParameter>
-          </camunda:inputOutput>
-          <camunda:properties>
-            <camunda:property name="service" value="getRequest" />
-          </camunda:properties>
-        </extensionElements>
-        <incoming>flow1</incoming>
-        <outgoing>flow2</outgoing>
-      </serviceTask>
-    </process>
-  `;
-
-const engine = new Bpmn.Engine({
-  source: processXml,
-  moddleOptions: {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
-  }
-});
-
-engine.execute({
-  variables: {
-    apiPath: 'http://example.com/test'
-  },
-  services: {
-    getRequest: {
-      module: 'request',
-      fnName: 'get'
-    }
-  }
-}, (err, execution) => {
-  if (err) throw err;
-  execution.once('end', () => {
-    console.log(execution.variables)
-    console.log('Script task output:', execution.variables.result);
-  });
-});
-```
-
-In the above example `request.get` will be called with `variables.apiPath`. The result is saved on `variables.result`.
-
-Expressions can also be used if camunda extension `moddleOptions` are passed to engine.
-
-```javascript
-const Bpmn = require('bpmn-engine');
-
-const processXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
   <process id="theProcess" isExecutable="true">
-    <serviceTask id="serviceTask" name="Get" camunda:expression="\${services.getService()}" camunda:resultVariable="output" />
+    <serviceTask id="serviceTask" name="Get" implementation="\${services.getService()}" />
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   name: 'service task example 3',
-  source: processXml,
+  source,
   moddleOptions: {
     camunda: require('camunda-bpmn-moddle/resources/camunda')
   }
@@ -489,12 +414,10 @@ engine.execute({
   variables: {
     input: 1
   }
-}, (err, instance) => {
-  if (err) throw err;
 });
 
-engine.once('end', (definition) => {
-  console.log(definition.variables.taskInput.serviceTask.output);
+engine.once('end', (execution) => {
+  console.log(execution.getOutput().taskInput.serviceTask);
 });
 ```
 
@@ -503,10 +426,10 @@ engine.once('end', (definition) => {
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
 
-const sourceXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions id="testProcess" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess1" isExecutable="true">
@@ -523,28 +446,26 @@ const sourceXml = `
 </definitions>
 `;
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   name: 'sequence flow example',
-  source: sourceXml
+  source
 });
 
 const listener = new EventEmitter();
-listener.on('taken-flow3withExpression', (flow) => {
-  throw new Error(`<${flow.id}> should not have been taken`);
+listener.on('end-end2', (api) => {
+  throw new Error(`<${api.id}> should not have been taken`);
 });
 
 engine.execute({
-  listener: listener,
+  listener,
   services: {
     isBelow: (input, test) => {
-      return input < Number(test);
+      return input < test;
     }
   },
   variables: {
     input: 2
   }
-}, (err) => {
-  if (err) throw err;
 });
 
 engine.once('end', () => {
@@ -557,23 +478,17 @@ engine.once('end', () => {
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
+const {Engine} = require('bpmn-engine');
+const extensions = {
+  js: require('../test/resources/JsExtension')
+}
 
-const sourceXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions id= "Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://bpmn.io/schema/bpmn">
-  <process id="Process_1" isExecutable="true">
-    <serviceTask id="recurring" name="Each item">
-      <multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.input}" />
-      <extensionElements>
-        <camunda:inputOutput>
-          <camunda:outputParameter name="sum">\${result[0]}</camunda:outputParameter>
-        </camunda:inputOutput>
-        <camunda:connector>
-          <camunda:connectorId>loop</camunda:connectorId>
-        </camunda:connector>
-      </extensionElements>
+<definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
+  <process id="Process_with_loop" isExecutable="true">
+    <serviceTask id="recurring" name="Each item" implementation="\${services.loop}" js:result="sum">
+      <multiInstanceLoopCharacteristics isSequential="true" js:collection="\${variables.input}" />
     </serviceTask>
     <boundaryEvent id="errorEvent" attachedToRef="recurring">
       <errorEventDefinition />
@@ -582,19 +497,18 @@ const sourceXml = `
 </definitions>
 `;
 
-const engine = new Bpmn.Engine({
-  source: sourceXml,
-  moddleOptions: {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
-  }
+const engine = Engine({
+  source,
+  extensions
 });
+
+let sum = 0;
 
 engine.execute({
   services: {
     loop: (executionContext, callback) => {
-      const prevResult = executionContext.variables.sum ? executionContext.variables.sum : 0;
-      const result = prevResult + executionContext.item;
-      callback(null, result);
+      sum += executionContext.item;
+      callback(null, sum);
     }
   },
   variables: {
@@ -602,7 +516,7 @@ engine.execute({
   }
 });
 
-engine.once('end', (definition) => {
-  console.log(definition.variables.sum, 'aught to be 13 blazing fast');
+engine.once('end', (execution) => {
+  console.log(sum, 'aught to be 13 blazing fast');
 });
 ```

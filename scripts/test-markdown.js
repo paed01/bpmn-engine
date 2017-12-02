@@ -57,9 +57,7 @@ function execute(script) {
     db: {
       getSavedState: (id, callback) => {
         if (fs.existsSync('./tmp/some-random-id.json')) {
-          const state = require('./some-random-id.json');
-          state.source = Buffer.from(state.source.data);
-
+          const state = require('../tmp/some-random-id.json');
           return callback(null, state);
         }
         callback(new Error('No state'));

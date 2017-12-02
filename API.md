@@ -38,10 +38,10 @@ The engine. Executes passed BPMN definitions.
 Creates a new Engine object where:
 
 - `options`: Optional object
-  - `source`: Bpmn definition source as String or Buffer
-  - `moddleContext`: Optional parsed moddle context object
   - `name`: Optional name of engine,
+  - `source`: Bpmn definition source as String or Buffer
   - [`extensions`](/docs/Extensions.md): Optional moddle parse extensions
+  - `moddleContext`: Optional parsed moddle context object
 
 Options `source` and `context` are mutually exclusive.
 
@@ -52,10 +52,7 @@ const {Engine} = require('bpmn-engine');
 const fs = require('fs');
 
 const engine = Engine({
-  source: fs.readFileSync('./test/resources/mother-of-all.bpmn'),
-  moddleOptions: {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
-  }
+  source: fs.readFileSync('./test/resources/mother-of-all.bpmn')
 });
 ```
 
@@ -96,7 +93,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = new Engine({
+const engine = Engine({
   name: 'first',
   source
 });
@@ -112,7 +109,7 @@ engine.execute((err, definition) => {
 An `EventEmitter` object with listeners. [Event names](#activity-events) are composed by activity event name and activity id, e.g. `wait-userTask`.
 
 ```js
-const EventEmitter = require('events').EventEmitter;
+const {EventEmitter} = require('events');
 
 const listener = new EventEmitter();
 
@@ -122,7 +119,7 @@ listener.on('wait-userTask', (task, instance) => {
 });
 
 engine.execute({
-  listener: listener
+  listener
 })
 ```
 
@@ -148,10 +145,10 @@ Execution variables are passed as the first argument to `#execute`.
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
+const {Engine} = require('bpmn-engine');
 const fs = require('fs');
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   source: fs.readFileSync('./test/resources/simple-task.bpmn')
 });
 
@@ -160,12 +157,10 @@ const variables = {
 };
 
 engine.execute({
-  variables: variables
+  variables
 }, (err, instance) => {
   if (err) throw err;
-  instance.once('end', () => {
-    console.log('completed')
-  });
+  console.log('completed')
 });
 ```
 
@@ -200,36 +195,36 @@ The module name can be a npm module, local module or a global reference. If a lo
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
 
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
-  <startEvent id="theStart" />
-  <scriptTask id="scriptTask" scriptFormat="Javascript">
-    <script>
-      <![CDATA[
-        const request = services.request;
+    <startEvent id="theStart" />
+    <scriptTask id="scriptTask" scriptFormat="Javascript">
+      <script>
+        <![CDATA[
+          const request = services.request;
 
-        const self = this;
+          const self = this;
 
-        request.get('http://example.com/test', (err, resp, body) => {
-          if (err) return next(err);
-          self.variables.scriptTaskCompleted = true;
-          next(null, {result: body});
-        })
-      ]]>
-    </script>
-  </scriptTask>
-  <endEvent id="theEnd" />
-  <sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
-  <sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
+          request.get('http://example.com/test', (err, resp, body) => {
+            if (err) return next(err);
+            self.variables.scriptTaskCompleted = true;
+            next(null, {result: body});
+          })
+        ]]>
+      </script>
+    </scriptTask>
+    <endEvent id="theEnd" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="scriptTask" />
+    <sequenceFlow id="flow2" sourceRef="scriptTask" targetRef="theEnd" />
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   source: processXml
 });
 
@@ -255,9 +250,7 @@ engine.execute({
   services: services
 }, (err, instance) => {
   if (err) throw err;
-  instance.once('end', () => {
-    console.log('completed')
-  });
+  console.log('completed')
 });
 ```
 
@@ -278,9 +271,9 @@ Get definitions. Loads definitions from sources or passed moddle contexts.
   - `definition`: List of added definitions
 
 ```javascript
-const Bpmn = require('bpmn-engine');
+const {Engine} = require('bpmn-engine');
 
-const processXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions id="Definition_42" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -292,8 +285,8 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
-  source: processXml
+const engine = Engine({
+  source
 });
 
 engine.getDefinitions((err, definitions) => {
@@ -320,18 +313,17 @@ Get activities that are in an entered state.
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
+const camundaExt = require('bpmn-engine-extensions/resources/camunda');
 
-const definitionSource = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+<definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
   <process id="theWaitingGame" isExecutable="true">
     <startEvent id="start" />
     <parallelGateway id="fork" />
-    <userTask id="userTask1" />
-    <userTask id="userTask2">
+    <userTask id="userTask1">
       <extensionElements>
         <camunda:formData>
           <camunda:formField id="surname" label="Surname" type="string" />
@@ -339,6 +331,7 @@ const definitionSource = `
         </camunda:formData>
       </extensionElements>
     </userTask>
+    <userTask id="userTask2" />
     <task id="task" />
     <parallelGateway id="join" />
     <endEvent id="end" />
@@ -351,33 +344,32 @@ const definitionSource = `
     <sequenceFlow id="flow7" sourceRef="task" targetRef="join" />
     <sequenceFlow id="flowEnd" sourceRef="join" targetRef="end" />
   </process>
-</definitions>
-    `;
+</definitions>`;
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   name: 'Pending game',
-  source: definitionSource,
-  moddleOptions: {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
+  source,
+  extensions: {
+    camunda: camundaExt
   }
 });
 
 const listener = new EventEmitter();
 
-engine.execute({
-  listener: listener
-}, (err, execution) => {
-  if (err) throw err;
+listener.on('wait', (api) => {
+  const pending = engine.getPendingActivities();
+  console.log('PENDING', JSON.stringify(pending, null, 2));
+
+  if (api.form) {
+    api.form.getFields()[0].set("mememe");
+  }
+
+  engine.signal(api.id);
 });
 
-setTimeout(() => {
-  const pending = engine.getPendingActivities();
-  console.log(JSON.stringify(pending, null, 2));
-
-  const task = pending.definitions[0].children.find(c => c.type === 'bpmn:UserTask');
-
-  engine.signal(task.id);
-}, 300);
+engine.execute({
+  listener
+});
 ```
 
 ### `getState()`
@@ -400,8 +392,8 @@ The saved state will include the following content:
 ```javascript
 'use strict';
 
-const Bpmn = require('bpmn-engine');
-const EventEmitter = require('events').EventEmitter;
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
 const fs = require('fs');
 
 const processXml = `
@@ -416,7 +408,7 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = new Bpmn.Engine({
+const engine = Engine({
   source: processXml
 });
 
@@ -435,7 +427,7 @@ listener.once('start', () => {
 });
 
 engine.execute({
-  listener: listener
+  listener
 }, (err, execution) => {
   if (err) throw err;
 });
@@ -468,7 +460,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = new Engine({
+const engine = Engine({
   source
 });
 const listener = new EventEmitter();
@@ -482,7 +474,7 @@ engine.execute({
   variables: {
     executionId: 'some-random-id'
   },
-  listener: listener
+  listener
 }, (err, execution) => {
   if (err) throw err;
 });
@@ -510,7 +502,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = new Engine({
+const engine = Engine({
   source
 });
 const listener = new EventEmitter();
@@ -525,7 +517,7 @@ engine.execute({
   variables: {
     executionId: 'some-random-id'
   },
-  listener: listener
+  listener
 }, (err, execution) => {
   if (err) throw err;
 });
@@ -542,12 +534,17 @@ const {Engine} = require('bpmn-engine');
 const {EventEmitter} = require('events');
 
 // Retrieve saved state
-const state = db.getState('some-random-id', (err, state) => {
+const state = db.getSavedState('some-random-id', (err, state) => {
   if (err) return console.log(err.message);
 
   console.log(state)
 
-  const engine = Engine.resume(state);
+  const listener = new EventEmitter();
+  listener.on('wait', (api) => {
+    api.signal();
+  });
+
+  const engine = Engine.resume(state, {listener});
   engine.on('end', () => {
     console.log('resumed instance completed');
   });
@@ -679,6 +676,7 @@ The following expressions are supported:
 
 - `${variables.input}` - resolves to the variable input
 - `${variables.input[0]}` - resolves to first item of the variable input array
+- `${variables.input[-1]}` - resolves to last item of the variable input array
 - `${variables.input[spaced name]}` - resolves to the variable input object property `spaced name`
 
 - `${services.getInput}` - return the service function `getInput`
