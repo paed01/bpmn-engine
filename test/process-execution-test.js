@@ -1,6 +1,6 @@
 'use strict';
 
-const ProcessExecution = require('../lib/activities/process-execution');
+const ProcessExecution = require('../lib/process/Execution');
 const Lab = require('lab');
 const testHelpers = require('./helpers/testHelpers');
 

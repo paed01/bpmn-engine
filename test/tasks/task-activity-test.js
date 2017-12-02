@@ -2,7 +2,7 @@
 
 const factory = require('../helpers/factory');
 const Lab = require('lab');
-const Process = require('../../lib/activities/Process');
+const Process = require('../../lib/process');
 const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');

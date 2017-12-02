@@ -3,7 +3,7 @@
 const Environment = require('../../lib/Environment');
 const factory = require('../helpers/factory');
 const Lab = require('lab');
-const Process = require('../../lib/activities/Process');
+const Process = require('../../lib/process');
 const testHelpers = require('../helpers/testHelpers');
 const {EventEmitter} = require('events');
 
