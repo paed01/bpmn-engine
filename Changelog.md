@@ -5,10 +5,10 @@ Changelog
 
 ## Breaking changes
 - Engine `execute` callback is called when execution completes
-- Node version >= 8 is supported
+- Node version >= 8.9 is supported
 - `SendTask` message requires output
 - `ParallelGateway` emits `start` on first taken inbound, i.e. discarded inbound are just registered
-- Extensions are moved to separate project
+- Extensions have been moved to separate project [bpmn-engine-extensions](https://github.com/paed01/bpmn-engine-extensions)
 
 ## Additions
 - Support for parallell task loop

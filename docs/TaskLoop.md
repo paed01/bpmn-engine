@@ -26,4 +26,4 @@ Loop all items in a list.
 <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="\${variables.list}" />
 ```
 
-For `bpmn-moddle` to read the `camunda:collection` namespaced attribute, the engine must be instantiated with moddle options referring [`camunda-bpmn-moddle/resources/camunda`][1].
+For `bpmn-moddle` to read the `camunda:collection` namespaced attribute, the engine must be instantiated with moddle options or extension referring [`camunda-bpmn-moddle/resources/camunda`][1].

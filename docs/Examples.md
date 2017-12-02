@@ -389,7 +389,7 @@ const {Engine} = require('bpmn-engine');
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
     <serviceTask id="serviceTask" name="Get" implementation="\${services.getService()}" />
   </process>
@@ -397,10 +397,7 @@ const source = `
 
 const engine = Engine({
   name: 'service task example 3',
-  source,
-  moddleOptions: {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
-  }
+  source
 });
 
 engine.execute({

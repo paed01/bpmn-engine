@@ -12,7 +12,7 @@ Extensions
 
 <!-- tocstop -->
 
-Extension can be a module that exports `moddleOptions` and an extension function.
+Extension can be a module that exports `moddleOptions` and an extension function. The Camunda Modeler extension can be found under [bpmn-engine-extensions](https://github.com/paed01/bpmn-engine-extensions).
 
 Example:
 

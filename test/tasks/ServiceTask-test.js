@@ -331,6 +331,40 @@ describe('ServiceTask', () => {
     });
   });
 
+  describe('extensions', () => {
+    it('supports saving result in variable', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="testProcess" isExecutable="true">
+          <serviceTask id="task" name="Get" implementation="\${services.save}" js:result="result" />
+        </process>
+      </definitions>`;
+
+      const engine = new Engine({
+        source,
+        extensions: {
+          js: require('../resources/JsExtension')
+        }
+      });
+
+      engine.execute({
+        services: {
+          save: (inputContext, callback) => {
+            callback(null, 1);
+          }
+        }
+      });
+      engine.once('end', (execution) => {
+        expect(execution.getOutput()).to.equal({
+          result: [1]
+        });
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
+        done();
+      });
+    });
+  });
+
   describe('loop', () => {
     describe('sequential', () => {
       let context;
