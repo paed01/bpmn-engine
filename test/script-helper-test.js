@@ -5,7 +5,7 @@ const scriptHelper = require('../lib/script-helper');
 
 const lab = exports.lab = Lab.script();
 const {describe, it} = lab;
-const {expect, fail} = Lab.assertions;
+const {expect} = Lab.assertions;
 
 describe('script-helper', () => {
   describe('isJavascript()', () => {
@@ -92,65 +92,5 @@ describe('script-helper', () => {
       const script = scriptHelper.parse('unit-test.js', 'next()');
       scriptHelper.execute(script, null, done);
     });
-  });
-
-
-  describe('executeWithMessage()', () => {
-    it('takes message as third argument', (done) => {
-      const script = scriptHelper.parse('unit-test.js', 'i');
-      const message = {
-        i: true
-      };
-      expect(scriptHelper.executeWithMessage(script, null, message)).to.be.true();
-      done();
-    });
-
-    it('message is a shallow copy', (done) => {
-      const script = scriptHelper.parse('unit-test.js', 'i = false; i;');
-      const message = {
-        i: true
-      };
-      expect(scriptHelper.executeWithMessage(script, null, message)).to.be.false();
-      expect(message.i).to.be.true();
-      done();
-    });
-
-    it('fourth argument is callback and is passed as next to script', (done) => {
-      const script = scriptHelper.parse('unit-test.js', 'next()');
-      const message = {
-        i: true
-      };
-      scriptHelper.executeWithMessage(script, null, message, done);
-    });
-
-    it('next has to be called or the script will not finish', (done) => {
-      const script = scriptHelper.parse('unit-test.js', 'i = false;');
-      const message = {
-        i: true
-      };
-      scriptHelper.executeWithMessage(script, null, message, () => {
-        fail('next was not supposed to be called');
-      });
-      setTimeout(() => {
-        done();
-      }, 10);
-    });
-
-    it('non-object message without callback throws', (done) => {
-      const script = scriptHelper.parse('unit-test.js', 'next()');
-      const message = 'me';
-      expect(() => scriptHelper.executeWithMessage(script, null, message)).to.throw();
-      done();
-    });
-
-    it('non-object message with callback return error', (done) => {
-      const script = scriptHelper.parse('unit-test.js', 'next()');
-      const message = 'me';
-      scriptHelper.executeWithMessage(script, null, message, (err) => {
-        expect(err).to.be.an.error();
-        done();
-      });
-    });
-
   });
 });
