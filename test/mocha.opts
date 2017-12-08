@@ -1,0 +1,4 @@
+--timeout 2000
+--reporter spec
+--recursive
+--require ./test/helpers/setup.js

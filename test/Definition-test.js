@@ -1,58 +1,49 @@
 'use strict';
 
-const {EventEmitter} = require('events');
 const factory = require('./helpers/factory');
-const Lab = require('lab');
-const {Definition} = require('../lib/mapper');
 const testHelpers = require('./helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {before, beforeEach, describe, it} = lab;
-const {expect, fail} = Lab.assertions;
+const {Definition} = require('../lib/mapper');
+const {EventEmitter} = require('events');
 
 const extensions = {
   js: require('./resources/JsExtension')
 };
 
 describe('Definition', () => {
-  describe('new Definition()', () => {
+  describe('Definition()', () => {
     let moddleContext;
     before(async () => {
       moddleContext = await testHelpers.moddleContext(factory.valid('testingCtor'));
     });
 
-    it('throws without arguments', (done) => {
+    it('throws if without arguments', () => {
       expect(() => {
-        new Definition();
+        Definition();
       }).to.throw(/No moddle context/);
-      done();
     });
 
-    it('takes moddle context as first argument', (done) => {
-      const definition = new Definition(moddleContext);
-      expect(definition.moddleContext).to.exist();
-      done();
+    it('takes moddle context as first argument', () => {
+      const definition = Definition(moddleContext);
+      expect(definition.moddleContext).to.exist;
     });
 
-    it('stores definition id on instance', (done) => {
-      const definition = new Definition(moddleContext);
+    it('stores definition id on instance', () => {
+      const definition = Definition(moddleContext);
       expect(definition.id).to.equal('testingCtor');
-      done();
     });
 
-    it('stores environment on instance', (done) => {
-      const definition = new Definition(moddleContext, {
+    it('stores environment on instance', () => {
+      const definition = Definition(moddleContext, {
         variables: {
           input: 1
         }
       });
-      expect(definition.environment).to.be.an.object();
-      done();
+      expect(definition.environment).to.be.an('object');
     });
 
-    it('throws if options are invalid', (done) => {
+    it('throws if options are invalid', () => {
       expect(() => {
-        new Definition(moddleContext, {
+        Definition(moddleContext, {
           services: {
             invalid: {
               type: 'require'
@@ -60,29 +51,24 @@ describe('Definition', () => {
           }
         });
       }).to.throw(Error);
-      done();
     });
   });
 
   describe('getProcesses()', () => {
     let definition;
-    it('Given definition is initiated with two processes', (done) => {
-      testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (merr, moddleContext) => {
-        if (merr) return done(merr);
-        definition = new Definition(moddleContext);
-        done();
-      });
+    it('Given definition is initiated with two processes', async () => {
+      const moddleContext = await testHelpers.moddleContext(factory.resource('lanes.bpmn'));
+      definition = Definition(moddleContext);
     });
 
-    it('returns processes from passed moddle context', (done) => {
+    it('returns processes from passed moddle context', () => {
       expect(definition.getProcesses().length).to.equal(2);
-      done();
     });
 
     it('returns executable process in callback', (done) => {
       definition.getProcesses((err, mainProcess) => {
         if (err) return done(err);
-        expect(mainProcess).to.exist();
+        expect(mainProcess).to.exist;
         done();
       });
     });
@@ -90,7 +76,7 @@ describe('Definition', () => {
     it('returns all processes in callback', (done) => {
       definition.getProcesses((err, mainProcess, processes) => {
         if (err) return done(err);
-        expect(processes).to.exist();
+        expect(processes).to.exist;
         expect(processes.length).to.equal(2);
         done();
       });
@@ -100,9 +86,9 @@ describe('Definition', () => {
       testHelpers.getModdleContext(factory.invalid(), (merr, result) => {
         if (merr) return done(merr);
 
-        const def = new Definition(result);
+        const def = Definition(result);
         def.getProcesses((err) => {
-          expect(err).to.be.an.error();
+          expect(err).to.be.an('error');
           done();
         });
       });
@@ -114,9 +100,9 @@ describe('Definition', () => {
       testHelpers.getModdleContext(factory.invalid(), (merr, result) => {
         if (merr) return done(merr);
 
-        const def = new Definition(result);
+        const def = Definition(result);
         def.once('error', (err) => {
-          expect(err).to.be.an.error();
+          expect(err).to.be.an('error');
           done();
         });
 
@@ -128,7 +114,7 @@ describe('Definition', () => {
       testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (cerr, moddleContext) => {
         if (cerr) return done(cerr);
 
-        const definition = new Definition(moddleContext);
+        const definition = Definition(moddleContext);
         let count = 0;
         definition.on('enter', () => {
           count++;
@@ -148,7 +134,7 @@ describe('Definition', () => {
       testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (cerr, moddleContext) => {
         if (cerr) return done(cerr);
 
-        const definition = new Definition(moddleContext);
+        const definition = Definition(moddleContext);
         let count = 0;
         definition.on('start', () => {
           count++;
@@ -168,7 +154,7 @@ describe('Definition', () => {
       testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (cerr, moddleContext) => {
         if (cerr) return done(cerr);
 
-        const definition = new Definition(moddleContext);
+        const definition = Definition(moddleContext);
         definition.once('end', () => {
           testHelpers.expectNoLingeringListenersOnDefinition(definition);
           done();
@@ -185,7 +171,7 @@ describe('Definition', () => {
       testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (cerr, moddleContext) => {
         if (cerr) return done(cerr);
 
-        const definition = new Definition(JSON.parse(testHelpers.serializeModdleContext(moddleContext)));
+        const definition = Definition(JSON.parse(testHelpers.serializeModdleContext(moddleContext)));
         definition.once('end', () => {
           testHelpers.expectNoLingeringListenersOnDefinition(definition);
           done();
@@ -207,9 +193,9 @@ describe('Definition', () => {
           activity = activityApi;
         });
 
-        const definition = new Definition(moddleContext);
+        const definition = Definition(moddleContext);
         definition.once('end', () => {
-          expect(activity, 'event listener').to.exist();
+          expect(activity, 'event listener').to.exist;
           expect(definition.environment.variables).to.include({
             input: 1
           });
@@ -239,14 +225,14 @@ describe('Definition', () => {
           activity = a;
         });
 
-        const definition = new Definition(moddleContext, {
-          listener: listener,
+        const definition = Definition(moddleContext, {
+          listener,
           variables: {
             input: 1
           }
         });
         definition.once('end', () => {
-          expect(activity, 'event listener').to.exist();
+          expect(activity, 'event listener').to.exist;
           expect(definition.environment.variables).to.include({
             input: 1
           });
@@ -265,7 +251,7 @@ describe('Definition', () => {
       testHelpers.getModdleContext(factory.resource('lanes.bpmn'), (cerr, moddleContext) => {
         if (cerr) return done(cerr);
 
-        const definition = new Definition(moddleContext);
+        const definition = Definition(moddleContext);
 
         function testFn() {
           definition.execute({
@@ -282,7 +268,7 @@ describe('Definition', () => {
       testHelpers.getModdleContext(factory.resource('mother-of-all.bpmn'), (cerr, moddleContext) => {
         if (cerr) return done(cerr);
 
-        const definition = new Definition(moddleContext);
+        const definition = Definition(moddleContext);
         const listener = new EventEmitter();
 
         listener.on('wait', (activityApi) => {
@@ -318,9 +304,9 @@ describe('Definition', () => {
       testHelpers.getModdleContext(factory.invalid(), (merr, result) => {
         if (merr) return done(merr);
 
-        const def = new Definition(result);
+        const def = Definition(result);
         def.execute((err) => {
-          expect(err).to.be.an.error();
+          expect(err).to.be.an('error');
           done();
         });
       });
@@ -330,9 +316,9 @@ describe('Definition', () => {
       testHelpers.getModdleContext(factory.invalid(), (merr, result) => {
         if (merr) return done(merr);
 
-        const def = new Definition(result);
+        const def = Definition(result);
         def.once('error', (err) => {
-          expect(err).to.be.an.error();
+          expect(err).to.be.an('error');
           done();
         });
         def.execute();
@@ -348,9 +334,9 @@ describe('Definition', () => {
       testHelpers.getModdleContext(source, (merr, result) => {
         if (merr) return done(merr);
 
-        const def = new Definition(result);
+        const def = Definition(result);
         def.execute((err) => {
-          expect(err).to.be.an.error();
+          expect(err).to.be.an('error');
           done();
         });
       });
@@ -365,9 +351,9 @@ describe('Definition', () => {
       testHelpers.getModdleContext(source, (merr, result) => {
         if (merr) return done(merr);
 
-        const def = new Definition(result);
+        const def = Definition(result);
         def.once('error', (err) => {
-          expect(err).to.be.an.error();
+          expect(err).to.be.an('error');
           done();
         });
         def.execute();
@@ -376,26 +362,21 @@ describe('Definition', () => {
   });
 
   describe('getState()', () => {
-    const processXml = factory.userTask();
+    const source = factory.userTask();
     let moddleContext;
-    before((done) => {
-      testHelpers.getModdleContext(processXml, (err, result) => {
-        if (err) return done(err);
-        moddleContext = result;
-        done();
-      });
+    before(async () => {
+      moddleContext = await testHelpers.moddleContext(source);
     });
 
-    it('returns state "pending" when not started yet', (done) => {
-      const definition = new Definition(moddleContext);
+    it('returns state "pending" when not started yet', () => {
+      const definition = Definition(moddleContext);
       const state = definition.getState();
       expect(state.state).to.equal('pending');
-      done();
     });
 
     it('returns state "running" when running', (done) => {
       const listener = new EventEmitter();
-      const definition = new Definition(moddleContext);
+      const definition = Definition(moddleContext);
 
       definition.on('start', (executionApi) => {
         const state = executionApi.getState();
@@ -412,7 +393,7 @@ describe('Definition', () => {
 
     it('returns state "completed" when completed', (done) => {
       const listener = new EventEmitter();
-      const definition = new Definition(moddleContext);
+      const definition = Definition(moddleContext);
 
       listener.on('wait-userTask', (task) => {
         task.signal();
@@ -433,12 +414,12 @@ describe('Definition', () => {
 
     it('returns state of processes', (done) => {
       const listener = new EventEmitter();
-      const definition = new Definition(moddleContext);
+      const definition = Definition(moddleContext);
 
       listener.on('wait-userTask', () => {
         const state = definition.getState();
         expect(state.state).to.equal('running');
-        expect(state.processes[state.entryPointId], `<${state.entryPointId}> state`).to.be.an.object();
+        expect(state.processes[state.entryPointId], `<${state.entryPointId}> state`).to.be.an('object');
         expect(state.processes[state.entryPointId], `<${state.entryPointId}> state`).to.include({
           entered: true
         });
@@ -454,10 +435,10 @@ describe('Definition', () => {
 
     it('returns stopped flag if stopped', (done) => {
       const listener = new EventEmitter();
-      const definition = new Definition(moddleContext);
+      const definition = Definition(moddleContext);
 
       listener.on('end-theProcess', () => {
-        fail('Process should not complete');
+        expect.fail('Process should not complete');
       });
 
       listener.on('wait-userTask', () => {
@@ -468,34 +449,7 @@ describe('Definition', () => {
       });
 
       definition.execute({
-        listener: listener
-      }, (err) => {
-        if (err) return done(err);
-      });
-    });
-
-    it('returns processes variables and services', (done) => {
-      const listener = new EventEmitter();
-      const definition = new Definition(moddleContext);
-
-      listener.on('wait-userTask', () => {
-        const state = definition.getState();
-        expect(state.processes[state.entryPointId].environment, `<${definition.entryPointId}> variables`).to.include({
-          output: {}
-        });
-        done();
-      });
-
-      definition.execute({
-        listener: listener,
-        variables: {
-          input: 1
-        },
-        services: {
-          request: {
-            module: 'request'
-          }
-        }
+        listener
       }, (err) => {
         if (err) return done(err);
       });
@@ -504,50 +458,65 @@ describe('Definition', () => {
 
   describe('getChildActivityById()', () => {
     let moddleContext;
-    before((done) => {
-      const processXml = factory.resource('lanes.bpmn');
-      testHelpers.getModdleContext(processXml, (err, result) => {
-        if (err) return done(err);
-        moddleContext = result;
+    before(async () => {
+      const source = factory.resource('lanes.bpmn');
+      moddleContext = await testHelpers.moddleContext(source);
+    });
+
+    it('returns child activity', () => {
+      const definition = Definition(moddleContext);
+      expect(definition.getChildActivityById('task1')).to.exist;
+    });
+
+    it('returns child activity from participant process', () => {
+      const definition = Definition(moddleContext);
+      expect(definition.getChildActivityById('completeTask')).to.exist;
+    });
+
+    it('returns undefined if activity is not found', () => {
+      const definition = Definition(moddleContext);
+      expect(definition.getChildActivityById('whoAmITask')).to.be.undefined;
+    });
+  });
+
+  describe('getChildState()', () => {
+    let moddleContext;
+    before(async () => {
+      moddleContext = await testHelpers.moddleContext(factory.userTask('userTask1'));
+    });
+
+    it('returns child activity state', (done) => {
+      const definition = Definition(moddleContext);
+      const listener = new EventEmitter();
+
+      listener.once('wait-userTask1', (task) => {
+        expect(definition.getChildState(task.id).waiting).to.be.true;
         done();
+      });
+
+      definition.execute({
+        listener
       });
     });
 
-    it('returns child activity', (done) => {
-      const definition = new Definition(moddleContext);
-      expect(definition.getChildActivityById('task1')).to.exist();
-      done();
-    });
-
-    it('returns child activity from participant process', (done) => {
-      const definition = new Definition(moddleContext);
-      expect(definition.getChildActivityById('completeTask')).to.exist();
-      done();
-    });
-
-    it('returns undefined if activity is not found', (done) => {
-      const definition = new Definition(moddleContext);
-      expect(definition.getChildActivityById('whoAmITask')).to.be.undefined();
-      done();
+    it('returns nothing if not running', () => {
+      const definition = Definition(moddleContext);
+      expect(definition.getChildState('userTask1')).to.be.undefined;
     });
   });
 
   describe('signal()', () => {
     let moddleContext;
-    before((done) => {
-      testHelpers.getModdleContext(factory.userTask('userTask1'), (err, result) => {
-        if (err) return done(err);
-        moddleContext = result;
-        done();
-      });
+    before(async () => {
+      moddleContext = await testHelpers.moddleContext(factory.userTask('userTask1'));
     });
 
     it('signals child activity', (done) => {
-      const definition = new Definition(moddleContext);
+      const definition = Definition(moddleContext);
       const listener = new EventEmitter();
 
       listener.once('wait-userTask1', (task) => {
-        expect(definition.signal(task.id, {input: 'it´s me'})).to.be.true();
+        expect(definition.signal(task.id, {input: 'it´s me'})).to.be.true;
       });
 
       definition.once('end', () => {
@@ -563,23 +532,28 @@ describe('Definition', () => {
     });
 
     it('ignored if activity is not found by id', (done) => {
-      const definition = new Definition(moddleContext);
+      const definition = Definition(moddleContext);
       const listener = new EventEmitter();
 
       listener.once('wait', () => {
-        expect(definition.signal('madeUpId', 'who am I')).to.be.undefined();
+        expect(definition.signal('madeUpId', 'who am I')).to.be.undefined;
         done();
       });
 
       definition.execute({
-        listener: listener
+        listener
       });
+    });
+
+    it('ignored if not running', () => {
+      const definition = Definition(moddleContext);
+      definition.signal();
     });
   });
 
   describe('events', () => {
     describe('child error', () => {
-      it('event callback returns error, child, process, and definition', (done) => {
+      it('error event handler returns error, child, process execution', (done) => {
         const source = `
         <?xml version="1.0" encoding="UTF-8"?>
         <definitions id="testError" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -591,12 +565,12 @@ describe('Definition', () => {
         testHelpers.getModdleContext(source, null, (err, moddleContext) => {
           if (err) return done(err);
 
-          const definition = new Definition(moddleContext);
+          const definition = Definition(moddleContext);
 
           definition.once('error', (childErr, processExecution) => {
             testHelpers.expectNoLingeringListenersOnDefinition(definition);
-            expect(childErr).to.be.an.error();
-            expect(processExecution).to.exist();
+            expect(childErr).to.be.an('error').and.match(/did not resolve to a function/i);
+            expect(processExecution).to.exist;
             expect(processExecution.type).to.equal('bpmn:Process');
             done();
           });
@@ -610,16 +584,12 @@ describe('Definition', () => {
 
   describe('stop()', () => {
     let moddleContext;
-    before((done) => {
-      testHelpers.getModdleContext(factory.userTask(null, 'stopDef'), (err, result) => {
-        if (err) return done(err);
-        moddleContext = result;
-        done();
-      });
+    before(async () => {
+      moddleContext = await testHelpers.moddleContext(factory.userTask(null, 'stopDef'));
     });
 
     it('sets stopped flag', (done) => {
-      const definition = new Definition(moddleContext);
+      const definition = Definition(moddleContext);
       const listener = new EventEmitter();
       listener.on('wait-userTask', () => {
         definition.stop();
@@ -636,25 +606,24 @@ describe('Definition', () => {
       }, (err) => {
         if (err) return done(err);
       });
-
     });
 
+    it('ignored if not executing', () => {
+      const definition = Definition(moddleContext);
+      definition.stop();
+    });
   });
 
   describe('resume()', () => {
     const source = factory.userTask(null, 'resumeDef');
     let moddleContext, state;
-    before((done) => {
-      testHelpers.getModdleContext(source, (err, result) => {
-        if (err) return done(err);
-        moddleContext = result;
-        done();
-      });
+    before(async () => {
+      moddleContext = await testHelpers.moddleContext(source);
     });
 
     beforeEach((done) => {
       const listener = new EventEmitter();
-      const definition = new Definition(moddleContext);
+      const definition = Definition(moddleContext);
       listener.on('wait-userTask', () => {
         state = definition.getState();
         state.processes.theProcess.environment.variables = {input: 'resumed'};
@@ -676,7 +645,7 @@ describe('Definition', () => {
     it('starts with stopped task', (done) => {
       const listener = new EventEmitter();
       listener.once('start-theStart', (activity) => {
-        fail(`<${activity.id}> should not have been started`);
+        expect.fail(`<${activity.id}> should not have been started`);
       });
 
       listener.once('wait-userTask', (task) => {
@@ -696,14 +665,14 @@ describe('Definition', () => {
     });
 
     it('callback is optional', (done) => {
-      const listener2 = new EventEmitter();
+      const listener = new EventEmitter();
 
-      listener2.once('wait-userTask', (task) => {
+      listener.once('wait-userTask', (task) => {
         task.signal('Continue');
       });
 
       const definition2 = Definition.resume(testHelpers.readFromDb(state), {
-        listener: listener2
+        listener
       });
       definition2.once('end', () => {
         testHelpers.expectNoLingeringListenersOnDefinition(definition2);
@@ -712,14 +681,14 @@ describe('Definition', () => {
     });
 
     it('takes options', (done) => {
-      const listener2 = new EventEmitter();
+      const listener = new EventEmitter();
 
-      listener2.once('wait-userTask', (task) => {
+      listener.once('wait-userTask', (task) => {
         task.signal('Continue');
       });
 
       const definition2 = Definition.resume(testHelpers.readFromDb(state), {
-        listener: listener2
+        listener
       }, (err) => {
         if (err) return done(err);
       });
@@ -737,7 +706,7 @@ describe('Definition', () => {
         });
 
         Definition.resume(invalidState, (err) => {
-          expect(err).to.be.an.error();
+          expect(err).to.be.an('error');
           done();
         });
       });
@@ -750,7 +719,7 @@ describe('Definition', () => {
         const listener = new EventEmitter();
 
         let startState;
-        const definition1 = new Definition(validModdleContext);
+        const definition1 = Definition(validModdleContext);
         listener.once('enter-theStart', () => {
           startState = definition1.getState();
           definition1.stop();
@@ -778,7 +747,7 @@ describe('Definition', () => {
           moddleContext: result
         });
         definitionf.once('error', (error) => {
-          expect(error).to.be.an.error();
+          expect(error).to.be.an('error');
           done();
         });
       });
@@ -786,13 +755,10 @@ describe('Definition', () => {
   });
 
   describe('getPendingActivities()', () => {
-    it('returns executing children', (done) => {
-      testHelpers.getModdleContext(factory.valid(), {}, (err, validModdleContext) => {
-        if (err) return done(err);
-        const definition = new Definition(validModdleContext);
-        expect(definition.getPendingActivities().children).to.have.length(0);
-        done();
-      });
+    it('returns no executing children if not running', async () => {
+      const validModdleContext = await testHelpers.moddleContext(factory.valid());
+      const definition = Definition(validModdleContext);
+      expect(definition.getPendingActivities().children).to.have.length(0);
     });
 
     it('returns empty children if not executing', (done) => {
@@ -801,7 +767,7 @@ describe('Definition', () => {
 
         const listener = new EventEmitter();
 
-        const definition = new Definition(validModdleContext);
+        const definition = Definition(validModdleContext);
         listener.once('enter-theStart', () => {
           const pending = definition.getPendingActivities();
           expect(pending.state).to.equal('running');
@@ -833,7 +799,7 @@ describe('Definition', () => {
         if (err) return done(err);
 
         const listener = new EventEmitter();
-        const definition = new Definition(moddleContext, {
+        const definition = Definition(moddleContext, {
           listener,
           extensions,
           variables: {

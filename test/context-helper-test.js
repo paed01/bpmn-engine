@@ -1,13 +1,8 @@
 'use strict';
 
-const {transformer} = require('..');
 const ContextHelper = require('../lib/context-helper');
 const factory = require('./helpers/factory');
-const Lab = require('lab');
-
-const lab = exports.lab = Lab.script();
-const {before, beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
+const {transformer} = require('..');
 
 describe('context-helper', () => {
   let context;
@@ -83,7 +78,7 @@ describe('context-helper', () => {
       </definitions>`;
       transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        expect(ContextHelper(result).hasInboundSequenceFlows('theStart')).to.be.false();
+        expect(ContextHelper(result).hasInboundSequenceFlows('theStart')).to.be.false;
         done();
       });
     });
@@ -100,7 +95,7 @@ describe('context-helper', () => {
       </definitions>`;
       transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        expect(ContextHelper(result).hasInboundSequenceFlows('theEnd')).to.be.true();
+        expect(ContextHelper(result).hasInboundSequenceFlows('theEnd')).to.be.true;
         done();
       });
     });
@@ -116,7 +111,7 @@ describe('context-helper', () => {
       </definitions>`;
       transformer.transform(processXml, {}, (err, bpmnObject, result) => {
         if (err) return done(err);
-        expect(ContextHelper(result).hasInboundSequenceFlows('theEnd')).to.be.false();
+        expect(ContextHelper(result).hasInboundSequenceFlows('theEnd')).to.be.false;
         done();
       });
     });
@@ -150,7 +145,7 @@ describe('context-helper', () => {
     });
 
     it('if found', (done) => {
-      expect(context.getSequenceFlowTargetId('nonFoundFlow1')).to.not.exist();
+      expect(context.getSequenceFlowTargetId('nonFoundFlow1')).to.not.be.ok;
       done();
     });
   });

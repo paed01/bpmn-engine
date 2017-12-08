@@ -4,64 +4,51 @@ const Bpmn = require('..');
 const BpmnModdle = require('bpmn-moddle');
 const EventEmitter = require('events').EventEmitter;
 const factory = require('./helpers/factory');
-const Lab = require('lab');
 const testHelpers = require('./helpers/testHelpers');
 
-const lab = exports.lab = Lab.script();
-const {before, describe, it} = lab;
-const {expect, fail} = Lab.assertions;
-
 describe('Engine', () => {
-  it('Bpmn exposes Engine', (done) => {
-    expect(Bpmn).to.include('Engine');
-    done();
+  it('Bpmn exposes Engine', () => {
+    expect(Bpmn).to.have.property('Engine');
   });
-  it('Bpmn exposes Defintion', (done) => {
-    expect(Bpmn).to.include('Definition');
-    done();
+  it('Bpmn exposes Defintion', () => {
+    expect(Bpmn).to.have.property('Definition');
   });
-  it('Bpmn exposes transformer', (done) => {
-    expect(Bpmn).to.include('transformer');
-    done();
+  it('Bpmn exposes transformer', () => {
+    expect(Bpmn).to.have.property('transformer');
   });
-  it('Bpmn exposes validation', (done) => {
-    expect(Bpmn).to.include('validation');
-    done();
+  it('Bpmn exposes validation', () => {
+    expect(Bpmn).to.have.property('validation');
   });
 
   describe('ctor', () => {
-    it('without arguments', (done) => {
+    it('without arguments is ok', () => {
       expect(() => {
         new Bpmn.Engine();
-      }).to.not.throw();
-      done();
+      }).to.not.throw(Error);
     });
 
-    it('takes source option', (done) => {
+    it('takes source option', () => {
       const engine = new Bpmn.Engine({
         source: factory.valid()
       });
-      expect(engine.sources).to.exist();
+      expect(engine.sources).to.be.ok;
       expect(engine.sources.length).to.equal(1);
-      done();
     });
 
-    it('throws if unsupported source is passed', (done) => {
+    it('throws if unsupported source is passed', () => {
       expect(() => {
         new Bpmn.Engine({
           source: {}
         });
       }).to.throw(/Unparsable Bpmn source/i);
-      done();
     });
 
-    it('throws if unsupported option is passed', (done) => {
+    it('throws if unsupported option is passed', () => {
       expect(() => {
         new Bpmn.Engine({
           context: {}
         });
       }).to.throw(/Option \w+ is unsupported/i);
-      done();
     });
 
     it('accepts source as Buffer', (done) => {
@@ -71,22 +58,21 @@ describe('Engine', () => {
         source
       });
       engine.execute((err) => {
-        expect(err).to.not.exist();
+        expect(err).to.not.be.ok;
         done();
       });
     });
 
-    it('but not function', (done) => {
+    it('but not function', () => {
       const source = () => {};
       expect(() => {
         new Bpmn.Engine({
           source
         });
       }).to.throw();
-      done();
     });
 
-    it('accepts name', (done) => {
+    it('accepts name', () => {
       let engine;
       expect(() => {
         engine = new Bpmn.Engine({
@@ -95,8 +81,6 @@ describe('Engine', () => {
       }).to.not.throw();
 
       expect(engine.name).to.equal('no source');
-
-      done();
     });
   });
 
@@ -111,7 +95,7 @@ describe('Engine', () => {
         });
         engine.getDefinition((err) => {
           if (err) return done(err);
-          expect(engine.getDefinitionById('contextTest')).to.exist();
+          expect(engine.getDefinitionById('contextTest')).to.be.ok;
           done();
         });
       });
@@ -126,7 +110,7 @@ describe('Engine', () => {
         });
         engine.getDefinition((err) => {
           if (err) return done(err);
-          expect(engine.getDefinitionById('contextTest')).to.exist();
+          expect(engine.getDefinitionById('contextTest')).to.be.ok;
           done();
         });
       });
@@ -137,7 +121,7 @@ describe('Engine', () => {
         source: 'not xml'
       });
       engine.getDefinition((err) => {
-        expect(err).to.exist();
+        expect(err).to.be.ok;
         done();
       });
     });
@@ -145,8 +129,8 @@ describe('Engine', () => {
     it('returns undefined in callback if no definitions', (done) => {
       const engine = new Bpmn.Engine();
       engine.getDefinition((err, def) => {
-        expect(err).not.to.exist();
-        expect(def).not.to.exist();
+        expect(err).to.not.be.ok;
+        expect(def).to.not.be.ok;
         done();
       });
     });
@@ -169,7 +153,7 @@ describe('Engine', () => {
         source: ''
       });
       engine.execute((err) => {
-        expect(err).to.be.an.error(/nothing to execute/i);
+        expect(err).to.be.an('error').and.match(/nothing to execute/i);
         done();
       });
     });
@@ -179,7 +163,7 @@ describe('Engine', () => {
         source: 'jdalsk'
       });
       engine.execute((err) => {
-        expect(err).to.exist();
+        expect(err).to.be.ok;
         done();
       });
     });
@@ -189,7 +173,7 @@ describe('Engine', () => {
         source: 'jdalsk'
       });
       engine.once('error', (err) => {
-        expect(err).to.be.an.error();
+        expect(err).to.be.an('error');
         done();
       });
 
@@ -207,7 +191,7 @@ describe('Engine', () => {
         source: processXml
       });
       engine.execute((err) => {
-        expect(err).to.be.an.error(/no executable process/);
+        expect(err).to.be.an('error').and.match(/ executable process/);
         done();
       });
     });
@@ -224,7 +208,7 @@ describe('Engine', () => {
       });
 
       engine.once('error', (err) => {
-        expect(err).to.be.an.error(/no executable process/);
+        expect(err).to.be.an('error').and.match(/ executable process/);
         done();
       });
 
@@ -260,7 +244,7 @@ describe('Engine', () => {
         source,
       });
       engine.once('error', (err) => {
-        expect(err).to.be.an.error('Inner error');
+        expect(err).to.be.an('error').and.match(/Inner error/i);
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -375,7 +359,7 @@ describe('Engine', () => {
 
       listener.on('wait-userTask', () => {
         const state = engine.getState();
-        expect(state).to.be.an.object();
+        expect(state).to.be.an('object');
         expect(state).to.include({
           state: 'running'
         });
@@ -399,7 +383,7 @@ describe('Engine', () => {
 
       const state = engine.getState();
 
-      expect(state).to.be.an.object();
+      expect(state).to.be.an('object');
       expect(state).to.include({
         state: 'idle'
       });
@@ -417,8 +401,8 @@ describe('Engine', () => {
         const state = engine.getState();
         expect(state.name).to.equal('running');
         expect(state.definitions).to.have.length(1);
-        expect(state.definitions[0]).to.be.an.object();
-        expect(state.definitions[0].processes).to.be.an.object();
+        expect(state.definitions[0]).to.be.an('object');
+        expect(state.definitions[0].processes).to.be.an('object');
         done();
       });
 
@@ -528,7 +512,7 @@ describe('Engine', () => {
             moddleContext: moddleContext
           }],
         }, (err) => {
-          expect(err).to.be.an.error();
+          expect(err).to.be.an('error');
           done();
         });
       });
@@ -586,7 +570,7 @@ describe('Engine', () => {
 
     it('when first process completes engine doesn´t emit end event', (done) => {
       const endListener = () => {
-        fail('Should not have ended');
+        expect.fail('Should not have ended');
       };
       engine.once('end', endListener);
 
@@ -650,7 +634,7 @@ describe('Engine', () => {
       const engine = new Bpmn.Engine();
       engine.addDefinitionBySource('not xml');
       engine.getDefinitions((err) => {
-        expect(err).to.be.an.error();
+        expect(err).to.be.an('error');
         expect(engine.definitions.length).to.equal(0);
         done();
       });
@@ -754,8 +738,7 @@ describe('Engine', () => {
 
     it('then all entered activities are returned', (done) => {
       expect(pending.definitions).to.have.length(1);
-      expect(pending.definitions[0]).to.include(['children']);
-      expect(pending.definitions[0].children).to.have.length(5);
+      expect(pending.definitions[0]).to.have.property('children').with.length(5);
       done();
     });
 

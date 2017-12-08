@@ -2,48 +2,37 @@
 
 const Context = require('../lib/Context');
 const factory = require('./helpers/factory');
-const Lab = require('lab');
 const testHelpers = require('./helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {before, beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
 
 describe('Context', () => {
   describe('getChildActivityById()', () => {
     let moddleContext;
-    before((done) => {
-      testHelpers.getModdleContext(factory.resource('lanes.bpmn').toString(), (err, result) => {
-        if (err) return done(err);
-        moddleContext = result;
-        done();
-      });
+    before(async () => {
+      moddleContext = await testHelpers.moddleContext(factory.resource('lanes.bpmn').toString());
     });
 
-    it('returns activity instance', (done) => {
-      expect(Context('mainProcess', moddleContext).getChildActivityById('mainStartEvent')).to.include(['id', 'type', 'io']);
-      done();
+    it('returns activity instance', () => {
+      const activity = Context('mainProcess', moddleContext).getChildActivityById('mainStartEvent');
+      expect(Object.keys(activity)).to.contain.members(['id', 'type', 'io']);
     });
 
-    it('returns child instance in process scope', (done) => {
+    it('returns child instance in process scope', () => {
       const context = Context('mainProcess', moddleContext);
       const actitivy = context.getChildActivityById('task1');
-      expect(context.children).to.contain([actitivy.id]);
-      done();
+      expect(context.children).to.have.property(actitivy.id);
     });
 
-    it('but not if out of process scope', (done) => {
+    it('but not if out of process scope', () => {
       const context = new Context('mainProcess', moddleContext);
-      const actitivy = context.getChildActivityById('meTooTask');
-      expect(actitivy).to.not.exist();
-      expect(context.children).to.not.contain(['meTooTask']);
-      done();
+      const actitivy = context.getChildActivityById('outOfBTask');
+      expect(actitivy).to.not.exist;
+      expect(context.children).to.not.have.property('outOfBTask');
     });
   });
 
   describe('getAttachedToActivity()', () => {
     let moddleContext;
-    beforeEach((done) => {
+    beforeEach(async () => {
       const source = `
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="mainProcess" isExecutable="true">
@@ -54,40 +43,33 @@ describe('Context', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getModdleContext(source, (err, result) => {
-        if (err) return done(err);
-        moddleContext = result;
-        done();
-      });
+      moddleContext = await testHelpers.moddleContext(source);
     });
 
-    it('returns attachedTo actitivy', (done) => {
+    it('returns attachedTo actitivy', () => {
       const context = new Context('mainProcess', moddleContext);
       const actitivy = context.getAttachedToActivity('boundEvent');
       expect(actitivy.id).to.equal('task');
-      done();
     });
 
-    it('returns undefined if attachedToRef is not found', (done) => {
+    it('returns undefined if attachedToRef is not found', () => {
       moddleContext.references.find(({id}) => id === 'task').id = 'task2';
 
       const context = new Context('mainProcess', moddleContext);
       const actitivy = context.getAttachedToActivity('boundEvent');
-      expect(actitivy).to.not.exist();
-      done();
+      expect(actitivy).to.not.exist;
     });
 
-    it('returns undefined if eventId is not found', (done) => {
+    it('returns undefined if eventId is not found', () => {
       const context = new Context('mainProcess', moddleContext);
       const actitivy = context.getAttachedToActivity('boundEvent2');
-      expect(actitivy).to.not.exist();
-      done();
+      expect(actitivy).to.not.exist;
     });
   });
 
   describe('getActivityExtensions()', () => {
     let moddleContext;
-    beforeEach((done) => {
+    beforeEach(async () => {
       const source = `
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
@@ -100,14 +82,10 @@ describe('Context', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getModdleContext(source, {
+      moddleContext = await testHelpers.moddleContext(source, {
         moddleOptions: {
           js: require('./resources/js-bpmn-moddle')
         }
-      }, (err, result) => {
-        if (err) return done(err);
-        moddleContext = result;
-        done();
       });
     });
 
