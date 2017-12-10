@@ -1,14 +1,9 @@
 'use strict';
 
+const factory = require('./helpers/factory');
+const testHelpers = require('./helpers/testHelpers');
 const {Engine} = require('../');
 const {EventEmitter} = require('events');
-const Lab = require('lab');
-const testHelpers = require('./helpers/testHelpers');
-const factory = require('./helpers/factory');
-
-const lab = exports.lab = Lab.script();
-const {describe, it} = lab;
-const {expect} = Lab.assertions;
 
 describe('issues', () => {
   describe('issue 19 - save state', () => {
@@ -44,7 +39,7 @@ describe('issues', () => {
           listener: listener2
         });
         engine2.once('end', () => {
-          expect(messages).to.equal([
+          expect(messages).to.eql([
             'Waiting Task B for 5 seconds...',
             'Waiting Task B for 5 seconds...',
             'Resume Task B!',

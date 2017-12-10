@@ -1,50 +1,38 @@
 'use strict';
 
-const Code = require('code');
-const Lab = require('lab');
-
-const lab = exports.lab = Lab.script();
-const expect = Code.expect;
-
 const mapper = require('../lib/mapper');
 
-lab.experiment('mapper', () => {
-  lab.test('returns Bpmn instance type from context', (done) => {
+describe('mapper', () => {
+  it('returns Bpmn instance type from context', () => {
     const event = mapper('bpmn:StartEvent');
-    expect(event).to.be.a.function();
-    done();
+    expect(event).to.be.a('function');
   });
 
-  lab.test('throws if Bpmn instance type is not mapped', (done) => {
+  it('throws if Bpmn instance type is not mapped', () => {
     expect(() => {
       mapper('bpmn:NonExisting');
     }).to.throw();
-    done();
   });
 
-  lab.test('if $type is missing from input', (done) => {
+  it('if $type is missing from input', () => {
     expect(() => {
       mapper({});
     }).to.throw(Error);
-    done();
   });
 
-  lab.describe('isTask', () => {
-    lab.test('bpmn:UserTask is true', (done) => {
-      expect(mapper.isTask('bpmn:UserTask')).to.be.true();
-      done();
+  describe('isTask', () => {
+    it('bpmn:UserTask is true', () => {
+      expect(mapper.isTask('bpmn:UserTask')).to.be.true;
     });
 
-    lab.test('bpmn:StartEvent is false', (done) => {
-      expect(mapper.isTask('bpmn:StartEvent')).to.be.false();
-      done();
+    it('bpmn:StartEvent is false', () => {
+      expect(mapper.isTask('bpmn:StartEvent')).to.be.false;
     });
 
-    lab.test('empty is false', (done) => {
-      expect(mapper.isTask(null)).to.be.false();
-      expect(mapper.isTask()).to.be.false();
-      expect(mapper.isTask('')).to.be.false();
-      done();
+    it('empty is false', () => {
+      expect(mapper.isTask(null)).to.be.false;
+      expect(mapper.isTask()).to.be.false;
+      expect(mapper.isTask('')).to.be.false;
     });
   });
 });

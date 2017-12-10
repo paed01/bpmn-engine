@@ -1,13 +1,8 @@
 'use strict';
 
-const Lab = require('lab');
 const testHelpers = require('./helpers/testHelpers');
 const {Engine} = require('../');
 const {EventEmitter} = require('events');
-
-const lab = exports.lab = Lab.script();
-const {describe, it} = lab;
-const {expect} = Lab.assertions;
 
 const extensions = {
   js: require('./resources/JsExtension')

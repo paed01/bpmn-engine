@@ -1,11 +1,6 @@
 'use strict';
 
 const {transformer} = require('..');
-const Lab = require('lab');
-
-const lab = exports.lab = Lab.script();
-const {describe, it} = lab;
-const {expect} = Lab.assertions;
 
 const validBpmnDefinition = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -26,21 +21,21 @@ describe('transformer', () => {
 
   it('unless null input', (done) => {
     transformer.transform(null, {}, (err) => {
-      expect(err).to.exist();
+      expect(err).to.be.an('error');
       done();
     });
   });
 
   it('or empty string', (done) => {
     transformer.transform('', {}, (err) => {
-      expect(err).to.exist();
+      expect(err).to.be.an('error');
       done();
     });
   });
 
   it('or not a string', (done) => {
     transformer.transform({}, {}, (err) => {
-      expect(err).to.exist();
+      expect(err).to.be.an('error');
       done();
     });
   });

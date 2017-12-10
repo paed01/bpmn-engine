@@ -1,12 +1,7 @@
 'use strict';
 
 const ProcessExecution = require('../lib/process/Execution');
-const Lab = require('lab');
 const testHelpers = require('./helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {describe, it} = lab;
-const {expect} = Lab.assertions;
 
 describe('process execution', () => {
   describe('execute()', () => {
@@ -50,7 +45,7 @@ describe('process execution', () => {
         const instance = ProcessExecution({}, context, () => {});
 
         instance.execute((err, errSource) => {
-          expect(err).to.be.an.error('Test err');
+          expect(err).to.be.an('error').and.match(/Test err/i);
           expect(errSource.id).to.equal('task');
           testHelpers.expectNoLingeringChildListeners(context);
           done();

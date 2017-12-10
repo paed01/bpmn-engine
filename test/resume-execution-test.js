@@ -1,15 +1,10 @@
 'use strict';
 
 const factory = require('./helpers/factory');
-const Lab = require('lab');
 const nock = require('nock');
 const testHelpers = require('./helpers/testHelpers');
 const {Engine} = require('../');
 const {EventEmitter} = require('events');
-
-const lab = exports.lab = Lab.script();
-const {describe, it} = lab;
-const {expect, fail} = Lab.assertions;
 
 describe('Resume execution', () => {
 
@@ -35,7 +30,7 @@ describe('Resume execution', () => {
       const listener2 = new EventEmitter();
 
       listener2.once('start-theStart', (activity) => {
-        fail(`<${activity.id}> should not have been started`);
+        expect.fail(`<${activity.id}> should not have been started`);
       });
 
       listener2.once('wait-userTask', (task) => {
@@ -88,11 +83,11 @@ describe('Resume execution', () => {
       });
 
       listener2.on('start-theStart', (activity) => {
-        fail(`<${activity.id}> should not have been started`);
+        expect.fail(`<${activity.id}> should not have been started`);
       });
 
       listener2.on('end-subUserTaskTimer', (activity) => {
-        fail(`<${activity.id}> should not have been started`);
+        expect.fail(`<${activity.id}> should not have been started`);
       });
 
       listener2.on('wait-subUserTask1', (task) => {
@@ -153,7 +148,7 @@ describe('Resume execution', () => {
     engine.once('end', () => {
       const timeout = state.definitions[0].processes.interruptedProcess.children.find(c => c.id === 'timeoutEvent').timeout;
 
-      expect(timeout).to.be.between(0, 99);
+      expect(timeout).to.be.above(0).and.below(99);
 
       const startedAt = new Date();
       Engine.resume(testHelpers.readFromDb(state), (err) => {
@@ -223,10 +218,10 @@ describe('Resume execution', () => {
       const listener2 = new EventEmitter();
 
       listener2.on('end-scriptTask', (activity) => {
-        fail(`<${activity.id}> should not have ended`);
+        expect.fail(`<${activity.id}> should not have ended`);
       });
       listener2.on('start-timedEndEvent', (activity) => {
-        fail(`<${activity.id}> should not have been taken`);
+        expect.fail(`<${activity.id}> should not have been taken`);
       });
 
       Engine.resume(testHelpers.readFromDb(state), {
@@ -442,7 +437,9 @@ describe('Resume execution', () => {
         listener: listener2
       }, (err, resumedDefinition) => {
         if (err) return done(err);
-        expect(resumedDefinition.getOutput().taskInput.serviceTask[0]).to.include(['statusCode', 'body']);
+        const outp = resumedDefinition.getOutput().taskInput.serviceTask[0];
+        expect(outp).to.have.property('statusCode', 200);
+        expect(outp).to.have.property('body');
         done();
       });
     });

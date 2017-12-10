@@ -2,11 +2,6 @@
 
 const {Engine} = require('../');
 const {EventEmitter} = require('events');
-const Lab = require('lab');
-
-const lab = exports.lab = Lab.script();
-const {describe, it} = lab;
-const {expect} = Lab.assertions;
 
 describe('listener emits expected event sequence', () => {
   it('for simple process', (done) => {
@@ -48,7 +43,7 @@ describe('listener emits expected event sequence', () => {
       });
     });
     engine.once('end', () => {
-      expect(eventSequence).to.equal([
+      expect(eventSequence).to.eql([
         'enter-theProcess',
         'start-theProcess',
         'enter-start',
@@ -114,7 +109,7 @@ describe('listener emits expected event sequence', () => {
       });
     });
     engine.once('end', () => {
-      expect(eventSequence).to.equal([
+      expect(eventSequence).to.eql([
         'enter-theProcess',
         'start-theProcess',
         'enter-start',
@@ -188,7 +183,7 @@ describe('listener emits expected event sequence', () => {
     });
 
     engine.once('end', () => {
-      expect(eventSequence).to.equal([
+      expect(eventSequence).to.eql([
         'enter-theProcess',
         'start-theProcess',
         'enter-start',
@@ -272,7 +267,7 @@ describe('listener emits expected event sequence', () => {
     });
 
     engine.once('end', () => {
-      expect(eventSequence).to.equal([
+      expect(eventSequence).to.eql([
         'enter-theProcess',
         'start-theProcess',
         'enter-start',
@@ -356,7 +351,7 @@ describe('listener emits expected event sequence', () => {
     });
 
     engine.once('end', () => {
-      expect(eventSequence).to.equal([
+      expect(eventSequence).to.eql([
         'enter-theProcess',
         'start-theProcess',
         'enter-start',
@@ -438,7 +433,7 @@ describe('listener emits expected event sequence', () => {
     });
 
     engine.once('end', () => {
-      expect(eventSequence).to.equal([
+      expect(eventSequence).to.eql([
         'enter-theProcess',
         'start-theProcess',
         'enter-start',

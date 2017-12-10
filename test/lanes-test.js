@@ -1,14 +1,9 @@
 'use strict';
 
 const factory = require('./helpers/factory');
-const Lab = require('lab');
 const testHelpers = require('./helpers/testHelpers');
 const {Engine} = require('../');
 const {EventEmitter} = require('events');
-
-const lab = exports.lab = Lab.script();
-const {describe, it} = lab;
-const {expect} = Lab.assertions;
 
 describe('Lanes', () => {
   const source = factory.resource('lanes.bpmn');
@@ -67,7 +62,7 @@ describe('Lanes', () => {
     });
 
     listener.once('end-messageStartEvent', (activityApi) => {
-      expect(activityApi.getOutput()).to.equal({
+      expect(activityApi.getOutput()).to.eql({
         message: 'I\'m done',
         arbval: '10'
       });
@@ -86,7 +81,7 @@ describe('Lanes', () => {
     });
 
     engine.once('end', (execution, definitionExecution) => {
-      expect(definitionExecution.getOutput()).to.include(['taskInput']);
+      expect(definitionExecution.getOutput()).to.have.property('taskInput');
       done();
     });
 

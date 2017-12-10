@@ -1,15 +1,9 @@
 'use strict';
 
 const factory = require('./helpers/factory');
-const Lab = require('lab');
 const testHelpers = require('./helpers/testHelpers');
 const validation = require('../lib/validation');
 const {EventEmitter} = require('events');
-
-const lab = exports.lab = Lab.script();
-const {describe, it} = lab;
-const {expect} = Lab.assertions;
-
 
 const validBpmnDefinition = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -35,7 +29,7 @@ describe('validation', () => {
 
     it('is invalid if definitions are missing', (done) => {
       const warnings = validation.validateModdleContext(null);
-      expect(warnings[0]).to.be.an.error();
+      expect(warnings[0]).to.be.an('error');
       done();
     });
 
@@ -54,7 +48,7 @@ describe('validation', () => {
 
         const warnings = validation.validateModdleContext(context);
 
-        expect(warnings[0]).to.be.an.error(/no-end/);
+        expect(warnings[0]).to.be.an('error').and.match(/no-end/);
         done();
       });
     });
@@ -106,7 +100,7 @@ describe('validation', () => {
       testHelpers.getModdleContext(source, {}, (err, context) => {
         if (err) return done(err);
         const warnings = validation.validateModdleContext(context);
-        expect(warnings[0]).to.be.an.error(/"targetRef" is required/);
+        expect(warnings[0]).to.be.an('error').and.match(/"targetRef" is required/);
         done();
       });
     });
@@ -124,7 +118,7 @@ describe('validation', () => {
       testHelpers.getModdleContext(source, {}, (err, context) => {
         if (err) return done(err);
         const warnings = validation.validateModdleContext(context);
-        expect(warnings[0]).to.be.an.error(/"sourceRef" is required/);
+        expect(warnings[0]).to.be.an('error').and.match(/"sourceRef" is required/);
         done();
       });
     });
@@ -172,7 +166,7 @@ describe('validation', () => {
       testHelpers.getModdleContext(source, {}, (err, context) => {
         if (err) return done(err);
         const warnings = validation.validateModdleContext(context);
-        expect(warnings[0]).to.be.an.error(/single diverging flow/);
+        expect(warnings[0]).to.be.an('error').and.match(/single diverging flow/);
         done();
       });
     });
@@ -195,7 +189,7 @@ describe('validation', () => {
       testHelpers.getModdleContext(source, {}, (err, context) => {
         if (err) return done(err);
         const warnings = validation.validateModdleContext(context);
-        expect(warnings[0]).to.be.an.error(/has no condition/);
+        expect(warnings[0]).to.be.an('error').and.match(/has no condition/);
         done();
       });
     });
@@ -273,7 +267,7 @@ describe('validation', () => {
         if (err) return done(err);
 
         const warnings = validation.validateModdleContext(context);
-        expect(warnings[0]).to.be.an.error(/has no outgoing flow/);
+        expect(warnings[0]).to.be.an('error').and.match(/has no outgoing flow/);
         done();
       });
     });
@@ -301,7 +295,7 @@ describe('validation', () => {
     });
   });
 
-  lab.describe('serialized bpmn-moddle context', () => {
+  describe('serialized bpmn-moddle context', () => {
     it('returns bpmn-moddle warnings', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
@@ -337,7 +331,7 @@ describe('validation', () => {
         const contextFromDb = JSON.parse(testHelpers.serializeModdleContext(context));
 
         const warnings = validation.validateModdleContext(contextFromDb);
-        expect(warnings[0]).to.be.an.error(/"targetRef" is required/);
+        expect(warnings[0]).to.be.an('error').and.match(/"targetRef" is required/);
         done();
       });
     });
@@ -369,7 +363,7 @@ describe('validation', () => {
       done();
     });
 
-    lab.describe('listener', () => {
+    describe('listener', () => {
       it('as EventEmitter is valid', (done) => {
         function fn() {
           validation.validateOptions({
@@ -403,7 +397,7 @@ describe('validation', () => {
       });
     });
 
-    lab.describe('variables', () => {
+    describe('variables', () => {
       it('as an object is valid', (done) => {
         function fn() {
           validation.validateOptions({
@@ -425,7 +419,7 @@ describe('validation', () => {
       });
     });
 
-    lab.describe('services', () => {
+    describe('services', () => {
       it('with service as a function is valid', (done) => {
         function fn() {
           validation.validateOptions({
