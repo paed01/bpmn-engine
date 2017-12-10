@@ -1,12 +1,8 @@
 'use strict';
 
-const {Engine} = require('../../lib');
-const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
+const {ActivityError} = require('../../lib/errors');
+const {Engine} = require('../../lib');
 
 describe('InclusiveGateway', () => {
   describe('behavior', () => {
@@ -62,7 +58,7 @@ describe('InclusiveGateway', () => {
       });
 
       gateway.once('leave', () => {
-        expect(discardedFlows, 'discarded flows').to.equal(['condFlow1', 'defaultFlow']);
+        expect(discardedFlows, 'discarded flows').to.eql(['condFlow1', 'defaultFlow']);
         done();
       });
 
@@ -86,7 +82,7 @@ describe('InclusiveGateway', () => {
       });
 
       gateway.once('leave', () => {
-        expect(discardedFlows, 'discarded flows').to.equal(['defaultFlow']);
+        expect(discardedFlows, 'discarded flows').to.eql(['defaultFlow']);
         done();
       });
 
@@ -125,10 +121,8 @@ describe('InclusiveGateway', () => {
 
             const state = api.getState();
 
-            expect(state).to.include({
-              discardedOutbound: ['condFlow1'],
-              pendingOutbound: ['defaultFlow', 'condFlow2']
-            });
+            expect(state).to.have.property('discardedOutbound').and.eql(['condFlow1']);
+            expect(state).to.have.property('pendingOutbound').and.eql(['defaultFlow', 'condFlow2']);
 
             const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('decisions');
@@ -139,7 +133,7 @@ describe('InclusiveGateway', () => {
               const resumedApi = resumedActivityApi.getApi(resumedActivityExecution);
               resumedApi.stop();
 
-              expect(resumedApi.getState().pendingOutbound).to.equal(['defaultFlow', 'condFlow2']);
+              expect(resumedApi.getState().pendingOutbound).to.eql(['defaultFlow', 'condFlow2']);
               done();
             });
 
@@ -174,9 +168,7 @@ describe('InclusiveGateway', () => {
 
             const state = api.getState();
 
-            expect(state).to.include({
-              pendingOutbound: ['defaultFlow', 'condFlow2']
-            });
+            expect(state).to.have.property('pendingOutbound').and.eql(['defaultFlow', 'condFlow2']);
 
             const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('decisions');
@@ -185,10 +177,10 @@ describe('InclusiveGateway', () => {
 
             resumedGateway.once('leave', (g) => {
               const defaultFlow = g.outbound.find((f) => f.isDefault);
-              expect(defaultFlow.discarded, defaultFlow.id).to.be.true();
-              expect(defaultFlow.taken, defaultFlow.id).to.be.undefined();
+              expect(defaultFlow.discarded, defaultFlow.id).to.be.true;
+              expect(defaultFlow.taken, defaultFlow.id).to.be.undefined;
 
-              expect(flowSequence).to.equal(['taken-condFlow1', 'taken-condFlow2', 'discarded-defaultFlow']);
+              expect(flowSequence).to.eql(['taken-condFlow1', 'taken-condFlow2', 'discarded-defaultFlow']);
 
               done();
             });
@@ -228,9 +220,9 @@ describe('InclusiveGateway', () => {
 
             resumedGateway.once('leave', (g) => {
               const defaultFlow = g.outbound.find((f) => f.isDefault);
-              expect(defaultFlow.taken, defaultFlow.id).to.be.true();
+              expect(defaultFlow.taken, defaultFlow.id).to.be.true;
 
-              expect(flowSequence).to.equal(['discarded-condFlow1', 'discarded-condFlow2', 'taken-defaultFlow']);
+              expect(flowSequence).to.eql(['discarded-condFlow1', 'discarded-condFlow2', 'taken-defaultFlow']);
 
               done();
             });
@@ -281,9 +273,9 @@ describe('InclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.true();
-        expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.true();
-        expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.true();
+        expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.true;
+        expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.true;
+        expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.true;
         done();
       });
     });
@@ -323,9 +315,9 @@ describe('InclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.undefined();
-        expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.true();
-        expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.undefined();
+        expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.undefined;
+        expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.true;
+        expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.undefined;
 
         testHelpers.expectNoLingeringListenersOnEngine(engine);
 
@@ -368,9 +360,9 @@ describe('InclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.true();
-        expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.undefined();
-        expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.undefined();
+        expect(execution.getChildState('theEnd1').taken, 'theEnd1').to.be.true;
+        expect(execution.getChildState('theEnd2').taken, 'theEnd2').to.be.undefined;
+        expect(execution.getChildState('theEnd3').taken, 'theEnd3').to.be.undefined;
 
         testHelpers.expectNoLingeringListenersOnEngine(engine);
 
@@ -405,7 +397,7 @@ describe('InclusiveGateway', () => {
         source
       });
       engine.once('error', (err) => {
-        expect(err).to.be.an.error(/no conditional flow/i);
+        expect(err).to.be.instanceOf(ActivityError).and.match(/no conditional flow/i);
 
         testHelpers.expectNoLingeringListenersOnEngine(engine);
 

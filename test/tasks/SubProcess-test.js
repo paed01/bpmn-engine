@@ -1,14 +1,9 @@
 'use strict';
 
+const factory = require('../helpers/factory');
+const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
-const factory = require('../helpers/factory');
-const Lab = require('lab');
-const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
 
 describe('SubProcess', () => {
   describe('events', () => {
@@ -92,9 +87,9 @@ describe('SubProcess', () => {
       });
 
       engine.on('end', (execution, definition) => {
-        expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.undefined();
-        expect(definition.getChildState('subProcess').entered, 'subProcess entered').to.be.undefined();
-        expect(definition.getChildState('subProcess').cancelled, 'subProcess canceled').to.be.true();
+        expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.undefined;
+        expect(definition.getChildState('subProcess').entered, 'subProcess entered').to.be.undefined;
+        expect(definition.getChildState('subProcess').cancelled, 'subProcess canceled').to.be.true;
         testHelpers.expectNoLingeringListenersOnDefinition(definition);
         testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
         done();
@@ -121,9 +116,9 @@ describe('SubProcess', () => {
       });
 
       engine.once('end', (execution, definition) => {
-        expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.true();
-        expect(definition.getChildState('subProcess').cancelled, 'subProcess canceled').to.be.undefined();
-        expect(definition.getChildState('subProcess').taken, 'subProcess taken').to.be.true();
+        expect(definition.getChildState('theEnd').taken, 'theEnd taken').to.be.true;
+        expect(definition.getChildState('subProcess').cancelled, 'subProcess canceled').to.be.undefined;
+        expect(definition.getChildState('subProcess').taken, 'subProcess taken').to.be.true;
 
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         testHelpers.expectNoLingeringListeners(definition.getChildActivityById('subProcess'));
@@ -156,7 +151,7 @@ describe('SubProcess', () => {
       });
 
       engine.on('error', (thrownErr) => {
-        expect(thrownErr).to.be.an.error('Expected');
+        expect(thrownErr).to.be.an('error').and.match(/Expected/);
         done();
       });
     });
@@ -182,7 +177,7 @@ describe('SubProcess', () => {
           }
         }
       }, (err) => {
-        expect(err).to.be.an.error('Expected');
+        expect(err).to.be.an('error').and.match(/Expected/);
         done();
       });
     });
@@ -216,7 +211,7 @@ describe('SubProcess', () => {
       });
 
       engine.on('end', (execution) => {
-        expect(execution.getOutput().taskInput.errorEvent).to.equal({
+        expect(execution.getOutput().taskInput.errorEvent).to.eql({
           errorCode: 'Expected',
           errorMessage: 'Expected'
         });
@@ -245,7 +240,7 @@ describe('SubProcess', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(starts).to.be.equal(['sub-process-task', 'sub-process-task', 'sub-process-task']);
+          expect(starts).to.be.eql(['sub-process-task', 'sub-process-task', 'sub-process-task']);
           done();
         });
 
@@ -267,7 +262,7 @@ describe('SubProcess', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(doneTasks).to.equal(['labour', 'archiving', 'shopping']);
+          expect(doneTasks).to.eql(['labour', 'archiving', 'shopping']);
 
           done();
         });
@@ -275,7 +270,7 @@ describe('SubProcess', () => {
         taskApi.run();
       });
 
-      it.skip('resume', (done) => {
+      it('resume', (done) => {
         const listener = new EventEmitter();
         context.environment.setListener(listener);
 
@@ -290,7 +285,7 @@ describe('SubProcess', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(doneTasks).to.equal(['labour', 'archiving', 'shopping']);
+          expect(doneTasks).to.eql(['labour', 'archiving', 'shopping']);
           done();
         });
 
@@ -320,7 +315,7 @@ describe('SubProcess', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(starts.includes(task.id), 'unique task id').to.be.false();
+          expect(starts.includes(task.id), 'unique task id').to.be.false;
           done();
         });
 
@@ -342,7 +337,7 @@ describe('SubProcess', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(doneTasks).to.equal(['labour', 'archiving', 'shopping']);
+          expect(doneTasks).to.eql(['labour', 'archiving', 'shopping']);
           done();
         });
 

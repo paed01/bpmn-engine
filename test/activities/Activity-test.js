@@ -2,14 +2,9 @@
 
 const Environment = require('../../lib/Environment');
 const factory = require('../helpers/factory');
-const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../..');
 const {EventEmitter} = require('events');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
 
 describe('Activity', () => {
   const processXml = `
@@ -25,21 +20,16 @@ describe('Activity', () => {
   </definitions>`;
 
   let context;
-  beforeEach((done) => {
-    testHelpers.getContext(processXml, (cerr, result) => {
-      if (cerr) return done(cerr);
-      context = result;
-      done();
-    });
+  beforeEach(async () => {
+    context = await testHelpers.context(processXml);
   });
 
   describe('ctor', () => {
-    it('set activity id, type and name', (done) => {
+    it('set activity id, type and name', () => {
       const activity = context.getChildActivityById('start');
       expect(activity.id).to.equal('start');
       expect(activity.type).to.equal('bpmn:StartEvent');
       expect(activity.name).to.equal('Start');
-      done();
     });
   });
 
@@ -59,7 +49,7 @@ describe('Activity', () => {
       });
 
       engine.on('end', (execution, definitionExecution) => {
-        expect(definitionExecution.getChildState('end').taken).to.be.undefined();
+        expect(definitionExecution.getChildState('end').taken).to.be.undefined;
         done();
       });
     });
@@ -67,42 +57,38 @@ describe('Activity', () => {
   });
 
   describe('activate()', () => {
-    it('sets up event activity inbound sequenceFlow listeners', (done) => {
+    it('sets up event activity inbound sequenceFlow listeners', () => {
       const endEvent = context.getChildActivityById('end');
       endEvent.activate();
       expect(endEvent.inbound[0].listenerCount('taken')).to.equal(1);
       expect(endEvent.inbound[0].listenerCount('discarded')).to.equal(1);
-      done();
     });
 
-    it.skip('sets up event activity inbound sequenceFlow listeners once', (done) => {
+    it.skip('sets up event activity inbound sequenceFlow listeners once', () => {
       const endEvent = context.getChildActivityById('end');
       endEvent.activate();
       endEvent.activate();
       expect(context.sequenceFlows[1].listenerCount('taken')).to.equal(1);
       expect(context.sequenceFlows[1].listenerCount('discarded')).to.equal(1);
-      done();
     });
   });
 
   describe('deactivate()', () => {
-    it('tears down inbound sequenceFlow listeners', (done) => {
+    it('tears down inbound sequenceFlow listeners', () => {
       const endEvent = context.getChildActivityById('end');
       const activity = endEvent.activate();
       activity.deactivate();
       expect(context.sequenceFlows[0].listenerCount('taken')).to.equal(0);
       expect(context.sequenceFlows[0].listenerCount('discarded')).to.equal(0);
-      done();
     });
 
-    it.skip('tears down inbound sequenceFlow listeners once', (done) => {
+    it.skip('tears down inbound sequenceFlow listeners once', () => {
       const endEvent = context.getChildActivityById('end');
       const activity = endEvent.activate();
       activity.deactivate();
       activity.deactivate();
       expect(context.sequenceFlows[0].listenerCount('taken')).to.equal(0);
       expect(context.sequenceFlows[0].listenerCount('discarded')).to.equal(0);
-      done();
     });
   });
 
@@ -115,9 +101,9 @@ describe('Activity', () => {
       });
 
       task.once('leave', (activityApi) => {
-        expect(activityApi.getState().canceled).to.be.true();
+        expect(activityApi.getState().canceled).to.be.true;
         expect(task.outbound.length).to.be.above(0);
-        task.outbound.forEach((f) => expect(f.taken).to.be.true());
+        task.outbound.forEach((f) => expect(f.taken).to.be.true);
         done();
       });
 
@@ -133,7 +119,7 @@ describe('Activity', () => {
 
       task.once('leave', (activityApi, activityExecution) => {
         const api = activityApi.getApi(activityExecution);
-        expect(api.getState().canceled).to.be.true();
+        expect(api.getState().canceled).to.be.true;
         done();
       });
 
@@ -152,12 +138,12 @@ describe('Activity', () => {
       task.once('leave', () => {
         task.once('wait', (activityApi, activityExecution) => {
           const api = activityApi.getApi(activityExecution);
-          expect(api.getState().canceled, 'wait state').to.be.undefined();
+          expect(api.getState().canceled, 'wait state').to.be.undefined;
           api.signal();
         });
         task.once('leave', (activityApi, activityExecution) => {
           const api = activityApi.getApi(activityExecution);
-          expect(api.getState().canceled, 'leave state').to.be.undefined();
+          expect(api.getState().canceled, 'leave state').to.be.undefined;
           done();
         });
 
@@ -183,7 +169,7 @@ describe('Activity', () => {
         const newContext = context.clone();
         const taskToResume = newContext.getChildActivityById('end');
 
-        expect(taskToResume.activate(state).getState().canceled).to.be.true();
+        expect(taskToResume.activate(state).getState().canceled).to.be.true;
         done();
       });
 
@@ -197,7 +183,7 @@ describe('Activity', () => {
 
       end.once('end', (activityApi, activityExecution) => {
         const api = activityApi.getApi(activityExecution);
-        expect(api.getState().taken).to.be.true();
+        expect(api.getState().taken).to.be.true;
         done();
       });
 
@@ -220,7 +206,7 @@ describe('Activity', () => {
         const newContext = context.clone(new Environment());
         const taskToResume = newContext.getChildActivityById('end');
 
-        expect(taskToResume.activate(state).getState().taken).to.be.true();
+        expect(taskToResume.activate(state).getState().taken).to.be.true;
         done();
       });
 

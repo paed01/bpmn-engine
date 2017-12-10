@@ -1,14 +1,9 @@
 'use strict';
 
 const factory = require('../helpers/factory');
-const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect, fail} = Lab.assertions;
 
 describe('UserTask', () => {
   describe('behaviour', () => {
@@ -37,7 +32,7 @@ describe('UserTask', () => {
       it('returns activity api', (done) => {
         const task = context.getChildActivityById('task');
         const activityApi = task.activate();
-        expect(activityApi).to.exist();
+        expect(activityApi).to.be.ok;
         done();
       });
 
@@ -48,20 +43,20 @@ describe('UserTask', () => {
           id: 'task',
           type: 'bpmn:UserTask'
         });
-        expect(activityApi.inbound).to.be.an.array().and.have.length(1);
-        expect(activityApi.outbound).to.be.an.array().and.have.length(1);
+        expect(activityApi.inbound).to.be.an('array').and.have.length(1);
+        expect(activityApi.outbound).to.be.an('array').and.have.length(1);
         done();
       });
 
       it('activity api has the expected functions', (done) => {
         const task = context.getChildActivityById('task');
         const activityApi = task.activate();
-        expect(activityApi.run, 'run').to.be.a.function();
-        expect(activityApi.deactivate, 'deactivate').to.be.a.function();
-        expect(activityApi.execute, 'execute').to.be.a.function();
-        expect(activityApi.getState, 'getState').to.be.a.function();
-        expect(activityApi.resume, 'resume').to.be.a.function();
-        expect(activityApi.getApi, 'getApi').to.be.a.function();
+        expect(activityApi.run, 'run').to.be.a('function');
+        expect(activityApi.deactivate, 'deactivate').to.be.a('function');
+        expect(activityApi.execute, 'execute').to.be.a('function');
+        expect(activityApi.getState, 'getState').to.be.a('function');
+        expect(activityApi.resume, 'resume').to.be.a('function');
+        expect(activityApi.getApi, 'getApi').to.be.a('function');
         done();
       });
     });
@@ -81,7 +76,7 @@ describe('UserTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
         task.once('start', () => {
-          fail('No start should happen');
+          expect.fail('No start should happen');
         });
         task.once('leave', () => {
           done();
@@ -101,7 +96,7 @@ describe('UserTask', () => {
         });
         task.once('wait', (activity) => {
           expect(activity.id).to.equal('task');
-          expect(eventNames).to.equal(['start']);
+          expect(eventNames).to.eql(['start']);
           done();
         });
 
@@ -122,7 +117,7 @@ describe('UserTask', () => {
           executionContext.signal();
         });
         task.once('end', () => {
-          expect(eventNames).to.equal(['start', 'wait']);
+          expect(eventNames).to.eql(['start', 'wait']);
           done();
         });
 
@@ -150,21 +145,21 @@ describe('UserTask', () => {
         const task = context.getChildActivityById('task');
         task.activate();
         task.once('enter', (activityApi, executionApi) => {
-          expect(activityApi.getApi(executionApi).getState()).to.equal({
+          expect(activityApi.getApi(executionApi).getState()).to.eql({
             id: 'task',
             type: 'bpmn:UserTask',
             entered: true
           });
         });
         task.once('start', (activityApi, executionApi) => {
-          expect(activityApi.getApi(executionApi).getState()).to.equal({
+          expect(activityApi.getApi(executionApi).getState()).to.eql({
             id: 'task',
             type: 'bpmn:UserTask',
             entered: true
           });
         });
         task.once('wait', (activityApi, executionApi) => {
-          expect(activityApi.getApi(executionApi).getState()).to.equal({
+          expect(activityApi.getApi(executionApi).getState()).to.eql({
             id: 'task',
             type: 'bpmn:UserTask',
             entered: true,
@@ -173,7 +168,7 @@ describe('UserTask', () => {
           executionApi.signal();
         });
         task.once('end', (activityApi, executionApi) => {
-          expect(activityApi.getApi(executionApi).getState()).to.equal({
+          expect(activityApi.getApi(executionApi).getState()).to.eql({
             id: 'task',
             type: 'bpmn:UserTask',
             entered: undefined,
@@ -182,7 +177,7 @@ describe('UserTask', () => {
           });
         });
         task.once('leave', (activityApi, executionApi) => {
-          expect(activityApi.getApi(executionApi).getState()).to.equal({
+          expect(activityApi.getApi(executionApi).getState()).to.eql({
             id: 'task',
             type: 'bpmn:UserTask',
             entered: undefined,
@@ -199,12 +194,8 @@ describe('UserTask', () => {
 
   describe('IO', () => {
     let context;
-    beforeEach((done) => {
-      testHelpers.getContext(factory.userTask('task'), (err, result) => {
-        if (err) return done(err);
-        context = result;
-        done();
-      });
+    beforeEach(async () => {
+      context = await testHelpers.context(factory.userTask('task'));
     });
 
     it('event argument getInput() on start returns input parameters', (done) => {
@@ -213,7 +204,7 @@ describe('UserTask', () => {
       const task = context.getChildActivityById('task');
       task.activate();
       task.once('start', (activityApi, executionContext) => {
-        expect(executionContext.getInput()).to.equal({
+        expect(executionContext.getInput()).to.eql({
           Surname: 'von Knaus'
         });
         done();
@@ -232,7 +223,7 @@ describe('UserTask', () => {
       });
 
       task.once('end', (activityApi, executionContext) => {
-        expect(executionContext.getOutput()).to.equal({
+        expect(executionContext.getOutput()).to.eql({
           input: 'me'
         });
         done();
@@ -270,7 +261,7 @@ describe('UserTask', () => {
       listener.on('start-task', (activity) => {
         startCount++;
         if (startCount > 2) {
-          fail(`<${activity.id}> Too many starts`);
+          expect.fail(`<${activity.id}> Too many starts`);
         }
       });
 
@@ -360,7 +351,7 @@ describe('UserTask', () => {
       });
 
       engine.on('end', (execution) => {
-        expect(execution.getOutput().taskInput).to.be.undefined();
+        expect(execution.getOutput().taskInput).to.be.undefined;
         done();
       });
     });
@@ -383,7 +374,7 @@ describe('UserTask', () => {
 
         const waits = [];
         task.on('wait', (activityApi, executionContext) => {
-          if (waits.length > 5) fail('too many waits');
+          if (waits.length > 5) expect.fail('too many waits');
           waits.push(executionContext.id);
           executionContext.signal();
         });
@@ -420,7 +411,7 @@ describe('UserTask', () => {
 
           task.on('start', () => {
             ++count;
-            if (count > 4) fail('Too many starts');
+            if (count > 4) expect.fail('Too many starts');
           });
           task.on('leave', () => {
             expect(waits).to.have.length(3);
@@ -452,7 +443,7 @@ describe('UserTask', () => {
         const starts = [];
         const waits = [];
         task.on('wait', (activityApi, executionContext) => {
-          if (waits.length > 5) fail('too many waits');
+          if (waits.length > 5) expect.fail('too many waits');
 
           starts.push(executionContext);
           waits.push(executionContext.id);
@@ -466,7 +457,7 @@ describe('UserTask', () => {
 
           expect(waits).to.have.length(3);
           waits.forEach((id) => expect(id).to.match(/^task_/i));
-          expect(waits.includes(task.id), 'unique task id').to.be.false();
+          expect(waits.includes(task.id), 'unique task id').to.be.false;
           done();
         });
 

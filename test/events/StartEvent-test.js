@@ -1,13 +1,8 @@
 'use strict';
 
+const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
-const Lab = require('lab');
-const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
 
 const extensions = {
   js: require('../resources/JsExtension')
@@ -38,7 +33,7 @@ describe('StartEvent', () => {
 
     it('supports io', (done) => {
       const event = context.getChildActivityById('start');
-      expect(event.io).to.exist();
+      expect(event.io).to.exist;
       done();
     });
 
@@ -61,7 +56,7 @@ describe('StartEvent', () => {
       event.on('leave', (a, b) => {
         expect(a.id).to.equal(b.id);
         sequence.push('leave');
-        expect(sequence).to.equal(['enter', 'start', 'end', 'leave']);
+        expect(sequence).to.eql(['enter', 'start', 'end', 'leave']);
         done();
       });
 
@@ -84,7 +79,7 @@ describe('StartEvent', () => {
       const listener = new EventEmitter();
 
       listener.once('wait-start', (activityApi) => {
-        expect(activityApi.getState().waiting).to.be.true();
+        expect(activityApi.getState().waiting).to.be.true;
         activityApi.signal({
           formfield1: 1,
           formfield2: 2
@@ -97,7 +92,7 @@ describe('StartEvent', () => {
       });
 
       engine.once('end', (exection) => {
-        expect(exection.getOutput().taskInput.start).to.equal({
+        expect(exection.getOutput().taskInput.start).to.eql({
           formfield1: 1,
           formfield2: 2
         });
@@ -138,7 +133,7 @@ describe('StartEvent', () => {
       listener.once('wait-start', (event) => {
         engine.stop();
         const state = event.getState();
-        expect(state).to.include(['form']);
+        expect(state).to.have.property('form');
         expect(state.form.key).to.equal('testForm');
         done();
       });
@@ -173,14 +168,14 @@ describe('StartEvent', () => {
       });
 
       listener.once('end-start', (activityApi) => {
-        expect(activityApi.getOutput()).to.equal({signal: 'START'});
+        expect(activityApi.getOutput()).to.eql({signal: 'START'});
       });
 
       engine.execute({
         listener
       });
       engine.once('end', (exection) => {
-        expect(exection.getOutput()).to.equal({
+        expect(exection.getOutput()).to.eql({
           taskInput: {
             start: {
               signal: 'START'

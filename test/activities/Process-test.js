@@ -2,14 +2,9 @@
 
 const Environment = require('../../lib/Environment');
 const factory = require('../helpers/factory');
-const Lab = require('lab');
 const Process = require('../../lib/process');
 const testHelpers = require('../helpers/testHelpers');
 const {EventEmitter} = require('events');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
 
 describe('Process', () => {
   const source = `
@@ -70,7 +65,7 @@ describe('Process', () => {
 
       mainProcess.once('start', (p, execution) => {
         expect(mainProcess.id).to.equal(execution.id);
-        expect(execution.signal).to.be.a.function();
+        expect(execution.signal).to.be.a('function');
         done();
       });
 
@@ -117,7 +112,7 @@ describe('Process', () => {
         started = true;
       });
       mainProcess.on('end', () => {
-        expect(started).to.be.true();
+        expect(started).to.be.true;
         done();
       });
       mainProcess.run();
@@ -134,8 +129,8 @@ describe('Process', () => {
       mainProcess.once('end', (activityApi, executionContext) => {
         const api = activityApi.getApi(executionContext);
 
-        expect(api.getChildState('task2').taken, 'task2 taken').to.be.true();
-        expect(api.getChildState('userTask').taken, 'userTask taken').to.be.true();
+        expect(api.getChildState('task2').taken, 'task2 taken').to.be.true;
+        expect(api.getChildState('userTask').taken, 'userTask taken').to.be.true;
 
         expect(api.getOutput().taskInput.userTask).to.equal('von Rosen');
         expect(mainProcess.environment.variables.input).to.equal(2);
@@ -179,8 +174,8 @@ describe('Process', () => {
 
         mainProcess.once('end', (activityApi, executionContext) => {
           const api = activityApi.getApi(executionContext);
-          expect(api.getChildState('task1').taken).to.be.true();
-          expect(api.getChildState('task2').taken).to.be.true();
+          expect(api.getChildState('task1').taken).to.be.true;
+          expect(api.getChildState('task2').taken).to.be.true;
 
           expect(api.getOutput().taskInput.task1).to.equal('von Rosen');
           expect(mainProcess.environment.variables.userWrote).to.equal('von Rosen');
@@ -203,8 +198,8 @@ describe('Process', () => {
 
         mainProcess.once('end', (activityApi, executionContext) => {
           const api = activityApi.getApi(executionContext);
-          expect(api.getChildState('script1').taken).to.be.true();
-          expect(api.getChildState('script2').taken).to.be.true();
+          expect(api.getChildState('script1').taken).to.be.true;
+          expect(api.getChildState('script2').taken).to.be.true;
 
           expect(mainProcess.environment.variables.input, 'iterated input').to.equal(2);
 
@@ -224,7 +219,8 @@ describe('Process', () => {
       }));
 
       mainProcess.once('start', (p, executionContext) => {
-        expect(executionContext.getInput()).to.include({
+        expect(executionContext.getInput()).to.eql({
+          output: {},
           variables: {
             input: 1
           },
@@ -250,7 +246,7 @@ describe('Process', () => {
       });
 
       mainProcess.once('end', (p, executionContext) => {
-        expect(executionContext.getOutput()).to.equal({
+        expect(executionContext.getOutput()).to.eql({
           taskInput: {
             usertask: {done: true}
           }
@@ -274,7 +270,7 @@ describe('Process', () => {
       });
 
       mainProcess.once('end', (p, executionContext) => {
-        expect(executionContext.getOutput()).to.equal({
+        expect(executionContext.getOutput()).to.eql({
           output: 'Input was 1'
         });
         done();
@@ -294,12 +290,11 @@ describe('Process', () => {
       listener.on('wait-userTask', (activityApi, processExecution) => {
         const state = processExecution.getState();
         expect(state.id).to.equal('theUncontrolledProcess');
-        expect(state.entered).to.be.true();
-        expect(state, 'tasks').to.include(['children', 'environment']);
-        expect(state.children.find(c => c.id === 'userTask')).to.include({
-          entered: true
-        });
-        expect(state.children.find(c => c.id === 'task2').entered).to.be.undefined();
+        expect(state.entered).to.be.true;
+        expect(state, 'tasks').to.have.property('children');
+        expect(state, 'tasks').to.have.property('environment');
+        expect(state.children.find(c => c.id === 'userTask')).to.have.property('entered', true);
+        expect(state.children.find(c => c.id === 'task2').entered).to.be.undefined;
         done();
       });
 

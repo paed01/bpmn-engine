@@ -1,11 +1,6 @@
 'use strict';
 
-const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect, fail} = Lab.assertions;
 
 describe('ManualTask', () => {
   describe('events', () => {
@@ -22,12 +17,8 @@ describe('ManualTask', () => {
     </definitions>`;
 
     let context;
-    beforeEach((done) => {
-      testHelpers.getContext(manualTaskProcessXml, (err, result) => {
-        if (err) return done(err);
-        context = result;
-        done();
-      });
+    beforeEach(async () => {
+      context = await testHelpers.context(manualTaskProcessXml);
     });
 
     it('emits wait on taken inbound', (done) => {
@@ -44,7 +35,7 @@ describe('ManualTask', () => {
       const task = context.getChildActivityById('task');
       task.activate();
       task.once('wait', () => {
-        fail('No wait should happen');
+        expect.fail('No wait should happen');
       });
       task.once('leave', () => {
         done();
@@ -83,7 +74,7 @@ describe('ManualTask', () => {
         executionContext.signal();
       });
       task.once('end', (activityApi) => {
-        expect(activityApi.getState().taken).to.be.true();
+        expect(activityApi.getState().taken).to.be.true;
         done();
       });
 
@@ -108,14 +99,14 @@ describe('ManualTask', () => {
 
         const waits = [];
         task.on('wait', (activityApi, executionContext) => {
-          if (waits.length > 5) fail('too many waits');
+          if (waits.length > 5) expect.fail('too many waits');
           waits.push(executionContext.id);
 
           executionContext.signal();
         });
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
-          expect(waits).to.equal(['task', 'task', 'task']);
+          expect(waits).to.eql(['task', 'task', 'task']);
           done();
         });
 
@@ -133,7 +124,7 @@ describe('ManualTask', () => {
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
-          expect(executionContext.getOutput()).to.equal(['labour', 'archiving', 'shopping']);
+          expect(executionContext.getOutput()).to.eql(['labour', 'archiving', 'shopping']);
           done();
         });
 
@@ -158,7 +149,7 @@ describe('ManualTask', () => {
         const starts = [];
         const waits = [];
         task.on('wait', (activityApi, executionContext) => {
-          if (waits.length > 5) fail('too many waits');
+          if (waits.length > 5) expect.fail('too many waits');
 
           waits.push(executionContext.id);
           starts.push(executionContext);
@@ -172,7 +163,7 @@ describe('ManualTask', () => {
 
           expect(waits).to.have.length(3);
           waits.forEach((id) => expect(id).to.match(/^task_/i));
-          expect(waits.includes(task.id), 'unique task id').to.be.false();
+          expect(waits.includes(task.id), 'unique task id').to.be.false;
 
           done();
         });
@@ -190,7 +181,7 @@ describe('ManualTask', () => {
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
-          expect(executionContext.getOutput()).to.equal(['labour', 'archiving', 'shopping']);
+          expect(executionContext.getOutput()).to.eql(['labour', 'archiving', 'shopping']);
           done();
         });
 

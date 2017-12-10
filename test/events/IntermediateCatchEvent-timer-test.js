@@ -1,15 +1,10 @@
 'use strict';
 
 const ck = require('chronokinesis');
+const factory = require('../helpers/factory');
+const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
-const factory = require('../helpers/factory');
-const Lab = require('lab');
-const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {afterEach, beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
 
 describe('IntermediateCatchEvent with timer', () => {
   describe('behaviour', () => {
@@ -70,14 +65,16 @@ describe('IntermediateCatchEvent with timer', () => {
       const event = context.getChildActivityById('timeoutEvent');
 
       event.on('start', (activityApi, executionContext) => {
-        expect(activityApi.getApi(executionContext).getState()).to.include({
+        const state = activityApi.getApi(executionContext).getState();
+        expect(state).to.include({
           id: 'timeoutEvent',
           type: 'bpmn:IntermediateCatchEvent',
-          startedAt,
           timeout: 10,
           duration: 10,
           entered: true
         });
+        expect(state.startedAt).to.eql(startedAt);
+
         ck.reset();
         activityApi.stop();
         done();
@@ -163,7 +160,7 @@ describe('IntermediateCatchEvent with timer', () => {
       }, (err) => {
         if (err) return done(err);
 
-        expect(calledEnds).to.include(['task1', 'duration', 'task2']);
+        expect(calledEnds).to.include.members(['task1', 'duration', 'task2']);
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });

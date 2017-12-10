@@ -1,12 +1,7 @@
 'use strict';
 
-const Lab = require('lab');
 const {Engine} = require('../..');
 const {EventEmitter} = require('events');
-
-const lab = exports.lab = Lab.script();
-const {describe, it} = lab;
-const {expect} = Lab.assertions;
 
 const moddleOptions = require('../resources/js-bpmn-moddle.json');
 
@@ -41,7 +36,7 @@ describe('engine extensions', () => {
 
     engine.execute((err) => {
       if (err) return done(err);
-      expect(initExtensions).to.be.true();
+      expect(initExtensions).to.be.true;
       done();
     });
   });
@@ -90,7 +85,7 @@ describe('engine extensions', () => {
 
     engine.execute((err) => {
       if (err) return done(err);
-      expect(extensionArgs).to.equal(['bpmn:Task.task']);
+      expect(extensionArgs).to.eql(['bpmn:Task.task']);
       done();
     });
   });
@@ -123,7 +118,7 @@ describe('engine extensions', () => {
     function resume(state) {
       const resumeEngine = Engine.resume(state, {extensions, name: 'resume-extension'});
       resumeEngine.on('end', () => {
-        expect(extensionArgs).to.equal(['bpmn:Task.task', 'bpmn:Task.task']);
+        expect(extensionArgs).to.eql(['bpmn:Task.task', 'bpmn:Task.task']);
         done();
       });
     }

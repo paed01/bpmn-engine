@@ -3,7 +3,6 @@
 const BpmnModdle = require('bpmn-moddle');
 const debug = require('debug')('bpmn-engine:test');
 const contextHelper = require('../../lib/context-helper');
-const expect = require('lab').expect;
 const getOptionsAndCallback = require('../../lib/getOptionsAndCallback');
 const transformer = require('../../lib/transformer');
 

@@ -35,7 +35,7 @@
     "chai": "^4.1.2",
     "chronokinesis": "^1.3.2",
     "coveralls": "^3.0.0",
-    "lab": "^14.3.1",
+    "eslint": "^4.13.0",
     "markdown-toc": "^1.2.0",
     "mocha": "^4.0.1",
     "nock": "^9.1.0",

@@ -2,13 +2,6 @@
 
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events').EventEmitter;
-const Lab = require('lab');
-
-const lab = exports.lab = Lab.script();
-const {describe, it} = lab;
-const {expect} = Lab.assertions;
-
-const Bpmn = require('../..');
 
 describe('ReceiveTask', () => {
   const source = `
@@ -20,7 +13,7 @@ describe('ReceiveTask', () => {
   </definitions>`;
 
   it('process emits wait when entering receive task', (done) => {
-    const engine = new Engine({
+    const engine = Engine({
       source
     });
     const listener = new EventEmitter();
@@ -38,7 +31,7 @@ describe('ReceiveTask', () => {
     });
 
     engine.once('end', (definition) => {
-      expect(definition.getOutput().taskInput.receive).to.equal({
+      expect(definition.getOutput().taskInput.receive).to.eql({
         sirname: 'von Rosen'
       });
       done();
@@ -46,7 +39,7 @@ describe('ReceiveTask', () => {
   });
 
   it('completes if canceled', (done) => {
-    const engine = new Bpmn.Engine({
+    const engine = Engine({
       source
     });
     const listener = new EventEmitter();
@@ -60,7 +53,7 @@ describe('ReceiveTask', () => {
     });
 
     engine.once('end', (execution, definition) => {
-      expect(definition.getChildState('receive').canceled).to.be.true();
+      expect(definition.getChildState('receive').canceled).to.be.true;
       done();
     });
   });

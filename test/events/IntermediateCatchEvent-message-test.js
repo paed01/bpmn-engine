@@ -1,12 +1,7 @@
 'use strict';
 
 const factory = require('../helpers/factory');
-const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
 
 describe('IntermediateCatchEvent with message', () => {
   describe('behaviour', () => {

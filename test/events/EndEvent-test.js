@@ -1,13 +1,8 @@
 'use strict';
 
+const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
-const Lab = require('lab');
-const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect, fail} = Lab.assertions;
 
 describe('EndEvent', () => {
   describe('behaviour', () => {
@@ -34,7 +29,7 @@ describe('EndEvent', () => {
 
     it('supports io', (done) => {
       const event = context.getChildActivityById('end');
-      expect(event.io).to.exist();
+      expect(event.io).to.exist;
       done();
     });
 
@@ -57,7 +52,7 @@ describe('EndEvent', () => {
       event.on('leave', (a, b) => {
         expect(a.id).to.equal(b.id);
         sequence.push('leave');
-        expect(sequence).to.equal(['enter', 'start', 'end', 'leave']);
+        expect(sequence).to.eql(['enter', 'start', 'end', 'leave']);
         done();
       });
 
@@ -70,7 +65,7 @@ describe('EndEvent', () => {
         const event = context.getChildActivityById('end');
         event.once('enter', (activityApi, executionContext) => {
           const state = activityApi.getApi(executionContext).getState();
-          expect(state).to.equal({
+          expect(state).to.eql({
             id: 'end',
             type: 'bpmn:EndEvent',
             entered: true
@@ -86,7 +81,7 @@ describe('EndEvent', () => {
         const event = context.getChildActivityById('end');
         event.once('start', (activityApi, executionContext) => {
           const state = activityApi.getApi(executionContext).getState();
-          expect(state).to.equal({
+          expect(state).to.eql({
             id: 'end',
             type: 'bpmn:EndEvent',
             entered: true
@@ -102,7 +97,7 @@ describe('EndEvent', () => {
         const event = context.getChildActivityById('end');
         event.once('end', (activityApi, executionContext) => {
           const state = activityApi.getApi(executionContext).getState();
-          expect(state).to.equal({
+          expect(state).to.eql({
             id: 'end',
             type: 'bpmn:EndEvent',
             entered: undefined,
@@ -119,7 +114,7 @@ describe('EndEvent', () => {
         const event = context.getChildActivityById('end');
         event.once('leave', (activityApi, executionContext) => {
           const state = activityApi.getApi(executionContext).getState();
-          expect(state).to.equal({
+          expect(state).to.eql({
             id: 'end',
             type: 'bpmn:EndEvent',
             entered: undefined,
@@ -164,11 +159,11 @@ describe('EndEvent', () => {
       });
       const listener = new EventEmitter();
       listener.once('end-theEnd1', (activityApi) => {
-        fail(new Error(`${activityApi.id} should have been terminated`));
+        expect.fail(new Error(`${activityApi.id} should have been terminated`));
       });
 
       engine.execute({
-        listener: listener
+        listener
       });
 
       engine.once('end', () => {
@@ -179,7 +174,7 @@ describe('EndEvent', () => {
 
     it('should have inbound sequence flows', (done) => {
       const element = context.getChildActivityById('fatal');
-      expect(element).to.include('inbound');
+      expect(element).to.have.property('inbound');
       expect(element.inbound).to.have.length(1);
       done();
     });
@@ -213,7 +208,7 @@ describe('EndEvent', () => {
       event.on('terminate', (a, b) => {
         expect(a.id).to.equal(b.id);
         sequence.push('terminate');
-        expect(sequence).to.equal(['enter', 'start', 'end', 'terminate']);
+        expect(sequence).to.eql(['enter', 'start', 'end', 'terminate']);
         done();
       });
 
@@ -226,7 +221,7 @@ describe('EndEvent', () => {
         const event = context.getChildActivityById('fatal');
         event.once('enter', (activityApi, executionContext) => {
           const state = activityApi.getApi(executionContext).getState();
-          expect(state).to.equal({
+          expect(state).to.eql({
             id: 'fatal',
             type: 'bpmn:EndEvent',
             entered: true
@@ -242,7 +237,7 @@ describe('EndEvent', () => {
         const event = context.getChildActivityById('fatal');
         event.once('start', (activityApi, executionContext) => {
           const state = activityApi.getApi(executionContext).getState();
-          expect(state).to.equal({
+          expect(state).to.eql({
             id: 'fatal',
             type: 'bpmn:EndEvent',
             terminate: true,
@@ -259,7 +254,7 @@ describe('EndEvent', () => {
         const event = context.getChildActivityById('fatal');
         event.once('end', (activityApi, executionContext) => {
           const state = activityApi.getApi(executionContext).getState();
-          expect(state).to.equal({
+          expect(state).to.eql({
             id: 'fatal',
             type: 'bpmn:EndEvent',
             entered: undefined,
@@ -277,7 +272,7 @@ describe('EndEvent', () => {
         const event = context.getChildActivityById('fatal');
         event.once('terminate', (activityApi, executionContext) => {
           const state = activityApi.getApi(executionContext).getState();
-          expect(state).to.equal({
+          expect(state).to.eql({
             id: 'fatal',
             type: 'bpmn:EndEvent',
             entered: undefined,

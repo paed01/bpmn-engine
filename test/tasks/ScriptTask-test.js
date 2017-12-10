@@ -1,14 +1,9 @@
 'use strict';
 
-const {Engine} = require('../../lib');
-const {EventEmitter} = require('events');
-const Lab = require('lab');
 const nock = require('nock');
 const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect, fail} = Lab.assertions;
+const {Engine} = require('../../lib');
+const {EventEmitter} = require('events');
 
 describe('ScriptTask', () => {
   describe('events', () => {
@@ -31,12 +26,8 @@ describe('ScriptTask', () => {
     </definitions>`;
 
     let context;
-    beforeEach((done) => {
-      testHelpers.getContext(source, (err, result) => {
-        if (err) return done(err);
-        context = result;
-        done();
-      });
+    beforeEach(async () => {
+      context = await testHelpers.context(source);
     });
 
     it('emits start on taken inbound', (done) => {
@@ -53,7 +44,7 @@ describe('ScriptTask', () => {
       const task = context.getChildActivityById('task');
       task.activate();
       task.once('start', () => {
-        fail('No start should happen');
+        expect.fail('No start should happen');
       });
       task.once('leave', () => {
         done();
@@ -97,7 +88,7 @@ describe('ScriptTask', () => {
       listener.on('start-task', (activityApi) => {
         startCount++;
         if (startCount > 2) {
-          fail(`<${activityApi.id}> Too many starts`);
+          expect.fail(`<${activityApi.id}> Too many starts`);
         }
       });
 
@@ -117,8 +108,10 @@ describe('ScriptTask', () => {
         }
       });
       engine.once('end', (def) => {
-        expect(def.getOutput().taskInput).to.equal({
-          decision: {defaultTaken: true},
+        expect(def.getOutput().taskInput).to.eql({
+          decision: {
+            defaultTaken: true
+          },
           task: true
         });
 
@@ -159,7 +152,7 @@ describe('ScriptTask', () => {
 
         task.once('end', (activityApi, executionContext) => {
           const api = activityApi.getApi(executionContext);
-          expect(api.getOutput()).to.equal({input: 1});
+          expect(api.getOutput()).to.eql({input: 1});
           done();
         });
 
@@ -191,8 +184,7 @@ describe('ScriptTask', () => {
         const task = context.getChildActivityById('scriptTask');
 
         task.once('error', (err, activityApi) => {
-          expect(err).to.exist();
-          expect(err).to.be.an.error(Error, 'Inside');
+          expect(err).to.be.an('error').and.match(/Inside/i);
           expect(activityApi).to.include({id: 'scriptTask'});
           done();
         });
@@ -357,7 +349,7 @@ describe('ScriptTask', () => {
         task.activate();
 
         task.once('end', (activityApi, executionContext) => {
-          expect(nock.isDone()).to.be.true();
+          expect(nock.isDone()).to.be.true;
           expect(executionContext.getOutput()).to.include({
             data: 4
           });
@@ -404,7 +396,7 @@ describe('ScriptTask', () => {
       listener.on('start-scriptTask', () => {
         ++count;
         if (count > 2) {
-          fail('too many starts');
+          expect.fail('too many starts');
         }
       });
 
@@ -441,7 +433,7 @@ describe('ScriptTask', () => {
       engine.execute();
 
       engine.once('end', (exec) => {
-        expect(exec.getOutput().taskInput.scriptTask).to.equal({output: 1});
+        expect(exec.getOutput().taskInput.scriptTask).to.eql({output: 1});
         done();
       });
     });
@@ -470,7 +462,7 @@ describe('ScriptTask', () => {
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
-          expect(starts).to.equal(['task', 'task', 'task']);
+          expect(starts).to.eql(['task', 'task', 'task']);
           done();
         });
 
@@ -506,7 +498,7 @@ describe('ScriptTask', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(executionContext.getOutput()).to.equal([{name: 'Pål'}, {name: 'Franz'}, {name: 'Immanuel'}]);
+          expect(executionContext.getOutput()).to.eql([{name: 'Pål'}, {name: 'Franz'}, {name: 'Immanuel'}]);
           done();
         });
 
@@ -539,7 +531,7 @@ describe('ScriptTask', () => {
         task.on('end', (activityApi, activityExecution) => {
           if (activityExecution.isLoopContext) return;
 
-          expect(starts.includes(task.id), 'unique task id').to.be.false();
+          expect(starts.includes(task.id), 'unique task id').to.be.false;
           done();
         });
 
@@ -575,7 +567,7 @@ describe('ScriptTask', () => {
         task.on('end', (activityApi, activityExecution) => {
           if (activityExecution.isLoopContext) return;
 
-          expect(activityExecution.getOutput()).to.equal([{name: 'Pål'}, {name: 'Franz'}, {name: 'Immanuel'}]);
+          expect(activityExecution.getOutput()).to.eql([{name: 'Pål'}, {name: 'Franz'}, {name: 'Immanuel'}]);
 
           done();
         });

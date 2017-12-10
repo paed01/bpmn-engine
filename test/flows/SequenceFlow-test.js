@@ -1,32 +1,23 @@
 'use strict';
 
 const factory = require('../helpers/factory');
-const Lab = require('lab');
 const SequenceFlow = require('../../lib/mapper')('bpmn:SequenceFlow');
 const testHelper = require('../helpers/testHelpers');
 const {Engine} = require('../..');
 const {EventEmitter} = require('events');
 
-const lab = exports.lab = Lab.script();
-const {before, describe, it} = lab;
-const {expect, fail} = Lab.assertions;
-
 describe('SequenceFlow', () => {
   let context;
-  before((done) => {
-    testHelper.getContext(factory.resource('multiple-multiple-inbound.bpmn').toString(), (err, newContext) => {
-      if (err) return done(err);
-      context = newContext;
-      expect(context.sequenceFlows.length).to.be.above(0);
-      done();
-    });
+  before(async () => {
+    context = await testHelper.context(factory.resource('multiple-multiple-inbound.bpmn').toString());
+    expect(context.sequenceFlows.length).to.be.above(0);
   });
 
   describe('properties', () => {
     it('has source and target id', (done) => {
       context.sequenceFlows.forEach((f) => {
-        expect(f.targetId).to.exist();
-        expect(f.sourceId).to.exist();
+        expect(f.targetId).to.exist;
+        expect(f.sourceId).to.exist;
       });
       done();
     });
@@ -44,7 +35,7 @@ describe('SequenceFlow', () => {
   });
 
   describe('condition', () => {
-    it('throws if script type is not JavaScript', (done) => {
+    it('throws if script type is not JavaScript', () => {
       const activity = {
         element: {
           id: 'flow',
@@ -60,7 +51,6 @@ describe('SequenceFlow', () => {
       }
 
       expect(test).to.throw(Error, /Java is unsupported/i);
-      done();
     });
 
     it('condition cannot alter variables (or at least shallow)', (done) => {
@@ -89,7 +79,7 @@ describe('SequenceFlow', () => {
       const listener = new EventEmitter();
 
       listener.on('taken-flow3', (flow) => {
-        fail(`<${flow.id}> should not have been taken`);
+        expect.fail(`<${flow.id}> should not have been taken`);
       });
 
       engine.execute({
@@ -127,7 +117,7 @@ describe('SequenceFlow', () => {
       const listener = new EventEmitter();
 
       listener.on('taken-flow3withExpression', (flow) => {
-        fail(`<${flow.id}> should not have been taken`);
+        expect.fail(`<${flow.id}> should not have been taken`);
       });
 
       engine.execute({
@@ -164,7 +154,7 @@ describe('SequenceFlow', () => {
       const listener = new EventEmitter();
 
       listener.on('taken-flow3withExpression', (flow) => {
-        fail(`<${flow.id}> should not have been taken`);
+        expect.fail(`<${flow.id}> should not have been taken`);
       });
 
       engine.execute({
@@ -210,7 +200,7 @@ describe('SequenceFlow', () => {
       const listener = new EventEmitter();
 
       listener.on('taken-flow3withExpression', (flow) => {
-        fail(`<${flow.id}> should not have been taken`);
+        expect.fail(`<${flow.id}> should not have been taken`);
       });
 
       engine.execute({

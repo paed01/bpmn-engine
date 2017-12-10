@@ -1,14 +1,9 @@
 'use strict';
 
+const factory = require('../helpers/factory');
+const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
-const factory = require('../helpers/factory');
-const Lab = require('lab');
-const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect, fail} = Lab.assertions;
 
 describe('ParallelGateway', () => {
   describe('join', () => {
@@ -38,7 +33,7 @@ describe('ParallelGateway', () => {
 
       gateway.once('start', (activityApi, executionContext) => {
         const state = activityApi.getApi(executionContext).getState();
-        expect(state.pendingJoin).to.be.true();
+        expect(state.pendingJoin).to.be.true;
         expect(state.pendingInbound).to.have.length(1);
         done();
       });
@@ -52,8 +47,8 @@ describe('ParallelGateway', () => {
 
       gateway.on('end', (activityApi, executionContext) => {
         const state = activityApi.getApi(executionContext).getState();
-        expect(state.taken).to.be.true();
-        expect(state.pendingInbound).to.be.undefined();
+        expect(state.taken).to.be.true;
+        expect(state.pendingInbound).to.be.undefined;
         done();
       });
 
@@ -66,8 +61,8 @@ describe('ParallelGateway', () => {
 
       gateway.on('leave', (activityApi) => {
         const state = activityApi.getState();
-        expect(state.entered).to.be.undefined();
-        expect(state.pendingInbound).to.be.undefined();
+        expect(state.entered).to.be.undefined;
+        expect(state.pendingInbound).to.be.undefined;
         done();
       });
 
@@ -92,9 +87,7 @@ describe('ParallelGateway', () => {
 
         gateway.once('enter', (activityApi, executionContext) => {
           const state = activityApi.getApi(executionContext).getState();
-          expect(state).to.include({
-            pendingInbound: ['flow3']
-          });
+          expect(state).to.have.property('pendingInbound').and.eql(['flow3']);
           done();
         });
 
@@ -107,9 +100,7 @@ describe('ParallelGateway', () => {
 
         gateway.once('start', (activityApi, executionContext) => {
           const state = activityApi.getApi(executionContext).getState();
-          expect(state).to.include({
-            pendingInbound: ['flow3']
-          });
+          expect(state).to.have.property('pendingInbound').and.eql(['flow3']);
           done();
         });
 
@@ -123,9 +114,7 @@ describe('ParallelGateway', () => {
         gateway.once('enter', (activityApi, executionContext) => {
           const state = activityApi.getApi(executionContext).getState();
 
-          expect(state).to.include({
-            discardedInbound: ['flow2']
-          });
+          expect(state).to.have.property('discardedInbound').and.eql(['flow2']);
           done();
         });
 
@@ -139,10 +128,8 @@ describe('ParallelGateway', () => {
         gateway.once('start', (activityApi, executionContext) => {
           const state = activityApi.getApi(executionContext).getState();
 
-          expect(state).to.include({
-            pendingInbound: [],
-            discardedInbound: ['flow2']
-          });
+          expect(state).to.have.property('pendingInbound').and.eql([]);
+          expect(state).to.have.property('discardedInbound').and.eql(['flow2']);
           done();
         });
 
@@ -161,16 +148,14 @@ describe('ParallelGateway', () => {
           gatewayApi.stop();
 
           const state = gatewayApi.getState();
-          expect(state).to.include({
-            pendingInbound: ['flow3']
-          });
+          expect(state).to.have.property('pendingInbound').and.eql(['flow3']);
 
           const clonedContext = context.clone();
           const resumedGateway = clonedContext.getChildActivityById('join');
           resumedGateway.id += '-resumed';
 
           resumedGateway.once('enter', (resumedActivityApi, resumedExecutionContext) => {
-            expect(resumedActivityApi.getApi(resumedExecutionContext).getState().pendingInbound).to.equal(['flow3']);
+            expect(resumedActivityApi.getApi(resumedExecutionContext).getState().pendingInbound).to.eql(['flow3']);
             done();
           });
 
@@ -190,10 +175,7 @@ describe('ParallelGateway', () => {
           gatewayApi.stop();
 
           const state = gatewayApi.getState();
-
-          expect(state).to.include({
-            pendingInbound: ['flow3']
-          });
+          expect(state).to.have.property('pendingInbound').and.eql(['flow3']);
 
           const clonedContext = context.clone();
           const resumedGateway = clonedContext.getChildActivityById('join');
@@ -224,10 +206,8 @@ describe('ParallelGateway', () => {
           gatewayApi.stop();
 
           const state = gatewayApi.getState();
-          expect(state).to.include({
-            pendingInbound: ['flow3'],
-            discardedInbound: ['flow2']
-          });
+          expect(state).to.have.property('pendingInbound').and.eql(['flow3']);
+          expect(state).to.have.property('discardedInbound').and.eql(['flow2']);
 
           const clonedContext = context.clone();
           const resumedGateway = clonedContext.getChildActivityById('join');
@@ -258,10 +238,7 @@ describe('ParallelGateway', () => {
           gatewayApi.stop();
 
           const state = gatewayApi.getState();
-
-          expect(state).to.include({
-            pendingInbound: ['flow3']
-          });
+          expect(state).to.have.property('pendingInbound').and.eql(['flow3']);
 
           const clonedContext = context.clone();
           const resumedGateway = clonedContext.getChildActivityById('join');
@@ -272,10 +249,10 @@ describe('ParallelGateway', () => {
             done();
           });
           resumedGateway.outbound[0].once('taken', () => {
-            fail('Should not be taken');
+            expect.fail('Should not be taken');
           });
           resumedGateway.once('start', () => {
-            fail('Should not emit start');
+            expect.fail('Should not emit start');
           });
 
           const resumedGatewayApi = resumedGateway.activate(state);
@@ -326,7 +303,7 @@ describe('ParallelGateway', () => {
       const gateway = context.getChildActivityById('fork');
 
       gateway.on('end', (activity) => {
-        expect(activity.getState().pendingOutbound).to.not.exist();
+        expect(activity.getState().pendingOutbound).to.not.exist;
         done();
       });
 
@@ -349,7 +326,7 @@ describe('ParallelGateway', () => {
       });
 
       gateway.on('leave', () => {
-        expect(discardedFlows, 'discarded flows').to.equal([]);
+        expect(discardedFlows, 'discarded flows').to.eql([]);
       });
 
       gateway.activate();
@@ -393,10 +370,7 @@ describe('ParallelGateway', () => {
             gatewayApi.stop();
 
             const state = gatewayApi.getState();
-
-            expect(state).to.include({
-              pendingOutbound: ['flow3']
-            });
+            expect(state).to.have.property('pendingOutbound').and.eql(['flow3']);
 
             const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('fork');
@@ -409,7 +383,7 @@ describe('ParallelGateway', () => {
             resumedGateway.id += '-resumed';
 
             resumedGateway.once('end', () => {
-              expect(takenFlows).to.equal(['flow3']);
+              expect(takenFlows).to.eql(['flow3']);
               done();
             });
 
@@ -449,7 +423,7 @@ describe('ParallelGateway', () => {
       engine.execute((err, execution) => {
         if (err) return done(err);
 
-        expect(execution.getChildState('end').taken, 'end').to.be.true();
+        expect(execution.getChildState('end').taken, 'end').to.be.true;
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -476,8 +450,8 @@ describe('ParallelGateway', () => {
       engine.execute((err, execution) => {
         if (err) return done(err);
 
-        expect(execution.getChildState('end1').taken, 'end1').to.be.true();
-        expect(execution.getChildState('end2').taken, 'end2').to.be.true();
+        expect(execution.getChildState('end1').taken, 'end1').to.be.true;
+        expect(execution.getChildState('end2').taken, 'end2').to.be.true;
 
         testHelpers.expectNoLingeringListenersOnEngine(engine);
 
@@ -517,7 +491,7 @@ describe('ParallelGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        expect(execution.getChildState('end').taken, 'end').to.be.true();
+        expect(execution.getChildState('end').taken, 'end').to.be.true;
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -553,8 +527,8 @@ describe('ParallelGateway', () => {
         source
       });
       engine.once('end', (execution, definition) => {
-        expect(definition.getChildState('end').taken, 'end').to.be.true();
-        expect(definition.getChildState('task').taken, 'task').to.not.be.true();
+        expect(definition.getChildState('end').taken, 'end').to.be.true;
+        expect(definition.getChildState('task').taken, 'task').to.not.be.true;
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -601,7 +575,7 @@ describe('ParallelGateway', () => {
       }, (err, definition) => {
         if (err) return done(err);
 
-        expect(definition.getChildState('end').taken, 'end').to.be.true();
+        expect(definition.getChildState('end').taken, 'end').to.be.true;
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -642,7 +616,7 @@ describe('ParallelGateway', () => {
         }
       });
       engine.once('end', (execution, definition) => {
-        expect(definition.getChildState('end').taken, 'end').to.be.true();
+        expect(definition.getChildState('end').taken, 'end').to.be.true;
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -660,8 +634,8 @@ describe('ParallelGateway', () => {
       });
 
       engine.once('end', (execution, definition) => {
-        expect(definition.getChildState('scriptTask1').taken, 'scriptTask1').to.be.true();
-        expect(definition.getChildState('scriptTask2').taken, 'scriptTask2').to.be.true();
+        expect(definition.getChildState('scriptTask1').taken, 'scriptTask1').to.be.true;
+        expect(definition.getChildState('scriptTask2').taken, 'scriptTask2').to.be.true;
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });

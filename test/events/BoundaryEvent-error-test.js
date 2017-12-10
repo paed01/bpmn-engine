@@ -1,15 +1,10 @@
 'use strict';
 
 const getPropertyValue = require('../../lib/getPropertyValue');
-const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 const factory = require('../helpers/factory');
 const {Engine} = require('../..');
 const {EventEmitter} = require('events');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect, fail} = Lab.assertions;
 
 describe('Error BoundaryEvent', () => {
 
@@ -171,7 +166,7 @@ describe('Error BoundaryEvent', () => {
 
       event.once('end', (eventApi) => {
         const state = eventApi.getState();
-        expect(state.entered).to.be.undefined();
+        expect(state.entered).to.be.undefined;
         done();
       });
 
@@ -185,19 +180,19 @@ describe('Error BoundaryEvent', () => {
       const listener = new EventEmitter();
 
       listener.on('end-errorEvent', ({id}) => {
-        fail(`<${id}> should have been discarded`);
+        expect.fail(`<${id}> should have been discarded`);
       });
 
       let leaveTimerCount = 0;
       listener.on('leave-timerEvent', ({id}) => {
         leaveTimerCount++;
-        if (leaveTimerCount > 1) fail(`<${id}> should only leave once`);
+        if (leaveTimerCount > 1) expect.fail(`<${id}> should only leave once`);
       });
 
       let leaveErrorCount = 0;
       listener.on('leave-errorEvent', ({id}) => {
         leaveErrorCount++;
-        if (leaveErrorCount > 1) fail(`<${id}> should only leave once`);
+        if (leaveErrorCount > 1) expect.fail(`<${id}> should only leave once`);
       });
 
       engine.on('end', () => {
@@ -230,7 +225,7 @@ describe('Error BoundaryEvent', () => {
       const listener = new EventEmitter();
 
       listener.on('end-service', ({id}) => {
-        fail(`<${id}> should have been discarded`);
+        expect.fail(`<${id}> should have been discarded`);
       });
 
       engine.on('end', () => {
@@ -272,7 +267,7 @@ describe('Error BoundaryEvent', () => {
       });
       const listener = new EventEmitter();
       listener.once('end-errorEvent', (e) => {
-        fail(`<${e.id}> should have been discarded`);
+        expect.fail(`<${e.id}> should have been discarded`);
       });
 
       engine.execute({
@@ -299,7 +294,7 @@ describe('Error BoundaryEvent', () => {
         activityApi.cancel();
       });
       listener.once('end-errorEvent', (activityApi) => {
-        fail(`<${activityApi.id}> should have been discarded`);
+        expect.fail(`<${activityApi.id}> should have been discarded`);
       });
 
       engine.execute({
@@ -323,7 +318,7 @@ describe('Error BoundaryEvent', () => {
       });
       const listener = new EventEmitter();
       listener.once('end-service', (e) => {
-        fail(`<${e.id}> should have been discarded`);
+        expect.fail(`<${e.id}> should have been discarded`);
       });
 
       engine.execute({
@@ -375,7 +370,7 @@ describe('Error BoundaryEvent', () => {
       listener.on('start-task', (activity) => {
         startCount++;
         if (startCount > 2) {
-          fail(`<${activity.id}> Too many starts`);
+          expect.fail(`<${activity.id}> Too many starts`);
         }
       });
 
@@ -404,7 +399,7 @@ describe('Error BoundaryEvent', () => {
       engine.once('end', (execution) => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
-        expect(execution.getOutput()).to.equal({
+        expect(execution.getOutput()).to.eql({
           taskInput: {
             decision: {defaultTaken: true},
             task: ['successfully executed twice']
@@ -425,7 +420,7 @@ describe('Error BoundaryEvent', () => {
       listener.on('start-task', (activity) => {
         startCount++;
         if (startCount > 2) {
-          fail(`<${activity.id}> Too many starts`);
+          expect.fail(`<${activity.id}> Too many starts`);
         }
       });
 
@@ -455,7 +450,7 @@ describe('Error BoundaryEvent', () => {
       engine.once('end', (execution) => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
-        expect(execution.getOutput()).to.equal({
+        expect(execution.getOutput()).to.eql({
           taskInput: {
             errorEvent: {
               errorCode: 'successfully caught twice',
@@ -518,11 +513,11 @@ describe('Error BoundaryEvent', () => {
         const serviceState = getPropertyValue(state, 'definitions[0].processes.interruptedProcess.children', []).find(({id}) => id === 'service');
         const eventState = getPropertyValue(state, 'definitions[0].processes.interruptedProcess.children', []).find(({id}) => id === 'errorEvent');
 
-        expect(eventState.entered, 'entered bound error event').to.be.true();
+        expect(eventState.entered, 'entered bound error event').to.be.true;
         expect(eventState.attachedToId).to.equal('service');
         expect(eventState.errorId).to.equal('Error_0w1hljb');
 
-        expect(serviceState.entered, 'entered service').to.be.true();
+        expect(serviceState.entered, 'entered service').to.be.true;
 
         testHelpers.expectNoLingeringListenersOnEngine(engine);
 
@@ -673,7 +668,7 @@ describe('Error BoundaryEvent', () => {
       engine.on('end', () => {
         Engine.resume(state, (err, execution) => {
           if (err) return done(err);
-          expect(execution.getOutput().taskInput.errorEvent).to.equal({
+          expect(execution.getOutput().taskInput.errorEvent).to.eql({
             errorCode: 'EXP: expected',
             errorMessage: 'EXP: expected'
           });

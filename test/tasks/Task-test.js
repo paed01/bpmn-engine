@@ -1,13 +1,8 @@
 'use strict';
 
+const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
-const Lab = require('lab');
-const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect, fail} = Lab.assertions;
 
 describe('Task', () => {
   describe('behaviour', () => {
@@ -29,35 +24,32 @@ describe('Task', () => {
     });
 
     describe('activate()', () => {
-      it('returns activity api', (done) => {
+      it('returns activity api', () => {
         const task = context.getChildActivityById('task');
         const activityApi = task.activate();
-        expect(activityApi).to.exist();
-        done();
+        expect(activityApi).to.be.ok;
       });
 
-      it('activity api has the expected properties', (done) => {
+      it('activity api has the expected properties', () => {
         const task = context.getChildActivityById('task');
         const activityApi = task.activate();
         expect(activityApi).to.include({
           id: 'task',
           type: 'bpmn:Task'
         });
-        expect(activityApi.inbound).to.be.an.array().and.have.length(1);
-        expect(activityApi.outbound).to.be.an.array().and.have.length(1);
-        done();
+        expect(activityApi.inbound).to.be.an('array').and.have.length(1);
+        expect(activityApi.outbound).to.be.an('array').and.have.length(1);
       });
 
-      it('activity api has the expected functions', (done) => {
+      it('activity api has the expected functions', () => {
         const task = context.getChildActivityById('task');
         const activityApi = task.activate();
-        expect(activityApi.run, 'run').to.be.a.function();
-        expect(activityApi.deactivate, 'deactivate').to.be.a.function();
-        expect(activityApi.execute, 'execute').to.be.a.function();
-        expect(activityApi.getState, 'getState').to.be.a.function();
-        expect(activityApi.resume, 'resume').to.be.a.function();
-        expect(activityApi.getApi, 'getApi').to.be.a.function();
-        done();
+        expect(activityApi.run, 'run').to.be.a('function');
+        expect(activityApi.deactivate, 'deactivate').to.be.a('function');
+        expect(activityApi.execute, 'execute').to.be.a('function');
+        expect(activityApi.getState, 'getState').to.be.a('function');
+        expect(activityApi.resume, 'resume').to.be.a('function');
+        expect(activityApi.getApi, 'getApi').to.be.a('function');
       });
     });
 
@@ -76,7 +68,7 @@ describe('Task', () => {
         const task = context.getChildActivityById('task');
         task.activate();
         task.once('start', () => {
-          fail('No start should happen');
+          expect.fail('No start should happen');
         });
         task.once('leave', () => {
           done();
@@ -96,7 +88,7 @@ describe('Task', () => {
         });
         task.once('end', (activity) => {
           expect(activity.id).to.equal('task');
-          expect(eventNames).to.equal(['start']);
+          expect(eventNames).to.eql(['start']);
           done();
         });
 
@@ -116,7 +108,7 @@ describe('Task', () => {
           eventNames.push('end');
         });
         task.once('leave', () => {
-          expect(eventNames).to.equal(['start', 'end']);
+          expect(eventNames).to.eql(['start', 'end']);
           done();
         });
 
@@ -134,7 +126,7 @@ describe('Task', () => {
           engine.stop();
         });
         listener.once('end-task', () => {
-          fail('should have been stopped');
+          expect.fail('should have been stopped');
         });
         engine.execute({listener}, done);
       });
@@ -152,7 +144,7 @@ describe('Task', () => {
           engine.stop();
         });
         listener.once('end-task', () => {
-          fail('should have been stopped');
+          expect.fail('should have been stopped');
         });
         engine.execute({listener}, resume);
 
@@ -168,10 +160,8 @@ describe('Task', () => {
             resumedExecution.stop();
           });
           resumeListener.once('end-task', () => {
-            fail('should have been stopped');
+            expect.fail('should have been stopped');
           });
-
-
         }
       });
     });
@@ -205,7 +195,7 @@ describe('Task', () => {
       listener.on('start-task', (activity) => {
         startCount++;
         if (startCount > 2) {
-          fail(`<${activity.id}> Too many starts`);
+          expect.fail(`<${activity.id}> Too many starts`);
         }
       });
 
@@ -252,7 +242,7 @@ describe('Task', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(starts).to.be.equal(['task', 'task', 'task']);
+          expect(starts).to.be.eql(['task', 'task', 'task']);
           done();
         });
 
@@ -281,7 +271,7 @@ describe('Task', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(starts.includes(task.id), 'unique task id').to.be.false();
+          expect(starts.includes(task.id), 'unique task id').to.be.false;
           done();
         });
 

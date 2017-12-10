@@ -1,15 +1,10 @@
 'use strict';
 
 const factory = require('../helpers/factory');
-const Lab = require('lab');
 const Process = require('../../lib/process');
 const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
-
-const lab = exports.lab = Lab.script();
-const {describe, it} = lab;
-const {expect, fail} = Lab.assertions;
 
 describe('task activity', () => {
 
@@ -28,8 +23,8 @@ describe('task activity', () => {
       });
 
       engine.once('end', (execution, definitionExecution) => {
-        expect(definitionExecution.getChildState('join').taken, 'join').to.be.true();
-        expect(definitionExecution.getChildState('end').taken, 'end').to.be.true();
+        expect(definitionExecution.getChildState('join').taken, 'join').to.be.true;
+        expect(definitionExecution.getChildState('end').taken, 'end').to.be.true;
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -52,7 +47,7 @@ describe('task activity', () => {
       listener.on('end-script', (a) => {
         taskCount++;
         if (taskCount > 3) {
-          fail(`Too many runs for <${a.id}>`);
+          expect.fail(`Too many runs for <${a.id}>`);
         }
       });
 
@@ -116,7 +111,7 @@ describe('task activity', () => {
       listener.on('start-task', (a) => {
         taskCount++;
         if (taskCount > 3) {
-          fail(`Too many runs (${taskCount}) for <${a.id}>`);
+          expect.fail(`Too many runs (${taskCount}) for <${a.id}>`);
         }
       });
 
@@ -130,7 +125,7 @@ describe('task activity', () => {
 
       engine.once('end', (execution, definitionExecution) => {
         expect(taskCount, 'start tasks').to.equal(3);
-        expect(definitionExecution.getChildState('end').taken).to.be.true();
+        expect(definitionExecution.getChildState('end').taken).to.be.true;
         done();
       });
 

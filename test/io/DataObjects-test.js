@@ -1,15 +1,10 @@
 'use strict';
 
-const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
 
 describe('DataObjects', () => {
   let context;
-  beforeEach((done) => {
+  beforeEach(async () => {
     const source = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -32,15 +27,11 @@ describe('DataObjects', () => {
       </process>
     </definitions>`;
 
-    testHelpers.getContext(source, (err, result) => {
-      if (err) return done(err);
-      context = result;
-      done();
-    });
+    context = await testHelpers.context(source);
   });
 
   describe('getActivityInputValue()', () => {
-    it('returns value from environment', (done) => {
+    it('returns value from environment', () => {
       const data = context.getDataObjects();
 
       context.environment.assignVariables({
@@ -48,25 +39,21 @@ describe('DataObjects', () => {
       });
 
       expect(data.getActivityInputValue('userInput')).to.equal('test');
-
-      done();
     });
 
-    it('with undefined activity input returns undefined', (done) => {
+    it('with undefined activity input returns undefined', () => {
       const data = context.getDataObjects();
-      expect(data.getActivityInputValue('noref')).to.be.undefined();
-      done();
+      expect(data.getActivityInputValue('noref')).to.be.undefined;
     });
 
-    it('with unassociated activity input returns undefined', (done) => {
+    it('with unassociated activity input returns undefined', () => {
       const data = context.getDataObjects();
-      expect(data.getActivityInputValue('userNoRef')).to.be.undefined();
-      done();
+      expect(data.getActivityInputValue('userNoRef')).to.be.undefined;
     });
   });
 
   describe('saveActivityOutputValue()', () => {
-    it('saves value to environment', (done) => {
+    it('saves value to environment', () => {
       const data = context.getDataObjects();
       const {environment} = context;
 
@@ -76,29 +63,25 @@ describe('DataObjects', () => {
 
       data.saveActivityOutputValue('userOutput', 'save me');
       expect(environment.variables.userSays).to.equal('save me');
-      expect(environment.getOutput()).to.equal({
+      expect(environment.getOutput()).to.eql({
         userSays: 'save me'
       });
-
-      done();
     });
 
-    it('with undefined activity output ignores', (done) => {
+    it('with undefined activity output ignores', () => {
       const data = context.getDataObjects();
       const {environment} = context;
 
       data.saveActivityOutputValue('noref', 'save me');
-      expect(environment.getOutput()).to.equal({});
-      done();
+      expect(environment.getOutput()).to.eql({});
     });
 
-    it('with unassociated activity input is ignored', (done) => {
+    it('with unassociated activity input is ignored', () => {
       const data = context.getDataObjects();
       const {environment} = context;
 
       data.saveActivityOutputValue('userNoRef', 'save me');
-      expect(environment.getOutput()).to.equal({});
-      done();
+      expect(environment.getOutput()).to.eql({});
     });
   });
 });

@@ -1,13 +1,8 @@
 'use strict';
 
-const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../../.');
 const {EventEmitter} = require('events');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
 
 const moddleOptions = {
   js: require('../resources/js-bpmn-moddle.json')
@@ -40,13 +35,13 @@ describe('IoSpecification', () => {
 
     const listener = new EventEmitter();
     listener.on('wait-userTask', (activityApi) => {
-      expect(activityApi.getInput()).to.equal({});
+      expect(activityApi.getInput()).to.eql({});
       activityApi.signal({signal: 'no input'});
     });
 
     engine.execute({listener}, (err, execution) => {
       if (err) done(err);
-      expect(execution.getOutput()).to.equal({
+      expect(execution.getOutput()).to.eql({
         inputFromUser: 'no input'
       });
       done();
@@ -79,7 +74,7 @@ describe('IoSpecification', () => {
 
     const listener = new EventEmitter();
     listener.on('wait-userTask', (activityApi) => {
-      expect(activityApi.getInput()).to.equal({
+      expect(activityApi.getInput()).to.eql({
         info: 'this is how'
       });
       activityApi.signal('no input');
@@ -92,7 +87,7 @@ describe('IoSpecification', () => {
       }
     }, (err, execution) => {
       if (err) done(err);
-      expect(execution.getOutput()).to.equal({});
+      expect(execution.getOutput()).to.eql({});
       done();
     });
   });
@@ -120,7 +115,7 @@ describe('IoSpecification', () => {
 
     const listener = new EventEmitter();
     listener.on('wait-userTask', (activityApi) => {
-      expect(activityApi.getInput()).to.equal({});
+      expect(activityApi.getInput()).to.eql({});
       activityApi.signal('no input');
     });
 
@@ -131,7 +126,7 @@ describe('IoSpecification', () => {
       }
     }, (err, execution) => {
       if (err) done(err);
-      expect(execution.getOutput()).to.equal({});
+      expect(execution.getOutput()).to.eql({});
       done();
     });
   });
@@ -160,7 +155,7 @@ describe('IoSpecification', () => {
 
     const listener = new EventEmitter();
     listener.on('wait-userTask', (activityApi) => {
-      expect(activityApi.getInput()).to.equal({});
+      expect(activityApi.getInput()).to.eql({});
       activityApi.signal('no input');
     });
 
@@ -171,7 +166,7 @@ describe('IoSpecification', () => {
       }
     }, (err, execution) => {
       if (err) done(err);
-      expect(execution.getOutput()).to.equal({});
+      expect(execution.getOutput()).to.eql({});
       done();
     });
   });
@@ -198,7 +193,7 @@ describe('IoSpecification', () => {
 
     const listener = new EventEmitter();
     listener.on('wait-userTask', (activityApi) => {
-      expect(activityApi.getInput()).to.equal({});
+      expect(activityApi.getInput()).to.eql({});
       activityApi.signal('no input');
     });
 
@@ -209,7 +204,7 @@ describe('IoSpecification', () => {
       }
     }, (err, execution) => {
       if (err) done(err);
-      expect(execution.getOutput()).to.equal({});
+      expect(execution.getOutput()).to.eql({});
       done();
     });
   });
@@ -266,12 +261,8 @@ describe('IoSpecification', () => {
       </process>
     </definitions>`;
 
-    beforeEach((done) => {
-      testHelpers.getContext(source, {}, (err, result) => {
-        if (err) return done(err);
-        context = result;
-        done();
-      });
+    beforeEach(async () => {
+      context = await testHelpers.context(source);
     });
 
     it('input set is available to activity', (done) => {
@@ -283,7 +274,7 @@ describe('IoSpecification', () => {
 
       task.on('wait', (activityApi, executionContext) => {
         const api = activityApi.getApi(executionContext);
-        expect(api.getInput()).to.equal({
+        expect(api.getInput()).to.eql({
           input: 'START'
         });
         done();
@@ -302,7 +293,7 @@ describe('IoSpecification', () => {
 
       task.on('end', (activityApi, executionContext) => {
         const api = activityApi.getApi(executionContext);
-        expect(api.getOutput()).to.equal({
+        expect(api.getOutput()).to.eql({
           surname: 'von Rosen'
         });
         done();
@@ -321,7 +312,7 @@ describe('IoSpecification', () => {
 
       task.on('end', (activityApi, executionContext) => {
         const api = activityApi.getApi(executionContext);
-        expect(api.getOutput()).to.be.empty();
+        expect(api.getOutput()).to.eql({});
         done();
       });
 
@@ -340,7 +331,7 @@ describe('IoSpecification', () => {
 
       task.on('end', (activityApi, executionContext) => {
         const api = activityApi.getApi(executionContext);
-        expect(api.getOutput()).to.be.empty();
+        expect(api.getOutput()).to.eql({});
         done();
       });
 
@@ -357,7 +348,7 @@ describe('IoSpecification', () => {
         activityApi.signal({surname: 'von Rosen'});
       });
       listener.on('wait-task2', (activityApi) => {
-        expect(activityApi.getInput()).to.equal({
+        expect(activityApi.getInput()).to.eql({
           age: 42,
           surname: 'von Rosen'
         });
@@ -375,7 +366,7 @@ describe('IoSpecification', () => {
       });
 
       engine.on('end', (e, def) => {
-        expect(def.environment.getOutput()).to.equal({
+        expect(def.environment.getOutput()).to.eql({
           input: 43,
           surname: 'von Rosen',
           givenName: ['Martin', 'Pål']
@@ -439,7 +430,7 @@ describe('IoSpecification', () => {
       const activity = context.getChildActivityById('task-io-loop');
       activity.on('wait', (activityApi, activityExecution) => {
         const api = activityApi.getApi(activityExecution);
-        expect(activityExecution.getIo().isLoopContext).to.be.true();
+        expect(activityExecution.getIo().isLoopContext).to.be.true;
         api.signal();
       });
 
@@ -516,7 +507,7 @@ describe('IoSpecification', () => {
       activity.on('end', (activityApi, activityExecution) => {
         if (activityExecution.isLoopContext) {
           const {index} = activityExecution.getInput();
-          expect(activityExecution.getOutput()).to.equal({
+          expect(activityExecution.getOutput()).to.eql({
             field_givename: `Jr ${index}`,
             field_age: index
           });
@@ -525,7 +516,7 @@ describe('IoSpecification', () => {
 
       activity.on('leave', (activityApi, activityExecution) => {
         activityExecution.save();
-        expect(context.environment.getOutput()).to.equal({
+        expect(context.environment.getOutput()).to.eql({
           givenName: [ 'Jr 0', 'Jr 1', 'Jr 2' ],
           input: [ 0, 1, 2 ]
         });

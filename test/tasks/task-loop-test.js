@@ -1,13 +1,8 @@
 'use strict';
 
+const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
-const Lab = require('lab');
-const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect, fail} = Lab.assertions;
 
 const extensions = {
   js: {
@@ -202,7 +197,7 @@ describe('task loop', () => {
 
         let waitCount = 0;
         listener.on('wait-recurring', (activityApi) => {
-          if (waitCount > 5) fail(Error('Infinite loop'));
+          if (waitCount > 5) expect.fail(Error('Infinite loop'));
 
           activityApi.signal({
             input: ++waitCount
@@ -449,7 +444,7 @@ describe('task loop', () => {
 
       task.on('leave', (activityApi, executionContext) => {
         const compare = [ [0], [1], [2] ];
-        expect(executionContext.getOutput()).to.equal(compare);
+        expect(executionContext.getOutput()).to.eql(compare);
         done();
       });
 
@@ -475,7 +470,7 @@ describe('task loop', () => {
 
       task.on('end', (activityApi, activityExecution) => {
         if (activityExecution.isLoopContext) return;
-        fail('Should have been stopped');
+        expect.fail('Should have been stopped');
       });
       task.on('leave', () => {
         expect(startCount).to.equal(2);
@@ -517,9 +512,9 @@ describe('task loop', () => {
             const tte = 20 - idx * 2;
 
             if (idx < 2) {
-              expect(arg.resumed, `service resumed ${idx}`).to.be.true();
+              expect(arg.resumed, `service resumed ${idx}`).to.be.true;
             } else {
-              expect(arg.resumed, `service resumed ${idx}`).to.be.undefined();
+              expect(arg.resumed, `service resumed ${idx}`).to.be.undefined;
             }
 
             setTimeout(next, tte, null, idx);
@@ -529,7 +524,7 @@ describe('task loop', () => {
 
           resumeTask.on('start', () => {
             ++count;
-            if (count > 4) fail('Too many starts');
+            if (count > 4) expect.fail('Too many starts');
           });
           resumeTask.on('leave', () => {
             expect(count).to.equal(4);
@@ -572,7 +567,7 @@ describe('task loop', () => {
           count = 0;
           resumeTask.on('start', () => {
             ++count;
-            if (count > 2) fail('Too many starts');
+            if (count > 2) expect.fail('Too many starts');
           });
           resumeTask.on('leave', () => {
             expect(count, 'resumed').to.equal(1);
@@ -613,10 +608,10 @@ describe('task loop', () => {
           count = 0;
           resumeTask.on('start', () => {
             ++count;
-            if (count > 3) fail('Too many starts');
+            if (count > 3) expect.fail('Too many starts');
           });
           resumeTask.on('leave', (activityApi, executionContext) => {
-            expect(executionContext.getOutput()).to.equal([[0], [1], [2]]);
+            expect(executionContext.getOutput()).to.eql([[0], [1], [2]]);
             done();
           });
 
@@ -666,7 +661,7 @@ describe('task loop', () => {
 
       task.on('leave', (activityApi, executionContext) => {
         const compare = [ [0], [1], [2] ];
-        expect(executionContext.getOutput()).to.equal(compare);
+        expect(executionContext.getOutput()).to.eql(compare);
         done();
       });
       task.run();
@@ -688,7 +683,7 @@ describe('task loop', () => {
 
       task.on('end', (activityApi, activityExecution) => {
         if (activityExecution.isLoopContext) return;
-        fail('Should have been stopped');
+        expect.fail('Should have been stopped');
       });
       errorEvent.on('end', () => {
         done();
@@ -728,9 +723,9 @@ describe('task loop', () => {
             const tte = 20 - idx * 2;
 
             if (idx < 2) {
-              expect(arg.resumed, `service resumed ${idx}`).to.be.true();
+              expect(arg.resumed, `service resumed ${idx}`).to.be.true;
             } else {
-              expect(arg.resumed, `service resumed ${idx}`).to.be.undefined();
+              expect(arg.resumed, `service resumed ${idx}`).to.be.undefined;
             }
 
             setTimeout(next, tte, null, idx);
@@ -739,7 +734,7 @@ describe('task loop', () => {
 
           resumeTask.on('start', () => {
             ++count;
-            if (count > 6) fail('Too many starts');
+            if (count > 6) expect.fail('Too many starts');
           });
           resumeTask.on('leave', () => {
             expect(count).to.equal(5);
@@ -780,7 +775,7 @@ describe('task loop', () => {
           count = 0;
           task.on('start', () => {
             ++count;
-            if (count > 3) fail('Too many starts');
+            if (count > 3) expect.fail('Too many starts');
           });
           task.on('leave', () => {
             expect(count).to.equal(1);
@@ -821,10 +816,10 @@ describe('task loop', () => {
           count = 0;
           resumeTask.on('start', () => {
             ++count;
-            if (count > 3) fail('Too many starts');
+            if (count > 3) expect.fail('Too many starts');
           });
           resumeTask.on('leave', (activityApi, executionContext) => {
-            expect(executionContext.getOutput()).to.equal([[0], [1], [2]]);
+            expect(executionContext.getOutput()).to.eql([[0], [1], [2]]);
             done();
           });
 
@@ -935,7 +930,7 @@ describe('task loop', () => {
         const engine2 = Engine.resume(testHelpers.readFromDb(state), {extensions});
 
         engine2.once('end', (def) => {
-          expect(def.getOutput().taskInput.recurring).to.equal([
+          expect(def.getOutput().taskInput.recurring).to.eql([
             [7], [10], [12], [13]
           ]);
           done();

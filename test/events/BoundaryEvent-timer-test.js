@@ -1,19 +1,13 @@
 'use strict';
 
 const ck = require('chronokinesis');
-const {Engine} = require('../../lib');
-const {EventEmitter} = require('events');
 const factory = require('../helpers/factory');
 const getPropertyValue = require('../../lib/getPropertyValue');
-const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {afterEach, beforeEach, describe, it} = lab;
-const {expect, fail} = Lab.assertions;
+const {Engine} = require('../../lib');
+const {EventEmitter} = require('events');
 
 describe('BoundaryEvent with TimerEventDefinition', () => {
-
   describe('behaviour', () => {
     let context;
     beforeEach(async () => {
@@ -67,7 +61,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         done();
       });
       event.once('end', () => {
-        fail('should have been stopped');
+        expect.fail('should have been stopped');
       });
 
       task.run();
@@ -82,7 +76,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
 
       event.on('start', (activityApi, executionContext) => {
         const eventApi = activityApi.getApi(executionContext);
-        expect(eventApi.getState()).to.equal({
+        expect(eventApi.getState()).to.eql({
           id: 'timeoutEvent',
           type: 'bpmn:BoundaryEvent',
           attachedToId: 'dontWaitForMe',
@@ -130,7 +124,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
           done();
         });
         event.once('end', () => {
-          fail('should have been stopped');
+          expect.fail('should have been stopped');
         });
 
         task.run();
@@ -154,7 +148,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       const event = context.getChildActivityById('timeoutEvent');
       event.activate();
 
-      event.once('end', fail.bind(null, 'No end event should have been emitted'));
+      event.once('end', expect.fail.bind(null, 'No end event should have been emitted'));
       event.once('leave', () => {
         done();
       });
@@ -226,8 +220,8 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       event.once('end', (activityApi, executionContext) => {
         const eventApi = activityApi.getApi(executionContext);
         const state = eventApi.getState();
-        expect(state.entered).to.be.undefined();
-        expect(state.timeout).to.be.undefined();
+        expect(state.entered).to.be.undefined;
+        expect(state.timeout).to.be.undefined;
         done();
       });
 
@@ -243,7 +237,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
         activityApi.cancel();
       });
       listener.once('end-boundTimeoutEvent', (activityApi) => {
-        fail(`<${activityApi.id}> should have been discarded`);
+        expect.fail(`<${activityApi.id}> should have been discarded`);
       });
 
       engine.execute({
@@ -262,7 +256,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       });
       const listener = new EventEmitter();
       listener.once('end-userTask', (e) => {
-        fail(`<${e.id}> should have been discarded`);
+        expect.fail(`<${e.id}> should have been discarded`);
       });
 
       engine.execute({
@@ -297,7 +291,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
           listener: listener
         }, (err) => {
           if (err) return done(err);
-          expect(calledEnds).to.include(['userTask', 'boundaryEvent']);
+          expect(calledEnds).to.have.members(['userTask', 'boundaryEvent']);
           testHelpers.expectNoLingeringListenersOnEngine(engine);
           done();
         });
@@ -326,7 +320,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
           listener
         }, (err) => {
           if (err) return done(err);
-          expect(calledEnds).to.include(['userTask']);
+          expect(calledEnds).to.include('userTask');
           testHelpers.expectNoLingeringListenersOnEngine(engine);
           done();
         });
@@ -341,7 +335,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
           task.cancel();
         });
         listener.once('end-boundaryEvent', (e) => {
-          fail(`<${e.id}> should have been discarded`);
+          expect.fail(`<${e.id}> should have been discarded`);
         });
 
         engine.execute({
@@ -362,19 +356,19 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       const listener = new EventEmitter();
 
       listener.on('end-timerEvent', (e) => {
-        fail(`<${e}> should have been discarded`);
+        expect.fail(`<${e}> should have been discarded`);
       });
 
       let leaveTimerCount = 0;
       listener.on('leave-timerEvent', ({id}) => {
         leaveTimerCount++;
-        if (leaveTimerCount > 1) fail(`<${id}> should only leave once`);
+        if (leaveTimerCount > 1) expect.fail(`<${id}> should only leave once`);
       });
 
       let leaveErrorCount = 0;
       listener.on('leave-errorEvent', ({id}) => {
         leaveErrorCount++;
-        if (leaveErrorCount > 1) fail(`<${id}> should only leave once`);
+        if (leaveErrorCount > 1) expect.fail(`<${id}> should only leave once`);
       });
 
       engine.on('error', () => {
@@ -667,7 +661,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       listener.on('start-task', (activity) => {
         startCount++;
         if (startCount > 2) {
-          fail(`<${activity.id}> Too many starts`);
+          expect.fail(`<${activity.id}> Too many starts`);
         }
       });
 
@@ -696,7 +690,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       engine.once('end', (execution) => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
-        expect(execution.getOutput().taskInput).to.equal({
+        expect(execution.getOutput().taskInput).to.eql({
           decision: {defaultTaken: true},
           task: ['successfully executed twice']
         });
@@ -715,7 +709,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
       listener.on('start-task', (activity) => {
         startCount++;
         if (startCount > 2) {
-          fail(`<${activity.id}> Too many starts`);
+          expect.fail(`<${activity.id}> Too many starts`);
         }
       });
 
@@ -760,7 +754,7 @@ describe('BoundaryEvent with TimerEventDefinition', () => {
 
       const listener = new EventEmitter();
       listener.on('end-boundaryEvent', (api) => {
-        fail(`<${api.id}> should have been stopped`);
+        expect.fail(`<${api.id}> should have been stopped`);
       });
       engine.execute({
         listener

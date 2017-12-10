@@ -1,16 +1,10 @@
 'use strict';
 
-const {Engine} = require('../..');
-const Environment = require('../../lib/Environment');
-const {EventEmitter} = require('events');
-const Lab = require('lab');
 const nock = require('nock');
 const request = require('request');
 const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {after, beforeEach, describe, it} = lab;
-const {expect, fail} = Lab.assertions;
+const {Engine} = require('../..');
+const {EventEmitter} = require('events');
 
 const bupServiceFn = testHelpers.serviceFn;
 
@@ -21,7 +15,7 @@ describe('ServiceTask', () => {
   });
 
   describe('behaviour', () => {
-    it('implementation expression is recognized', (done) => {
+    it('implementation expression is recognized', async () => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -30,22 +24,19 @@ describe('ServiceTask', () => {
         </process>
       </definitions>`;
 
-      testHelpers.getContext(source, (cerr, context) => {
-        if (cerr) return done(cerr);
-        const task = context.getChildActivityById('serviceTask');
-        expect(task).to.include(['service']);
-        expect(task.service).to.exist();
-        expect(task.service.services[0]).to.include({
-          implementation: '${services.get}'
-        });
-        done();
+      const context = await testHelpers.context(source);
+
+      const task = context.getChildActivityById('serviceTask');
+      expect(task).to.have.property('service');
+      expect(task.service.services[0]).to.include({
+        implementation: '${services.get}'
       });
     });
   });
 
   describe('execute()', () => {
     let context;
-    beforeEach((done) => {
+    beforeEach(async () => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -63,22 +54,15 @@ describe('ServiceTask', () => {
           <sequenceFlow id="flow1" sourceRef="start" targetRef="serviceTask" />
         </process>
       </definitions>`;
-      testHelpers.getContext(source, (err, result) => {
-        if (err) return done(err);
-        testHelpers.serviceFn = (message, callback) => {
-          callback(null, true);
-        };
 
-        const environment = Environment({
-          services: {
-            postMessage: {
-              module: './test/helpers/testHelpers',
-              fnName: 'serviceFn'
-            }
-          }
-        });
-        context = result.getSubContext(result.id, environment);
-        done();
+      context = await testHelpers.context(source);
+      testHelpers.serviceFn = (message, callback) => {
+        callback(null, true);
+      };
+
+      context.environment.addService('postMessage', {
+        module: './test/helpers/testHelpers',
+        fnName: 'serviceFn'
       });
     });
 
@@ -95,7 +79,6 @@ describe('ServiceTask', () => {
         if (cerr) return done(cerr);
         const task = context2.getChildActivityById('serviceTask');
         task.activate();
-        expect(task.service).to.exist();
         task.once('end', () => done());
         task.run();
       });
@@ -106,7 +89,7 @@ describe('ServiceTask', () => {
       task.activate();
 
       task.once('end', (activityApi, executionContext) => {
-        expect(executionContext.getOutput()).to.equal([true]);
+        expect(executionContext.getOutput()).to.eql([true]);
         done();
       });
 
@@ -115,7 +98,9 @@ describe('ServiceTask', () => {
 
     it('is called with input context', (done) => {
       context.environment.addService('postMessage', (message, callback) => {
-        expect(message).to.include(['output', 'variables', 'services']);
+        expect(message).to.have.property('output');
+        expect(message).to.have.property('variables');
+        expect(message).to.have.property('services');
         callback();
       });
 
@@ -138,7 +123,7 @@ describe('ServiceTask', () => {
       task.activate();
 
       boundEvent.once('end', (event) => {
-        expect(event.getState().taken).to.be.true();
+        expect(event.getState().taken).to.be.true;
         done();
       });
 
@@ -156,7 +141,7 @@ describe('ServiceTask', () => {
       task.activate();
 
       timeoutEvent.once('end', (event) => {
-        expect(event.getState().taken).to.be.true();
+        expect(event.getState().taken).to.be.true;
         done();
       });
 
@@ -178,7 +163,7 @@ describe('ServiceTask', () => {
 
           const resumeContext = context.clone();
           resumeContext.environment.addService('postMessage', (arg, next) => {
-            expect(arg.resumed, 'service resumed').to.be.true();
+            expect(arg.resumed, 'service resumed').to.be.true;
             next();
           });
           const resumeTask = resumeContext.getChildActivityById('serviceTask');
@@ -220,7 +205,7 @@ describe('ServiceTask', () => {
 
         task.once('end', (activityApi, executionContext) => {
           const output = executionContext.getOutput();
-          expect(output).to.equal([1]);
+          expect(output).to.eql([1]);
           done();
         });
 
@@ -253,7 +238,7 @@ describe('ServiceTask', () => {
 
         task.once('end', (activityApi, executionContext) => {
           const output = executionContext.getOutput();
-          expect(output).to.equal(['whatever value']);
+          expect(output).to.eql(['whatever value']);
           done();
         });
 
@@ -290,7 +275,7 @@ describe('ServiceTask', () => {
       listener.on('start-task', (activity) => {
         startCount++;
         if (startCount > 2) {
-          fail(`<${activity.id}> Too many starts`);
+          expect.fail(`<${activity.id}> Too many starts`);
         }
       });
 
@@ -319,7 +304,7 @@ describe('ServiceTask', () => {
       engine.once('end', (execution) => {
         expect(startCount, 'task starts').to.equal(2);
         expect(endEventCount, 'end event').to.equal(1);
-        expect(execution.getOutput().taskInput).to.equal({
+        expect(execution.getOutput().taskInput).to.eql({
           decision: {
             defaultTaken: true
           },
@@ -356,7 +341,7 @@ describe('ServiceTask', () => {
         }
       });
       engine.once('end', (execution) => {
-        expect(execution.getOutput()).to.equal({
+        expect(execution.getOutput()).to.eql({
           result: [1]
         });
         testHelpers.expectNoLingeringListenersOnEngine(engine);
@@ -398,8 +383,8 @@ describe('ServiceTask', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(starts).to.equal(['task', 'task', 'task']);
-          expect(nock.isDone()).to.be.true();
+          expect(starts).to.eql(['task', 'task', 'task']);
+          expect(nock.isDone()).to.be.true;
           done();
         });
 
@@ -445,7 +430,7 @@ describe('ServiceTask', () => {
 
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
-          expect(executionContext.getOutput()).to.equal([
+          expect(executionContext.getOutput()).to.eql([
             [{
               statusCode: 200,
               body: {
@@ -505,7 +490,7 @@ describe('ServiceTask', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(starts.includes(task.id), 'unique task id').to.be.false();
+          expect(starts.includes(task.id), 'unique task id').to.be.false;
           done();
         });
 
@@ -530,7 +515,7 @@ describe('ServiceTask', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(executionContext.getOutput()).to.equal([
+          expect(executionContext.getOutput()).to.eql([
             [{
               statusCode: 200,
               body: {
@@ -575,7 +560,7 @@ describe('ServiceTask', () => {
         task.on('end', (activityApi, executionContext) => {
           if (executionContext.isLoopContext) return;
 
-          expect(executionContext.getOutput()).to.equal([
+          expect(executionContext.getOutput()).to.eql([
             [{
               statusCode: 200,
               body: {

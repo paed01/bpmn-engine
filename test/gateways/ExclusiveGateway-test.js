@@ -1,12 +1,8 @@
 'use strict';
 
-const {Engine} = require('../../lib');
-const Lab = require('lab');
 const testHelpers = require('../helpers/testHelpers');
-
-const lab = exports.lab = Lab.script();
-const {beforeEach, describe, it} = lab;
-const {expect} = Lab.assertions;
+const {ActivityError} = require('../../lib/errors');
+const {Engine} = require('../../lib');
 
 describe('ExclusiveGateway', () => {
   describe('behavior', () => {
@@ -63,7 +59,7 @@ describe('ExclusiveGateway', () => {
       });
 
       gateway.once('leave', () => {
-        expect(discardedFlows, 'discarded flows').to.equal(['condFlow1', 'defaultFlow']);
+        expect(discardedFlows, 'discarded flows').to.eql(['condFlow1', 'defaultFlow']);
         done();
       });
 
@@ -80,7 +76,7 @@ describe('ExclusiveGateway', () => {
           discardedFlows.push(f.id);
 
           if (gateway.outbound.length === discardedFlows.length) {
-            expect(discardedFlows, 'discarded flows').to.equal(['defaultFlow', 'condFlow1', 'condFlow2']);
+            expect(discardedFlows, 'discarded flows').to.eql(['defaultFlow', 'condFlow1', 'condFlow2']);
             done();
           }
         });
@@ -103,10 +99,8 @@ describe('ExclusiveGateway', () => {
 
             const state = api.getState();
 
-            expect(state).to.include({
-              discardedOutbound: ['condFlow1'],
-              pendingOutbound: ['defaultFlow', 'condFlow2']
-            });
+            expect(state).to.have.property('discardedOutbound').and.eql(['condFlow1']);
+            expect(state).to.have.property('pendingOutbound').and.eql(['defaultFlow', 'condFlow2']);
 
             const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('decision');
@@ -115,7 +109,7 @@ describe('ExclusiveGateway', () => {
             resumedGateway.once('enter', (resumedActivityApi, resumedActivityExecution) => {
               const resumedApi = resumedActivityApi.getApi(resumedActivityExecution);
               resumedApi.stop();
-              expect(resumedApi.getState().pendingOutbound).to.equal(['defaultFlow', 'condFlow2']);
+              expect(resumedApi.getState().pendingOutbound).to.eql(['defaultFlow', 'condFlow2']);
               done();
             });
 
@@ -148,10 +142,7 @@ describe('ExclusiveGateway', () => {
             api.stop();
 
             const state = api.getState();
-
-            expect(state).to.include({
-              pendingOutbound: ['defaultFlow', 'condFlow2']
-            });
+            expect(state).to.have.property('pendingOutbound').and.eql(['defaultFlow', 'condFlow2']);
 
             const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('decision');
@@ -159,10 +150,10 @@ describe('ExclusiveGateway', () => {
 
             resumedGateway.once('leave', () => {
               const defaultFlow = resumedGateway.outbound.find((f) => f.isDefault);
-              expect(defaultFlow.discarded, defaultFlow.id).to.be.true();
-              expect(defaultFlow.taken, defaultFlow.id).to.be.undefined();
+              expect(defaultFlow.discarded, defaultFlow.id).to.be.true;
+              expect(defaultFlow.taken, defaultFlow.id).to.be.undefined;
 
-              expect(flowSequence).to.equal(['taken-condFlow1', 'discarded-condFlow2', 'discarded-defaultFlow']);
+              expect(flowSequence).to.eql(['taken-condFlow1', 'discarded-condFlow2', 'discarded-defaultFlow']);
 
               done();
             });
@@ -185,10 +176,8 @@ describe('ExclusiveGateway', () => {
 
             const state = api.getState();
 
-            expect(state).to.include({
-              discardedOutbound: ['condFlow1'],
-              pendingOutbound: ['defaultFlow', 'condFlow2']
-            });
+            expect(state).to.have.property('discardedOutbound').and.eql(['condFlow1']);
+            expect(state).to.have.property('pendingOutbound').and.eql(['defaultFlow', 'condFlow2']);
 
             const clonedContext = context.clone();
             const resumedGateway = clonedContext.getChildActivityById('decision');
@@ -196,7 +185,7 @@ describe('ExclusiveGateway', () => {
 
             resumedGateway.once('end', (resumedActivityApi) => {
               const defaultFlow = resumedActivityApi.outbound.find((f) => f.isDefault);
-              expect(defaultFlow.taken, defaultFlow.id).to.be.true();
+              expect(defaultFlow.taken, defaultFlow.id).to.be.true;
               done();
             });
 
@@ -242,17 +231,15 @@ describe('ExclusiveGateway', () => {
 
               const state = activity.getState();
 
-              expect(state).to.include({
-                discardedOutbound: ['flow2'],
-                pendingOutbound: ['flow3']
-              });
+              expect(state).to.have.property('discardedOutbound').and.eql(['flow2']);
+              expect(state).to.have.property('pendingOutbound').and.eql(['flow3']);
 
               const clonedContext = testContext.clone();
               const resumedGateway = clonedContext.getChildActivityById('decision');
               resumedGateway.id += '-resumed';
 
               resumedGateway.once('error', (err) => {
-                expect(err).to.be.an.error(/no conditional flow/i);
+                expect(err).to.be.instanceOf(ActivityError).and.match(/no conditional flow/i);
                 done();
               });
 
@@ -326,8 +313,8 @@ describe('ExclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        expect(execution.getChildState('end1').taken).to.be.true();
-        expect(execution.getChildState('end2').taken, 'end2').to.be.undefined();
+        expect(execution.getChildState('end1').taken).to.be.true;
+        expect(execution.getChildState('end2').taken, 'end2').to.be.undefined;
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -366,8 +353,8 @@ describe('ExclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        expect(execution.getChildState('end1').taken, 'end1').to.be.undefined();
-        expect(execution.getChildState('end2').taken, 'end2').to.be.true();
+        expect(execution.getChildState('end1').taken, 'end1').to.be.undefined;
+        expect(execution.getChildState('end2').taken, 'end2').to.be.true;
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -402,8 +389,8 @@ describe('ExclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        expect(execution.getChildState('end1').taken, 'end1').to.be.true();
-        expect(execution.getChildState('end2').taken, 'end2').to.be.undefined();
+        expect(execution.getChildState('end1').taken, 'end1').to.be.true;
+        expect(execution.getChildState('end2').taken, 'end2').to.be.undefined;
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -438,8 +425,8 @@ describe('ExclusiveGateway', () => {
       }, (err, execution) => {
         if (err) return done(err);
 
-        expect(execution.getChildState('end1').taken, 'end1').to.be.undefined();
-        expect(execution.getChildState('end2').taken, 'end2').to.be.true();
+        expect(execution.getChildState('end1').taken, 'end1').to.be.undefined;
+        expect(execution.getChildState('end2').taken, 'end2').to.be.true;
         testHelpers.expectNoLingeringListenersOnEngine(engine);
         done();
       });
@@ -472,7 +459,7 @@ describe('ExclusiveGateway', () => {
         source
       });
       engine.once('error', (err) => {
-        expect(err).to.be.an.error(/no conditional flow/i);
+        expect(err).to.be.instanceOf(ActivityError).and.match(/no conditional flow/i);
         expect(err.source).to.include({
           id: 'decision'
         });
@@ -514,7 +501,7 @@ describe('ExclusiveGateway', () => {
         source
       });
       engine.once('error', (err) => {
-        expect(err).to.be.an.error(/no conditional flow/i);
+        expect(err).to.be.instanceOf(ActivityError).and.match(/no conditional flow/i);
         expect(err.source).to.include({
           id: 'decision'
         });
