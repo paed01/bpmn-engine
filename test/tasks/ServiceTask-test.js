@@ -32,6 +32,28 @@ describe('ServiceTask', () => {
         implementation: '${services.get}'
       });
     });
+
+    it('no service on execution throws', async () => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true" implementation="">
+          <serviceTask id="task" name="Get" />
+        </process>
+      </definitions>`;
+
+      const context = await testHelpers.context(source, {disableDummyService: true});
+      const task = context.getChildActivityById('task');
+      const api = task.activate();
+
+      try {
+        api.run();
+      } catch (e) {
+        var err = e; // eslint-disable-line
+      }
+
+      expect(err).to.be.an('error').and.match(/no service definition found/);
+    });
   });
 
   describe('execute()', () => {

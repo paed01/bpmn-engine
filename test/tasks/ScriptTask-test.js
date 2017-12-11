@@ -5,7 +5,71 @@ const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../../lib');
 const {EventEmitter} = require('events');
 
+const extensions = {
+  js: require('../resources/JsExtension')
+};
+
 describe('ScriptTask', () => {
+  describe('behavior', () => {
+    it('io is passed as context to script', async () => {
+      const source = `
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
+        <process id="theProcess" isExecutable="true">
+          <scriptTask id="task" scriptFormat="Javascript" js:result="scriptResult">
+            <script>
+              <![CDATA[
+                next(null, {output: variables.input});
+              ]]>
+            </script>
+          </scriptTask>
+        </process>
+      </definitions>`;
+      const context = await testHelpers.context(source, {extensions});
+      context.environment.set('input', 42);
+      const task = context.getChildActivityById('task');
+
+      const wait = new Promise((resolve) => {
+        task.once('end', (activityApi, activityExecution) => {
+          return resolve({activityApi, activityExecution});
+        });
+      });
+
+      task.activate();
+      task.run();
+
+      const {activityExecution} = await wait;
+
+      expect(activityExecution.getOutput()).to.eql({output: 42});
+    });
+
+    it('activate() emits error if script format is not javascript', async () => {
+      const source = `
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <scriptTask id="task" scriptFormat="coffeescript">
+            <script>
+              <![CDATA[
+                if true then next() else next(new Error("tea"))
+              ]]>
+            </script>
+          </scriptTask>
+        </process>
+      </definitions>`;
+
+      const context = await testHelpers.context(source);
+      const task = context.getChildActivityById('task');
+
+      try {
+        task.activate();
+      } catch (e) {
+        var err = e; // eslint-disable-line
+      }
+
+      expect(err).to.be.an('error').and.match(/unsupported/);
+    });
+  });
+
   describe('events', () => {
     const source = `
     <?xml version="1.0" encoding="UTF-8"?>

@@ -415,7 +415,7 @@ describe('IoSpecification', () => {
 
     let context;
     beforeEach(async () => {
-      context = await testHelpers.context(source, moddleOptions);
+      context = await testHelpers.context(source, {moddleOptions});
     });
 
     it('io is loop aware', (done) => {
