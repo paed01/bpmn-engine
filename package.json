@@ -18,8 +18,9 @@
     "lib/"
   ],
   "scripts": {
-    "test": "make test-cov-lcov",
-    "wintest": "node_modules/.bin/lab -v",
+    "test": "nyc mocha && eslint . --cache",
+    "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "wintest": "node_modules/.bin/mocha",
     "toc": "node scripts/generate-api-toc ./API.md,./docs/Examples.md,./docs/Definition.md,./docs/ServiceTask.md,./docs/Activity.md,./docs/Extensions.md"
   },
   "keywords": [

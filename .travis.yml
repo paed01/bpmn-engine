@@ -4,5 +4,4 @@ node_js:
 - '8'
 - '9'
 sudo: false
-after_success:
-- cat coverage.lcov | ./node_modules/.bin/coveralls --verbose
+after_success: npm run coverage
