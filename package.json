@@ -39,6 +39,7 @@
     "eslint": "^4.13.0",
     "markdown-toc": "^1.2.0",
     "mocha": "^4.0.1",
+    "mocha-cakes-2": "^2.1.0",
     "nock": "^9.1.0",
     "nyc": "^11.3.0",
     "request": "^2.83.0",

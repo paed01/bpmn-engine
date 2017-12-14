@@ -130,6 +130,30 @@ describe('Environment', () => {
         module: 'request'
       });
     });
+
+    it('returns assigned variables', () => {
+      const environment = Environment();
+      environment.set('input', 3);
+
+      const state = environment.getState();
+      expect(state.variables).to.have.property('input', 3);
+    });
+
+    it('returns added service', () => {
+      const environment = Environment();
+      const service = {
+        type: 'require',
+        module: 'request',
+        fnName: 'post'
+      };
+
+      environment.addService('post', service);
+      expect(environment.resolveExpression('${services.post}')).to.be.a('function');
+
+      const state = environment.getState();
+      expect(state.services).to.have.property('post');
+      expect(state.services.post).to.eql(service);
+    });
   });
 
   describe('resume()', () => {

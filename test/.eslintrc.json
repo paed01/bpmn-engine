@@ -8,6 +8,13 @@
     "prefer-arrow-callback": 1
   },
   "globals": {
-    "expect": false
+    "expect": false,
+    "Feature": false,
+    "Scenario": false,
+    "Given": false,
+    "When": false,
+    "Then": false,
+    "And": false,
+    "But": false
   }
 }
