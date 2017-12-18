@@ -18,7 +18,7 @@ describe('SubProcess', () => {
       const subProcess = context.getChildActivityById('subProcess');
       subProcess.activate();
 
-      subProcess.once('start', () => {
+      subProcess.on('start', () => {
         done();
       });
 
