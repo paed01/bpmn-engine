@@ -219,6 +219,48 @@ describe('SequenceFlow', () => {
       });
     });
 
+    it('stops if flow lacks id', async () => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="testProcess" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess1" isExecutable="true">
+          <startEvent id="start" />
+          <task id="task" />
+          <endEvent id="end" />
+          <sequenceFlow sourceRef="start" targetRef="task" />
+          <sequenceFlow sourceRef="task" targetRef="end" />
+        </process>
+      </definitions>`;
+
+      const engine = new Engine({
+        name: 'flow without id',
+        source
+      });
+      const listener = new EventEmitter();
+
+      let count = 0;
+      listener.on('start-task', (api) => {
+        count++;
+        if (count > 2) {
+          expect.fail(`<${api.id}> should only start once`);
+        }
+      });
+
+      const execution = engine.execute({
+        listener,
+        services: {
+          isBelow: (input, test) => {
+            return input < Number(test);
+          }
+        },
+        variables: {
+          input: 2
+        }
+      });
+
+      await execution.waitFor('end');
+    });
+
   });
 });
 

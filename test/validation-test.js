@@ -254,7 +254,7 @@ describe('validation', () => {
       });
     });
 
-    it('without flows is NOT supported', (done) => {
+    it('without flows is supported', (done) => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -267,7 +267,7 @@ describe('validation', () => {
         if (err) return done(err);
 
         const warnings = validation.validateModdleContext(context);
-        expect(warnings[0]).to.be.an('error').and.match(/has no outgoing flow/);
+        expect(warnings).to.have.length(0);
         done();
       });
     });

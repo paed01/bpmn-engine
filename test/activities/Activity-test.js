@@ -213,4 +213,29 @@ describe('Activity', () => {
       task.run();
     });
   });
+
+  describe('flow without ids', () => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions id="testProcess" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theProcess1" isExecutable="true">
+        <startEvent id="start" />
+        <task id="task" />
+        <endEvent id="end" />
+        <sequenceFlow sourceRef="start" targetRef="task" />
+        <sequenceFlow sourceRef="task" targetRef="end" />
+      </process>
+    </definitions>`;
+
+    let testContext;
+    beforeEach(async () => {
+      testContext = await testHelpers.context(source);
+    });
+
+    it('assigns correct flow', () => {
+      const task = testContext.getChildActivityById('task');
+      expect(task.inbound.length, 'inbound').to.equal(1);
+      expect(task.outbound.length, 'outbound').to.equal(1);
+    });
+  });
 });

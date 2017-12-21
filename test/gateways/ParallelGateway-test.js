@@ -128,7 +128,7 @@ describe('ParallelGateway', () => {
         gateway.once('start', (activityApi, executionContext) => {
           const state = activityApi.getApi(executionContext).getState();
 
-          expect(state).to.have.property('pendingInbound').and.eql([]);
+          expect(state).to.not.have.property('pendingInbound');
           expect(state).to.have.property('discardedInbound').and.eql(['flow2']);
           done();
         });
@@ -148,6 +148,7 @@ describe('ParallelGateway', () => {
           gatewayApi.stop();
 
           const state = gatewayApi.getState();
+
           expect(state).to.have.property('pendingInbound').and.eql(['flow3']);
 
           const clonedContext = context.clone();
@@ -238,12 +239,12 @@ describe('ParallelGateway', () => {
           gatewayApi.stop();
 
           const state = gatewayApi.getState();
+
+          expect(state).to.have.property('discardedInbound').and.eql(['flow2']);
           expect(state).to.have.property('pendingInbound').and.eql(['flow3']);
 
           const clonedContext = context.clone();
           const resumedGateway = clonedContext.getChildActivityById('join');
-
-          resumedGateway.id += '-resumed';
 
           resumedGateway.outbound[0].once('discarded', () => {
             done();
@@ -257,6 +258,7 @@ describe('ParallelGateway', () => {
 
           const resumedGatewayApi = resumedGateway.activate(state);
           resumedGatewayApi.resume();
+
           resumedGateway.inbound[1].discard();
         });
 
