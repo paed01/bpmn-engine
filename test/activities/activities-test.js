@@ -1,6 +1,7 @@
 'use strict';
 
 const BpmnModdle = require('bpmn-moddle');
+const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../..');
 const {EventEmitter} = require('events');
 
@@ -90,6 +91,7 @@ describe('activities', () => {
         await execution.waitFor('end');
 
         expect(apiEvent).to.eql(['enter', 'start', 'end', 'leave']);
+        testHelpers.expectNoLingeringListenersOnEngine(engine);
       });
 
       function assertApi(activityApi, compareState) {
