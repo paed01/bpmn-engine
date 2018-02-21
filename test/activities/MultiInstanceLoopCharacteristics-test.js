@@ -6,7 +6,7 @@ const Lab = require('lab');
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
 
-const MultiInstanceLoopCharacteristics = require('../../lib/mapper')('bpmn:MultiInstanceLoopCharacteristics');
+const MultiInstanceLoopCharacteristics = require('../../lib/mapper').fromType('bpmn:MultiInstanceLoopCharacteristics');
 
 lab.experiment('MultiInstanceLoopCharacteristics', () => {
 
