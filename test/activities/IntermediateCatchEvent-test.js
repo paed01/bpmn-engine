@@ -9,8 +9,8 @@ const Bpmn = require('../..');
 const expect = Code.expect;
 
 const mapper = require('../../lib/mapper');
-const TimerEvent = mapper('bpmn:TimerEventDefinition');
-const MessageEvent = mapper('bpmn:MessageEventDefinition');
+const TimerEvent = mapper.fromType('bpmn:TimerEventDefinition');
+const MessageEvent = mapper.fromType('bpmn:MessageEventDefinition');
 
 lab.experiment('IntermediateCatchEvent', () => {
   lab.test('TimerEvent', (done) => {

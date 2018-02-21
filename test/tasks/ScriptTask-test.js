@@ -21,7 +21,7 @@ lab.experiment('ScriptTask', () => {
       };
 
       function test() {
-        new (mapper(activity.$type))(activity); // eslint-disable-line no-new
+        new (mapper.fromType(activity.$type))(activity); // eslint-disable-line no-new
       }
 
       expect(test).to.throw(Error, /Java is unsupported/i);
@@ -34,7 +34,7 @@ lab.experiment('ScriptTask', () => {
       };
 
       function test() {
-        new (mapper(activity.$type))(activity); // eslint-disable-line no-new
+        new (mapper.fromType(activity.$type))(activity); // eslint-disable-line no-new
       }
 
       expect(test).to.throw(Error, /undefined is unsupported/i);
