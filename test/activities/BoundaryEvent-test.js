@@ -9,8 +9,8 @@ const testHelpers = require('../helpers/testHelpers');
 
 const lab = exports.lab = Lab.script();
 const Bpmn = require('../..');
-const TimerEvent = require('../../lib/mapper')('bpmn:TimerEventDefinition');
-const ErrorEvent = require('../../lib/mapper')('bpmn:ErrorEventDefinition');
+const TimerEvent = require('../../lib/mapper').fromType('bpmn:TimerEventDefinition');
+const ErrorEvent = require('../../lib/mapper').fromType('bpmn:ErrorEventDefinition');
 
 lab.experiment('BoundaryEvent', () => {
   lab.test('supports TimerEvent type', (done) => {

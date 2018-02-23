@@ -16,7 +16,7 @@ const BaseProcess = require('../../lib/mapper').Process;
 const bpmnModdle = new BpmnModdle({
   camunda: require('camunda-bpmn-moddle/resources/camunda')
 });
-const ServiceTask = mapper('bpmn:ServiceTask');
+const ServiceTask = mapper.fromType('bpmn:ServiceTask');
 
 const bupServiceFn = testHelpers.serviceFn;
 

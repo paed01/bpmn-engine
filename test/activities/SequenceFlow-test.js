@@ -6,7 +6,7 @@ const EventEmitter = require('events').EventEmitter;
 const factory = require('../helpers/factory');
 const Lab = require('lab');
 const testHelper = require('../helpers/testHelpers');
-const SequenceFlow = require('../../lib/mapper')('bpmn:SequenceFlow');
+const SequenceFlow = require('../../lib/mapper').fromType('bpmn:SequenceFlow');
 
 const lab = exports.lab = Lab.script();
 const expect = Code.expect;
