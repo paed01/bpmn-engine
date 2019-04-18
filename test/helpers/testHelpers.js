@@ -1,6 +1,6 @@
 'use strict';
 
-const BpmnModdle = require('bpmn-moddle');
+const BpmnModdle = require('../../dist/bpmn-moddle');
 const contextHelper = require('../../lib/context-helper');
 const debug = require('debug')('bpmn-engine:test');
 const Environment = require('../../lib/Environment');

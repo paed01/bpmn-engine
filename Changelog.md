@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 6.0.0
+
+## Breaking changes
+- Node version >= 10 is supported
+
 # 5.0.0
 
 ## Breaking changes

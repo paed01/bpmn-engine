@@ -1,25 +1,28 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "5.0.0-rc2",
-  "author": "Pål Edman <pal.edman@gmail.com> (https://github.com/paed01)",
-  "main": "lib/index.js",
+  "version": "6.0.0-rc1",
+  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/paed01/bpmn-engine"
   },
+  "author": {
+    "name": "Pål Edman",
+    "url": "https://github.com/paed01"
+  },
   "engines": {
-    "node": ">=8.9"
+    "node": ">=10"
   },
   "files": [
-    "API.md",
-    "LICENSE",
-    "README.md",
-    "lib/"
+    "lib/",
+    "index.js"
   ],
   "scripts": {
-    "test": "nyc mocha && eslint . --cache",
-    "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "test": "mocha -R dot",
+    "posttest": "eslint . --cache",
+    "prepare": "npm run bundle",
+    "bundle": "rollup -c rollup.config.js",
     "wintest": "node_modules/.bin/mocha",
     "toc": "node scripts/generate-api-toc ./API.md,./docs/Examples.md,./docs/Definition.md,./docs/ServiceTask.md,./docs/Activity.md,./docs/Extensions.md"
   },
@@ -31,30 +34,41 @@
     "bpmn",
     "bpmn 2"
   ],
-  "devDependencies": {
-    "camunda-bpmn-moddle": "^0.13.0",
-    "chai": "^4.1.2",
-    "chronokinesis": "^1.3.2",
-    "coveralls": "^3.0.0",
-    "eslint": "^4.13.1",
-    "markdown-toc": "^1.2.0",
-    "mocha": "^4.0.1",
-    "mocha-cakes-2": "^2.1.0",
-    "nock": "^9.1.4",
-    "nyc": "^11.4.1",
-    "request": "^2.83.0",
-    "unnecessary": "^1.3.3"
-  },
-  "dependencies": {
-    "bpmn-moddle": "^2.0.1",
-    "debug": "^3.1.0",
-    "iso8601-duration": "^1.1.1"
-  },
   "license": "BSD-3-Clause",
   "licenses": [
     {
       "type": "BSD-3-Clause",
       "url": "https://github.com/paed01/bpmn-node/master/LICENSE"
     }
-  ]
+  ],
+  "devDependencies": {
+    "@babel/cli": "^7.4.3",
+    "@babel/core": "^7.4.3",
+    "@babel/preset-env": "^7.4.3",
+    "bpmn-moddle": "^5.1.6",
+    "camunda-bpmn-moddle": "^0.13.0",
+    "chai": "^4.1.2",
+    "chronokinesis": "^2.0.1",
+    "coveralls": "^3.0.0",
+    "eslint": "^5.16.0",
+    "markdown-toc": "^1.2.0",
+    "mocha": "^6.1.3",
+    "mocha-cakes-2": "^3.3.0",
+    "nock": "^9.1.4",
+    "nyc": "^11.4.1",
+    "request": "^2.83.0",
+    "rollup": "^1.10.0",
+    "rollup-plugin-babel": "^4.3.2",
+    "rollup-plugin-commonjs": "^9.3.4",
+    "rollup-plugin-json": "^4.0.0",
+    "rollup-plugin-license": "^0.8.1",
+    "rollup-plugin-node-resolve": "^4.2.3",
+    "unnecessary": "^1.3.3"
+  },
+  "dependencies": {
+    "bpmn-elements": "0.0.5",
+    "debug": "^4.1.1",
+    "moddle-context-serializer": "^0.2.0",
+    "smqp": "^1.4.0"
+  }
 }

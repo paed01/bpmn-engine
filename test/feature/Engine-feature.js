@@ -3,10 +3,8 @@
 const {Engine} = require('../..');
 const {EventEmitter} = require('events');
 
-
 Feature('Engine', () => {
-  Scenario('execution is stopped and resurrected', () => {
-
+  Scenario('execution is stopped and recovered', () => {
     let engine, listener, source;
     Given('a bpmn source with one user task', () => {
       source = `
@@ -31,8 +29,8 @@ Feature('Engine', () => {
     let waiting;
     And('listening once for wait', () => {
       waiting = new Promise((resolve) => {
-        listener.once('wait-task', (...args) => {
-          resolve(...args);
+        listener.once('wait', (api) => {
+          resolve(api);
         });
       });
     });
@@ -47,33 +45,56 @@ Feature('Engine', () => {
 
     let state;
     Then('the executing source is stopped', () => {
-      state = engine.getState();
       engine.stop();
-      expect(state.state).to.equal('running');
+      state = engine.getState();
+
+      expect(state.state).to.equal('idle');
       expect(state.definitions).to.have.length(1);
+      expect(state.definitions[0].source).to.be.ok;
     });
 
-    let resurrected;
-    When('engine is resurrected', () => {
-      resurrected = Engine.resurrect(state, {listener});
+    let recovered;
+    When('engine is recovered', () => {
+      recovered = Engine({
+        name: 'Recovered engine',
+      }).recover(state);
     });
 
     Then('engine state is still idle', () => {
-      expect(resurrected.getState()).to.have.property('name', 'Engine feature');
-      expect(resurrected.getState()).to.have.property('state', 'idle');
+      expect(recovered.getState()).to.have.property('state', 'idle');
     });
 
     let definition;
     But('definitions has a resumed state', () => {
-      expect(resurrected.definitions.length).to.equal(1);
+      expect(recovered.definitions.length).to.equal(1);
 
-      [definition] = resurrected.definitions;
-      expect(definition.getChildActivityById('task')).to.be.ok;
+      [definition] = recovered.definitions;
+      expect(definition.getActivityById('task')).to.be.ok;
     });
 
-    And('user task is in a waiting state', () => {
-      console.log(definition.getPendingActivities())
-      expect(definition.getChildActivityById('task').getState()).to.have.property('waiting', true);
+    And('user task is in executing state', () => {
+      expect(definition.getActivityById('task')).to.have.property('status', 'executing');
+    });
+
+    And('listening once for wait', () => {
+      waiting = new Promise((resolve) => {
+        listener.once('wait', (api) => {
+          resolve(api);
+        });
+      });
+    });
+
+    When('resumed', () => {
+      recovered.resume({listener});
+    });
+
+    And('task is signaled', async () => {
+      const api = await waiting;
+      api.signal();
+    });
+
+    Then('execution completes', async () => {
+      expect(recovered).to.have.property('state', 'idle');
     });
   });
 });
