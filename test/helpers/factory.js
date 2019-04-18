@@ -18,9 +18,15 @@ const invalidProcess = `
   </process>
 </definitions>`;
 
-const pub = {};
+module.exports = {
+  valid,
+  invalid,
+  userTask,
+  multipleInbound,
+  resource,
+};
 
-pub.valid = (definitionId) => {
+function valid(definitionId) {
   if (!definitionId) definitionId = 'valid';
   return `
   <?xml version="1.0" encoding="UTF-8"?>
@@ -37,13 +43,13 @@ pub.valid = (definitionId) => {
       </sequenceFlow>
     </process>
   </definitions>`;
-};
+}
 
-pub.invalid = () => {
+function invalid() {
   return invalidProcess;
-};
+}
 
-pub.userTask = (userTaskId, definitionId) => {
+function userTask(userTaskId, definitionId) {
   if (!userTaskId) userTaskId = 'userTask';
   return `
   <?xml version="1.0" encoding="UTF-8"?>
@@ -62,7 +68,7 @@ pub.userTask = (userTaskId, definitionId) => {
           </inputSet>
           <dataOutput id="userInput" name="input" />
         </ioSpecification>
-        <dataInputAssociation id="associatedInput" sourceRef="input_1" targetRef="globalInputRef" />
+        <dataInputAssociation id="associatedInput" sourceRef="globalInputRef" targetRef="input_1" />
         <dataOutputAssociation id="associatedOutput" sourceRef="userInput" targetRef="inputFromUserRef" />
       </userTask>
       <endEvent id="theEnd" />
@@ -70,9 +76,9 @@ pub.userTask = (userTaskId, definitionId) => {
       <sequenceFlow id="flow2" sourceRef="${userTaskId}" targetRef="theEnd" />
     </process>
   </definitions>`;
-};
+}
 
-pub.multipleInbound = () => {
+function multipleInbound() {
   return `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -88,10 +94,8 @@ pub.multipleInbound = () => {
       <sequenceFlow id="endFlow" sourceRef="task" targetRef="end" />
     </process>
   </definitions>`;
-};
+}
 
-pub.resource = function(name) {
+function resource(name) {
   return fs.readFileSync(path.join(__dirname, '..', 'resources', name));
-};
-
-module.exports = pub;
+}

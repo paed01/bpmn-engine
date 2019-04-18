@@ -65,7 +65,7 @@
     <bpmn:scriptTask id="scriptTask2" name="Only run me once" scriptFormat="JavaScript">
       <bpmn:incoming>SequenceFlow_1yini0t</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_14x0br6</bpmn:outgoing>
-      <bpmn:script><![CDATA[this.variables.stopLoop = true;
+      <bpmn:script><![CDATA[this.environment.variables.stopLoop = true;
 next();]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:inclusiveGateway id="InclusiveGateway_0mwa6t0" default="SequenceFlow_02w8hmj">
@@ -90,7 +90,7 @@ next();]]></bpmn:script>
     <bpmn:sequenceFlow id="SequenceFlow_1so85gh" sourceRef="InclusiveGateway_0mwa6t0" targetRef="Task_1he29fg" />
     <bpmn:sequenceFlow id="SequenceFlow_1of6o8g" sourceRef="InclusiveGateway_0mwa6t0" targetRef="Task_0d5f6aq" />
     <bpmn:sequenceFlow id="SequenceFlow_1yini0t" name="Enter loop" sourceRef="ExclusiveGateway_0s9m5h8" targetRef="scriptTask2">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">!this.variables.stopLoop</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">!this.environment.variables.stopLoop</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_0lz4avh" sourceRef="ExclusiveGateway_0s9m5h8" targetRef="theEnd" />
   </bpmn:process>
