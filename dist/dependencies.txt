@@ -22,19 +22,6 @@ Author: bpmn.io <http://bpmn.io>
 
 ---
 
-Name: moddle-xml
-Version: 7.4.0
-License: MIT
-Private: false
-Description: XML import/export for documents described with moddle
-Repository: git+https://github.com/bpmn-io/moddle-xml.git
-Homepage: https://github.com/bpmn-io/moddle-xml#readme
-Author: Nico Rehwaldt (https://github.com/Nikku)
-Contributors:
-  bpmn.io contributors (https://github.com/bpmn-io)
-
----
-
 Name: moddle
 Version: 4.1.0
 License: MIT
@@ -42,6 +29,19 @@ Private: false
 Description: A library for importing meta-model based file formats into JS
 Repository: git+https://github.com/bpmn-io/moddle.git
 Homepage: https://github.com/bpmn-io/moddle#readme
+Author: Nico Rehwaldt (https://github.com/Nikku)
+Contributors:
+  bpmn.io contributors (https://github.com/bpmn-io)
+
+---
+
+Name: moddle-xml
+Version: 7.4.0
+License: MIT
+Private: false
+Description: XML import/export for documents described with moddle
+Repository: git+https://github.com/bpmn-io/moddle-xml.git
+Homepage: https://github.com/bpmn-io/moddle-xml#readme
 Author: Nico Rehwaldt (https://github.com/Nikku)
 Contributors:
   bpmn.io contributors (https://github.com/bpmn-io)

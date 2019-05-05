@@ -4,10 +4,9 @@ const BpmnModdle = require('./dist/bpmn-moddle');
 const DebugLogger = require('./lib/Logger');
 const elements = require('bpmn-elements');
 const JavaScripts = require('./lib/JavaScripts');
-const {version: engineVersion} = require('./package.json');
 const ProcessOutputDataObject = require('./lib/extensions/bpmn/ProcessOutputDataObject');
-
 const {default: serializer, deserialize, TypeResolver} = require('moddle-context-serializer');
+const {version: engineVersion} = require('./package.json');
 const {EventEmitter} = require('events');
 
 module.exports = {Engine};
@@ -75,7 +74,6 @@ function Engine(options = {}) {
   async function execute(executeOptions = {}) {
     const runSources = await Promise.all(pendingSources);
     definitions = runSources.map((source) => loadDefinition(source, executeOptions));
-
     setup(executeOptions);
 
     definitions.forEach((definition) => definition.run());
@@ -89,7 +87,6 @@ function Engine(options = {}) {
   function recover(savedState) {
     if (name) name = savedState.name;
     if (!savedState.definitions) return engine;
-
 
     definitions = savedState.definitions.map((dState) => {
       const source = deserialize(JSON.parse(dState.source), typeResolver);
@@ -155,9 +152,6 @@ function Engine(options = {}) {
   }
 
   function onDefinitionMessage(routingKey, message, owner) {
-
-    console.log('---->', routingKey)
-
     switch (routingKey) {
       case 'definition.enter':
         state = 'running';
