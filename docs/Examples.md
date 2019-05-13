@@ -51,7 +51,7 @@ const engine = Engine({
 
 engine.execute({
   variables: {
-    id: id
+    id
   }
 }, (err, execution) => {
   console.log('Execution completed with id', execution);

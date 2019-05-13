@@ -22,44 +22,7 @@ BPMN 2.0 execution engine. Open source javascript workflow engine.
 
 # Supported elements
 
-The following elements are tested and supported.
-
-- [Definition](/docs/Definition.md)
-- Process
-- Lane
-- Flows:
-  - Sequence: javascript- and expression conditions
-  - Message
-- Events
-  - [Start](/docs/StartEvent.md)
-  - End
-  - Error
-    - Boundary
-  - Message
-    - Start
-    - Intermediate
-  - Timer: with duration as ISO_8601
-    - Intermediate
-    - Boundary Interupting
-    - Boundary Non-interupting
-- Tasks
-  - Manual: needs signal
-  - [Loop](/docs/TaskLoop.md): Sequential and parallell
-    - Cardinality, integer or expression
-    - Condition, script or expression
-    - Collection (extension expression)
-  - [Service](/docs/ServiceTask.md)
-  - SubProcess
-  - Script: javascript only
-  - Task: completes immediately
-  - User: needs signal
-  - Send
-  - Receive
-- [Gateways](/docs/Gateways.md)
-  - Exclusive
-  - Inclusive
-  - Parallel: join and fork
-- Form
+See [bpmn-elements](https://github.com/paed01/bpmn-elements) for supported elements.
 
 # Process modeller
 

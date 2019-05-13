@@ -15,6 +15,7 @@
     "node": ">=10"
   },
   "files": [
+    "dist/",
     "lib/",
     "index.js"
   ],
