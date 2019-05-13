@@ -14,10 +14,10 @@ module.exports = {Engine};
 function Engine(options = {}) {
   options = {Logger: DebugLogger, scripts: JavaScripts(), ...options};
 
-  let {name} = options;
+  let {name, Logger} = options;
 
-  let definitions;
-  let state = 'idle';
+  let loadedDefinitions, execution;
+  const logger = Logger('engine');
 
   const sources = [];
   const typeResolver = TypeResolver({
@@ -40,12 +40,14 @@ function Engine(options = {}) {
   const engine = Object.assign(emitter, {
     environment,
     execute,
+    logger,
     getDefinitionById,
     getDefinitions,
     getState,
     recover,
     resume,
     stop,
+    waitFor,
   });
 
   Object.defineProperty(engine, 'name', {
@@ -53,19 +55,31 @@ function Engine(options = {}) {
     get() {
       return name;
     },
-  });
-
-  Object.defineProperty(engine, 'definitions', {
-    enumerable: true,
-    get() {
-      return definitions;
+    set(value) {
+      name = value;
     },
   });
 
   Object.defineProperty(engine, 'state', {
     enumerable: true,
     get() {
-      return state;
+      if (execution) return execution.state;
+      return 'idle';
+    },
+  });
+
+  Object.defineProperty(engine, 'stopped', {
+    enumerable: true,
+    get() {
+      if (execution) return execution.stopped;
+      return false;
+    },
+  });
+
+  Object.defineProperty(engine, 'execution', {
+    enumerable: true,
+    get() {
+      return execution;
     },
   });
 
@@ -73,29 +87,29 @@ function Engine(options = {}) {
 
   async function execute(executeOptions = {}) {
     const runSources = await Promise.all(pendingSources);
-    definitions = runSources.map((source) => loadDefinition(source, executeOptions));
-    setup(executeOptions);
-
-    definitions.forEach((definition) => definition.run());
+    const definitions = runSources.map((source) => loadDefinition(source, executeOptions));
+    execution = Execution(engine, definitions, options);
+    return execution.execute(executeOptions);
   }
 
-  function stop() {
-    if (!definitions) return;
-    definitions.forEach((d) => d.stop());
+  async function stop() {
+    if (!execution) return;
+    return execution.stop();
   }
 
   function recover(savedState) {
-    if (name) name = savedState.name;
+    if (!name) name = savedState.name;
     if (!savedState.definitions) return engine;
 
-    definitions = savedState.definitions.map((dState) => {
+    logger.debug(`<${name}> recover`);
+
+    loadedDefinitions = savedState.definitions.map((dState) => {
       const source = deserialize(JSON.parse(dState.source), typeResolver);
 
-      console.log('KLKK', source.getActivities())
+      logger.debug(`<${name}> recover ${dState.type} <${dState.id}>`);
 
       const definition = loadDefinition(source);
       definition.recover(dState);
-
 
       return definition;
     });
@@ -103,13 +117,18 @@ function Engine(options = {}) {
     return engine;
   }
 
-  function resume(resumeOptions = {}) {
-    if (!definitions) return;
-    setup(resumeOptions);
-    definitions.forEach((definition) => definition.resume());
+  async function resume(resumeOptions = {}) {
+    if (execution) return execution.resume(resumeOptions);
+
+    const definitions = await getDefinitions();
+
+    execution = Execution(engine, definitions, options);
+
+    return execution.resume(resumeOptions);
   }
 
-  function getDefinitions(executeOptions) {
+  async function getDefinitions(executeOptions) {
+    if (loadedDefinitions && loadedDefinitions.length) return loadedDefinitions;
     return Promise.all(pendingSources).then((srcs) => srcs.map((src) => loadDefinition(src, executeOptions)));
   }
 
@@ -117,76 +136,11 @@ function Engine(options = {}) {
     return (await getDefinitions()).find((d) => d.id === id);
   }
 
-  function getState() {
-    const result = {
-      name,
-      state,
-      engineVersion,
-    };
-    if (!definitions) return result;
-    return {
-      ...result,
-      definitions: definitions.map(getDefinitionState),
-    };
+  async function getState() {
+    if (execution) return execution.getState();
 
-    function getDefinitionState(definition) {
-      return {
-        ...definition.getState(),
-        source: definition.environment.options.source.serialize(),
-      };
-    }
-  }
-
-  function setup({listener}) {
-    if (listener && typeof listener.emit !== 'function') throw new Error('listener.emit is not a function');
-
-    definitions.forEach(setupDefinition);
-
-    function setupDefinition(definition) {
-      if (listener) definition.environment.options.listener = listener;
-
-      definition.broker.subscribeTmp('event', 'definition.#', onDefinitionMessage, {noAck: true, consumerTag: '_engine_definition'});
-      definition.broker.subscribeTmp('event', 'process.end', onDefinitionMessage, {noAck: true, consumerTag: '_engine_process_leave'});
-      definition.broker.subscribeTmp('event', 'activity.wait', onDefinitionMessage, {noAck: true, consumerTag: '_engine_activity_wait'});
-    }
-  }
-
-  function onDefinitionMessage(routingKey, message, owner) {
-    switch (routingKey) {
-      case 'definition.enter':
-        state = 'running';
-        break;
-      case 'definition.stop':
-        state = 'idle';
-        break;
-      case 'activity.wait': {
-        const {environment: ownerEnvironment} = owner;
-        if (ownerEnvironment.options.listener) ownerEnvironment.options.listener.emit('wait', owner.getApi(message));
-        break;
-      }
-      case 'process.end': {
-        if (message.content.output && message.content.output.data) {
-          environment.output.data = environment.output.data || {};
-          environment.output.data = {...environment.output.data, ...message.content.output.data};
-        }
-        break;
-      }
-      case 'definition.error':
-        emitter.emit('error', message.content.error);
-        break;
-      case 'definition.leave':
-        state = 'idle';
-
-        teardownDefinition(owner);
-        emitter.emit('end');
-        break;
-    }
-  }
-
-  function teardownDefinition(definition) {
-    definition.broker.cancel('_engine_definition');
-    definition.broker.cancel('_engine_process_leave');
-    definition.broker.cancel('_engine_activity_wait');
+    const definitions = await getDefinitions();
+    return Execution(engine, definitions, options).getState();
   }
 
   function loadDefinition(serializedContext, executeOptions) {
@@ -210,13 +164,6 @@ function Engine(options = {}) {
     return serialized;
   }
 
-  function recoverDefinitionSource(serializedSource) {
-    const serialized = deserialize(JSON.parse(serializedSource), typeResolver);
-    sources.push(serialized);
-    const context = elements.Context(serialized);
-    return elements.Definition(context, options);
-  }
-
   function getModdleContext(source) {
     return new Promise((resolve, reject) => {
       const bpmnModdle = new BpmnModdle(options.moddleOptions);
@@ -225,5 +172,186 @@ function Engine(options = {}) {
         resolve(moddleContext);
       });
     });
+  }
+
+  async function waitFor(eventName) {
+    return new Promise((resolve, reject) => {
+      engine.once(eventName, onEvent);
+      engine.once('error', onError);
+
+      function onEvent(api) {
+        engine.removeListener('error', onError);
+        resolve(api);
+      }
+      function onError(err) {
+        engine.removeListener(eventName, onError);
+        reject(err);
+      }
+    });
+  }
+}
+
+function Execution(engine, definitions, options) {
+  const {environment, logger, waitFor} = engine;
+  let state = 'idle';
+  let stopped;
+
+  return {
+    get state() {
+      return state;
+    },
+    get stopped() {
+      return stopped;
+    },
+    execute,
+    getState,
+    resume,
+    stop,
+  };
+
+  function execute(executeOptions) {
+    setup(executeOptions);
+    stopped = false;
+    logger.debug(`<${engine.name}> execute`);
+
+    definitions.forEach((definition) => definition.run());
+
+    return Api();
+  }
+
+  function resume(resumeOptions) {
+    setup(resumeOptions);
+
+    stopped = false;
+    logger.debug(`<${engine.name}> resume`);
+
+    definitions.forEach((definition) => definition.resume());
+
+    return Api();
+  }
+
+  function stop() {
+    const prom = waitFor('stop');
+    definitions.forEach((d) => d.stop());
+    return prom;
+  }
+
+  function setup(setupOptions = {}) {
+    const listener = setupOptions.listener || options.listener;
+    if (listener && typeof listener.emit !== 'function') throw new Error('listener.emit is not a function');
+
+    definitions.forEach(setupDefinition);
+
+    function setupDefinition(definition) {
+      if (listener) definition.environment.options.listener = listener;
+
+      definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, {noAck: true, consumerTag: '_engine_definition'});
+      definition.broker.subscribeTmp('event', 'process.#', onChildMessage, {noAck: true, consumerTag: '_engine_process_leave'});
+      definition.broker.subscribeTmp('event', 'activity.#', onChildMessage, {noAck: true, consumerTag: '_engine_activity_wait'});
+    }
+  }
+
+  function onChildMessage(routingKey, message, owner) {
+    const {environment: ownerEnvironment} = owner;
+    const listener = ownerEnvironment.options && ownerEnvironment.options.listener;
+    state = 'running';
+
+    let executionStopped;
+    switch (routingKey) {
+      case 'definition.stop':
+        teardownDefinition(owner);
+        if (definitions.some((d) => d.isRunning)) break;
+        executionStopped = true;
+        state = 'idle';
+        break;
+      case 'activity.wait': {
+        emitListenerEvent('wait', owner.getApi(message), Api());
+        break;
+      }
+      case 'process.end': {
+        if (!message.content.output) break;
+
+        for (const key in message.content.output) {
+          switch (key) {
+            case 'data': {
+              environment.output.data = environment.output.data || {};
+              environment.output.data = {...environment.output.data, ...message.content.output.data};
+              break;
+            }
+            default: {
+              environment.output[key] = message.content.output[key];
+            }
+          }
+        }
+        break;
+      }
+      case 'definition.error':
+        engine.emit('error', message.content.error);
+        break;
+      case 'definition.leave':
+        state = 'idle';
+
+        teardownDefinition(owner);
+        engine.emit('end', Api());
+        break;
+    }
+
+    emitListenerEvent(routingKey, owner.getApi(message), Api());
+    if (executionStopped) {
+      stopped = true;
+      state = 'stopped';
+      logger.debug(`<${engine.name}> stopped`);
+      engine.emit('stop', Api());
+    }
+
+    function emitListenerEvent(...args) {
+      if (!listener) return;
+      listener.emit(...args);
+    }
+  }
+
+  function teardownDefinition(definition) {
+    definition.broker.cancel('_engine_definition');
+    definition.broker.cancel('_engine_process_leave');
+    definition.broker.cancel('_engine_activity_wait');
+  }
+
+  function getState() {
+    return {
+      name: engine.name,
+      state,
+      stopped,
+      engineVersion,
+      definitions: definitions.map(getDefinitionState),
+    };
+  }
+
+  function getDefinitionState(definition) {
+    return {
+      ...definition.getState(),
+      source: definition.environment.options.source.serialize(),
+    };
+  }
+
+  function Api() {
+    return {
+      name: engine.name,
+      get state() {
+        return state;
+      },
+      get stopped() {
+        return stopped;
+      },
+      environment,
+      definitions,
+      stop,
+      getState,
+      getPostponed() {
+        return definitions.reduce((result, definition) => {
+          result = result.concat(definition.getPostponed());
+          return result;
+        }, []);
+      },
+    };
   }
 }

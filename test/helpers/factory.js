@@ -3,21 +3,6 @@
 const fs = require('fs');
 const path = require('path');
 
-const invalidProcess = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess2" isExecutable="true">
-    <startEvent id="theStart" />
-    <exclusiveGateway id="decision" default="flow2" />
-    <endEvent id="end1" />
-    <endEvent id="end2" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
-    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end2">
-      <conditionExpression xsi:type="tFormalExpression" language="JavaScript">true</conditionExpression>
-    </sequenceFlow>
-  </process>
-</definitions>`;
-
 module.exports = {
   valid,
   invalid,
@@ -46,14 +31,26 @@ function valid(definitionId) {
 }
 
 function invalid() {
-  return invalidProcess;
+  return `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess2" isExecutable="true">
+    <startEvent id="theStart" />
+    <exclusiveGateway id="decision" />
+    <endEvent id="end1" />
+    <endEvent id="end2" />
+    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
+    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end2">
+      <conditionExpression xsi:type="tFormalExpression" language="JavaScript">false</conditionExpression>
+    </sequenceFlow>
+  </process>
+</definitions>`;
 }
 
-function userTask(userTaskId, definitionId) {
-  if (!userTaskId) userTaskId = 'userTask';
+function userTask(userTaskId = 'userTask', definitionId = 'Def_1') {
   return `
   <?xml version="1.0" encoding="UTF-8"?>
-  <definitions id="${definitionId || 'testUserTask'}" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <definitions id="${definitionId}" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <process id="theProcess" isExecutable="true">
       <dataObjectReference id="globalInputRef" dataObjectRef="input" />
       <dataObjectReference id="inputFromUserRef" dataObjectRef="inputFromUser" />

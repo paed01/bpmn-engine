@@ -29,7 +29,7 @@
       <bpmn:boundaryEvent id="subUserTaskTimer" attachedToRef="subUserTask1">
         <bpmn:outgoing>SequenceFlow_0mdaw7s</bpmn:outgoing>
         <bpmn:timerEventDefinition>
-          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT0.01S</bpmn:timeDuration>
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT0.05S</bpmn:timeDuration>
         </bpmn:timerEventDefinition>
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="SequenceFlow_0mdaw7s" sourceRef="subUserTaskTimer" targetRef="subScriptTask1" />

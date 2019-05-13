@@ -1,23 +1,13 @@
 'use strict';
 
 const Bpmn = require('..');
-const BpmnModdle = require('../dist/bpmn-moddle');
-const EventEmitter = require('events').EventEmitter;
 const factory = require('./helpers/factory');
 const testHelpers = require('./helpers/testHelpers');
+const {EventEmitter} = require('events');
 
 describe('Engine', () => {
   it('Bpmn exposes Engine', () => {
     expect(Bpmn).to.have.property('Engine');
-  });
-  it.skip('Bpmn exposes Defintion', () => {
-    expect(Bpmn).to.have.property('Definition');
-  });
-  it.skip('Bpmn exposes transformer', () => {
-    expect(Bpmn).to.have.property('transformer');
-  });
-  it.skip('Bpmn exposes validation', () => {
-    expect(Bpmn).to.have.property('validation');
   });
 
   describe('ctor', () => {
@@ -138,7 +128,7 @@ describe('Engine', () => {
       const moddleContext = await testHelpers.moddleContext(factory.valid('contextTest'));
 
       const engine = Bpmn.Engine({
-        moddleContext: JSON.parse(testHelpers.serializeModdleContext(moddleContext))
+        moddleContext: JSON.parse(JSON.stringify(testHelpers.serializeModdleContext(moddleContext)))
       });
 
       expect(await engine.getDefinitionById('contextTest')).to.be.ok;
@@ -146,7 +136,7 @@ describe('Engine', () => {
   });
 
   describe('execute()', () => {
-    it('without arguments runs definition', (done) => {
+    it('runs definition and emits end when completed', (done) => {
       const engine = Bpmn.Engine({
         source: factory.valid()
       });
@@ -156,6 +146,37 @@ describe('Engine', () => {
       });
 
       engine.execute();
+    });
+
+    it('returns api with name, running definitions, and function to get postponed activities', async () => {
+      const engine = Bpmn.Engine({
+        name: 'with api',
+        source: factory.userTask('userTask')
+      });
+
+      const api = await engine.execute();
+      expect(api).to.have.property('name', 'with api');
+      expect(api).to.have.property('definitions').to.have.length(1);
+      expect(api.definitions[0]).to.have.property('status', 'executing');
+      expect(api).to.have.property('getPostponed').that.is.a('function');
+
+      const postponed = api.getPostponed();
+      expect(postponed).to.have.length(1);
+      expect(postponed[0]).to.have.property('id', 'userTask');
+    });
+
+    it('engine and execution api definitions are the same', async () => {
+      const engine = Bpmn.Engine({
+        name: 'with api',
+        source: factory.userTask('userTask')
+      });
+
+      const engineDefs = await engine.getDefinitions();
+      const api = await engine.execute();
+
+      expect(engineDefs.length).to.be.above(0);
+      expect(engineDefs.length, 'same length').to.equal(api.definitions.length);
+      expect(engineDefs[0] === api.definitions[0], 'same instance');
     });
 
     it('with options runs definitions with options', (done) => {
@@ -174,16 +195,6 @@ describe('Engine', () => {
       });
     });
 
-    it.skip('returns error in callback if no source', (done) => {
-      const engine = Bpmn.Engine({
-        source: ''
-      });
-      engine.execute((err) => {
-        expect(err).to.be.an('error').and.match(/nothing to execute/i);
-        done();
-      });
-    });
-
     it('rejects if not well formatted xml', (done) => {
       const engine = Bpmn.Engine({
         source: 'jdalsk'
@@ -194,16 +205,15 @@ describe('Engine', () => {
       });
     });
 
-    it.skip('emits error if not well formatted xml', (done) => {
+    it('rejects if not well formatted xml', (done) => {
       const engine = Bpmn.Engine({
         source: 'jdalsk'
       });
-      engine.once('error', (err) => {
+
+      engine.execute().catch((err) => {
         expect(err).to.be.an('error');
         done();
       });
-
-      engine.execute();
     });
 
     it('rejects if no executable process', (done) => {
@@ -277,26 +287,6 @@ describe('Engine', () => {
       });
 
       engine.execute();
-    });
-
-    it.skip('runs process with deserialized context', (done) => {
-      const moddle = new BpmnModdle();
-      moddle.fromXML(factory.resource('lanes.bpmn').toString(), (moddleErr, definition, context) => {
-        if (moddleErr) return done(moddleErr);
-
-        const engine = Bpmn.Engine({
-          name: 'deserialized context',
-          moddleContext: JSON.parse(testHelpers.serializeModdleContext(context))
-        });
-        engine.once('end', () => {
-          testHelpers.expectNoLingeringListenersOnEngine(engine);
-          done();
-        });
-
-        engine.execute((err) => {
-          if (err) return done(err);
-        });
-      });
     });
 
     it('throws error if listener doesn´t have an emit function', async () => {
@@ -381,8 +371,54 @@ describe('Engine', () => {
     });
   });
 
+  describe('waitFor(eventName)', () => {
+    it('end resolves when execution completes', async () => {
+      const engine = Bpmn.Engine({
+        source: factory.valid()
+      });
+
+      const end = engine.waitFor('end');
+
+      engine.execute();
+
+      await end;
+
+      expect(engine).to.have.property('state', 'idle');
+    });
+
+    it('end rejects if error occur', async () => {
+      const engine = Bpmn.Engine({
+        source: factory.invalid()
+      });
+
+      let error;
+      const end = engine.waitFor('end').catch((err) => {
+        error = err;
+      });
+
+      engine.execute();
+
+      await end;
+
+      expect(error).to.be.ok;
+    });
+  });
+
   describe('getState()', () => {
     const source = factory.userTask();
+
+    it('engine returns non-running state', async () => {
+      const sourceEngine = Bpmn.Engine({
+        name: 'test state',
+        source: factory.userTask()
+      });
+      expect(await sourceEngine.getDefinitions()).to.have.length(1);
+
+      const state = await sourceEngine.getState();
+      expect(state).to.have.property('name', 'test state');
+      expect(state).to.have.property('definitions').with.length(1);
+      expect(state.definitions[0]).to.have.property('source');
+    });
 
     it('returns state "running" when running definitions', (done) => {
       const engine = Bpmn.Engine({
@@ -390,8 +426,8 @@ describe('Engine', () => {
       });
       const listener = new EventEmitter();
 
-      listener.on('wait', () => {
-        const state = engine.getState();
+      listener.on('wait', (_, engineApi) => {
+        const state = engineApi.getState();
         expect(state).to.be.an('object');
         expect(state).to.have.property('state', 'running');
         done();
@@ -405,12 +441,12 @@ describe('Engine', () => {
       });
     });
 
-    it('returns state "idle" when nothing is running', () => {
+    it('returns state "idle" when nothing is running', async () => {
       const engine = Bpmn.Engine({
         source
       });
 
-      const state = engine.getState();
+      const state = await engine.getState();
 
       expect(state).to.be.an('object');
       expect(state).to.have.property('state', 'idle');
@@ -423,8 +459,32 @@ describe('Engine', () => {
       });
       const listener = new EventEmitter();
 
-      listener.on('wait', () => {
-        const state = engine.getState();
+      listener.on('wait', (_, engineApi) => {
+        const state = engineApi.getState();
+        expect(state.state).to.equal('running');
+        expect(state.definitions).to.have.length(1);
+        expect(state.definitions[0]).to.be.an('object');
+        expect(state.definitions[0].execution).to.be.ok;
+        done();
+      });
+
+      engine.execute({
+        listener,
+        variables: {
+          input: null
+        }
+      });
+    });
+
+    it('returns state of running definitions', (done) => {
+      const engine = Bpmn.Engine({
+        name: 'running',
+        source
+      });
+      const listener = new EventEmitter();
+
+      listener.on('wait', (_, engineApi) => {
+        const state = engineApi.getState();
         expect(state.state).to.equal('running');
         expect(state.definitions).to.have.length(1);
         expect(state.definitions[0]).to.be.an('object');
@@ -446,8 +506,8 @@ describe('Engine', () => {
       });
       const listener = new EventEmitter();
 
-      listener.on('wait', () => {
-        const state = engine.getState();
+      listener.on('wait', (_, engineApi) => {
+        const state = engineApi.getState();
         expect(state.engineVersion).to.match(/^\d+\.\d+\.\d+/);
         done();
       });
@@ -458,6 +518,84 @@ describe('Engine', () => {
           input: null
         }
       });
+    });
+  });
+
+  describe('stop()', () => {
+    it('stop by engine stops execution', async () => {
+      const engine = Bpmn.Engine({
+        name: 'stop test',
+        source: factory.userTask(),
+      });
+
+      expect(engine).to.have.property('stopped', false);
+
+      const api = await engine.execute();
+
+      await engine.stop();
+
+      expect(engine).to.have.property('state', 'stopped');
+      expect(engine).to.have.property('stopped', true);
+      expect(api).to.have.property('stopped', true);
+      expect(api.definitions[0]).to.have.property('stopped', true);
+    });
+
+    it('stop by api stops execution', async () => {
+      const engine = Bpmn.Engine({
+        name: 'stop test',
+        source: factory.userTask(),
+      });
+
+      const api = await engine.execute();
+      await api.stop();
+
+      expect(api).to.have.property('stopped', true);
+      expect(engine).to.have.property('state', 'stopped');
+      expect(engine).to.have.property('stopped', true);
+      expect(api.definitions[0]).to.have.property('stopped', true);
+    });
+  });
+
+  describe('recover()', () => {
+    it('recovers engine from state', async () => {
+      const sourceEngine = Bpmn.Engine({
+        name: 'test recover',
+        source: factory.userTask()
+      });
+      expect(await sourceEngine.getDefinitions()).to.have.length(1);
+      expect(sourceEngine).to.have.property('state', 'idle');
+
+      const engine = Bpmn.Engine().recover(await sourceEngine.getState());
+      expect(engine).to.have.property('name', 'test recover');
+      expect(engine).to.have.property('state', 'idle');
+      expect(await engine.getDefinitions()).to.have.length(1);
+    });
+
+    it('recovers definition running state', async () => {
+      const sourceEngine = Bpmn.Engine({
+        name: 'test recover',
+        source: factory.userTask()
+      });
+
+      const sourceApi = await sourceEngine.execute();
+
+      expect(sourceApi.definitions).to.have.length(1);
+      expect(sourceApi.definitions[0]).to.have.property('status', 'executing');
+
+      const engine = Bpmn.Engine().recover(await sourceEngine.getState());
+      const definitions = await engine.getDefinitions();
+      expect(definitions).to.have.length(1);
+      expect(definitions[0]).to.have.property('status', 'executing');
+    });
+
+    it('doesn´t overwrite name from state if instantiated with name', async () => {
+      const sourceEngine = Bpmn.Engine({
+        name: 'test recover',
+        source: factory.userTask()
+      });
+
+      const engine = Bpmn.Engine({name: 'my new name'}).recover(await sourceEngine.getState());
+      expect(engine).to.have.property('name', 'my new name');
     });
   });
 
@@ -472,7 +610,10 @@ describe('Engine', () => {
 
       listener.on('wait', () => {
         engine.stop();
-        engineState = engine.getState();
+      });
+
+      engine.on('stop', async () => {
+        engineState = await engine.getState();
         done();
       });
 
@@ -484,7 +625,7 @@ describe('Engine', () => {
       });
     });
 
-    it('resumes execution', (done) => {
+    it('resumes recovered execution', (done) => {
       const listener = new EventEmitter();
       listener.once('wait', (activityApi) => {
         activityApi.signal();
@@ -492,67 +633,91 @@ describe('Engine', () => {
 
       const engine = Bpmn.Engine();
       engine.recover(JSON.parse(JSON.stringify(engineState)));
+      engine.once('end', done.bind(null, null));
 
-      const resumedEngine = engine.resume({listener});
-
-      resumedEngine.once('end', done.bind(null, null));
+      engine.resume({listener});
     });
 
-    it('resumes without callback', (done) => {
-      const resumeListener = new EventEmitter();
-      resumeListener.once('wait', (activityApi) => {
+    it('resume with new listener replaces listener', async () => {
+      const listener = new EventEmitter();
+      const engine = Bpmn.Engine();
+      engine.recover(engineState);
+      engine.resume({listener});
+
+      const definitions = await engine.getDefinitions();
+      expect(definitions).to.have.length(1);
+
+      expect(definitions[0].environment.options.listener).to.equal(listener);
+    });
+
+    it('resumes stopped execution', async () => {
+      const engine = Bpmn.Engine({
+        name: 'resume stopped',
+        source: factory.userTask(),
+      });
+
+      let api = await engine.execute();
+
+      await api.stop();
+
+      expect(api.definitions[0]).to.have.property('stopped', true);
+
+      const listener = new EventEmitter();
+      listener.on('wait', (activityApi) => {
         activityApi.signal();
       });
 
-      const resumedEngine = Bpmn.Engine.resume(testHelpers.readFromDb(engineState), {
-        listener: resumeListener
-      });
+      const completed = engine.waitFor('end');
 
-      resumedEngine.once('end', done.bind(null, null));
+      api = await engine.resume({listener});
+
+      expect(api.definitions[0]).to.have.property('stopped', false);
+
+      return completed;
     });
 
-    it('resume failure emits error if no callback', (done) => {
-      testHelpers.getModdleContext(factory.invalid(), {}, (merr, moddleContext) => {
-        const engine = Bpmn.Engine.resume({
-          name: 'Invalid state',
-          definitions: [{
-            id: 'who',
-            moddleContext: moddleContext
-          }],
-        });
-        engine.once('error', () => {
-          done();
-        });
-      });
-    });
+    // it('resume failure emits error if no callback', (done) => {
+    //   testHelpers.getModdleContext(factory.invalid(), {}, (merr, moddleContext) => {
+    //     const engine = Bpmn.Engine.resume({
+    //       name: 'Invalid state',
+    //       definitions: [{
+    //         id: 'who',
+    //         moddleContext: moddleContext
+    //       }],
+    //     });
+    //     engine.once('error', () => {
+    //       done();
+    //     });
+    //   });
+    // });
 
-    it('resume failure returns error in callback', (done) => {
-      testHelpers.getModdleContext(factory.invalid(), {}, (merr, moddleContext) => {
-        Bpmn.Engine.resume({
-          name: 'Invalid state',
-          definitions: [{
-            id: 'who',
-            moddleContext: moddleContext
-          }],
-        }, (err) => {
-          expect(err).to.be.an('error');
-          done();
-        });
-      });
-    });
+    // it('resume failure returns error in callback', (done) => {
+    //   testHelpers.getModdleContext(factory.invalid(), {}, (merr, moddleContext) => {
+    //     Bpmn.Engine.resume({
+    //       name: 'Invalid state',
+    //       definitions: [{
+    //         id: 'who',
+    //         moddleContext: moddleContext
+    //       }],
+    //     }, (err) => {
+    //       expect(err).to.be.an('error');
+    //       done();
+    //     });
+    //   });
+    // });
 
-    it('with invalid engine state throws', (done) => {
-      function fn() {
-        Bpmn.Engine.resume({
-          definitions: 'invalid array'
-        });
-      }
-      expect(fn).to.throw(/must be an array/);
-      done();
-    });
+    // it('with invalid engine state throws', (done) => {
+    //   function fn() {
+    //     Bpmn.Engine.resume({
+    //       definitions: 'invalid array'
+    //     });
+    //   }
+    //   expect(fn).to.throw(/must be an array/);
+    //   done();
+    // });
   });
 
-  describe('multiple definitions', () => {
+  describe.skip('multiple definitions', () => {
     const engine = Bpmn.Engine();
     const listener = new EventEmitter();
     const processes = [];
@@ -617,7 +782,7 @@ describe('Engine', () => {
     });
   });
 
-  describe('addDefinitionBySource()', () => {
+  describe.skip('addDefinitionBySource()', () => {
     it('adds definition', (done) => {
       const engine = Bpmn.Engine();
       engine.addDefinitionBySource(factory.valid());
@@ -664,7 +829,7 @@ describe('Engine', () => {
     });
   });
 
-  describe('signal()', () => {
+  describe.skip('signal()', () => {
     it('without definitions is ignored', (done) => {
       const engine = Bpmn.Engine();
       engine.signal();
@@ -710,7 +875,7 @@ describe('Engine', () => {
     });
   });
 
-  describe('getPendingActivities()', () => {
+  describe.skip('getPostponed()', () => {
     const source = `
     <?xml version="1.0" encoding="UTF-8"?>
     <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -734,23 +899,17 @@ describe('Engine', () => {
     </definitions>`;
 
     let engine, pending;
-    it('given an engine', (done) => {
+    before('given an engine', () => {
       engine = Bpmn.Engine({
         name: 'get pending',
         source
       });
-      done();
-    });
-
-    it('returns empty definitions if not loaded', (done) => {
-      expect(engine.getPendingActivities().definitions).to.have.length(0);
-      done();
     });
 
     it('when executed', (done) => {
       const listener = new EventEmitter();
-      listener.once('start-join', () => {
-        pending = engine.getPendingActivities();
+      listener.once('wait', () => {
+        pending = engine.getPostponed();
         done();
       });
 

@@ -3,8 +3,13 @@ Changelog
 
 # 6.0.0
 
+Use [bpmn-elements](https://github.com/paed01/bpmn-elements) to execute elements.
+
 ## Breaking changes
-- Node version >= 10 is supported
+- Node version >= 10 is required
+
+## Changes
+- Change license to MIT
 
 # 5.0.0
 

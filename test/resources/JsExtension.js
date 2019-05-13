@@ -1,167 +1,106 @@
 'use strict';
 
 const moddleOptions = require('./js-bpmn-moddle.json');
-const getNormalizedResult = require('../../lib/getNormalizedResult');
-const {hasExpression} = require('../../lib/expressions');
+
+const safePattern = /[./\\#*:\s]/g;
 
 module.exports = {
   extension: Js,
-  moddleOptions
+  moddleOptions,
 };
 
-function Js(activityElement, parentContext) {
-  const {formKey} = activityElement;
-
-  let form = loadForm();
-  const io = ResultVariableIo(activityElement, parentContext, form);
-  if (io) {
-    form = undefined;
-  }
+function Js(activity, context) {
+  const resultVariable = ResultVariableIo(activity, context);
+  const formKey = FormKey(activity, context);
 
   return {
-    form,
-    io
+    type: 'js:extension',
+    extensions: {resultVariable, formKey},
+    activate(msg) {
+      if (resultVariable) resultVariable.activate(msg);
+      if (formKey) formKey.activate(msg);
+    },
+    deactivate() {
+      if (resultVariable) resultVariable.deactivate();
+      if (formKey) formKey.deactivate();
+    },
   };
-
-  function loadForm() {
-    if (formKey) return FormKey(activityElement, parentContext);
-  }
 }
 
-function FormKey(activityElement) {
-  const {id, formKey} = activityElement;
-  const type = 'js:formKey';
+function ResultVariableIo(activity, context) {
+  const {id, logger, behaviour} = activity;
+  const {result} = behaviour;
+  if (!result) return;
+
+  const {broker} = activity;
+  const {environment} = context;
+
+  const type = 'js:resultvariable';
+  let activityConsumer;
 
   return {
-    id,
-    type,
-    activate
-  };
-
-  function activate() {
-    return {
-      id,
-      type,
-      getState
-    };
-
-    function getState() {
-      return {
-        key: formKey
-      };
-    }
-  }
-}
-
-function ResultVariableIo(activityElement, {environment}, form) {
-  const {id, $type, result: resultVariable} = activityElement;
-  if (!resultVariable) return;
-
-  const type = `${$type}:resultvariable`;
-
-  return {
-    id,
     type,
     activate,
-    resume: resumeIo
+    deactivate,
   };
 
-  function resumeIo(parentApi, inputContext, ioState) {
-    return activate(parentApi, inputContext).resume(ioState);
+  function deactivate() {
+    if (activityConsumer) activityConsumer = activityConsumer.cancel();
   }
 
-  function activate(parentApi, inputContext) {
-    const {isLoopContext} = inputContext;
-    const isExpression = hasExpression(resultVariable);
-
-    let formInstance, variableName, resultData;
-
-    const ioApi = {
-      id,
-      type,
-      getForm,
-      getInput,
-      getOutput,
-      getState,
-      resume,
-      save,
-      setOutputValue,
-      setResult
-    };
-
-    return ioApi;
-
-    function getForm() {
-      if (!form) return;
-      if (formInstance) return formInstance;
-      formInstance = form.activate(parentApi, inputContext);
-      return formInstance;
-    }
-
-    function getInput() {
-      return inputContext;
-    }
-
-    function getOutput() {
-      if (isLoopContext) {
-        if (formInstance) return formInstance.getOutput();
-        return resultData;
-      }
-
-      return formInstance ? formInstance.getOutput() : resultData;
-    }
-
-    function getState() {
-      const result = {};
-      if (formInstance) {
-        Object.assign(result, formInstance.getState());
-      }
-      return result;
-    }
-
-    function resume(ioState) {
-      if (!ioState) return ioApi;
-
-      const ioForm = getForm();
-      if (ioForm) ioForm.resume(ioState.form);
-
-      return ioApi;
-    }
-
-    function save() {
-      const name = getVariableName(true);
-      const value = formInstance ? formInstance.getOutput() : resultData;
-      if (!name || value === undefined) return;
-
-      environment.setOutputValue(name, value);
-    }
-
-    function setOutputValue(name, value) {
-      resultData = resultData || {};
-      resultData[name] = value;
-    }
-
-    function setResult(result1, ...args) {
-      if (args.length) {
-        resultData = [result1, ...args];
-      } else {
-        resultData = result1;
-      }
-    }
-
-    function getOutputContext() {
-      return Object.assign(inputContext, getNormalizedResult(resultData || {}));
-    }
-
-    function getVariableName(reassign) {
-      if (!reassign && variableName) return variableName;
-      if (isExpression) {
-        variableName = environment.resolveExpression(resultVariable, getOutputContext());
-      } else {
-        variableName = resultVariable;
-      }
-
-      return variableName;
-    }
+  function activate() {
+    if (activityConsumer) return;
+    activityConsumer = broker.subscribeTmp('event', 'activity.end', onActivityEnd, {noAck: true});
   }
+
+  function onActivityEnd(_, message) {
+    const resultName = environment.resolveExpression(result, message.content);
+    logger.debug(`<${id}>`, 'js:extension save to', `"${resultName}"`);
+
+    environment.output[resultName] = message.content.output;
+  }
+}
+
+function FormKey(activity, context) {
+  const {id, logger, behaviour} = activity;
+  const {formKey} = behaviour;
+  if (!formKey) return;
+
+  const {broker} = activity;
+  const {environment} = context;
+
+  const type = 'js:formkey';
+  const safeType = brokerSafeId(type).toLowerCase();
+  let activityConsumer;
+
+  return {
+    type,
+    activate,
+    deactivate,
+  };
+
+  function deactivate() {
+    if (activityConsumer) activityConsumer = activityConsumer.cancel();
+  }
+
+  function activate() {
+    if (activityConsumer) return;
+    activityConsumer = broker.subscribeTmp('event', 'activity.start', onActivityStart, {noAck: true});
+  }
+
+  function onActivityStart(_, message) {
+    const formKeyValue = environment.resolveExpression(formKey, message);
+    logger.debug(`<${id}> apply form`);
+
+    broker.publish('format', `run.${safeType}.start`, {
+      form: {
+        type,
+        key: formKeyValue,
+      },
+    });
+  }
+}
+
+function brokerSafeId(id) {
+  return id.replace(safePattern, '_');
 }

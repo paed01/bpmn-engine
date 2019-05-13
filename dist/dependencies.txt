@@ -36,7 +36,7 @@ Contributors:
 ---
 
 Name: moddle-xml
-Version: 7.4.0
+Version: 7.3.0
 License: MIT
 Private: false
 Description: XML import/export for documents described with moddle
@@ -58,3 +58,14 @@ Homepage: https://github.com/nikku/saxen#readme
 Author: Vopilovskiy Konstantin <flash.vkv@gmail.com> (http://vflash.ru)
 Contributors:
   Nico Rehwaldt (https://github.com/nikku)
+
+---
+
+Name: tiny-stack
+Version: 1.1.0
+License: BSD-3-Clause
+Private: false
+Description: Tiny stack for browser or server
+Repository: git://github.com/avoidwork/tiny-stack.git
+Homepage: http://avoidwork.github.io/tiny-stack
+Author: Jason Mulligan <jason.mulligan@avoidwork.com>
