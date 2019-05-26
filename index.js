@@ -3,11 +3,13 @@
 const BpmnModdle = require('./dist/bpmn-moddle');
 const DebugLogger = require('./lib/Logger');
 const elements = require('bpmn-elements');
+const getOptionsAndCallback = require('./lib/getOptionsAndCallback');
 const JavaScripts = require('./lib/JavaScripts');
 const ProcessOutputDataObject = require('./lib/extensions/bpmn/ProcessOutputDataObject');
+const {Broker} = require('smqp');
 const {default: serializer, deserialize, TypeResolver} = require('moddle-context-serializer');
-const {version: engineVersion} = require('./package.json');
 const {EventEmitter} = require('events');
+const {version: engineVersion} = require('./package.json');
 
 module.exports = {Engine};
 
@@ -50,6 +52,16 @@ function Engine(options = {}) {
     waitFor,
   });
 
+  const broker = Broker(engine);
+  broker.assertExchange('event', 'topic', {autoDelete: false});
+
+  Object.defineProperty(engine, 'broker', {
+    enumerable: true,
+    get() {
+      return broker;
+    }
+  });
+
   Object.defineProperty(engine, 'name', {
     enumerable: true,
     get() {
@@ -85,11 +97,13 @@ function Engine(options = {}) {
 
   return engine;
 
-  async function execute(executeOptions = {}) {
+  async function execute(...args) {
+    const [executeOptions, callback] = getOptionsAndCallback(...args);
+
     const runSources = await Promise.all(pendingSources);
     const definitions = runSources.map((source) => loadDefinition(source, executeOptions));
     execution = Execution(engine, definitions, options);
-    return execution.execute(executeOptions);
+    return execution.execute(executeOptions, callback);
   }
 
   async function stop() {
@@ -117,14 +131,15 @@ function Engine(options = {}) {
     return engine;
   }
 
-  async function resume(resumeOptions = {}) {
-    if (execution) return execution.resume(resumeOptions);
+  async function resume(...args) {
+    const [resumeOptions, callback] = getOptionsAndCallback(...args);
 
-    const definitions = await getDefinitions();
+    if (!execution) {
+      const definitions = await getDefinitions();
+      execution = Execution(engine, definitions, options);
+    }
 
-    execution = Execution(engine, definitions, options);
-
-    return execution.resume(resumeOptions);
+    return execution.resume(resumeOptions, callback);
   }
 
   async function getDefinitions(executeOptions) {
@@ -192,7 +207,7 @@ function Engine(options = {}) {
 }
 
 function Execution(engine, definitions, options) {
-  const {environment, logger, waitFor} = engine;
+  const {environment, logger, waitFor, broker} = engine;
   let state = 'idle';
   let stopped;
 
@@ -209,25 +224,55 @@ function Execution(engine, definitions, options) {
     stop,
   };
 
-  function execute(executeOptions) {
+  function execute(executeOptions, callback) {
     setup(executeOptions);
     stopped = false;
     logger.debug(`<${engine.name}> execute`);
 
+    addConsumerCallbacks(callback);
     definitions.forEach((definition) => definition.run());
 
     return Api();
   }
 
-  function resume(resumeOptions) {
+  function resume(resumeOptions, callback) {
     setup(resumeOptions);
 
     stopped = false;
     logger.debug(`<${engine.name}> resume`);
+    addConsumerCallbacks(callback);
 
     definitions.forEach((definition) => definition.resume());
 
     return Api();
+  }
+
+  function addConsumerCallbacks(callback) {
+    if (!callback) return;
+
+    broker.off('return', onBrokerReturn);
+
+    clearConsumers();
+
+    broker.subscribeOnce('event', 'engine.stop', cbLeave, {consumerTag: 'ctag-cb-stop'});
+    broker.subscribeOnce('event', 'engine.end', cbLeave, {consumerTag: 'ctag-cb-end'});
+    broker.subscribeOnce('event', 'engine.error', cbError, {consumerTag: 'ctag-cb-error'});
+
+    function cbLeave() {
+      clearConsumers();
+      return callback(null, Api());
+    }
+    function cbError(_, err) {
+      clearConsumers();
+      return callback(err);
+    }
+
+    function clearConsumers() {
+      broker.cancel('ctag-cb-stop');
+      broker.cancel('ctag-cb-end');
+      broker.cancel('ctag-cb-error');
+      broker.on('return', onBrokerReturn);
+    }
   }
 
   function stop() {
@@ -256,13 +301,20 @@ function Execution(engine, definitions, options) {
     const listener = ownerEnvironment.options && ownerEnvironment.options.listener;
     state = 'running';
 
-    let executionStopped;
+    let executionStopped, executionCompleted;
     switch (routingKey) {
       case 'definition.stop':
         teardownDefinition(owner);
         if (definitions.some((d) => d.isRunning)) break;
+
         executionStopped = true;
-        state = 'idle';
+        stopped = true;
+        break;
+      case 'definition.leave':
+        teardownDefinition(owner);
+        if (definitions.some((d) => d.isRunning)) break;
+
+        executionCompleted = true;
         break;
       case 'activity.wait': {
         emitListenerEvent('wait', owner.getApi(message), Api());
@@ -288,20 +340,23 @@ function Execution(engine, definitions, options) {
       case 'definition.error':
         engine.emit('error', message.content.error);
         break;
-      case 'definition.leave':
-        state = 'idle';
-
-        teardownDefinition(owner);
-        engine.emit('end', Api());
-        break;
     }
 
     emitListenerEvent(routingKey, owner.getApi(message), Api());
+
     if (executionStopped) {
-      stopped = true;
       state = 'stopped';
       logger.debug(`<${engine.name}> stopped`);
-      engine.emit('stop', Api());
+      onComplete('stop');
+    } else if (executionCompleted) {
+      state = 'idle';
+      logger.debug(`<${engine.name}> completed`);
+      onComplete('end');
+    }
+
+    function onComplete(eventName) {
+      broker.publish('event', `engine.${eventName}`, {}, {type: eventName});
+      engine.emit(eventName, Api());
     }
 
     function emitListenerEvent(...args) {
@@ -331,6 +386,13 @@ function Execution(engine, definitions, options) {
       ...definition.getState(),
       source: definition.environment.options.source.serialize(),
     };
+  }
+
+  function onBrokerReturn(message) {
+    if (message.properties.type === 'error') {
+      const err = message.content.error;
+      throw err;
+    }
   }
 
   function Api() {

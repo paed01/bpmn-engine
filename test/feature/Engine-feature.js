@@ -320,9 +320,116 @@ Feature('Engine', () => {
     });
 
     And('extension have saved output in environment', () => {
-
       expect(engine.environment.output).to.have.property('task1').that.eql({surname: 'von Rosen'});
       expect(engine.environment.output).to.have.property('task2', 2);
+    });
+  });
+
+  Scenario('Execute with callback', () => {
+    let engine, source;
+    Given('a massive source with user task, timeouts, and the rest', () => {
+      source = factory.resource('mother-of-all.bpmn');
+    });
+
+    And('an engine', () => {
+      engine = Engine({
+        name: 'Engine feature',
+        source,
+      });
+    });
+
+    let listener;
+    And('expects to be signaled when waiting', () => {
+      listener = new EventEmitter();
+      listener.on('activity.wait', (activityApi) => {
+        activityApi.signal();
+      });
+    });
+
+    let callbackCalled, complete;
+    When('source is executed with a callback', async () => {
+      complete = engine.waitFor('end');
+
+      callbackCalled = new Promise((resolve, reject) => {
+        engine.execute({listener}, (err, endApi) => {
+          if (err) return reject(err);
+          resolve(endApi);
+        });
+      });
+    });
+
+    Then('callback is called when engine execution is completed', async () => {
+      await complete;
+      const api = await callbackCalled;
+      expect(api).to.have.property('state', 'idle');
+    });
+  });
+
+  Scenario('Resume with callback', () => {
+    let engine, source;
+    Given('a massive source with user task, timeouts, and the rest', () => {
+      source = factory.resource('mother-of-all.bpmn');
+    });
+
+    And('an engine', () => {
+      engine = Engine({
+        name: 'Engine feature',
+        source,
+      });
+    });
+
+    let listener;
+    And('expects to be stopped at first user task wait', () => {
+      listener = new EventEmitter();
+      listener.once('activity.wait', (activityApi, engineApi) => {
+        engineApi.stop();
+      });
+    });
+
+    let callbackCalled, stopped;
+    When('source is executed with a callback', async () => {
+      stopped = engine.waitFor('stop');
+
+      callbackCalled = new Promise((resolve, reject) => {
+        engine.execute({listener}, (err, endApi) => {
+          if (err) return reject(err);
+          resolve(endApi);
+        });
+      });
+    });
+
+    Given('engine is stopped when waiting for user task', () => {
+      return stopped;
+    });
+
+    Then('callback is called with stopped engine api', async () => {
+      const api = await callbackCalled;
+      expect(api).to.have.property('stopped', true);
+    });
+
+    Given('expects to be signaled at user task wait', () => {
+      listener = new EventEmitter();
+      listener.on('activity.wait', (activityApi) => {
+        activityApi.signal();
+      });
+    });
+
+    let ended;
+    When('engine is resumed with a callback', async () => {
+      ended = engine.waitFor('end');
+
+      callbackCalled = new Promise((resolve, reject) => {
+        engine.resume({listener}, (err, endApi) => {
+          if (err) return reject(err);
+          resolve(endApi);
+        });
+      });
+    });
+
+    Then('callback is called when engine execution is completed', async () => {
+      await ended;
+      const api = await callbackCalled;
+      expect(api).to.have.property('state', 'idle');
     });
   });
 });
