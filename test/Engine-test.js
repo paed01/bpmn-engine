@@ -135,7 +135,7 @@ describe('Engine', () => {
     });
   });
 
-  describe('execute()', () => {
+  describe('execute([options, callback])', () => {
     it('runs definition and emits end when completed', (done) => {
       const engine = Bpmn.Engine({
         source: factory.valid()
@@ -205,13 +205,29 @@ describe('Engine', () => {
       });
     });
 
-    it('rejects if not well formatted xml', (done) => {
+    it('returns error in callback if not well formatted xml', (done) => {
       const engine = Bpmn.Engine({
         source: 'jdalsk'
       });
 
-      engine.execute().catch((err) => {
+      engine.execute((err) => {
         expect(err).to.be.an('error');
+        done();
+      });
+    });
+
+    it('returns error in callback if no executable process', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="false" />
+      </definitions>`;
+
+      const engine = Bpmn.Engine({
+        source
+      });
+      engine.execute((err) => {
+        expect(err).to.be.an('error').and.match(/executable process/);
         done();
       });
     });
@@ -227,7 +243,7 @@ describe('Engine', () => {
         source
       });
       engine.execute().catch((err) => {
-        expect(err).to.be.an('error').and.match(/ executable process/);
+        expect(err).to.be.an('error').and.match(/executable process/);
         done();
       });
     });
@@ -287,6 +303,31 @@ describe('Engine', () => {
       });
 
       engine.execute();
+    });
+
+    it('returns error in callback if execution fails', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <serviceTask id="serviceTask" name="Get" implementation="\${environment.services.get}" />
+        </process>
+      </definitions>`;
+
+      const engine = Bpmn.Engine({
+        name: 'end test',
+        source,
+        services: {
+          get: (context, next) => {
+            next(new Error('Inner error'));
+          }
+        }
+      });
+
+      engine.execute((err) => {
+        expect(err).to.be.an('error').and.match(/Inner error/i);
+        done();
+      });
     });
 
     it('throws error if listener doesn´t have an emit function', async () => {
@@ -717,6 +758,110 @@ describe('Engine', () => {
     // });
   });
 
+  describe('broker', () => {
+    it('re-publishes all element activities to engine broker', async () => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <task id="task" />
+          <sequenceFlow id="flow" sourceRef="task" targetRef="end" />
+          <endEvent id="end" />
+        </process>
+      </definitions>`;
+
+      const engine = Bpmn.Engine({
+        name: 'broker test',
+        source,
+      });
+      const messages = [];
+      engine.broker.subscribeTmp('event', '#', (routingKey) => {
+        messages.push(routingKey);
+      }, {noAck: true});
+
+      await engine.execute();
+
+      expect(messages).to.eql([
+        'definition.enter',
+        'definition.start',
+        'process.enter',
+        'process.start',
+        'activity.init',
+        'activity.enter',
+        'activity.start',
+        'activity.execution.completed',
+        'activity.end',
+        'flow.pre-flight',
+        'activity.leave',
+        'flow.take',
+        'activity.enter',
+        'activity.start',
+        'activity.execution.completed',
+        'activity.end',
+        'activity.leave',
+        'process.end',
+        'process.leave',
+        'definition.end',
+        'definition.leave',
+        'engine.end',
+      ]);
+    });
+  });
+
+  describe('getPostponed()', () => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theWaitingGame" isExecutable="true">
+        <startEvent id="start" />
+        <parallelGateway id="fork" />
+        <userTask id="userTask1" />
+        <userTask id="userTask2" />
+        <task id="task" />
+        <parallelGateway id="join" />
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="fork" />
+        <sequenceFlow id="flow2" sourceRef="fork" targetRef="userTask1" />
+        <sequenceFlow id="flow3" sourceRef="fork" targetRef="userTask2" />
+        <sequenceFlow id="flow4" sourceRef="fork" targetRef="task" />
+        <sequenceFlow id="flow5" sourceRef="userTask1" targetRef="join" />
+        <sequenceFlow id="flow6" sourceRef="userTask2" targetRef="join" />
+        <sequenceFlow id="flow7" sourceRef="task" targetRef="join" />
+        <sequenceFlow id="flowEnd" sourceRef="join" targetRef="end" />
+      </process>
+    </definitions>`;
+
+    let engine;
+    before('given an engine', () => {
+      engine = Bpmn.Engine({
+        name: 'get postponed',
+        source
+      });
+    });
+
+    it('returns activities in a postponed state', async () => {
+      const listener = new EventEmitter();
+      let engineApi;
+      listener.once('wait', (_, api) => {
+        engineApi = api;
+      });
+
+      await engine.execute({
+        listener
+      });
+
+      expect(engineApi.definitions).to.have.length(1);
+
+      const completed = engine.waitFor('end');
+
+      engineApi.getPostponed().forEach((c) => {
+        c.signal();
+      });
+
+      return completed;
+    });
+  });
+
   describe.skip('multiple definitions', () => {
     const engine = Bpmn.Engine();
     const listener = new EventEmitter();
@@ -829,107 +974,4 @@ describe('Engine', () => {
     });
   });
 
-  describe.skip('signal()', () => {
-    it('without definitions is ignored', (done) => {
-      const engine = Bpmn.Engine();
-      engine.signal();
-      done();
-    });
-
-    it('without waiting task is ignored', (done) => {
-      const source = `
-      <?xml version="1.0" encoding="UTF-8"?>
-      <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-        <process id="singleUserTask" isExecutable="true">
-          <task id="task" />
-        </process>
-      </definitions>
-      `;
-      const engine = Bpmn.Engine({
-        source
-      });
-      engine.execute(() => {
-        engine.signal('task');
-        done();
-      });
-    });
-
-    it('with non-existing activity id is ignored', (done) => {
-      const source = `
-      <?xml version="1.0" encoding="UTF-8"?>
-      <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-        <process id="singleUserTask" isExecutable="true">
-          <userTask id="userTask" />
-        </process>
-      </definitions>`;
-      const engine = Bpmn.Engine({
-        source
-      });
-      const listener = new EventEmitter();
-      listener.once('wait', () => {
-        engine.signal('task');
-        done();
-      });
-
-      engine.execute({listener});
-    });
-  });
-
-  describe.skip('getPostponed()', () => {
-    const source = `
-    <?xml version="1.0" encoding="UTF-8"?>
-    <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-      <process id="theWaitingGame" isExecutable="true">
-        <startEvent id="start" />
-        <parallelGateway id="fork" />
-        <userTask id="userTask1" />
-        <userTask id="userTask2" />
-        <task id="task" />
-        <parallelGateway id="join" />
-        <endEvent id="end" />
-        <sequenceFlow id="flow1" sourceRef="start" targetRef="fork" />
-        <sequenceFlow id="flow2" sourceRef="fork" targetRef="userTask1" />
-        <sequenceFlow id="flow3" sourceRef="fork" targetRef="userTask2" />
-        <sequenceFlow id="flow4" sourceRef="fork" targetRef="task" />
-        <sequenceFlow id="flow5" sourceRef="userTask1" targetRef="join" />
-        <sequenceFlow id="flow6" sourceRef="userTask2" targetRef="join" />
-        <sequenceFlow id="flow7" sourceRef="task" targetRef="join" />
-        <sequenceFlow id="flowEnd" sourceRef="join" targetRef="end" />
-      </process>
-    </definitions>`;
-
-    let engine, pending;
-    before('given an engine', () => {
-      engine = Bpmn.Engine({
-        name: 'get pending',
-        source
-      });
-    });
-
-    it('when executed', (done) => {
-      const listener = new EventEmitter();
-      listener.once('wait', () => {
-        pending = engine.getPostponed();
-        done();
-      });
-
-      engine.execute({
-        listener
-      });
-    });
-
-    it('then all entered activities are returned', (done) => {
-      expect(pending.definitions).to.have.length(1);
-      expect(pending.definitions[0]).to.have.property('children').with.length(5);
-      done();
-    });
-
-    it('comples when all user tasks are signaled', (done) => {
-      engine.once('end', done.bind(null, null));
-
-      pending.definitions[0].children.filter(c => c.type === 'bpmn:UserTask').forEach((c) => {
-        engine.signal(c.id);
-      });
-    });
-  });
 });

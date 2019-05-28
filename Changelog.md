@@ -5,8 +5,13 @@ Changelog
 
 Use [bpmn-elements](https://github.com/paed01/bpmn-elements) to execute elements.
 
+Behind the scenes the entire definition execution is replaced with [bpmn-elements](https://github.com/paed01/bpmn-elements)
+
 ## Breaking changes
 - Node version >= 10 is required
+- Events are not emitted with name of the activity, i.e. no more `enter-task_a8dje7` emits
+- Most events are emitted with the type of element as prefix, e.g. `activity.start`, one exception is `wait` wich is still emitted as `wait`
+- `getPendingActivities()` is renamed to `getPostponed()`
 
 ## Changes
 - Change license to MIT

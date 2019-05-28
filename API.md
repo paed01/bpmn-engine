@@ -1,5 +1,5 @@
 <!-- version -->
-# 5.0.0-rc2 API Reference
+# 6.0.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -12,19 +12,13 @@
       - [Execution `services`](#execution-services)
     - [`getDefinition(callback)`](#getdefinitioncallback)
     - [`getDefinitions(callback)`](#getdefinitionscallback)
-    - [`getPendingActivities()`](#getpendingactivities)
+    - [`getPostponed()`](#getpostponed)
     - [`getState()`](#getstate)
-    - [`signal(activityId[, message])`](#signalactivityid-message)
     - [`stop()`](#stop)
-  - [`Engine.resume(state, [options, [callback]])`](#engineresumestate-options-callback)
+  - [`resume(state, [options, [callback]])`](#resumestate-options-callback)
   - [Engine events](#engine-events)
   - [Activity events](#activity-events)
   - [Sequence flow events](#sequence-flow-events)
-- [Transformer](#transformer)
-  - [`transform(sourceXml, options, callback)`](#transformsourcexml-options-callback)
-- [Validation](#validation)
-  - [`validateModdleContext(moddleContext)`](#validatemoddlecontextmoddlecontext)
-  - [`validateOptions(executeOptions)`](#validateoptionsexecuteoptions)
 - [Expressions](#expressions)
 
 <!-- tocstop -->
@@ -35,24 +29,42 @@ The engine. Executes passed BPMN definitions.
 
 ## `Engine([options])`
 
-Creates a new Engine object where:
+Creates a new Engine.
 
-- `options`: Optional object
-  - `name`: Optional name of engine,
-  - `source`: Bpmn definition source as String or Buffer
-  - [`extensions`](/docs/Extensions.md): Optional moddle parse extensions
-  - `moddleContext`: Optional parsed moddle context object
+Arguments:
+- `options`: Optional options, passed to [environment](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md):
+  - `name`: optional name of engine,
+  - `source`: BPMN 2.0 definition source as string
+  - `moddleOptions`: optional bpmn-moddle options
+  - `moddleContext`: optional BPMN 2.0 definition moddle context
+  - `scripts`: optional [inline script handler](https://github.com/paed01/bpmn-elements/blob/master/docs/Scripts.md), defaults to vm module handling, i.e. JavaScript
+  - `Logger`: optional [Logger factory](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md#logger), defaults to [debug](https://www.npmjs.com/package/debug) logger
 
-Options `source` and `context` are mutually exclusive.
-
-Moddle options must be used if an extension is required when parsing BPMN-source. The object will be passed on to the constructor of `bpmn-moddle`. See [camunda-bpmn-moddle][1] for example.
+Returns:
+- `name`: engine name
+- `broker`: engine [broker](https://github.com/paed01/smqp)
+- `state`: engine state
+- `stopped`: boolean stopped
+- `execution`: current engine execution
+- `environment`: engine environment
+- `logger`: engine logger
+- `async execute()`: execute definition
+- `async getDefinitionById()`: get definition by id
+- `async getDefinitions()`: get all definitions
+- `async getState()`: get execution serialized state
+- `recover()`: recover from state
+- `async resume()`:
+- `stop()`: stop execution
+- `waitFor()`: wait for engine events, returns Promise
 
 ```javascript
 const {Engine} = require('bpmn-engine');
 const fs = require('fs');
 
 const engine = Engine({
-  source: fs.readFileSync('./test/resources/mother-of-all.bpmn')
+  name: 'mother of all',
+  source: fs.readFileSync('./test/resources/mother-of-all.bpmn'),
+  moddleOptions: require('camunda-bpmn-moddle/resources/camunda')
 });
 ```
 
@@ -66,8 +78,7 @@ Execute definition with:
   - [`services`](#execution-services): Optional object with service definitions
 - `callback`: optional callback
   - `err`: Error if any
-  - `definition`: Executing definition
-  - `siblings`: List of all definitions including executing
+  - `execution`: Engine execution
 
 ```javascript
 'use strict';
@@ -113,7 +124,7 @@ const {EventEmitter} = require('events');
 
 const listener = new EventEmitter();
 
-listener.on('wait-userTask', (task, instance) => {
+listener.on('wait', (task, instance) => {
   console.log(`${task.type} <${task.id}> of ${instance.id} is waiting for input`);
   task.signal('don´t wait for me');
 });
@@ -126,8 +137,8 @@ engine.execute({
 A generic event is also emitted, i.e. only the [event](#activity-events) is emitted.
 
 ```js
-listener.on('entered', (task, instance) => {
-  console.log(`${task.type} <${task.id}> of ${instance.id} is entered`);
+listener.on('activity.enter', (activity, instance) => {
+  console.log(`${activity.type} <${activity.id}> of ${instance.id} is entered`);
 });
 ```
 
@@ -149,6 +160,7 @@ const {Engine} = require('bpmn-engine');
 const fs = require('fs');
 
 const engine = Engine({
+  name: 'using variables',
   source: fs.readFileSync('./test/resources/simple-task.bpmn')
 });
 
@@ -166,39 +178,26 @@ engine.execute({
 
 #### Execution `services`
 
-A service is a module used by e.g. a script tasks or a condition where:
+A service is a function exposed on `environment.services`.
 
 ```javascript
+const bent = require('bent');
+
 const options = {
   services: {
-    get: {
-      module: 'request',
-      type: 'require',
-      fnName: 'get'
-    },
-    checkState: (message) => {
-      return message.variables.statusCode === 200;
-    }
+    get: bent('json'),
   }
 };
 ```
 
-- `name`: Exposed name in the engine
-  - `module`: Module or global name
-  - `type`: Optional type, supported types are `require` and `global`, defaults to `require`
-  - `fnName`: Optional module function name
-
-If the process will be stopped and resumed the module structure is to prefer. But it is also possible to send in functions, aware that they will not be serialized when getting state.
-
-The module name can be a npm module, local module or a global reference. If a local module is used the path must be relative from execution path, i.e. `process.cwd()`.
 
 ```javascript
 'use strict';
 
 const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
+const bent = require('bent');
 
-const processXml = `
+const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
@@ -206,15 +205,14 @@ const processXml = `
     <scriptTask id="scriptTask" scriptFormat="Javascript">
       <script>
         <![CDATA[
-          const request = services.request;
+          const get = environment.services.get;
 
           const self = this;
 
-          request.get('http://example.com/test', (err, resp, body) => {
-            if (err) return next(err);
-            self.variables.scriptTaskCompleted = true;
+          get('http://example.com/test').then((resp) => {
+            environment.variables.scriptTaskCompleted = true;
             next(null, {result: body});
-          })
+          }).catch((err) => next)
         ]]>
       </script>
     </scriptTask>
@@ -225,50 +223,30 @@ const processXml = `
 </definitions>`;
 
 const engine = Engine({
-  source: processXml
+  name: 'services doc',
+  source
 });
 
-const services = {
-  request: {
-    module: 'request'
-  },
-  put: {
-    module: 'request',
-    fnName: 'put'
-  },
-  require: {
-    module: 'require',
-    type: 'global'
-  },
-  serviceFn: {
-    module: './test/helpers/testHelpers',
-    fnName: 'serviceFn'
-  }
-};
-
 engine.execute({
-  services: services
+  services: {
+    get: bent('json')
+  },
+  checkState: (message) => {
+    return message.variables.statusCode === 200;
+  }
 }, (err, instance) => {
   if (err) throw err;
-  console.log('completed')
+  console.log('completed', instance.name)
 });
 ```
 
-### `getDefinition(callback)`
+### `getDefinitionById(id)`
 
-Utility function to get first definition.
+Get definition by id, returns Promise
 
-- `callback(err, firstDefinition)`:
-  - `err`: Occassional Error if definitions failed to load
-  - `firstDefinition`: First found definition
+### `getDefinitions()`
 
-### `getDefinitions(callback)`
-
-Get definitions. Loads definitions from sources or passed moddle contexts.
-
-- `callback(err, definitions)`:
-  - `err`: Occassional Error if definitions failed to load
-  - `definition`: List of added definitions
+Get all definitions
 
 ```javascript
 const {Engine} = require('bpmn-engine');
@@ -298,9 +276,9 @@ engine.getDefinitions((err, definitions) => {
 });
 ```
 
-### `getPendingActivities()`
+### `getPostponed()`
 
-Get activities that are in an entered state.
+Get activities that are in a postponed state.
 
 - `state`: State of engine
 - `definitions`: List of definitions
@@ -310,7 +288,7 @@ Get activities that are in an entered state.
     - `entered`: Boolean indicating that the child is currently executing
     - `waiting`: Boolean indicating if the task is in a waiting state
 
-```javascript
+```js
 'use strict';
 
 const {Engine} = require('bpmn-engine');
@@ -357,7 +335,7 @@ const engine = Engine({
 const listener = new EventEmitter();
 
 listener.on('wait', (api) => {
-  const pending = engine.getPendingActivities();
+  const pending = engine.getPostponed();
   console.log('PENDING', JSON.stringify(pending, null, 2));
 
   if (api.form) {
@@ -433,53 +411,6 @@ engine.execute({
 });
 ```
 
-### `signal(activityId[, message])`
-
-Signal an activity that is waiting.
-
-- `activityId`: Activity Id
-- `message`: Activity input message
-
-Returns boolean, `true` if signal was approved and `false` otherwise.
-
-```javascript
-'use strict';
-
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
-
-const source = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <userTask id="userTask" />
-    <endEvent id="theEnd" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
-    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
-  </process>
-</definitions>`;
-
-const engine = Engine({
-  source
-});
-const listener = new EventEmitter();
-
-let state;
-listener.once('wait', (activity) => {
-  engine.signal(activity.id);
-});
-
-engine.execute({
-  variables: {
-    executionId: 'some-random-id'
-  },
-  listener
-}, (err, execution) => {
-  if (err) throw err;
-});
-```
-
 ### `stop()`
 
 Stop execution. The instance is terminated.
@@ -508,7 +439,7 @@ const engine = Engine({
 const listener = new EventEmitter();
 
 let state;
-listener.once('wait-userTask', (activity) => {
+listener.once('wait', (activity) => {
   engine.stop();
   state = engine.getState();
 });
@@ -523,7 +454,7 @@ engine.execute({
 });
 ```
 
-## `Engine.resume(state, [options, [callback]])`
+## `resume(state, [options, [callback]])`
 
 Resume execution function with previously saved engine state.
 
@@ -558,115 +489,26 @@ const state = db.getSavedState('some-random-id', (err, state) => {
 
 Engine emits the following events:
 
-- `error`: An non-recoverable error has occurred, with arguments
-  - `err`: The error
-  - `eventSource`: The source instance that emitted error, e.g. a task or other activitiy
+- `error`: An non-recoverable error has occurred
 - `end`: Execution has completed or was stopped
-  - `lastReportingDefinition`: Last reporting definition instance
 
 ## Activity events
 
 Each activity and flow emits events when changing state.
 
-- `enter`: An activity is entered
-- `start`: An activity is started
-- `wait`: A start event or user task waits for signal
-- `end`: A task has ended successfully
-- `cancel`: An activity execution was canceled
-- `leave`: The execution left the activity, emitted asynchronously
-- `error`: An non-recoverable error has occurred
-  The error event will not be emitted if an `bpmn:errorEvent` is attached
+- `activity.enter`: An activity is entered
+- `activity.start`: An activity is started
+- `activity.wait`: An event or user task waits for signal
+- `activity.end`: A task has ended successfully
+- `activity.cancel`: An activity execution was canceled
+- `activity.leave`: The execution left the activity
+- `activity.stop`: Activity run was stopped
+- `activity.error`: An non-recoverable error has occurred
 
 ## Sequence flow events
 
-- `taken`: The sequence flow was taken
-- `discarded`: The sequence flow was discarded
-
-# Transformer
-
-Basically a wrapper around [`bpmn-moddle.fromXml`][2].
-
-## `transform(sourceXml, options, callback)`
-
-- `sourceXml`: String with bpmn definition source
-- `options`: Options to pass to [`bpmn-moddle`][2]
-- `callback`: callback
-  - `err`: Occasional error
-  - `definition`: Bpmn definition
-  - `moddleContext`: Bpmn moddle context
-
-```javascript
-const {Engine, transformer} = require('bpmn-engine');
-
-const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions id="transformer" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <userTask id="userTask" />
-    <endEvent id="theEnd" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
-    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
-  </process>
-</definitions>`;
-
-transformer.transform(processXml, {
-  camunda: require('camunda-bpmn-moddle/resources/camunda')
-}, (err, def, moddleContext) => {
-  const engine = Engine({
-    name: 'initiateWithModdleContext',
-    moddleContext: moddleContext
-  });
-
-  engine.execute((err, instance) => {
-    if (err) throw err;
-
-    console.log('Definition completed with process', instance.mainProcess.id);
-  });
-});
-```
-
-# Validation
-
-Bpmn engine exposes validation functions.
-
-## `validateModdleContext(moddleContext)`
-
-Validate moddle context to ensure that it is executable. Returns list of error instances, if any.
-
-- `moddleContext`: Moddle context object
-
-```javascript
-const {transformer, validation} = require('bpmn-engine');
-const {EventEmitter} = require('events');
-
-const processXml = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions id="validate" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess2" isExecutable="true">
-    <startEvent id="theStart" />
-    <exclusiveGateway id="decision" default="flow2" />
-    <endEvent id="end1" />
-    <endEvent id="end2" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
-    <sequenceFlow id="flow2" sourceRef="decision" targetRef="end2">
-      <conditionExpression xsi:type="tFormalExpression" language="JavaScript">true</conditionExpression>
-    </sequenceFlow>
-  </process>
-</definitions>`;
-
-transformer.transform(processXml, {
-  camunda: require('camunda-bpmn-moddle/resources/camunda')
-}, (err, def, moddleContext) => {
-  console.log(validation.validateModdleContext(moddleContext));
-});
-```
-
-## `validateOptions(executeOptions)`
-
-Validate [execution options](#executeoptions-callback) to ensure that it is correct. Throws error if invalid.
-
-- `executeOptions`: Execution options object
+- `flow.take`: The sequence flow was taken
+- `flow.discard`: The sequence flow was discarded
 
 # Expressions
 

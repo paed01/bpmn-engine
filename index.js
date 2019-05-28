@@ -99,8 +99,13 @@ function Engine(options = {}) {
 
   async function execute(...args) {
     const [executeOptions, callback] = getOptionsAndCallback(...args);
-
-    const runSources = await Promise.all(pendingSources);
+    let runSources;
+    try {
+      runSources = await Promise.all(pendingSources);
+    } catch (err) {
+      if (callback) return callback(err);
+      throw err;
+    }
     const definitions = runSources.map((source) => loadDefinition(source, executeOptions));
     execution = Execution(engine, definitions, options);
     return execution.execute(executeOptions, callback);
@@ -208,6 +213,8 @@ function Engine(options = {}) {
 
 function Execution(engine, definitions, options) {
   const {environment, logger, waitFor, broker} = engine;
+  broker.on('return', onBrokerReturn);
+
   let state = 'idle';
   let stopped;
 
@@ -262,9 +269,9 @@ function Execution(engine, definitions, options) {
       clearConsumers();
       return callback(null, Api());
     }
-    function cbError(_, err) {
+    function cbError(_, message) {
       clearConsumers();
-      return callback(err);
+      return callback(message.content);
     }
 
     function clearConsumers() {
@@ -291,8 +298,9 @@ function Execution(engine, definitions, options) {
       if (listener) definition.environment.options.listener = listener;
 
       definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, {noAck: true, consumerTag: '_engine_definition'});
-      definition.broker.subscribeTmp('event', 'process.#', onChildMessage, {noAck: true, consumerTag: '_engine_process_leave'});
-      definition.broker.subscribeTmp('event', 'activity.#', onChildMessage, {noAck: true, consumerTag: '_engine_activity_wait'});
+      definition.broker.subscribeTmp('event', 'process.#', onChildMessage, {noAck: true, consumerTag: '_engine_process'});
+      definition.broker.subscribeTmp('event', 'activity.#', onChildMessage, {noAck: true, consumerTag: '_engine_activity'});
+      definition.broker.subscribeTmp('event', 'flow.#', onChildMessage, {noAck: true, consumerTag: '_engine_flow'});
     }
   }
 
@@ -301,7 +309,7 @@ function Execution(engine, definitions, options) {
     const listener = ownerEnvironment.options && ownerEnvironment.options.listener;
     state = 'running';
 
-    let executionStopped, executionCompleted;
+    let executionStopped, executionCompleted, executionErrored;
     switch (routingKey) {
       case 'definition.stop':
         teardownDefinition(owner);
@@ -315,6 +323,10 @@ function Execution(engine, definitions, options) {
         if (definitions.some((d) => d.isRunning)) break;
 
         executionCompleted = true;
+        break;
+      case 'definition.error':
+        teardownDefinition(owner);
+        executionErrored = true;
         break;
       case 'activity.wait': {
         emitListenerEvent('wait', owner.getApi(message), Api());
@@ -337,12 +349,10 @@ function Execution(engine, definitions, options) {
         }
         break;
       }
-      case 'definition.error':
-        engine.emit('error', message.content.error);
-        break;
     }
 
     emitListenerEvent(routingKey, owner.getApi(message), Api());
+    broker.publish('event', routingKey, {...message.content}, {...message.properties, mandatory: false});
 
     if (executionStopped) {
       state = 'stopped';
@@ -352,11 +362,19 @@ function Execution(engine, definitions, options) {
       state = 'idle';
       logger.debug(`<${engine.name}> completed`);
       onComplete('end');
+    } else if (executionErrored) {
+      state = 'error';
+      logger.debug(`<${engine.name}> error`);
+      onError(message.content.error);
     }
 
     function onComplete(eventName) {
       broker.publish('event', `engine.${eventName}`, {}, {type: eventName});
       engine.emit(eventName, Api());
+    }
+
+    function onError(err) {
+      broker.publish('event', 'engine.error', err, {type: 'error', mandatory: true});
     }
 
     function emitListenerEvent(...args) {
@@ -367,8 +385,9 @@ function Execution(engine, definitions, options) {
 
   function teardownDefinition(definition) {
     definition.broker.cancel('_engine_definition');
-    definition.broker.cancel('_engine_process_leave');
-    definition.broker.cancel('_engine_activity_wait');
+    definition.broker.cancel('_engine_process');
+    definition.broker.cancel('_engine_activity');
+    definition.broker.cancel('_engine_flow');
   }
 
   function getState() {
@@ -390,8 +409,7 @@ function Execution(engine, definitions, options) {
 
   function onBrokerReturn(message) {
     if (message.properties.type === 'error') {
-      const err = message.content.error;
-      throw err;
+      engine.emit('error', message.content);
     }
   }
 
