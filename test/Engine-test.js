@@ -862,6 +862,35 @@ describe('Engine', () => {
     });
   });
 
+  describe('scripts', () => {
+    it('unsupported script format is ignored', async () => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <scriptTask id="task" scriptFormat="coffeescript">
+            <script>
+              <![CDATA[
+                if true then next() else next(new Error("tea"))
+              ]]>
+            </script>
+          </scriptTask>
+        </process>
+      </definitions>`;
+
+      const engine = Bpmn.Engine({source});
+
+      try {
+        await engine.execute();
+      } catch (e) {
+        var err = e; // eslint-disable-line
+      }
+
+      expect(err).to.be.ok;
+      expect(err).to.match(/unsupported/);
+    });
+  });
+
   describe('dataObjects', () => {
     it('adds dataObject values to output', (done) => {
       const source = `
@@ -904,117 +933,4 @@ describe('Engine', () => {
       });
     });
   });
-
-  describe.skip('multiple definitions', () => {
-    const engine = Bpmn.Engine();
-    const listener = new EventEmitter();
-    const processes = [];
-
-    it('given we have a first definition', (done) => {
-      engine.addDefinitionBySource(factory.userTask('userTask1', 'def1'));
-      done();
-    });
-
-    it('and a second definition', (done) => {
-      engine.addDefinitionBySource(factory.userTask('userTask2', 'def2'));
-      done();
-    });
-
-    it('when we execute', (done) => {
-      let startCount = 0;
-      listener.on('start-theProcess', function EH(processApi) {
-        startCount++;
-
-        processes.push(processApi);
-        if (startCount === 2) {
-          listener.removeListener('start-theProcess', EH);
-          return done();
-        }
-      });
-
-      engine.execute({
-        listener
-      });
-    });
-
-    it('all processes are started', (done) => {
-      expect(processes.length).to.equal(2);
-      expect(processes[0].getState()).to.contain({entered: true});
-      expect(processes[1].getState()).to.contain({entered: true});
-      done();
-    });
-
-    it('when first process completes engine doesn´t emit end event', (done) => {
-      const endListener = () => {
-        expect.fail('Should not have ended');
-      };
-      engine.once('end', endListener);
-
-      const definition = engine.getDefinitionById('def1');
-
-      definition.once('end', () => {
-        engine.removeListener('end', endListener);
-        done();
-      });
-
-      definition.signal('userTask1');
-    });
-
-    it('when second process is completed engine emits end event', (done) => {
-      engine.once('end', () => {
-        done();
-      });
-
-      const definition = engine.getDefinitionById('def2');
-      definition.signal('userTask2');
-    });
-  });
-
-  describe.skip('addDefinitionBySource()', () => {
-    it('adds definition', (done) => {
-      const engine = Bpmn.Engine();
-      engine.addDefinitionBySource(factory.valid());
-
-      engine.getDefinitions((err) => {
-        if (err) return done(err);
-        expect(engine.definitions.length).to.equal(1);
-        done();
-      });
-    });
-
-    it('adds definition once, identified by id', (done) => {
-      const engine = Bpmn.Engine();
-      const source = factory.valid('def1');
-      engine.addDefinitionBySource(source);
-      engine.addDefinitionBySource(source);
-
-      engine.getDefinitions((err) => {
-        if (err) return done(err);
-        expect(engine.definitions.length).to.equal(1);
-        done();
-      });
-    });
-
-    it('adds definition with moddleOptions', (done) => {
-      const engine = Bpmn.Engine();
-      engine.addDefinitionBySource(factory.valid());
-
-      engine.getDefinitions((err) => {
-        if (err) return done(err);
-        expect(engine.definitions.length).to.equal(1);
-        done();
-      });
-    });
-
-    it('returns error in callback if transform error', (done) => {
-      const engine = Bpmn.Engine();
-      engine.addDefinitionBySource('not xml');
-      engine.getDefinitions((err) => {
-        expect(err).to.be.an('error');
-        expect(engine.definitions.length).to.equal(0);
-        done();
-      });
-    });
-  });
-
 });

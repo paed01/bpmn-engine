@@ -3,7 +3,7 @@ bpmn-engine
 
 [![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/latest/active.svg)](http://www.repostatus.org/#active)
 
-[![Build Status](https://travis-ci.org/paed01/bpmn-engine.svg?branch=develop)](https://travis-ci.org/paed01/bpmn-engine)[![Build status](https://ci.appveyor.com/api/projects/status/670n39fivq1g3nu5/branch/develop?svg=true)](https://ci.appveyor.com/project/paed01/bpmn-engine/branch/develop)[![Coverage Status](https://coveralls.io/repos/github/paed01/bpmn-engine/badge.svg?branch=develop)](https://coveralls.io/github/paed01/bpmn-engine?branch=develop)
+[![Build Status](https://travis-ci.org/paed01/bpmn-engine.svg)](https://travis-ci.org/paed01/bpmn-engine)[![Build status](https://ci.appveyor.com/api/projects/status/670n39fivq1g3nu5?svg=true)](https://ci.appveyor.com/project/paed01/bpmn-engine)
 
 ## Introduction
 BPMN 2.0 execution engine. Open source javascript workflow engine.
@@ -18,7 +18,6 @@ BPMN 2.0 execution engine. Open source javascript workflow engine.
 ### Documentation
 - [API](/docs/API.md)
 - [Examples](/docs/Examples.md)
-- [Extensions](/docs/Extensions.md)
 
 # Supported elements
 

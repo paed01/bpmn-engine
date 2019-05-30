@@ -15,6 +15,11 @@ Feature('Engine', () => {
       engine = Engine({
         name: 'Engine feature',
         source,
+        services: {
+          serviceFn(...args) {
+            args.pop()();
+          }
+        }
       });
     });
 
@@ -68,7 +73,7 @@ Feature('Engine', () => {
       return subProcess.owner.waitFor('leave');
     });
 
-    Then('engine comletes run', () => {
+    Then('engine completes run', () => {
       expect(api.state).to.equal('idle');
     });
 
@@ -315,7 +320,7 @@ Feature('Engine', () => {
       task.signal(2);
     });
 
-    Then('engine comletes run', () => {
+    Then('engine completes run', () => {
       expect(api.state).to.equal('idle');
     });
 
@@ -335,6 +340,11 @@ Feature('Engine', () => {
       engine = Engine({
         name: 'Engine feature',
         source,
+        services: {
+          serviceFn(...args) {
+            args.pop()();
+          }
+        }
       });
     });
 
@@ -375,6 +385,11 @@ Feature('Engine', () => {
       engine = Engine({
         name: 'Engine feature',
         source,
+        services: {
+          serviceFn(...args) {
+            args.pop()();
+          }
+        }
       });
     });
 

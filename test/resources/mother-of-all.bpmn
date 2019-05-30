@@ -106,12 +106,7 @@ next();</bpmn:script>
       <bpmn:incoming>SequenceFlow_0o4woz0</bpmn:incoming>
       <bpmn:errorEventDefinition />
     </bpmn:endEvent>
-    <bpmn:serviceTask id="participantServiceTask" name="Service">
-      <bpmn:extensionElements>
-        <camunda:properties>
-          <camunda:property name="service" value="runService" />
-        </camunda:properties>
-      </bpmn:extensionElements>
+    <bpmn:serviceTask id="participantServiceTask" name="Service" implementation="${environment.services.serviceFn}">
       <bpmn:incoming>SequenceFlow_1ifeyo8</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1uyrch1</bpmn:outgoing>
     </bpmn:serviceTask>
