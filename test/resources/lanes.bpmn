@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.2.2">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.9.0">
   <bpmn:collaboration id="Collaboration_051sqjx">
     <bpmn:participant id="Participant_1vfdw5m" name="Main" processRef="mainProcess" />
     <bpmn:participant id="lane2" name="Listener" processRef="participantProcess" />
     <bpmn:messageFlow id="fromMainTaskMessageFlow" sourceRef="task1" targetRef="messageStartEvent" />
-    <bpmn:messageFlow id="MessageFlow_0rma79h" sourceRef="meTooTask" targetRef="intermediate" />
+    <bpmn:messageFlow id="fromOtherTaskMessageFlow" sourceRef="completeTask" targetRef="intermediate" />
   </bpmn:collaboration>
   <bpmn:process id="mainProcess" isExecutable="true">
     <bpmn:laneSet>
@@ -46,14 +46,14 @@
       <bpmn:outgoing>SequenceFlow_12npryr</bpmn:outgoing>
       <bpmn:messageEventDefinition messageRef="Message_0n5n7nu" />
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_12npryr" sourceRef="messageStartEvent" targetRef="Task_1of688q" />
-    <bpmn:task id="Task_1of688q" name="Other task">
+    <bpmn:sequenceFlow id="SequenceFlow_12npryr" sourceRef="messageStartEvent" targetRef="otherTask" />
+    <bpmn:task id="otherTask" name="Other task">
       <bpmn:incoming>SequenceFlow_12npryr</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1wte4yj</bpmn:outgoing>
     </bpmn:task>
-    <bpmn:sequenceFlow id="SequenceFlow_1wte4yj" sourceRef="Task_1of688q" targetRef="meTooTask" />
-    <bpmn:sequenceFlow id="SequenceFlow_0rsh2z2" sourceRef="meTooTask" targetRef="EndEvent_09x95tc" />
-    <bpmn:task id="meTooTask" name="Complete task">
+    <bpmn:sequenceFlow id="SequenceFlow_1wte4yj" sourceRef="otherTask" targetRef="completeTask" />
+    <bpmn:sequenceFlow id="SequenceFlow_0rsh2z2" sourceRef="completeTask" targetRef="participantEndEvent" />
+    <bpmn:task id="completeTask" name="Complete task">
       <bpmn:extensionElements>
         <camunda:inputOutput>
           <camunda:inputParameter name="messageToMain">Done!</camunda:inputParameter>
@@ -65,7 +65,7 @@
       <bpmn:incoming>SequenceFlow_1wte4yj</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0rsh2z2</bpmn:outgoing>
     </bpmn:task>
-    <bpmn:endEvent id="EndEvent_09x95tc">
+    <bpmn:endEvent id="participantEndEvent">
       <bpmn:incoming>SequenceFlow_0rsh2z2</bpmn:incoming>
     </bpmn:endEvent>
   </bpmn:process>
@@ -97,7 +97,7 @@
       <bpmndi:BPMNShape id="Participant_0pykme0_di" bpmnElement="lane2">
         <dc:Bounds x="232" y="166" width="600" height="158" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_1of688q_di" bpmnElement="Task_1of688q">
+      <bpmndi:BPMNShape id="Task_1of688q_di" bpmnElement="otherTask">
         <dc:Bounds x="397.6703910614525" y="199.79329608938545" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StartEvent_1qlp3rv_di" bpmnElement="messageStartEvent">
@@ -122,7 +122,7 @@
           <dc:Bounds x="316.5" y="215" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="EndEvent_09x95tc_di" bpmnElement="EndEvent_09x95tc">
+      <bpmndi:BPMNShape id="EndEvent_09x95tc_di" bpmnElement="participantEndEvent">
         <dc:Bounds x="719.6703910614525" y="222" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="692.6703910614525" y="258" width="90" height="20" />
@@ -135,7 +135,7 @@
           <dc:Bounds x="480" y="215" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Task_1tyjnld_di" bpmnElement="meTooTask">
+      <bpmndi:BPMNShape id="Task_1tyjnld_di" bpmnElement="completeTask">
         <dc:Bounds x="551.6703910614525" y="200" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0rsh2z2_di" bpmnElement="SequenceFlow_0rsh2z2">
@@ -158,7 +158,7 @@
           <dc:Bounds x="556.6703910614525" y="63" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="MessageFlow_0rma79h_di" bpmnElement="MessageFlow_0rma79h">
+      <bpmndi:BPMNEdge id="MessageFlow_0rma79h_di" bpmnElement="fromOtherTaskMessageFlow">
         <di:waypoint xsi:type="dc:Point" x="602" y="200" />
         <di:waypoint xsi:type="dc:Point" x="602" y="63" />
         <bpmndi:BPMNLabel>

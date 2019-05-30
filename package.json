@@ -1,27 +1,33 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "4.2.0",
-  "author": "Pål Edman <pal.edman@gmail.com> (https://github.com/paed01)",
+  "version": "6.0.0",
   "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/paed01/bpmn-engine"
   },
+  "author": {
+    "name": "Pål Edman",
+    "url": "https://github.com/paed01"
+  },
   "engines": {
-    "node": ">=4"
+    "node": ">=10"
   },
   "files": [
-    "API.md",
-    "index.js",
-    "LICENSE",
-    "README.md",
-    "lib/"
+    "dist/",
+    "lib/",
+    "index.js"
   ],
   "scripts": {
-    "test": "make test-cov-lcov",
-    "wintest": "node_modules/.bin/lab -v",
-    "toc": "node generate-api-toc ./API.md,./docs/Examples.md,./docs/Definition.md,./docs/ServiceTask.md,./docs/Activity.md,./docs/Form.md"
+    "pretest": "npm run bundle",
+    "test": "mocha -R dot",
+    "posttest": "eslint . --cache && npm run toc",
+    "prepare": "npm run bundle",
+    "bundle": "rollup -c rollup.config.js",
+    "wintest": "node_modules/.bin/mocha",
+    "toc": "node scripts/generate-api-toc ./docs/API.md,./docs/Examples.md",
+    "test-md": "node scripts/test-markdown.js ./docs/API.md && node scripts/test-markdown.js ./docs/Examples.md"
   },
   "keywords": [
     "workflow",
@@ -31,27 +37,48 @@
     "bpmn",
     "bpmn 2"
   ],
+  "license": "MIT",
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/paed01/bpmn-engine/master/LICENSE"
+    }
+  ],
+  "nyc": {
+    "exclude": [
+      "dist",
+      "test",
+      "rollup.config.js"
+    ]
+  },
   "devDependencies": {
-    "camunda-bpmn-moddle": "^0.11.0",
-    "code": "^4.0.0",
-    "coveralls": "^2.13.1",
-    "lab": "^13.0.4",
-    "markdown-toc": "^1.1.0",
-    "nock": "^9.0.13",
-    "request": "^2.81.0",
+    "@babel/cli": "^7.4.4",
+    "@babel/core": "^7.4.5",
+    "@babel/preset-env": "^7.4.5",
+    "bent": "^1.5.13",
+    "bpmn-moddle": "^5.1.6",
+    "camunda-bpmn-moddle": "^3.2.0",
+    "chai": "^4.1.2",
+    "coveralls": "^3.0.3",
+    "eslint": "^5.16.0",
+    "markdown-toc": "^1.2.0",
+    "mocha": "^6.1.3",
+    "mocha-cakes-2": "^3.3.0",
+    "nock": "^10.0.6",
+    "nyc": "^14.1.1",
+    "request": "^2.83.0",
+    "rollup": "^1.12.5",
+    "rollup-plugin-babel": "^4.3.2",
+    "rollup-plugin-commonjs": "^10.0.0",
+    "rollup-plugin-json": "^4.0.0",
+    "rollup-plugin-license": "^0.8.1",
+    "rollup-plugin-node-resolve": "^5.0.0",
     "unnecessary": "^1.3.3"
   },
   "dependencies": {
-    "async": "^2.4.0",
-    "bpmn-moddle": "^0.14.0",
-    "debug": "^2.6.6",
-    "iso8601-duration": "^1.0.6"
-  },
-  "license": "BSD-3-Clause",
-  "licenses": [
-    {
-      "type": "BSD-3-Clause",
-      "url": "https://github.com/paed01/bpmn-node/master/LICENSE"
-    }
-  ]
+    "bpmn-elements": "0.0.13",
+    "debug": "^4.1.1",
+    "moddle-context-serializer": "^0.2.0",
+    "smqp": "^1.6.0"
+  }
 }

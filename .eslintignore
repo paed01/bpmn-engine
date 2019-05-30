@@ -1,2 +1,5 @@
+.nyc_output
+coverage/
 node_modules
 tmp/
+dist/

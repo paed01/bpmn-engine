@@ -3,7 +3,7 @@ bpmn-engine
 
 [![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/latest/active.svg)](http://www.repostatus.org/#active)
 
-[![Build Status](https://travis-ci.org/paed01/bpmn-engine.svg?branch=master)](https://travis-ci.org/paed01/bpmn-engine)[![Build status](https://ci.appveyor.com/api/projects/status/670n39fivq1g3nu5/branch/master?svg=true)](https://ci.appveyor.com/project/paed01/bpmn-engine/branch/master)[![Coverage Status](https://coveralls.io/repos/github/paed01/bpmn-engine/badge.svg?branch=master)](https://coveralls.io/github/paed01/bpmn-engine?branch=master)
+[![Build Status](https://travis-ci.org/paed01/bpmn-engine.svg)](https://travis-ci.org/paed01/bpmn-engine)[![Build status](https://ci.appveyor.com/api/projects/status/670n39fivq1g3nu5?svg=true)](https://ci.appveyor.com/project/paed01/bpmn-engine)
 
 ## Introduction
 BPMN 2.0 execution engine. Open source javascript workflow engine.
@@ -16,49 +16,12 @@ BPMN 2.0 execution engine. Open source javascript workflow engine.
 - [Changelog](/Changelog.md)
 
 ### Documentation
-- [API](/API.md)
+- [API](/docs/API.md)
 - [Examples](/docs/Examples.md)
 
 # Supported elements
 
-The following elements are tested and supported.
-
-- [Definition](/docs/Definition.md)
-- Process
-- Lane
-- Flows:
-  - Sequence: javascript- and expression conditions
-  - Message
-- Events
-  - [Start](/docs/StartEvent.md)
-  - End
-  - Error
-    - Boundary
-  - Message
-    - Start
-    - Intermediate
-  - Timer: with duration as ISO_8601
-    - Intermediate
-    - Boundary Interupting
-    - Boundary Non-interupting
-- Tasks
-  - Manual: needs signal
-  - Sequential loop
-    - Cardinality, integer or expression
-    - Condition, script or expression
-    - Collection (camunda expression)
-  - [Service](/docs/ServiceTask.md)
-  - SubProcess
-  - Script: javascript only
-  - Task: completes immediately
-  - User: needs signal
-  - Send
-  - Receive
-- [Gateways](/docs/Gateways.md)
-  - Exclusive
-  - Inclusive
-  - Parallel: join and fork
-- [Form](/docs/Form.md)
+See [bpmn-elements](https://github.com/paed01/bpmn-elements) for supported elements.
 
 # Process modeller
 

@@ -32,3 +32,6 @@ config/_revision
 
 # eslint
 .eslintcache
+
+package-lock.json
+.nyc_output

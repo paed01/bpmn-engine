@@ -4,9 +4,11 @@
     <bpmn:startEvent id="Start" name="Start">
       <bpmn:outgoing>startToParallel1</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:endEvent id="End" name="End">
-      <bpmn:incoming>TaskCToEnd</bpmn:incoming>
-    </bpmn:endEvent>
+    <bpmn:parallelGateway id="Parallel1" name="Parallel 1">
+      <bpmn:incoming>startToParallel1</bpmn:incoming>
+      <bpmn:outgoing>Parallel1ToTaskA</bpmn:outgoing>
+      <bpmn:outgoing>Parallel1ToTaskB</bpmn:outgoing>
+    </bpmn:parallelGateway>
     <bpmn:task id="Task_A" name="Task A">
       <bpmn:incoming>Parallel1ToTaskA</bpmn:incoming>
       <bpmn:outgoing>TaskAToParallel2</bpmn:outgoing>
@@ -15,29 +17,27 @@
       <bpmn:incoming>Parallel1ToTaskB</bpmn:incoming>
       <bpmn:outgoing>TaskBToParallel2</bpmn:outgoing>
       <bpmn:script><![CDATA[
-				this.services.log('Waiting Task B for 5 seconds...');
-				this.services.timeout(() => { this.services.log('Resume Task B!'); next() }, this.variables.timeout);
+        this.environment.services.log('Waiting Task B for 5 seconds...');
+        this.environment.services.timeout(() => { this.environment.services.log('Resume Task B!'); next() }, this.environment.variables.timeout);
       ]]></bpmn:script>
     </bpmn:scriptTask>
-    <bpmn:parallelGateway id="Parallel1" name="Parallel 1">
-      <bpmn:incoming>startToParallel1</bpmn:incoming>
-      <bpmn:outgoing>Parallel1ToTaskA</bpmn:outgoing>
-      <bpmn:outgoing>Parallel1ToTaskB</bpmn:outgoing>
-    </bpmn:parallelGateway>
     <bpmn:parallelGateway id="Parallel2" name="Parallel 2">
       <bpmn:incoming>TaskAToParallel2</bpmn:incoming>
       <bpmn:incoming>TaskBToParallel2</bpmn:incoming>
       <bpmn:outgoing>Parallel2ToTaskC</bpmn:outgoing>
     </bpmn:parallelGateway>
+    <bpmn:task id="Task_C" name="Task C">
+      <bpmn:incoming>Parallel2ToTaskC</bpmn:incoming>
+      <bpmn:outgoing>TaskCToEnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End" name="End">
+      <bpmn:incoming>TaskCToEnd</bpmn:incoming>
+    </bpmn:endEvent>
     <bpmn:sequenceFlow id="startToParallel1" sourceRef="Start" targetRef="Parallel1" />
     <bpmn:sequenceFlow id="Parallel1ToTaskA" sourceRef="Parallel1" targetRef="Task_A" />
     <bpmn:sequenceFlow id="TaskAToParallel2" sourceRef="Task_A" targetRef="Parallel2" />
     <bpmn:sequenceFlow id="Parallel1ToTaskB" sourceRef="Parallel1" targetRef="Task_B" />
     <bpmn:sequenceFlow id="TaskBToParallel2" sourceRef="Task_B" targetRef="Parallel2" />
-    <bpmn:task id="Task_C" name="Task C">
-      <bpmn:incoming>Parallel2ToTaskC</bpmn:incoming>
-      <bpmn:outgoing>TaskCToEnd</bpmn:outgoing>
-    </bpmn:task>
     <bpmn:sequenceFlow id="Parallel2ToTaskC" sourceRef="Parallel2" targetRef="Task_C" />
     <bpmn:sequenceFlow id="TaskCToEnd" sourceRef="Task_C" targetRef="End" />
   </bpmn:process>
