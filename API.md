@@ -53,7 +53,7 @@ Returns:
 - `async getDefinitions()`: get all definitions
 - `async getState()`: get execution serialized state
 - `recover()`: recover from state
-- `async resume()`:
+- `async resume()`: resume execution
 - `stop()`: stop execution
 - `waitFor()`: wait for engine events, returns Promise
 

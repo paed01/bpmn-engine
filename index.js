@@ -310,6 +310,8 @@ function Execution(engine, definitions, options) {
     state = 'running';
 
     let executionStopped, executionCompleted, executionErrored;
+    const elementApi = owner.getApi && owner.getApi(message);
+
     switch (routingKey) {
       case 'definition.stop':
         teardownDefinition(owner);
@@ -334,7 +336,6 @@ function Execution(engine, definitions, options) {
       }
       case 'process.end': {
         if (!message.content.output) break;
-
         for (const key in message.content.output) {
           switch (key) {
             case 'data': {
@@ -351,7 +352,7 @@ function Execution(engine, definitions, options) {
       }
     }
 
-    emitListenerEvent(routingKey, owner.getApi(message), Api());
+    emitListenerEvent(routingKey, elementApi, Api());
     broker.publish('event', routingKey, {...message.content}, {...message.properties, mandatory: false});
 
     if (executionStopped) {

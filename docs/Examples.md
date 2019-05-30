@@ -24,6 +24,8 @@ How to reference service function.
 
 # Execute
 ```javascript
+'use strict';
+
 const {Engine} = require('bpmn-engine');
 
 const id = Math.floor(Math.random() * 10000);
@@ -54,7 +56,7 @@ engine.execute({
     id
   }
 }, (err, execution) => {
-  console.log('Execution completed with id', execution);
+  console.log('Execution completed with id', execution.environment.variables.id);
 });
 ```
 
@@ -92,18 +94,24 @@ const engine = Engine({
 
 const listener = new EventEmitter();
 
-listener.once('wait-userTask', (task) => {
+listener.once('wait', (task) => {
   task.signal({
-    sirname: 'von Rosen'
+    ioSpecification: {
+      dataOutputs: [{
+        id: 'userInput',
+        value: 'von Rosen',
+      }]
+    }
   });
 });
 
-listener.on('taken', (flow) => {
+listener.on('flow.take', (flow) => {
   console.log(`flow <${flow.id}> was taken`);
 });
 
 engine.once('end', (execution) => {
-  console.log(`User sirname is ${execution.getOutput().inputFromUser}`);
+  console.log(execution.environment.variables)
+  console.log(`User sirname is ${execution.environment.output.inputFromUser}`);
 });
 
 engine.execute({
@@ -134,12 +142,12 @@ const source = `
     <sequenceFlow id="flow1" sourceRef="start" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.variables.input <= 50
+      this.environment.variables.input <= 50
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.variables.input > 50
+      this.environment.variables.input > 50
       ]]></conditionExpression>
     </sequenceFlow>
   </process>
@@ -152,10 +160,10 @@ const engine = Engine({
 
 const listener = new EventEmitter();
 
-listener.on('start-end1', (api) => {
-  throw new Error(`<${api.id}> was not supposed to be taken, check your input`);
+listener.on('activity.start', (api) => {
+  if (api.id === 'end1') throw new Error(`<${api.id}> was not supposed to be taken, check your input`);
+  if (api.id === 'end2') console.log(`<${api.id}> correct decision was taken`);
 });
-listener.on('start-end2', (api) => console.log(`<${api.id}> correct decision was taken`));
 
 engine.execute({
   listener,
@@ -181,6 +189,7 @@ The `next` callback takes the following arguments:
 'use strict';
 
 const {Engine} = require('bpmn-engine');
+const bent = require('bent');
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -190,15 +199,15 @@ const source = `
   <scriptTask id="scriptTask" scriptFormat="Javascript">
     <script>
       <![CDATA[
-        const request = services.request;
-
-        const self = this;
-
-        request.get('http://example.com/test', (err, resp, body) => {
+        const getJson = this.environment.services.get;
+        getJson('http://example.com/test').then((resp) => {
           if (err) return next(err);
-          self.variables.scriptTaskCompleted = true;
-          next(null, {result: body});
-        })
+          this.environment.output.statusCode = err.statusCode;
+          next(null, {result: resp.body});
+        }).catch((err) => {
+          this.environment.output.statusCode = err.statusCode;
+          next();
+        });
       ]]>
     </script>
   </scriptTask>
@@ -218,19 +227,17 @@ engine.execute({
     scriptTaskCompleted: false
   },
   services: {
-    request: {
-      module: 'request'
-    }
+    get: bent('json'),
   }
 });
 engine.on('end', (execution) => {
-  console.log('Output:', execution.getOutput());
+  console.log('Output:', execution.environment.output);
 });
 ```
 
 # User task
 
-User tasks waits for signal to complete. The signal function can be called on the emitted event or the executing instance.
+User tasks waits for signal to complete.
 
 ```javascript
 'use strict';
@@ -242,18 +249,11 @@ const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
-    <dataObjectReference id="inputFromUserRef" dataObjectRef="inputFromUser" />
-    <dataObject id="inputFromUser" />
-    <startEvent id="theStart" />
-    <userTask id="userTask">
-      <ioSpecification id="inputSpec">
-        <dataOutput id="userInput" name="sirname" />
-      </ioSpecification>
-      <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUserRef" />
-    </userTask>
-    <endEvent id="theEnd" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
-    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+    <startEvent id="start" />
+    <userTask id="task" />
+    <endEvent id="end" />
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+    <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
   </process>
 </definitions>`;
 
@@ -264,59 +264,21 @@ const engine = Engine({
 
 const listener = new EventEmitter();
 
-listener.once('wait-userTask', (activityApi, processInstance) => {
-  processInstance.signal(activityApi.id, {
+listener.once('wait', (elementApi) => {
+  elementApi.signal({
     sirname: 'von Rosen'
   });
+});
+
+listener.on('activity.end', (elementApi, engineApi) => {
+  if (elementApi.content.output) engineApi.environment.output[elementApi.id] = elementApi.content.output;
 });
 
 engine.execute({
   listener
 }, (err, execution) => {
   if (err) throw err;
-  console.log(`User sirname is ${execution.getOutput().inputFromUser}`);
-});
-```
-
-Since, Imho, the data flow in bpmn2 is overcomplex the input is stored as `taskInput` with id if data associations dont´t exist.
-
-```javascript
-'use strict';
-
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
-
-const source = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <process id="theProcess" isExecutable="true">
-    <startEvent id="theStart" />
-    <userTask id="userTask" />
-    <endEvent id="theEnd" />
-    <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
-    <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
-  </process>
-</definitions>`;
-
-const engine = Engine({
-  name: 'script task example',
-  source
-});
-
-const listener = new EventEmitter();
-
-listener.once('wait-userTask', (activityApi, processInstance) => {
-  processInstance.signal(activityApi.id, {
-    sirname: 'von Rosen'
-  });
-});
-
-engine.execute({
-  listener
-}, (err, execution) => {
-  if (err) throw err;
-
-  console.log(`User sirname is ${execution.getOutput().taskInput.userTask.sirname}`);
+  console.log(`User sirname is ${execution.environment.output.task.sirname}`);
 });
 ```
 
@@ -335,25 +297,25 @@ A service task will receive the data available on the process instance. The sign
 'use strict';
 
 const {Engine} = require('bpmn-engine');
-const request = require('request');
 
-const services = require('../test/helpers/testHelpers');
-services.getRequest = (message, callback) => {
-  request.get(message.variables.apiPath, {json: true}, (err, resp, body) => {
-    if (err) return callback(err);
-    return callback(null, {
-      statusCode: resp.statusCode,
-      data: body
-    });
-  });
-};
+const getJson = require('bent')('json');
+
+async function getRequest(scope, callback) {
+  try {
+    var result = await getJson(scope.environment.variables.apiPath);
+  } catch (err) {
+    return callback(null, err);
+  }
+
+  return callback(null, result.body);
+}
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
   <process id="theProcess" isExecutable="true">
   <startEvent id="theStart" />
-  <serviceTask id="serviceTask" implementation="\${services.getRequest}" />
+  <serviceTask id="serviceTask" implementation="\${environment.services.getRequest}" camunda:result="serviceResult" />
   <endEvent id="theEnd" />
   <sequenceFlow id="flow1" sourceRef="theStart" targetRef="serviceTask" />
   <sequenceFlow id="flow2" sourceRef="serviceTask" targetRef="theEnd" />
@@ -362,7 +324,24 @@ const source = `
 
 const engine = Engine({
   name: 'service task example 1',
-  source
+  source,
+  moddleOptions: {
+    camunda: require('camunda-bpmn-moddle/resources/camunda')
+  },
+  extensions: {
+    fetchForm(activity) {
+      if (!activity.behaviour.result) return;
+      const endRoutingKey = 'run.result.end';
+      activity.on('end', (_, {content}) => {
+        console.log(content)
+      });
+    },
+    saveToEnvironmentOutput(activity, {environment}) {
+      activity.on('end', (api) => {
+        environment.output[api.id] = api.content.output;
+      });
+    }
+  }
 });
 
 engine.execute({
@@ -370,15 +349,12 @@ engine.execute({
     apiPath: 'http://example.com/test'
   },
   services: {
-    getRequest: {
-      module: './test/helpers/testHelpers',
-      fnName: 'getRequest'
-    }
+    getRequest,
   }
 }, (err, execution) => {
   if (err) throw err;
 
-  console.log('Service task output:', execution.getOutput().taskInput.serviceTask);
+  console.log('Service task output:', execution.environment.output);
 });
 ```
 
@@ -476,16 +452,17 @@ engine.once('end', () => {
 'use strict';
 
 const {Engine} = require('bpmn-engine');
+const JsExtension = require('../test/resources/JsExtension')
 const extensions = {
-  js: require('../test/resources/JsExtension')
-}
+  js: JsExtension.extension
+};
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
   <process id="Process_with_loop" isExecutable="true">
-    <serviceTask id="recurring" name="Each item" implementation="\${services.loop}" js:result="sum">
-      <multiInstanceLoopCharacteristics isSequential="true" js:collection="\${variables.input}" />
+    <serviceTask id="recurring" name="Each item" implementation="\${environment.services.loop}" js:result="sum">
+      <multiInstanceLoopCharacteristics isSequential="true" js:collection="\${environment.variables.input}" />
     </serviceTask>
     <boundaryEvent id="errorEvent" attachedToRef="recurring">
       <errorEventDefinition />
@@ -496,7 +473,8 @@ const source = `
 
 const engine = Engine({
   source,
-  extensions
+  moddleOptions: JsExtension.moddleOptions,
+  extensions,
 });
 
 let sum = 0;

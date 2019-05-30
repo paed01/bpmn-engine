@@ -26,7 +26,7 @@
     "prepare": "npm run bundle",
     "bundle": "rollup -c rollup.config.js",
     "wintest": "node_modules/.bin/mocha",
-    "toc": "node scripts/generate-api-toc ./API.md,./docs/Examples.md,./docs/Definition.md,./docs/ServiceTask.md,./docs/Activity.md,./docs/Extensions.md"
+    "toc": "node scripts/generate-api-toc ./API.md,./docs/Examples.md,./docs/Extensions.md"
   },
   "keywords": [
     "workflow",
@@ -68,7 +68,7 @@
     "unnecessary": "^1.3.3"
   },
   "dependencies": {
-    "bpmn-elements": "0.0.10",
+    "bpmn-elements": "0.0.12",
     "debug": "^4.1.1",
     "moddle-context-serializer": "^0.2.0",
     "smqp": "^1.6.0"

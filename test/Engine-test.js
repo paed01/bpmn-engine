@@ -862,6 +862,49 @@ describe('Engine', () => {
     });
   });
 
+  describe('dataObjects', () => {
+    it('adds dataObject values to output', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <dataObjectReference id="inputFromUserRef" dataObjectRef="inputFromUser" />
+          <dataObject id="inputFromUser" />
+          <startEvent id="theStart" />
+          <userTask id="userTask">
+            <ioSpecification id="inputSpec">
+              <dataOutput id="userInput" name="sirname" />
+            </ioSpecification>
+            <dataOutputAssociation id="associatedWith" sourceRef="userInput" targetRef="inputFromUserRef" />
+          </userTask>
+          <endEvent id="theEnd" />
+          <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+          <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+        </process>
+      </definitions>`;
+
+      const engine = Bpmn.Engine({source});
+      const listener = new EventEmitter();
+      listener.on('wait', (userTask) => {
+        expect(userTask.content).to.have.property('ioSpecification').with.property('dataOutputs').with.length(1);
+        userTask.signal({
+          ioSpecification: {
+            dataOutputs: [{
+              id: 'userInput',
+              value: 'von Rosen'
+            }]
+          }
+        });
+      });
+
+      engine.execute({listener}, (err, api) => {
+        if (err) return done(err);
+        expect(api.environment.output).to.have.property('data').with.property('inputFromUser', 'von Rosen');
+        done();
+      });
+    });
+  });
+
   describe.skip('multiple definitions', () => {
     const engine = Bpmn.Engine();
     const listener = new EventEmitter();
