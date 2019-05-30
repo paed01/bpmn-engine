@@ -3,13 +3,25 @@
 
 const fs = require('fs');
 const vm = require('vm');
+const nock = require('nock');
+
 const {name, main} = require('../package.json');
+
+process.on('unhandledRejection', (error) => {
+  console.log('unhandledRejection', error);
+});
+
+nock.enableNetConnect(/(localhost|127\.0\.0\.1):\d+/);
+nock('https://example.com')
+  .get(/.*/)
+  .reply(200, {data: 1})
+  .persist();
 
 const exPattern = /```javascript\n([\s\S]*?)```/ig;
 let lines = 0;
 let prevCharIdx = 0;
 
-const file = process.argv[2] || './API.md';
+const file = process.argv[2] || './docs/API.md';
 const blockIdx = Number(process.argv[3]);
 
 function parseDoc(filePath) {

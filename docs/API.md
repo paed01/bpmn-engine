@@ -10,12 +10,13 @@
       - [Execution `listener`](#execution-listener)
       - [Execution `variables`](#execution-variables)
       - [Execution `services`](#execution-services)
-    - [`getDefinition(callback)`](#getdefinitioncallback)
-    - [`getDefinitions(callback)`](#getdefinitionscallback)
+    - [`getDefinitionById(id)`](#getdefinitionbyidid)
+    - [`getDefinitions()`](#getdefinitions)
     - [`getPostponed()`](#getpostponed)
     - [`getState()`](#getstate)
     - [`stop()`](#stop)
-  - [`resume(state, [options, [callback]])`](#resumestate-options-callback)
+    - [`recover(state)`](#recoverstate)
+    - [`resume([options, [callback]])`](#resumeoptions-callback)
   - [Engine events](#engine-events)
   - [Activity events](#activity-events)
   - [Sequence flow events](#sequence-flow-events)
@@ -64,7 +65,9 @@ const fs = require('fs');
 const engine = Engine({
   name: 'mother of all',
   source: fs.readFileSync('./test/resources/mother-of-all.bpmn'),
-  moddleOptions: require('camunda-bpmn-moddle/resources/camunda')
+  moddleOptions: {
+    camunda: require('camunda-bpmn-moddle/resources/camunda')
+  }
 });
 ```
 
@@ -81,9 +84,8 @@ Execute definition with:
   - `execution`: Engine execution
 
 ```javascript
-'use strict';
-
 const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -109,9 +111,14 @@ const engine = Engine({
   source
 });
 
-engine.execute((err, definition) => {
+const listener = new EventEmitter();
+listener.on('wait', (elementApi) => {
+  elementApi.signal();
+});
+
+engine.execute({listener}, (err) => {
   if (err) throw err;
-  console.log('completed')
+  console.log('completed');
 });
 ```
 
@@ -119,33 +126,37 @@ engine.execute((err, definition) => {
 
 An `EventEmitter` object with listeners. [Event names](#activity-events) are composed by activity event name and activity id, e.g. `wait-userTask`.
 
-```js
+```javascript
+const {Engine} = require('bpmn-engine');
 const {EventEmitter} = require('events');
 
-const listener = new EventEmitter();
+const source = `
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <userTask id="userTask" />
+  </process>
+</definitions>`;
 
-listener.on('wait', (task, instance) => {
-  console.log(`${task.type} <${task.id}> of ${instance.id} is waiting for input`);
-  task.signal('don´t wait for me');
+const engine = Engine({
+  name: 'first listener',
+  source
+});
+
+const listener = new EventEmitter();
+listener.on('activity.enter', (elementApi, engineApi) => {
+  console.log(`${elementApi.type} <${elementApi.id}> of ${engineApi.name} is entered`);
+});
+
+listener.on('wait', (elemntApi, instance) => {
+  console.log(`${elemntApi.type} <${elemntApi.id}> of ${instance.name} is waiting for input`);
+  elemntApi.signal('don´t wait for me');
 });
 
 engine.execute({
   listener
-})
-```
-
-A generic event is also emitted, i.e. only the [event](#activity-events) is emitted.
-
-```js
-listener.on('activity.enter', (activity, instance) => {
-  console.log(`${activity.type} <${activity.id}> of ${instance.id} is entered`);
 });
 ```
-
-Event arguments are:
-
-- `activity`: The activity
-- `instance`: The running process instance
 
 > NB! `error` events are NOT emitted through the listener. Errors can be caught by an bpmn error event if they are to be handled.
 
@@ -154,8 +165,6 @@ Event arguments are:
 Execution variables are passed as the first argument to `#execute`.
 
 ```javascript
-'use strict';
-
 const {Engine} = require('bpmn-engine');
 const fs = require('fs');
 
@@ -170,9 +179,9 @@ const variables = {
 
 engine.execute({
   variables
-}, (err, instance) => {
+}, (err, engineApi) => {
   if (err) throw err;
-  console.log('completed')
+  console.log('completed');
 });
 ```
 
@@ -181,19 +190,6 @@ engine.execute({
 A service is a function exposed on `environment.services`.
 
 ```javascript
-const bent = require('bent');
-
-const options = {
-  services: {
-    get: bent('json'),
-  }
-};
-```
-
-
-```javascript
-'use strict';
-
 const {Engine} = require('bpmn-engine');
 const bent = require('bent');
 
@@ -209,10 +205,10 @@ const source = `
 
           const self = this;
 
-          get('http://example.com/test').then((resp) => {
+          get('https://example.com/test').then((body) => {
             environment.variables.scriptTaskCompleted = true;
             next(null, {result: body});
-          }).catch((err) => next)
+          }).catch(next)
         ]]>
       </script>
     </scriptTask>
@@ -230,13 +226,10 @@ const engine = Engine({
 engine.execute({
   services: {
     get: bent('json')
-  },
-  checkState: (message) => {
-    return message.variables.statusCode === 200;
   }
-}, (err, instance) => {
+}, (err, engineApi) => {
   if (err) throw err;
-  console.log('completed', instance.name)
+  console.log('completed', engineApi.name, engineApi.environment.variables);
 });
 ```
 
@@ -267,11 +260,8 @@ const engine = Engine({
   source
 });
 
-engine.getDefinitions((err, definitions) => {
-  if (err) throw err;
-
+engine.getDefinitions().then((definitions) => {
   console.log('Loaded', definitions[0].id);
-
   console.log('The definition comes with process', definitions[0].getProcesses()[0].id);
 });
 ```
@@ -288,12 +278,9 @@ Get activities that are in a postponed state.
     - `entered`: Boolean indicating that the child is currently executing
     - `waiting`: Boolean indicating if the task is in a waiting state
 
-```js
-'use strict';
-
+```javascript
 const {Engine} = require('bpmn-engine');
 const {EventEmitter} = require('events');
-const camundaExt = require('bpmn-engine-extensions/resources/camunda');
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -327,6 +314,9 @@ const source = `
 const engine = Engine({
   name: 'Pending game',
   source,
+  moddleOptions: {
+    camunda: require('camunda-bpmn-moddle/resources/camunda.json'),
+  },
   extensions: {
     camunda: camundaExt
   }
@@ -334,20 +324,38 @@ const engine = Engine({
 
 const listener = new EventEmitter();
 
-listener.on('wait', (api) => {
-  const pending = engine.getPostponed();
-  console.log('PENDING', JSON.stringify(pending, null, 2));
-
-  if (api.form) {
-    api.form.getFields()[0].set("mememe");
+listener.on('wait', (elementApi) => {
+  if (elementApi.content.form) {
+    console.log(elementApi.content.form);
+    return elementApi.signal(elementApi.content.form.fields.reduce((result, field) => {
+      if (field.label === 'Surname') result[field.id] = 'von Rosen';
+      if (field.label === 'Given name') result[field.id] = 'Sebastian';
+      return result;
+    }, {}));
   }
 
-  engine.signal(api.id);
+  elementApi.signal();
 });
 
 engine.execute({
   listener
 });
+
+function camundaExt(activity) {
+  if (!activity.behaviour.extensionElements) return;
+  let form;
+  for (const extn of activity.behaviour.extensionElements.values) {
+    if (extn.$type === 'camunda:FormData') {
+      form = {
+        fields: extn.fields.map((f) => ({...f}))
+      };
+    }
+  }
+
+  activity.on('enter', () => {
+    activity.broker.publish('format', 'run.form', {form});
+  });
+}
 ```
 
 ### `getState()`
@@ -368,8 +376,6 @@ The saved state will include the following content:
       - `entered`: Boolean indicating if the child is currently executing
 
 ```javascript
-'use strict';
-
 const {Engine} = require('bpmn-engine');
 const {EventEmitter} = require('events');
 const fs = require('fs');
@@ -406,7 +412,7 @@ listener.once('start', () => {
 
 engine.execute({
   listener
-}, (err, execution) => {
+}, (err) => {
   if (err) throw err;
 });
 ```
@@ -416,8 +422,6 @@ engine.execute({
 Stop execution. The instance is terminated.
 
 ```javascript
-'use strict';
-
 const {Engine} = require('bpmn-engine');
 const {EventEmitter} = require('events');
 
@@ -439,7 +443,7 @@ const engine = Engine({
 const listener = new EventEmitter();
 
 let state;
-listener.once('wait', (activity) => {
+listener.once('wait', () => {
   engine.stop();
   state = engine.getState();
 });
@@ -449,39 +453,37 @@ engine.execute({
     executionId: 'some-random-id'
   },
   listener
-}, (err, execution) => {
+}, (err) => {
   if (err) throw err;
 });
 ```
 
-## `resume(state, [options, [callback]])`
+### `recover(state)`
+
+Recover engine from state.
+
+```js
+const {Engine} = require('bpmn-engine');
+
+const state = fetchSomeState();
+const engine = Engine().recover(state);
+```
+
+### `resume([options, [callback]])`
 
 Resume execution function with previously saved engine state.
 
-```javascript
-'use strict';
-
+```js
 const {Engine} = require('bpmn-engine');
 const {EventEmitter} = require('events');
 
-// Retrieve saved state
-const state = db.getSavedState('some-random-id', (err, state) => {
-  if (err) return console.log(err.message);
+const state = fetchSomeState();
+const engine = Engine().recover(state);
 
-  console.log(state)
+const listener = new EventEmitter();
 
-  const listener = new EventEmitter();
-  listener.on('wait', (api) => {
-    api.signal();
-  });
-
-  const engine = Engine.resume(state, {listener});
-  engine.on('end', () => {
-    console.log('resumed instance completed');
-  });
-  engine.on('error', (err) => {
-    console.error('failed with', err);
-  });
+engine.resume({listener}, () => {
+  console.log('completed');
 });
 ```
 

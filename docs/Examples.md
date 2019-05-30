@@ -24,8 +24,6 @@ How to reference service function.
 
 # Execute
 ```javascript
-'use strict';
-
 const {Engine} = require('bpmn-engine');
 
 const id = Math.floor(Math.random() * 10000);
@@ -116,7 +114,7 @@ engine.once('end', (execution) => {
 
 engine.execute({
   listener
-}, (err, instance) => {
+}, (err) => {
   if (err) throw err;
 });
 ```
@@ -200,7 +198,7 @@ const source = `
     <script>
       <![CDATA[
         const getJson = this.environment.services.get;
-        getJson('http://example.com/test').then((resp) => {
+        getJson('https://example.com/test').then((resp) => {
           if (err) return next(err);
           this.environment.output.statusCode = err.statusCode;
           next(null, {result: resp.body});
@@ -307,7 +305,7 @@ async function getRequest(scope, callback) {
     return callback(null, err);
   }
 
-  return callback(null, result.body);
+  return callback(null, result);
 }
 
 const source = `
@@ -315,7 +313,7 @@ const source = `
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
   <process id="theProcess" isExecutable="true">
   <startEvent id="theStart" />
-  <serviceTask id="serviceTask" implementation="\${environment.services.getRequest}" camunda:result="serviceResult" />
+  <serviceTask id="serviceTask" implementation="\${environment.services.getRequest}" camunda:resultVariable="serviceResult" />
   <endEvent id="theEnd" />
   <sequenceFlow id="flow1" sourceRef="theStart" targetRef="serviceTask" />
   <sequenceFlow id="flow2" sourceRef="serviceTask" targetRef="theEnd" />
@@ -329,24 +327,19 @@ const engine = Engine({
     camunda: require('camunda-bpmn-moddle/resources/camunda')
   },
   extensions: {
-    fetchForm(activity) {
-      if (!activity.behaviour.result) return;
-      const endRoutingKey = 'run.result.end';
-      activity.on('end', (_, {content}) => {
-        console.log(content)
+    saveToResultVariable(activity) {
+      if (!activity.behaviour.resultVariable) return;
+
+      activity.on('end', ({environment, content}) => {
+        environment.output[activity.behaviour.resultVariable] = content.output[0];
       });
     },
-    saveToEnvironmentOutput(activity, {environment}) {
-      activity.on('end', (api) => {
-        environment.output[api.id] = api.content.output;
-      });
-    }
   }
 });
 
 engine.execute({
   variables: {
-    apiPath: 'http://example.com/test'
+    apiPath: 'https://example.com/test'
   },
   services: {
     getRequest,
@@ -354,20 +347,22 @@ engine.execute({
 }, (err, execution) => {
   if (err) throw err;
 
-  console.log('Service task output:', execution.environment.output);
+  console.log('Service task output:', execution.environment.output.serviceResult);
 });
 ```
 
 or if arguments must be passed, then `inputParameter` `arguments` must be defined. The result is an array with arguments from the service callback where first error argument is omitted.
 
 ```javascript
+'use strict';
+
 const {Engine} = require('bpmn-engine');
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
-    <serviceTask id="serviceTask" name="Get" implementation="\${services.getService()}" />
+    <serviceTask id="serviceTask" name="Get" implementation="\${environment.services.getService()}" />
   </process>
 </definitions>`;
 
@@ -380,25 +375,30 @@ engine.execute({
   services: {
     getService: () => {
       return (executionContext, callback) => {
-        callback(null, executionContext.variables.input);
+        callback(null, executionContext.environment.variables.input);
       };
     }
   },
   variables: {
     input: 1
+  },
+  extensions: {
+    saveToEnvironmentOutput(activity, {environment}) {
+      activity.on('end', (api) => {
+        environment.output[api.id] = api.content.output;
+      });
+    }
   }
 });
 
 engine.once('end', (execution) => {
-  console.log(execution.getOutput().taskInput.serviceTask);
+  console.log(execution.environment.output);
 });
 ```
 
 # Sequence flow with expression
 
 ```javascript
-'use strict';
-
 const {Engine} = require('bpmn-engine');
 const {EventEmitter} = require('events');
 
@@ -413,7 +413,7 @@ const source = `
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1" />
     <sequenceFlow id="flow3withExpression" sourceRef="decision" targetRef="end2">
-      <conditionExpression xsi:type="tFormalExpression">\${services.isBelow(variables.input,2)}</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">\${environment.services.isBelow(environment.variables.input,2)}</conditionExpression>
     </sequenceFlow>
   </process>
 </definitions>
@@ -425,8 +425,8 @@ const engine = Engine({
 });
 
 const listener = new EventEmitter();
-listener.on('end-end2', (api) => {
-  throw new Error(`<${api.id}> should not have been taken`);
+listener.on('activity.end', (elementApi) => {
+  if (elementApi.id === 'end2') throw new Error(`<${elementApi.id}> should not have been taken`);
 });
 
 engine.execute({
@@ -449,17 +449,14 @@ engine.once('end', () => {
 # Task loop over collection
 
 ```javascript
-'use strict';
-
 const {Engine} = require('bpmn-engine');
-const JsExtension = require('../test/resources/JsExtension')
-const extensions = {
-  js: JsExtension.extension
-};
+const JsExtension = require('../test/resources/JsExtension');
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
+<definitions id="Definitions_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:js="http://paed01.github.io/bpmn-engine/schema/2017/08/bpmn">
   <process id="Process_with_loop" isExecutable="true">
     <serviceTask id="recurring" name="Each item" implementation="\${environment.services.loop}" js:result="sum">
       <multiInstanceLoopCharacteristics isSequential="true" js:collection="\${environment.variables.input}" />
@@ -472,9 +469,14 @@ const source = `
 `;
 
 const engine = Engine({
+  name: 'loop collection',
   source,
-  moddleOptions: JsExtension.moddleOptions,
-  extensions,
+  moddleOptions: {
+    js: JsExtension.moddleOptions
+  },
+  extensions: {
+    js: JsExtension.extension
+  },
 });
 
 let sum = 0;
@@ -482,7 +484,7 @@ let sum = 0;
 engine.execute({
   services: {
     loop: (executionContext, callback) => {
-      sum += executionContext.item;
+      sum += executionContext.content.item;
       callback(null, sum);
     }
   },
@@ -491,7 +493,7 @@ engine.execute({
   }
 });
 
-engine.once('end', (execution) => {
+engine.once('end', () => {
   console.log(sum, 'aught to be 13 blazing fast');
 });
 ```

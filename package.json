@@ -22,11 +22,12 @@
   "scripts": {
     "pretest": "npm run bundle",
     "test": "mocha -R dot",
-    "posttest": "eslint . --cache",
+    "posttest": "eslint . --cache && npm run toc",
     "prepare": "npm run bundle",
     "bundle": "rollup -c rollup.config.js",
     "wintest": "node_modules/.bin/mocha",
-    "toc": "node scripts/generate-api-toc ./API.md,./docs/Examples.md,./docs/Extensions.md"
+    "toc": "node scripts/generate-api-toc ./docs/API.md,./docs/Examples.md,./docs/Extensions.md",
+    "test-md": "node scripts/test-markdown.js ./docs/API.md && node scripts/test-markdown.js ./docs/Examples.md"
   },
   "keywords": [
     "workflow",
@@ -51,7 +52,7 @@
     "bpmn-moddle": "^5.1.6",
     "camunda-bpmn-moddle": "^3.2.0",
     "chai": "^4.1.2",
-    "coveralls": "^3.0.0",
+    "coveralls": "^3.0.3",
     "eslint": "^5.16.0",
     "markdown-toc": "^1.2.0",
     "mocha": "^6.1.3",
