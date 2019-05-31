@@ -3,7 +3,7 @@
 const {Engine} = require('../..');
 
 Feature('extending behaviour', () => {
-  Scenario('Activity extension', () => {
+  Scenario('Activity form', () => {
     let engine, source;
     Given('a bpmn source with user tasks', () => {
       source = `
@@ -100,6 +100,85 @@ Feature('extending behaviour', () => {
     And('extension have saved output in environment', () => {
       expect(engine.environment.output).to.have.property('task1').that.eql({surname: 'von Rosen'});
       expect(engine.environment.output).to.have.property('task2', 2);
+    });
+  });
+
+  Scenario('Service task expression', () => {
+    let source;
+    Given('a bpmn source with user tasks', () => {
+      source = `
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="theProcess" isExecutable="true">
+          <serviceTask id="task1" camunda:expression="\${environment.services.serviceFn}" camunda:resultVariable="result" />
+        </process>
+      </definitions>`;
+    });
+
+    let ServiceExpression;
+    And('an service expression function', () => {
+      ServiceExpression = function ServiceExpressionFn(activity) {
+        const {type: atype, behaviour, environment} = activity;
+        const expression = behaviour.expression;
+
+        const type = `${atype}:expression`;
+
+        return {
+          type,
+          expression,
+          execute,
+        };
+
+        function execute(executionMessage, callback) {
+          const serviceFn = environment.resolveExpression(expression, executionMessage);
+          serviceFn.call(activity, executionMessage, (err, result) => {
+            callback(err, result);
+          });
+        }
+      };
+    });
+
+    let engine;
+    And('an engine loaded with extension for fetching form and saving output', () => {
+      engine = Engine({
+        name: 'extend service task',
+        source,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        },
+        services: {
+          serviceFn(scope, callback) {
+            callback(null, {data: 1});
+          }
+        },
+        extensions: {
+          camundaServiceTask(activity) {
+            if (activity.behaviour.expression) {
+              activity.behaviour.Service = ServiceExpression;
+            }
+            if (activity.behaviour.resultVariable) {
+              activity.on('end', (api) => {
+                activity.environment.output[activity.behaviour.resultVariable] = api.content.output;
+              });
+            }
+          },
+        }
+      });
+    });
+
+    let completed;
+    When('source is executed', async () => {
+      completed = engine.waitFor('end');
+      return engine.execute();
+    });
+
+    And('engine completes execution', () => {
+      return completed;
+    });
+
+    Then('extension have saved output in environment', () => {
+      expect(engine.environment.output).to.have.property('result').that.eql({data: 1});
     });
   });
 });

@@ -11,7 +11,8 @@ Examples
 - [Service task](#service-task)
 - [Sequence flow with condition expression](#sequence-flow-with-condition-expression)
 - [Task loop over collection](#task-loop-over-collection)
-- [Extend behaviour](#extend-behaviour)
+- [Extend form behaviour](#extend-form-behaviour)
+- [Extend service task behaviour](#extend-service-task-behaviour)
 
 <!-- tocstop -->
 
@@ -491,7 +492,7 @@ engine.once('end', () => {
 });
 ```
 
-# Extend behaviour
+# Extend form behaviour
 
 Pass an extend function with options.
 
@@ -573,4 +574,68 @@ function camundaExt(activity) {
     activity.broker.publish('format', 'run.form', {form});
   });
 }
+```
+
+# Extend service task behaviour
+
+Add your own extension function that act on service task attributes.
+
+```javascript
+const {Engine} = require('bpmn-engine');
+
+const source = `
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+  <process id="theProcess" isExecutable="true">
+    <serviceTask id="task1" camunda:expression="\${environment.services.serviceFn}" camunda:resultVariable="result" />
+  </process>
+</definitions>`;
+
+function ServiceExpression(activity) {
+  const {type: atype, behaviour, environment} = activity;
+  const expression = behaviour.expression;
+  const type = `${atype}:expression`;
+  return {
+    type,
+    expression,
+    execute,
+  };
+  function execute(executionMessage, callback) {
+    const serviceFn = environment.resolveExpression(expression, executionMessage);
+    serviceFn.call(activity, executionMessage, (err, result) => {
+      callback(err, result);
+    });
+  }
+}
+
+const engine = Engine({
+  name: 'extend service task',
+  source,
+  moddleOptions: {
+    camunda: require('camunda-bpmn-moddle/resources/camunda.json'),
+  },
+  services: {
+    serviceFn(scope, callback) {
+      callback(null, {data: 1});
+    }
+  },
+  extensions: {
+    camundaServiceTask(activity) {
+      if (activity.behaviour.expression) {
+        activity.behaviour.Service = ServiceExpression;
+      }
+      if (activity.behaviour.resultVariable) {
+        activity.on('end', (api) => {
+          activity.environment.output[activity.behaviour.resultVariable] = api.content.output;
+        });
+      }
+    },
+  }
+});
+
+engine.execute((err, instance) => {
+  if (err) throw err;
+  console.log(instance.name, instance.environment.output);
+});
 ```
