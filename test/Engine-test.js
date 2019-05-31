@@ -6,11 +6,7 @@ const testHelpers = require('./helpers/testHelpers');
 const {EventEmitter} = require('events');
 
 describe('Engine', () => {
-  it('Bpmn exposes Engine', () => {
-    expect(Bpmn).to.have.property('Engine');
-  });
-
-  describe('ctor', () => {
+  describe('options', () => {
     it('without arguments is ok', () => {
       expect(() => {
         Bpmn.Engine();
@@ -67,6 +63,23 @@ describe('Engine', () => {
       });
 
       expect(engine.name).to.equal('no source');
+    });
+
+    it('name can be set', () => {
+      const engine = Bpmn.Engine();
+      engine.name = 'still no source';
+      expect(engine.name).to.equal('still no source');
+    });
+
+    it('exposes execution when running', async () => {
+      const source = Buffer.from(factory.valid());
+      const engine = Bpmn.Engine({
+        name: 'execution prop',
+        source
+      });
+
+      await engine.execute();
+      expect(engine.execution).to.be.ok;
     });
   });
 
@@ -863,7 +876,7 @@ describe('Engine', () => {
   });
 
   describe('scripts', () => {
-    it('unsupported script format is ignored', async () => {
+    it('throws if unsupported script format', async () => {
       const source = `
       <?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -888,6 +901,27 @@ describe('Engine', () => {
 
       expect(err).to.be.ok;
       expect(err).to.match(/unsupported/);
+    });
+
+    it('runs through if no script body', async () => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <scriptTask id="task" scriptFormat="javascript" />
+        </process>
+      </definitions>`;
+
+      const engine = Bpmn.Engine({source});
+      const completed = engine.waitFor('end');
+      try {
+        await engine.execute();
+      } catch (e) {
+        var err = e; // eslint-disable-line
+      }
+
+      expect(err).to.not.be.ok;
+      return completed;
     });
   });
 

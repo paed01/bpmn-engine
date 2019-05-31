@@ -12,13 +12,13 @@
       - [Execution `services`](#execution-services)
     - [`getDefinitionById(id)`](#getdefinitionbyidid)
     - [`getDefinitions()`](#getdefinitions)
-    - [`getPostponed()`](#getpostponed)
     - [`getState()`](#getstate)
     - [`stop()`](#stop)
     - [`recover(state)`](#recoverstate)
     - [`resume([options, [callback]])`](#resumeoptions-callback)
-  - [Engine events](#engine-events)
+- [Engine events](#engine-events)
   - [Activity events](#activity-events)
+  - [Event Api](#event-api)
   - [Sequence flow events](#sequence-flow-events)
 - [Expressions](#expressions)
 
@@ -266,98 +266,6 @@ engine.getDefinitions().then((definitions) => {
 });
 ```
 
-### `getPostponed()`
-
-Get activities that are in a postponed state.
-
-- `state`: State of engine
-- `definitions`: List of definitions
-  - `state`: State of definition
-  - `children`: List of children that are in an entered state
-    - `id`: child id
-    - `entered`: Boolean indicating that the child is currently executing
-    - `waiting`: Boolean indicating if the task is in a waiting state
-
-```javascript
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
-
-const source = `
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-  <process id="theWaitingGame" isExecutable="true">
-    <startEvent id="start" />
-    <parallelGateway id="fork" />
-    <userTask id="userTask1">
-      <extensionElements>
-        <camunda:formData>
-          <camunda:formField id="surname" label="Surname" type="string" />
-          <camunda:formField id="givenName" label="Given name" type="string" />
-        </camunda:formData>
-      </extensionElements>
-    </userTask>
-    <userTask id="userTask2" />
-    <task id="task" />
-    <parallelGateway id="join" />
-    <endEvent id="end" />
-    <sequenceFlow id="flow1" sourceRef="start" targetRef="fork" />
-    <sequenceFlow id="flow2" sourceRef="fork" targetRef="userTask1" />
-    <sequenceFlow id="flow3" sourceRef="fork" targetRef="userTask2" />
-    <sequenceFlow id="flow4" sourceRef="fork" targetRef="task" />
-    <sequenceFlow id="flow5" sourceRef="userTask1" targetRef="join" />
-    <sequenceFlow id="flow6" sourceRef="userTask2" targetRef="join" />
-    <sequenceFlow id="flow7" sourceRef="task" targetRef="join" />
-    <sequenceFlow id="flowEnd" sourceRef="join" targetRef="end" />
-  </process>
-</definitions>`;
-
-const engine = Engine({
-  name: 'Pending game',
-  source,
-  moddleOptions: {
-    camunda: require('camunda-bpmn-moddle/resources/camunda.json'),
-  },
-  extensions: {
-    camunda: camundaExt
-  }
-});
-
-const listener = new EventEmitter();
-
-listener.on('wait', (elementApi) => {
-  if (elementApi.content.form) {
-    console.log(elementApi.content.form);
-    return elementApi.signal(elementApi.content.form.fields.reduce((result, field) => {
-      if (field.label === 'Surname') result[field.id] = 'von Rosen';
-      if (field.label === 'Given name') result[field.id] = 'Sebastian';
-      return result;
-    }, {}));
-  }
-
-  elementApi.signal();
-});
-
-engine.execute({
-  listener
-});
-
-function camundaExt(activity) {
-  if (!activity.behaviour.extensionElements) return;
-  let form;
-  for (const extn of activity.behaviour.extensionElements.values) {
-    if (extn.$type === 'camunda:FormData') {
-      form = {
-        fields: extn.fields.map((f) => ({...f}))
-      };
-    }
-  }
-
-  activity.on('enter', () => {
-    activity.broker.publish('format', 'run.form', {form});
-  });
-}
-```
-
 ### `getState()`
 
 Get state of a running execution. Listener events `wait` and `start` are recommended when saving state.
@@ -487,7 +395,7 @@ engine.resume({listener}, () => {
 });
 ```
 
-## Engine events
+# Engine events
 
 Engine emits the following events:
 
@@ -506,6 +414,19 @@ Each activity and flow emits events when changing state.
 - `activity.leave`: The execution left the activity
 - `activity.stop`: Activity run was stopped
 - `activity.error`: An non-recoverable error has occurred
+
+## Event Api
+
+Events are emitted with api with execution properties
+
+- `name`: engine name
+- `state`: state of execution, i.e running or idle
+- `stopped`: is the execution stopped
+- `environment`: engine environment
+- `definitions`: executing definitions
+- `stop()`: stop execution
+- `getState`()`: get execution serializable state
+- `getPostponed`()`: get activities in a postponed state
 
 ## Sequence flow events
 

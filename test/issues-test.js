@@ -30,26 +30,6 @@ describe('issues', () => {
         states.push(engineApi.getState());
       });
 
-      // engine.once('stop', () => {
-      //   const listener2 = new EventEmitter();
-      //   const engine2 = Engine({
-      //     listener: listener2,
-      //     services,
-      //   }).recover(state);
-
-      //   engine2.once('end', () => {
-      //     expect(messages).to.eql([
-      //       'Waiting Task B for 5 seconds...',
-      //       'Waiting Task B for 5 seconds...',
-      //       'Resume Task B!',
-      //       'Resume Task B!'
-      //     ]);
-      //     done();
-      //   });
-
-      //   engine.resume();
-      // });
-
       const end = engine.waitFor('end');
 
       await engine.execute({
