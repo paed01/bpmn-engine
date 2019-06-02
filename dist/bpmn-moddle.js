@@ -48,7 +48,8 @@ function isObject(obj) {
 }
 
 function isFunction(obj) {
-  return nativeToString.call(obj) === '[object Function]';
+  var tag = nativeToString.call(obj);
+  return tag === '[object Function]' || tag === '[object AsyncFunction]' || tag === '[object GeneratorFunction]' || tag === '[object AsyncGeneratorFunction]' || tag === '[object Proxy]';
 }
 
 function isString(obj) {
@@ -119,6 +120,8 @@ function filter(collection, matcher) {
 
 
 function forEach(collection, iterator) {
+  var val, result;
+
   if (isUndefined(collection)) {
     return;
   }
@@ -127,11 +130,11 @@ function forEach(collection, iterator) {
 
   for (var key in collection) {
     if (has(collection, key)) {
-      var val = collection[key];
-      var result = iterator(val, convertKey(key));
+      val = collection[key];
+      result = iterator(val, convertKey(key));
 
       if (result === false) {
-        return;
+        return val;
       }
     }
   }
@@ -182,19 +185,23 @@ function bind(fn, target) {
   return fn.bind(target);
 }
 
-var _extends = Object.assign || function (target) {
-  for (var i = 1; i < arguments.length; i++) {
-    var source = arguments[i];
+function _extends() {
+  _extends = Object.assign || function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
 
-    for (var key in source) {
-      if (Object.prototype.hasOwnProperty.call(source, key)) {
-        target[key] = source[key];
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
       }
     }
-  }
 
-  return target;
-};
+    return target;
+  };
+
+  return _extends.apply(this, arguments);
+}
 /**
  * Convenience wrapper for `Object.assign`.
  *
@@ -206,11 +213,11 @@ var _extends = Object.assign || function (target) {
 
 
 function assign(target) {
-  for (var _len = arguments.length, others = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+  for (var _len = arguments.length, others = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
     others[_key - 1] = arguments[_key];
   }
 
-  return _extends.apply(undefined, [target].concat(others));
+  return _extends.apply(void 0, [target].concat(others));
 }
 /**
  * Pick given properties from the target object.
