@@ -181,4 +181,52 @@ Feature('extending behaviour', () => {
       expect(engine.environment.output).to.have.property('result').that.eql({data: 1});
     });
   });
+
+  Scenario('Scripts', () => {
+    let engine, source;
+    Given('a bpmn source with user tasks', () => {
+      source = `
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <scriptTask id="task1">
+            <script>Placeholder</script>
+          </scriptTask>
+        </process>
+      </definitions>`;
+    });
+
+    And('an engine loaded with extension for fetching form and saving output', () => {
+      engine = Engine({
+        name: 'Engine feature',
+        source,
+        scripts: {
+          register() {},
+          getScript(scriptType, activity) {
+            if (activity.id === 'task1') {
+              return {
+                execute(scope, next) {
+                  scope.environment.output.myScript = 1;
+                  next();
+                }
+              };
+            }
+          }
+        }
+      });
+    });
+
+    let api;
+    When('source is executed', async () => {
+      api = await engine.execute();
+    });
+
+    Then('engine comletes run', () => {
+      expect(api.state).to.equal('idle');
+    });
+
+    And('extension have saved output in environment', () => {
+      expect(engine.environment.output).to.have.property('myScript', 1);
+    });
+  });
 });
