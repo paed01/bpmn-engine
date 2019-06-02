@@ -1,6 +1,7 @@
 'use strict';
 
 const {Engine} = require('../..');
+const {EventEmitter} = require('events');
 
 Feature('extending behaviour', () => {
   Scenario('Activity form', () => {
@@ -227,6 +228,104 @@ Feature('extending behaviour', () => {
 
     And('extension have saved output in environment', () => {
       expect(engine.environment.output).to.have.property('myScript', 1);
+    });
+  });
+
+  Scenario('End event with extension (issue #25)', () => {
+    let source;
+    Given('a source with extension elements on end event', () => {
+      source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="start" />
+          <endEvent id="end">
+            <extensionElements>
+              <camunda:InputOutput>
+                <camunda:inputParameter name="data">\${environment.variables.statusCode}</camunda:inputParameter>
+              </camunda:InputOutput>
+            </extensionElements>
+          </endEvent>
+          <sequenceFlow id="flow1" sourceRef="start" targetRef="end" />
+        </process>
+      </definitions>`;
+    });
+
+    let listener, startEventMessage, endEventMessage;
+    And('a listening device', () => {
+      listener = new EventEmitter();
+
+      listener.on('activity.start', (elementApi) => {
+        if (elementApi.type === 'bpmn:EndEvent') {
+          startEventMessage = elementApi;
+        }
+      });
+      listener.on('activity.end', (elementApi) => {
+        if (elementApi.type === 'bpmn:EndEvent') {
+          endEventMessage = elementApi;
+        }
+      });
+    });
+
+    let ioExtension;
+    And('an extension function that handles extension', () => {
+      ioExtension = function inputOutputExtension(activity) {
+        if (!activity.behaviour.extensionElements || !activity.behaviour.extensionElements.values) return;
+
+        const extendValues = activity.behaviour.extensionElements.values;
+        const io = extendValues.reduce((result, extension) => {
+          if (extension.$type === 'camunda:InputOutput') {
+            result.input = extension.inputParameters;
+          }
+          return result;
+        }, {});
+
+        activity.on('enter', (elementApi) => {
+          activity.broker.publish('format', 'run.io', {
+            io: {
+              input: io.input.map(({name, value}) => ({
+                name,
+                value: elementApi.resolveExpression(value),
+              }))
+            }
+          });
+        });
+      };
+    });
+
+    let engine;
+    And('an engine', () => {
+      engine = Engine({
+        source,
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda')
+        },
+        extensions: {
+          ioExtension
+        }
+      });
+    });
+
+    When('executing', (done) => {
+      engine.execute({
+        listener,
+        variables: {
+          statusCode: 200
+        }
+      }, done);
+    });
+
+    Then('start event message has the expected extension data', () => {
+      expect(startEventMessage.content).to.have.property('io').with.property('input').that.have.length(1);
+      expect(startEventMessage.content.io.input[0]).to.have.property('name', 'data');
+      expect(startEventMessage.content.io.input[0]).to.have.property('value', 200);
+    });
+
+    And('end event message has the expected extension data', () => {
+      expect(endEventMessage.content).to.have.property('io').with.property('input').that.have.length(1);
+      expect(endEventMessage.content.io.input[0]).to.have.property('name', 'data');
+      expect(endEventMessage.content.io.input[0]).to.have.property('value', 200);
     });
   });
 });
