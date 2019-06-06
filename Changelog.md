@@ -1,6 +1,16 @@
 Changelog
 =========
 
+# 6.2.0
+
+## Additions
+- Bump bpmn-elements and serializer and thereby add support for ConditionalEventDefinition
+
+# 6.1.0
+
+## Additions
+- Expose humanPerformer and potentialOwner
+
 # 6.0.0
 
 Use [bpmn-elements](https://github.com/paed01/bpmn-elements) to execute elements.
