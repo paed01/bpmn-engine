@@ -78,6 +78,7 @@
     "prefer-arrow-callback": 2,
     "prefer-const": ["error", {"destructuring": "all"}],
     "quotes": [2, "single"],
+    "require-atomic-updates": 0,
     "semi": [2, "always"],
     "semi-spacing": [2, {
       "before": false,

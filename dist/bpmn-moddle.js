@@ -2241,6 +2241,11 @@ function Context(options) {
       id = element.get(idProperty.name);
 
       if (id) {
+        // for QName validation as per http://www.w3.org/TR/REC-xml/#NT-NameChar
+        if (!/^([a-z][\w-.]*:)?[a-z_][\w-.]*$/i.test(id)) {
+          throw new Error('illegal ID <' + id + '>');
+        }
+
         if (elementsById[id]) {
           throw error$1('duplicate ID <' + id + '>');
         }
