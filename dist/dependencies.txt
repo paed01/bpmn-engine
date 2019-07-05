@@ -3,8 +3,7 @@ Version: 5.2.0
 License: MIT
 Private: false
 Description: A moddle wrapper for BPMN 2.0
-Repository: git+https://github.com/bpmn-io/bpmn-moddle.git
-Homepage: https://github.com/bpmn-io/bpmn-moddle#readme
+Repository: https://github.com/bpmn-io/bpmn-moddle
 Author: Nico Rehwaldt (https://github.com/nikku)
 Contributors:
   bpmn.io contributors (https://github.com/bpmn-io)
@@ -22,26 +21,24 @@ Author: bpmn.io <http://bpmn.io>
 
 ---
 
-Name: moddle-xml
-Version: 7.5.0
+Name: moddle
+Version: 4.1.0
 License: MIT
 Private: false
-Description: XML import/export for documents described with moddle
-Repository: git+https://github.com/bpmn-io/moddle-xml.git
-Homepage: https://github.com/bpmn-io/moddle-xml#readme
+Description: A library for importing meta-model based file formats into JS
+Repository: https://github.com/bpmn-io/moddle
 Author: Nico Rehwaldt (https://github.com/Nikku)
 Contributors:
   bpmn.io contributors (https://github.com/bpmn-io)
 
 ---
 
-Name: moddle
-Version: 4.1.0
+Name: moddle-xml
+Version: 7.5.0
 License: MIT
 Private: false
-Description: A library for importing meta-model based file formats into JS
-Repository: git+https://github.com/bpmn-io/moddle.git
-Homepage: https://github.com/bpmn-io/moddle#readme
+Description: XML import/export for documents described with moddle
+Repository: https://github.com/bpmn-io/moddle-xml
 Author: Nico Rehwaldt (https://github.com/Nikku)
 Contributors:
   bpmn.io contributors (https://github.com/bpmn-io)
@@ -53,8 +50,7 @@ Version: 8.1.0
 License: MIT
 Private: false
 Description: A tiny, super fast, namespace aware sax-style XML parser written in plain JavaScript
-Repository: git+https://github.com/nikku/saxen.git
-Homepage: https://github.com/nikku/saxen#readme
+Repository: https://github.com/nikku/saxen
 Author: Vopilovskiy Konstantin <flash.vkv@gmail.com> (http://vflash.ru)
 Contributors:
   Nico Rehwaldt (https://github.com/nikku)
