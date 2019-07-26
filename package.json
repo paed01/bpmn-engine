@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "6.3.0",
+  "version": "7.0.0",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -20,11 +20,8 @@
     "index.js"
   ],
   "scripts": {
-    "pretest": "npm run bundle",
     "test": "mocha -R dot",
     "posttest": "eslint . --cache && npm run toc",
-    "prepare": "npm run bundle",
-    "bundle": "rollup -c rollup.config.js",
     "wintest": "node_modules/.bin/mocha",
     "toc": "node scripts/generate-api-toc ./docs/API.md,./docs/Examples.md",
     "test-md": "node scripts/test-markdown.js ./docs/API.md && node scripts/test-markdown.js ./docs/Examples.md"
@@ -47,37 +44,27 @@
   "nyc": {
     "exclude": [
       "dist",
-      "test",
-      "rollup.config.js"
+      "test"
     ]
   },
   "devDependencies": {
-    "@babel/cli": "^7.5.0",
-    "@babel/core": "^7.5.0",
-    "@babel/preset-env": "^7.5.0",
-    "bent": "^1.5.13",
-    "bpmn-moddle": "^5.2.0",
+    "bent": "^1.6.0",
     "camunda-bpmn-moddle": "^3.2.0",
     "chai": "^4.1.2",
-    "coveralls": "^3.0.4",
-    "eslint": "^6.0.1",
+    "coveralls": "^3.0.5",
+    "eslint": "^6.1.0",
     "markdown-toc": "^1.2.0",
-    "mocha": "^6.1.3",
+    "mocha": "^6.2.0",
     "mocha-cakes-2": "^3.3.0",
     "nock": "^10.0.6",
     "nyc": "^14.1.1",
-    "rollup": "^1.16.6",
-    "rollup-plugin-babel": "^4.3.3",
-    "rollup-plugin-commonjs": "^10.0.1",
-    "rollup-plugin-json": "^4.0.0",
-    "rollup-plugin-license": "^0.9.0",
-    "rollup-plugin-node-resolve": "^5.2.0",
     "unnecessary": "^1.3.3"
   },
   "dependencies": {
-    "bpmn-elements": "^0.3.0",
+    "bpmn-elements": "^0.4.0",
+    "bpmn-moddle": "^6.0.0",
     "debug": "^4.1.1",
-    "moddle-context-serializer": "^0.4.0",
-    "smqp": "^1.6.0"
+    "moddle-context-serializer": "^0.5.0",
+    "smqp": "^1.7.0"
   }
 }

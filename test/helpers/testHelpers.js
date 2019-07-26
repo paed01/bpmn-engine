@@ -1,6 +1,6 @@
 'use strict';
 
-const BpmnModdle = require('../../dist/bpmn-moddle');
+const BpmnModdle = require('bpmn-moddle');
 
 module.exports = {
   moddleContext,

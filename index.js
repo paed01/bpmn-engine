@@ -1,6 +1,6 @@
 'use strict';
 
-const BpmnModdle = require('./dist/bpmn-moddle');
+const BpmnModdle = require('bpmn-moddle');
 const DebugLogger = require('./lib/Logger');
 const elements = require('bpmn-elements');
 const getOptionsAndCallback = require('./lib/getOptionsAndCallback');

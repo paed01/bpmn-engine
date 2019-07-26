@@ -1,6 +1,17 @@
 Changelog
 =========
 
+# 7.0.0
+
+Bump bpmn-elements and bpmn-moddle (which now has a node dist :).
+
+## Breaking changes
+- Implementation of ErrorEventDefinition is now closer to the BPMN 2.0 spec
+
+## Additions
+- Start sub-process' sub-process if sub-process throws an error
+- Expose the name of the element that emitted event
+
 # 6.2.0
 
 ## Additions

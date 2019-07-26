@@ -729,46 +729,6 @@ describe('Engine', () => {
 
       return completed;
     });
-
-    // it('resume failure emits error if no callback', (done) => {
-    //   testHelpers.getModdleContext(factory.invalid(), {}, (merr, moddleContext) => {
-    //     const engine = Bpmn.Engine.resume({
-    //       name: 'Invalid state',
-    //       definitions: [{
-    //         id: 'who',
-    //         moddleContext: moddleContext
-    //       }],
-    //     });
-    //     engine.once('error', () => {
-    //       done();
-    //     });
-    //   });
-    // });
-
-    // it('resume failure returns error in callback', (done) => {
-    //   testHelpers.getModdleContext(factory.invalid(), {}, (merr, moddleContext) => {
-    //     Bpmn.Engine.resume({
-    //       name: 'Invalid state',
-    //       definitions: [{
-    //         id: 'who',
-    //         moddleContext: moddleContext
-    //       }],
-    //     }, (err) => {
-    //       expect(err).to.be.an('error');
-    //       done();
-    //     });
-    //   });
-    // });
-
-    // it('with invalid engine state throws', (done) => {
-    //   function fn() {
-    //     Bpmn.Engine.resume({
-    //       definitions: 'invalid array'
-    //     });
-    //   }
-    //   expect(fn).to.throw(/must be an array/);
-    //   done();
-    // });
   });
 
   describe('broker', () => {
@@ -797,6 +757,7 @@ describe('Engine', () => {
       expect(messages).to.eql([
         'definition.enter',
         'definition.start',
+        'process.init',
         'process.enter',
         'process.start',
         'activity.init',
