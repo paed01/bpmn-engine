@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 7.1.0
+
+- Bump bpmn-elements to v0.5.0
+
 # 7.0.0
 
 Bump bpmn-elements and bpmn-moddle (which now has a node dist :).
