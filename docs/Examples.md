@@ -42,14 +42,13 @@ const source = `
 
 const engine = Engine({
   name: 'execution example',
-  source
-});
-
-engine.execute({
+  source,
   variables: {
     id
   }
-}, (err, execution) => {
+});
+
+engine.execute((err, execution) => {
   console.log('Execution completed with id', execution.environment.variables.id);
 });
 ```

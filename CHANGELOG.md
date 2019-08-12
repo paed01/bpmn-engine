@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 8.0.0
+
+- Bump bpmn-elements to v0.6.0 with refactored MessageEventDefinition, ReceiveTask, and some bug fixes from TallaInc
+
 # 7.1.0
 
 - Bump bpmn-elements to v0.5.0
