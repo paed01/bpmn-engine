@@ -48,7 +48,7 @@
     ]
   },
   "devDependencies": {
-    "bent": "^1.6.1",
+    "bent": "^6.0.1",
     "camunda-bpmn-moddle": "^4.1.1",
     "chai": "^4.1.2",
     "coveralls": "^3.0.6",

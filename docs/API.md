@@ -75,13 +75,15 @@ const engine = Engine({
 
 Execute definition with:
 
-- `options`: Optional object
+- `options`: Optional object with options to override the initial engine options
   - [`listener`](#execution-listener): Listen for [activity events](#activity-events), an `EventEmitter` object
   - [`variables`](#execution-variables): Optional object with instance variables
-  - [`services`](#execution-services): Optional object with service definitions
+  - [`services`](#execution-services): Optional object with service functions
 - `callback`: optional callback
   - `err`: Error if any
   - `execution`: Engine execution
+
+Execute options overrides the initial options passed to the engine before executing the definition.
 
 ```javascript
 const {Engine} = require('bpmn-engine');
@@ -108,17 +110,37 @@ const source = `
 
 const engine = Engine({
   name: 'first',
-  source
+  source,
+  variables: {
+    data: {
+      inputFromUser: 0,
+    }
+  }
 });
 
 const listener = new EventEmitter();
 listener.on('wait', (elementApi) => {
-  elementApi.signal();
+  elementApi.owner.logger.debug(`<${elementApi.executionId} (${elementApi.id})> signal with io`, elementApi.content.ioSpecification);
+  elementApi.signal({
+    ioSpecification: {
+      dataOutputs: [{
+        id: 'userInput',
+        value: 2
+      }]
+    }
+  });
 });
 
-engine.execute({listener}, (err) => {
+engine.execute({
+  listener,
+  variables: {
+    data: {
+      inputFromUser: 1,
+    }
+  }
+}, (err, execution) => {
   if (err) throw err;
-  console.log('completed');
+  console.log('completed with overridden listener', execution.environment.output);
 });
 ```
 

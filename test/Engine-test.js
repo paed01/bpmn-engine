@@ -197,6 +197,41 @@ describe('Engine', () => {
         source: factory.valid(),
       });
 
+      engine.once('end', (execution) => {
+        expect(execution.definitions[0].environment.variables).to.have.property('input', 1);
+        expect(execution.environment.variables).to.not.have.property('input');
+        done();
+      });
+
+      engine.execute({
+        variables: {
+          input: 1
+        }
+      });
+    });
+
+    it('execute options overrides engine options', (done) => {
+      const source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <serviceTask id="serviceTask" name="Get" implementation="\${environment.services.get}" />
+        </process>
+      </definitions>`;
+
+      const engine = Bpmn.Engine({
+        name: 'end test',
+        source,
+        variables: {
+          input: 0
+        },
+        services: {
+          get(context, next) {
+            next(new Error('Inner error'));
+          }
+        }
+      });
+
       engine.once('end', () => {
         done();
       });
@@ -204,6 +239,12 @@ describe('Engine', () => {
       engine.execute({
         variables: {
           input: 1
+        },
+        services: {
+          get(context, next) {
+            if (context.environment.variables.input !== 1) return next(new Error('Get error'));
+            next(null, context.environment.variables.input);
+          }
         }
       });
     });

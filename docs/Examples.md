@@ -103,7 +103,7 @@ listener.on('flow.take', (flow) => {
 });
 
 engine.once('end', (execution) => {
-  console.log(execution.environment.variables)
+  console.log(execution.environment.variables);
   console.log(`User sirname is ${execution.environment.output.inputFromUser}`);
 });
 
@@ -192,13 +192,16 @@ const source = `
   <scriptTask id="scriptTask" scriptFormat="Javascript">
     <script>
       <![CDATA[
-        const getJson = this.environment.services.get;
-        getJson('https://example.com/test').then((resp) => {
-          if (err) return next(err);
-          this.environment.output.statusCode = err.statusCode;
-          next(null, {result: resp.body});
+        const self = this;
+        const getJson = self.environment.services.get;
+        const set = self.environment.services.set;
+        getJson('https://example.com/test').then((result) => {
+          self.environment.output.statusCode = 200;
+          set(self, 'statusCode', 200)
+          next(null, {result});
         }).catch((err) => {
-          this.environment.output.statusCode = err.statusCode;
+          set(self, 'statusCode', err.statusCode);
+          self.environment.output.statusCode = err.statusCode;
           next();
         });
       ]]>
@@ -221,11 +224,16 @@ engine.execute({
   },
   services: {
     get: bent('json'),
+    set,
   }
 });
 engine.on('end', (execution) => {
   console.log('Output:', execution.environment.output);
 });
+
+function set(activity, name, value) {
+  activity.logger.debug('set', name, 'to', value);
+}
 ```
 
 # User task
