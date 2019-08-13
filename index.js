@@ -36,11 +36,10 @@ function Engine(options = {}) {
   if (options.source) pendingSources.push(serializeSource(options.source));
   if (options.moddleContext) pendingSources.push(serializeModdleContext(options.moddleContext));
 
-  const environment = elements.Environment(options);
+  let environment = elements.Environment(options);
   const emitter = new EventEmitter();
 
   const engine = Object.assign(emitter, {
-    environment,
     execute,
     logger,
     getDefinitionById,
@@ -69,6 +68,13 @@ function Engine(options = {}) {
     },
     set(value) {
       name = value;
+    },
+  });
+
+  Object.defineProperty(engine, 'environment', {
+    enumerable: true,
+    get() {
+      return environment;
     },
   });
 
@@ -116,11 +122,16 @@ function Engine(options = {}) {
     return execution.stop();
   }
 
-  function recover(savedState) {
-    if (!name) name = savedState.name;
-    if (!savedState.definitions) return engine;
+  function recover(savedState, recoverOptions) {
+    if (!savedState) return engine;
 
     logger.debug(`<${name}> recover`);
+
+    if (!name) name = savedState.name;
+    if (recoverOptions) environment = elements.Environment(recoverOptions);
+    if (savedState.environment) environment = environment.recover(savedState.environment);
+
+    if (!savedState.definitions) return engine;
 
     loadedDefinitions = savedState.definitions.map((dState) => {
       const source = deserialize(JSON.parse(dState.source), typeResolver);
@@ -397,6 +408,7 @@ function Execution(engine, definitions, options) {
       state,
       stopped,
       engineVersion,
+      environment: environment.getState(),
       definitions: definitions.map(getDefinitionState),
     };
   }

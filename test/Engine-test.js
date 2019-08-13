@@ -651,7 +651,7 @@ describe('Engine', () => {
     });
   });
 
-  describe('recover()', () => {
+  describe('recover(state[, recoverOptions])', () => {
     it('recovers engine from state', async () => {
       const sourceEngine = Bpmn.Engine({
         name: 'test recover',
@@ -664,6 +664,13 @@ describe('Engine', () => {
       expect(engine).to.have.property('name', 'test recover');
       expect(engine).to.have.property('state', 'idle');
       expect(await engine.getDefinitions()).to.have.length(1);
+    });
+
+    it('recover without state is simply ignored', async () => {
+      const engine = Bpmn.Engine().recover();
+      const recovered = engine.recover();
+
+      expect(engine === recovered).to.be.true;
     });
 
     it('recovers definition running state', async () => {
@@ -691,6 +698,56 @@ describe('Engine', () => {
 
       const engine = Bpmn.Engine({name: 'my new name'}).recover(await sourceEngine.getState());
       expect(engine).to.have.property('name', 'my new name');
+    });
+
+    it('environment is recovered', async () => {
+      const engine = Bpmn.Engine({
+        name: 'test recover',
+        source: factory.userTask(),
+        variables: {
+          execVersion: 1,
+        }
+      });
+
+      engine.execute();
+
+      await engine.stop();
+
+      const recovered = Bpmn.Engine().recover(await engine.getState());
+
+      expect(recovered.environment.variables).to.have.property('execVersion', 1);
+    });
+
+    it('recover options initializes new environment and passes options to recovered definitions', async () => {
+      const engine = Bpmn.Engine({
+        name: 'test recover',
+        source: factory.userTask(),
+        variables: {
+          execVersion: 1,
+        }
+      });
+
+      engine.execute();
+
+      await engine.stop();
+
+      const recovered = Bpmn.Engine().recover(await engine.getState(), {
+        variables: {
+          execVersion: 2,
+          recovered: true,
+        },
+        services: {
+          get() {},
+        }
+      });
+
+      expect(recovered.environment.variables).to.have.property('execVersion', 1);
+      expect(recovered.environment.variables).to.have.property('recovered', true);
+      const [definition] = await recovered.getDefinitions();
+      expect(definition.environment.variables).to.have.property('execVersion', 1);
+      expect(definition.environment.variables).to.have.property('recovered', true);
+
+      expect(definition.environment.services).to.have.property('get').that.is.a('function');
     });
   });
 

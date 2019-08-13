@@ -14,7 +14,7 @@
     - [`getDefinitions()`](#getdefinitions)
     - [`getState()`](#getstate)
     - [`stop()`](#stop)
-    - [`recover(state)`](#recoverstate)
+    - [`recover(state[, recoverOptions])`](#recoverstate-recoveroptions)
     - [`resume([options, [callback]])`](#resumeoptions-callback)
 - [Engine events](#engine-events)
   - [Activity events](#activity-events)
@@ -179,8 +179,6 @@ engine.execute({
   listener
 });
 ```
-
-> NB! `error` events are NOT emitted through the listener. Errors can be caught by an bpmn error event if they are to be handled.
 
 #### Execution `variables`
 
@@ -388,9 +386,13 @@ engine.execute({
 });
 ```
 
-### `recover(state)`
+### `recover(state[, recoverOptions])`
 
 Recover engine from state.
+
+Arguments:
+- `state`: engine state
+- `recoverOptions`: optional object with options that will completely override the options passed to the engine at init
 
 ```js
 const {Engine} = require('bpmn-engine');
@@ -422,7 +424,7 @@ engine.resume({listener}, () => {
 Engine emits the following events:
 
 - `error`: An non-recoverable error has occurred
-- `end`: Execution has completed or was stopped
+- `end`: Execution completed
 
 ## Activity events
 
@@ -430,11 +432,11 @@ Each activity and flow emits events when changing state.
 
 - `activity.enter`: An activity is entered
 - `activity.start`: An activity is started
-- `activity.wait`: An event or user task waits for signal
-- `activity.end`: A task has ended successfully
-- `activity.cancel`: An activity execution was canceled
+- `activity.wait`: The activity is postponed for some reason, e.g. a user task is waiting to be signaled or a message is expected
+- `activity.end`: An activity has ended successfully
 - `activity.leave`: The execution left the activity
 - `activity.stop`: Activity run was stopped
+- `activity.throw`: An recoverable error was thrown
 - `activity.error`: An non-recoverable error has occurred
 
 ## Event Api
@@ -454,6 +456,7 @@ Events are emitted with api with execution properties
 
 - `flow.take`: The sequence flow was taken
 - `flow.discard`: The sequence flow was discarded
+- `flow.looped`: The sequence is looped
 
 # Expressions
 
