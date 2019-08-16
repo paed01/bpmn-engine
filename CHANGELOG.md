@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 8.1.0
+
+- Bump bpmn-elements@0.7.0 to support LinkEventDefinition
+
 # 8.0.0
 
 ## Breaking changes
