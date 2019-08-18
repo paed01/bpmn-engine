@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 8.2.0
+
+- Bump bpmn-elements@0.8.0 and moddle-context-serializer to support StandardLoopCharacteristics
+
 # 8.1.0
 
 - Bump bpmn-elements@0.7.0 to support LinkEventDefinition
