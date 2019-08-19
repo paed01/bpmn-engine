@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 8.2.1
+
+- Bump bpmn-elements@0.8.1 that expose sequence flow name
+
 # 8.2.0
 
 - Bump bpmn-elements@0.8.0 and moddle-context-serializer to support StandardLoopCharacteristics

@@ -1,5 +1,5 @@
 <!-- version -->
-# 8.2.0 API Reference
+# 8.2.1 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -40,6 +40,7 @@ Arguments:
   - `moddleContext`: optional BPMN 2.0 definition moddle context
   - `scripts`: optional [inline script handler](https://github.com/paed01/bpmn-elements/blob/master/docs/Scripts.md), defaults to vm module handling, i.e. JavaScript
   - `Logger`: optional [Logger factory](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md#logger), defaults to [debug](https://www.npmjs.com/package/debug) logger
+  - `elements`: optional object with element type mapping override
 
 Returns:
 - `name`: engine name

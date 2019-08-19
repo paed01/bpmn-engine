@@ -1,5 +1,6 @@
 'use strict';
 
+const {Activity} = require('bpmn-elements');
 const {Engine} = require('../..');
 const {EventEmitter} = require('events');
 
@@ -326,6 +327,127 @@ Feature('extending behaviour', () => {
       expect(endEventMessage.content).to.have.property('io').with.property('input').that.have.length(1);
       expect(endEventMessage.content.io.input[0]).to.have.property('name', 'data');
       expect(endEventMessage.content.io.input[0]).to.have.property('value', 200);
+    });
+  });
+
+  Scenario('Replace element behaviour (issue #70)', () => {
+    let source;
+    Given('a source with a gateway', () => {
+      source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+        <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <startEvent id="start" />
+          <sequenceFlow id="flow1" sourceRef="start" targetRef="decision" />
+          <exclusiveGateway id="decision" default="flow2" />
+          <sequenceFlow id="flow2" name="pick me" sourceRef="decision" targetRef="end" />
+          <sequenceFlow id="flow3" name="no, pick me" sourceRef="decision" targetRef="end">
+            <conditionExpression xsi:type="tFormalExpression">\${content.condition}</conditionExpression>
+          </sequenceFlow>
+          <endEvent id="end" />
+        </process>
+      </definitions>`;
+    });
+
+    let MyExclusiveGateway;
+    And('a ExclusiveGateway behaviour that published decision message', () => {
+      MyExclusiveGateway = function ExclusiveGateway(activityDef, context) {
+        return Activity(ExclusiveGatewayBehaviour, activityDef, context);
+      };
+
+      function ExclusiveGatewayBehaviour(activity) {
+        const {broker, outbound: outboundFlows} = activity;
+
+        return {
+          execute,
+        };
+
+        function execute(executeMessage) {
+          broker.publish('event', 'activity.decide', {
+            ...executeMessage.content,
+            decisions: outboundFlows.map((f) => {
+              const {id, name, type} = f;
+              return {id, name, type};
+            })
+          });
+
+          broker.subscribeTmp('api', 'activity.#', onApiMessage, {noAck: true, consumerTag: '_my-exclusive-gateway'});
+
+          function onApiMessage(_, message) {
+            const type = message.properties.type;
+            switch (type) {
+              case 'discard':
+              case 'stop': {
+                return broker.cancel('_my-exclusive-gateway');
+              }
+              case 'signal': {
+                const takenId = message.content.message.id;
+                const outbound = [];
+                for (const flow of outboundFlows) {
+                  if (flow.id === takenId) outbound.push({id: flow.id, action: 'take'});
+                  else outbound.push({id: flow.id, action: 'discard'});
+                }
+
+                return broker.publish('execution', 'execute.completed', {
+                  ...executeMessage.content,
+                  outbound,
+                });
+              }
+            }
+          }
+        }
+      }
+    });
+
+    let listener, decideApi;
+    And('a listening device', () => {
+      listener = new EventEmitter();
+
+      listener.on('activity.decide', (elementApi) => {
+        decideApi = elementApi;
+      });
+    });
+
+    let engine, end;
+    And('an engine with overide elements', () => {
+      engine = Engine({
+        source,
+        listener,
+        elements: {
+          ExclusiveGateway: MyExclusiveGateway
+        }
+      });
+      end = engine.waitFor('end');
+    });
+
+    let execution;
+    When('executing', async () => {
+      execution = await engine.execute();
+    });
+
+    Then('decision message has the expected decisions', () => {
+      expect(decideApi).to.be.ok;
+      expect(decideApi.content).to.have.property('decisions').with.length(2);
+      expect(decideApi.content.decisions[0]).to.have.property('name', 'pick me');
+      expect(decideApi.content.decisions[1]).to.have.property('name', 'no, pick me');
+    });
+
+    When('decision is made by signal', () => {
+      decideApi.signal(decideApi.content.decisions[0]);
+    });
+
+    Then('run completes', () => {
+      return end;
+    });
+
+    And('decided flow was taken', () => {
+      const flow = execution.definitions[0].context.getSequenceFlowById('flow2');
+      expect(flow.counters).to.have.property('take', 1);
+    });
+
+    And('second flow was discarded', () => {
+      const flow = execution.definitions[0].context.getSequenceFlowById('flow3');
+      expect(flow.counters).to.have.property('discard', 1);
     });
   });
 });
