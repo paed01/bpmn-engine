@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 8.3.0
+
+- Bump bpmn-elements@0.9.0 to support compensation
+
 # 8.2.1
 
 - Bump bpmn-elements@0.8.1 that expose sequence flow name
