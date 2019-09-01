@@ -450,4 +450,129 @@ Feature('extending behaviour', () => {
       expect(flow.counters).to.have.property('discard', 1);
     });
   });
+
+  Scenario('Extension elements behaviour (issue #72)', () => {
+    let source;
+    Given('a source with a task with script extension', () => {
+      source = `
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_16cv7x0" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.3.2">
+        <process id="Process_0deeeh6" isExecutable="true">
+          <extensionElements>
+            <camunda:executionListener class="" event="start" />
+          </extensionElements>
+          <startEvent id="StartEvent_0wbnjd7" name="s">
+            <outgoing>SequenceFlow_1nigfug</outgoing>
+          </startEvent>
+          <task id="Task_1dcqqes" name="helloworld" camunda:asyncAfter="true">
+            <extensionElements>
+              <camunda:executionListener event="start">
+                <camunda:script scriptFormat="javascript" resource="/Users/workflowtest/hello.js" />
+              </camunda:executionListener>
+            </extensionElements>
+            <incoming>SequenceFlow_1nigfug</incoming>
+            <outgoing>SequenceFlow_1ilvvs7</outgoing>
+          </task>
+          <endEvent id="EndEvent_08ib9fm" name="e">
+            <incoming>SequenceFlow_1ilvvs7</incoming>
+          </endEvent>
+          <sequenceFlow id="SequenceFlow_1nigfug" sourceRef="StartEvent_0wbnjd7" targetRef="Task_1dcqqes" />
+          <sequenceFlow id="SequenceFlow_1ilvvs7" sourceRef="Task_1dcqqes" targetRef="EndEvent_08ib9fm" />
+        </process>
+      </definitions>`;
+    });
+
+    let extensions;
+    And('an extension executing script on task start', () => {
+      extensions = {
+        extension: Extension
+      };
+
+      function Extension(activity) {
+        if (!activity.behaviour.extensionElements) return;
+
+        const {broker, environment} = activity;
+        const myExtensions = [];
+
+        for (const extension of activity.behaviour.extensionElements.values) {
+          switch (extension.$type) {
+            case 'camunda:ExecutionListener': {
+              myExtensions.push(ExecutionListener(extension));
+              break;
+            }
+          }
+        }
+
+        return {
+          extensions: myExtensions,
+          activate(...args) {
+            myExtensions.forEach((e) => e.activate(...args));
+          },
+          deactivate() {
+            myExtensions.forEach((e) => e.deactivate());
+          },
+        };
+
+        function ExecutionListener(extension) {
+          return {
+            activate() {
+              const script = environment.scripts.getScript(extension.script.scriptFormat, {id: extension.script.resource});
+              broker.subscribeTmp('event', `activity.${extension.event}`, (routingKey, message) => {
+                script.execute(message);
+              }, {noAck: true, consumerTag: '_my-extension'});
+            },
+            deactivate() {
+              broker.cancel('_my-extension');
+            }
+          };
+        }
+
+      }
+    });
+
+    let engine, end, executed;
+    And('an engine with extensions and special script handling', () => {
+      engine = Engine({
+        moddleOptions: {
+          camunda: require('camunda-bpmn-moddle/resources/camunda'),
+        },
+        source,
+        extensions,
+        scripts: ExternalScripts(),
+      });
+
+      end = engine.waitFor('end');
+
+      function ExternalScripts() {
+        return {
+          getScript,
+          register,
+        };
+
+        function getScript(_, {id}) {
+          if (id === '/Users/workflowtest/hello.js') {
+            return {
+              execute(message) {
+                executed = message;
+              }
+            };
+          }
+        }
+
+        function register() {}
+      }
+    });
+
+    When('executing', async () => {
+      return engine.execute();
+    });
+
+    Then('extension elements script was executed on activity start', () => {
+      expect(executed).to.be.ok;
+      expect(executed.fields).to.have.property('routingKey', 'activity.start');
+    });
+
+    And('run completed', () => {
+      return end;
+    });
+  });
 });
