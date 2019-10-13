@@ -94,7 +94,7 @@ describe('issues', () => {
 
   describe('issue 74 - setting engine output from script', () => {
     const source = `<?xml version="1.0" encoding="UTF-8"?>
-    <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_01d9p2c" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.2.3">
+    <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_01d9p2c" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.2.3">
       <bpmn:process id="first_process" isExecutable="true" camunda:versionTag="1.0" camunda:historyTimeToLive="365">
         <bpmn:startEvent id="StartEvent_0an034v" />
         <bpmn:sequenceFlow id="SequenceFlow_19p3cf1" sourceRef="StartEvent_0an034v" targetRef="Task_0nh74lm" />
@@ -144,11 +144,48 @@ describe('issues', () => {
         listener,
       });
 
-      listener.on('activity.wait', exec => exec.signal());
+      listener.on('activity.wait', (exec) => exec.signal());
 
       await engine.execute({ listener });
 
       expect(engine.environment.output.test).to.equal('set from script');
+    });
+
+    it('resumes with correct state', async () => {
+      let state;
+
+      const listener = new EventEmitter();
+      const engine = Engine({
+        name: 'Engine',
+        source,
+        listener,
+      });
+
+      const resumeListener = new EventEmitter();
+      const resumeEngine = Engine({
+        name: 'Engine',
+        source,
+        listener: resumeListener,
+      });
+
+      resumeListener.on('activity.wait', (exec) => {
+        expect(exec.environment.output.test).to.equal('set from script');
+      });
+
+      listener.on('activity.wait', (exec) => {
+        expect(exec.environment.output.test).to.equal('set from script');
+
+        engine.getState().then(s => {
+          state = s;
+          engine.stop();
+        });
+      });
+
+      await engine.execute({ listener });
+
+      resumeEngine.recover(state);
+
+      await resumeEngine.resume({ listener: resumeListener });
     });
   });
 });

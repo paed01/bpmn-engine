@@ -47,9 +47,9 @@
   },
   "devDependencies": {
     "bent": "^7.0.2",
-    "camunda-bpmn-moddle": "^4.1.2",
+    "camunda-bpmn-moddle": "^4.2.0",
     "chai": "^4.1.2",
-    "coveralls": "^3.0.6",
+    "coveralls": "^3.0.7",
     "eslint": "^6.5.1",
     "markdown-toc": "^1.2.0",
     "mocha": "^6.2.1",
@@ -59,7 +59,7 @@
     "unnecessary": "^1.3.4"
   },
   "dependencies": {
-    "bpmn-elements": "^0.9.2",
+    "bpmn-elements": "^0.10.0",
     "bpmn-moddle": "^6.0.0",
     "debug": "^4.1.1",
     "moddle-context-serializer": "^0.11.0",

@@ -445,6 +445,7 @@ function Execution(engine, definitions, options) {
           return result;
         }, []);
       },
+      waitFor,
     };
   }
 }
