@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 8.4.0
+
+- Bump bpmn-elements@0.11.0 with new ability to use process extensions
+
 # 8.3.0
 
 - Bump bpmn-elements@0.9.0 to support compensation
