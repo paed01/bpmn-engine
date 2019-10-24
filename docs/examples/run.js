@@ -1,5 +1,5 @@
 import {
-  serviceTask, userTask, human, serviceBehaviour, extendBehaviour,
+  serviceTask, startResume, userTask, human, serviceBehaviour, extendBehaviour,
   loop, sequence, expressionCall, scriptTask, gateway, listen, simpleExecute
 } from './examples';
 
@@ -7,6 +7,11 @@ console.log('Running Examples');
 
 const command = process.argv[2];
 switch (command) {
+
+  case 'startResume':
+    startResume();
+    break;
+
   case 'serviceTask':
     serviceTask();
     break;
@@ -56,6 +61,6 @@ switch (command) {
     break;
 
   default:
-    console.log(`Choose a valide function:   serviceTask, userTask,scriptTask, human, serviceBehaviour, extendBehaviour,
+    console.log(`Choose a valide function:  startResume, serviceTask, userTask,scriptTask, human, serviceBehaviour, extendBehaviour,
       loop, sequence, expressionCall, gateway, listen, simpleExecute`);
 }

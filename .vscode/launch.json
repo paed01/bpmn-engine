@@ -26,7 +26,7 @@
             "request": "launch",
             "name": "Server",
             "runtimeExecutable": "nodemon",
-            "args": ["${workspaceRoot}/docs/examples/server.js","listen"],
+            "args": ["${workspaceRoot}/docs/examples/server.js","startResume"],
             "restart": true,
             "protocol": "inspector",
             "stopOnEntry": false,

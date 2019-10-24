@@ -701,8 +701,81 @@ function human(listener = null) {
   return engine;
 }
 
+const startState = async (states) => {
+  const listener = new EventEmitter();
+  listener.once('activity.wait', (task) => {
+    console.log('activity.wait');
+  });
+  listener.on('flow.take', (flow) => {
+    console.log(`flow <${flow.id}> was taken`);
+  });
+  const engine = listen(listener);
+  const state = await engine.getState();
+  states.push(state);
+  return state;
+};
+
+const resumeState = async (state, data) => {
+  const listener = new EventEmitter();
+  const engine = Engine().recover(state);
+
+
+  engine.once('end', (execution) => {
+    console.log(execution.environment.variables);
+    console.log(`User sirname is ${execution.environment.output.data.inputFromUser}`);
+  });
+
+  engine.once('error', (error) => {
+    console.log(error);
+  });
+
+  listener.once('activity.enter', (task) => {
+    console.log(task);
+  });
+  listener.once('activity.start', (task) => {
+    console.log(task);
+  });
+  listener.once('activity.wait', (task) => {
+    console.log(task);
+  });
+  listener.on('flow.take', (flow) => {
+    console.log(`flow <${flow.id}> was taken`);
+  });
+
+  const api = await engine.resume({
+    listener
+  }, console.log);
+
+  const info = {
+    ioSpecification: {
+      dataOutputs: Object.keys(data).map(key => {
+        return {
+          id: key,
+          value: data[key]
+        };
+      })
+    }
+  };
+
+  const post = api.getPostponed();
+  // console.log(api, api.getState(), api.getPostponed(), post);
+  const [task] = post;
+  if (task) {
+    task.signal(info);
+  }
+};
+
+const startResume = () => {
+  const states = [];
+  startState(states);
+  const data = {
+    'userInput': 'mario'
+  };
+  resumeState(states[0], data);
+};
 
 export {
   serviceTask, userTask, scriptTask, human, serviceBehaviour, extendBehaviour,
-  loop, sequence, expressionCall, gateway, listen, simpleExecute
+  loop, sequence, expressionCall, gateway, listen, simpleExecute,
+  startState, resumeState, startResume
 };
