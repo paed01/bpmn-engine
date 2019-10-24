@@ -1,6 +1,6 @@
 import {
   serviceTask, userTask, human, serviceBehaviour, extendBehaviour,
-  loop, sequence, expressionCall, scriptTask, gateway, listen, execute
+  loop, sequence, expressionCall, scriptTask, gateway, listen, simpleExecute
 } from './examples';
 
 const command = process.argv[2];
@@ -49,13 +49,13 @@ switch (command) {
     listen();
     break;
 
-  case 'execute':
-    execute();
+  case 'simpleExecute':
+    simpleExecute();
     break;
 
   default:
     console.log(`Choose a valide function:   serviceTask, userTask,scriptTask, human, serviceBehaviour, extendBehaviour,
-      loop, sequence, expressionCall, gateway, listen, execute`);
+      loop, sequence, expressionCall, gateway, listen, simpleExecute`);
 }
 
 

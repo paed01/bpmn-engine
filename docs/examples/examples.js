@@ -8,7 +8,7 @@ const getJson = require('bent')('json');
 const JsExtension = require('../../test/resources/JsExtension');
 
 // Execute
-function execute() {
+function simpleExecute() {
 
   const id = Math.floor(Math.random() * 10000);
 
@@ -258,12 +258,11 @@ function serviceTask() {
 
   async function getRequest(scope, callback) {
     try {
-      var result = await getJson(scope.environment.variables.apiPath);
+      const result = await getJson(scope.environment.variables.apiPath);
+      return callback(null, result);
     } catch (err) {
       return callback(null, err);
     }
-
-    return callback(null, result);
   }
 
   const source = `
@@ -665,5 +664,5 @@ function human() {
 
 export {
   serviceTask, userTask, scriptTask, human, serviceBehaviour, extendBehaviour,
-  loop, sequence, expressionCall, gateway, listen, execute
+  loop, sequence, expressionCall, gateway, listen, simpleExecute
 };
