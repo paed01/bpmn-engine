@@ -147,7 +147,7 @@ function gateway() {
 }
 
 // Script task
-function task() {
+function scriptTask() {
   // A script task will receive the data available on the process instance.So if `request` or another module is needed it has to be passed when starting the process.The script task also has a callback called`next` that has to be called for the task to complete.
 
   //     The`next` callback takes the following arguments:
@@ -664,6 +664,6 @@ function human() {
 
 
 export {
-  serviceTask, userTask, human, serviceBehaviour, extendBehaviour,
-  loop, sequence, expressionCall, task, gateway, listen, execute
+  serviceTask, userTask, scriptTask, human, serviceBehaviour, extendBehaviour,
+  loop, sequence, expressionCall, gateway, listen, execute
 };
