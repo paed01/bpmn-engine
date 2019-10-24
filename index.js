@@ -154,7 +154,6 @@ function Engine(options = {}) {
       const definitions = await getDefinitions();
       execution = Execution(engine, definitions, options);
     }
-
     return execution.resume(resumeOptions, callback);
   }
 

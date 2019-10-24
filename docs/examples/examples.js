@@ -44,7 +44,7 @@ function simpleExecute() {
 }
 
 // Listen for events
-function listen(listener = null) {
+async function listen(listener = null) {
   const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -92,10 +92,8 @@ function listen(listener = null) {
     console.log(`User sirname is ${execution.environment.output.data.inputFromUser}`);
   });
 
-  engine.execute({
+  await engine.execute({
     listener
-  }, (err) => {
-    if (err) throw err;
   });
 
   return engine;
@@ -703,13 +701,13 @@ function human(listener = null) {
 
 const startState = async (states) => {
   const listener = new EventEmitter();
-  listener.once('activity.wait', (task) => {
-    console.log('activity.wait');
+  listener.once('activity.wait', () => {
+    console.log('activity.wait for start');
   });
   listener.on('flow.take', (flow) => {
     console.log(`flow <${flow.id}> was taken`);
   });
-  const engine = listen(listener);
+  const engine = await listen(listener);
   const state = await engine.getState();
   states.push(state);
   return state;
@@ -725,18 +723,11 @@ const resumeState = async (state, data) => {
     console.log(`User sirname is ${execution.environment.output.data.inputFromUser}`);
   });
 
-  engine.once('error', (error) => {
-    console.log(error);
-  });
-
-  listener.once('activity.enter', (task) => {
-    console.log(task);
-  });
-  listener.once('activity.start', (task) => {
-    console.log(task);
-  });
-  listener.once('activity.wait', (task) => {
-    console.log(task);
+  // listener.once('activity.start', (task) => {
+  //   console.log(task);
+  // });
+  listener.once('activity.wait', () => {
+    console.log('activity.wait for resume');
   });
   listener.on('flow.take', (flow) => {
     console.log(`flow <${flow.id}> was taken`);
@@ -744,7 +735,7 @@ const resumeState = async (state, data) => {
 
   const api = await engine.resume({
     listener
-  }, console.log);
+  });
 
   const info = {
     ioSpecification: {
@@ -758,20 +749,21 @@ const resumeState = async (state, data) => {
   };
 
   const post = api.getPostponed();
-  // console.log(api, api.getState(), api.getPostponed(), post);
   const [task] = post;
   if (task) {
     task.signal(info);
   }
+
+  return await engine.getState();
 };
 
-const startResume = () => {
+const startResume = async () => {
   const states = [];
-  startState(states);
+  await startState(states);
   const data = {
     'userInput': 'mario'
   };
-  resumeState(states[0], data);
+  await resumeState(states[0], data);
 };
 
 export {

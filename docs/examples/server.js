@@ -29,7 +29,8 @@ app.get('/states', async (req, res) => {
 
 app.post('/answer/:index', jsonParser, async (req, res) => {
   let state = states[req.params.index];
-  resumeState(state, req.body);
+  state = await resumeState(state, req.body);
+  states[req.params.index] = state;
   res.json({
     state
   });
