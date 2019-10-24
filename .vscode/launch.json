@@ -8,13 +8,18 @@
             "type": "node",
             "request": "launch",
             "name": "Examples",
-            "cwd": "${workspaceFolder}",
-            "runtimeExecutable": "npm",
+            "runtimeExecutable": "nodemon",
+            "args": ["${workspaceRoot}/docs/examples/run.js","sequence"],
+            "restart": true,
+            "protocol": "inspector",
+            "stopOnEntry": false,
             "runtimeArgs": [
-                "run-script",
-                "examples",
-                "task"
-            ]
-        }
+              "--require",
+              "babel-register",
+              "--require",
+              "babel-polyfill"
+            ],
+            "sourceMaps": true
+        },
     ]
 }
