@@ -39,10 +39,12 @@ function simpleExecute() {
   engine.execute((err, execution) => {
     console.log('Execution completed with id', execution.environment.variables.id);
   });
+
+  return engine;
 }
 
 // Listen for events
-function listen() {
+function listen(listener = null) {
   const source = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -66,27 +68,28 @@ function listen() {
     name: 'listen example',
     source
   });
-
-  const listener = new EventEmitter();
-
-  listener.once('wait', (task) => {
-    task.signal({
-      ioSpecification: {
-        dataOutputs: [{
-          id: 'userInput',
-          value: 'von Rosen',
-        }]
-      }
+  if (!listener) {
+    listener = new EventEmitter();
+    listener.once('wait', (task) => {
+      console.log(task);
+      task.signal({
+        ioSpecification: {
+          dataOutputs: [{
+            id: 'userInput',
+            value: 'von Rosen',
+          }]
+        }
+      });
     });
-  });
 
-  listener.on('flow.take', (flow) => {
-    console.log(`flow <${flow.id}> was taken`);
-  });
+    listener.on('flow.take', (flow) => {
+      console.log(`flow <${flow.id}> was taken`);
+    });
+  }
 
   engine.once('end', (execution) => {
     console.log(execution.environment.variables);
-    console.log(`User sirname is ${execution.environment.output.inputFromUser}`);
+    console.log(`User sirname is ${execution.environment.output.data.inputFromUser}`);
   });
 
   engine.execute({
@@ -94,10 +97,12 @@ function listen() {
   }, (err) => {
     if (err) throw err;
   });
+
+  return engine;
 }
 
 // Exclusive gateway
-function gateway() {
+function gateway(listener = null) {
   //An exclusive gateway will receive the available process variables as `this.environment.variables`.
 
   const source = `
@@ -127,7 +132,10 @@ function gateway() {
     source
   });
 
-  const listener = new EventEmitter();
+  if (!listener) {
+    listener = new EventEmitter();
+  }
+
 
   listener.on('activity.start', (api) => {
     if (api.id === 'end1') throw new Error(`<${api.id}> was not supposed to be taken, check your input`);
@@ -144,6 +152,8 @@ function gateway() {
   engine.on('end', () => {
     console.log('completed');
   });
+
+  return engine;
 }
 
 // Script task
@@ -165,7 +175,7 @@ function scriptTask() {
         const self = this;
         const getJson = self.environment.services.get;
         const set = self.environment.services.set;
-        getJson('https://example.com/test').then((result) => {
+        getJson('https://google.com').then((result) => {
           self.environment.output.statusCode = 200;
           set(self, 'statusCode', 200)
           next(null, {result});
@@ -204,10 +214,12 @@ function scriptTask() {
   function set(activity, name, value) {
     activity.logger.debug('set', name, 'to', value);
   }
+
+  return engine;
 }
 
 // User task
-function userTask() {
+function userTask(listener = null) {
   // User tasks waits for signal to complete.
 
   const source = `
@@ -227,7 +239,10 @@ function userTask() {
     source
   });
 
-  const listener = new EventEmitter();
+  if (!listener) {
+    listener = new EventEmitter();
+  }
+
 
   listener.once('wait', (elementApi) => {
     elementApi.signal({
@@ -245,6 +260,8 @@ function userTask() {
     if (err) throw err;
     console.log(`User sirname is ${execution.environment.output.task.sirname}`);
   });
+
+  return engine;
 }
 
 // Service task
@@ -296,7 +313,7 @@ function serviceTask() {
 
   engine.execute({
     variables: {
-      apiPath: 'https://example.com/test'
+      apiPath: 'https://google.com'
     },
     services: {
       getRequest,
@@ -306,6 +323,8 @@ function serviceTask() {
 
     console.log('Service task output:', execution.environment.output.serviceResult);
   });
+
+  return engine;
 }
 
 // or as a expression function call:
@@ -347,10 +366,12 @@ function expressionCall() {
   engine.once('end', (execution) => {
     console.log(execution.name, execution.environment.output);
   });
+
+  return engine;
 }
 
 // Sequence flow with condition expression
-function sequence() {
+function sequence(listener = null) {
 
   const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -374,7 +395,10 @@ function sequence() {
     source
   });
 
-  const listener = new EventEmitter();
+  if (!listener) {
+    listener = new EventEmitter();
+  }
+
   listener.on('activity.end', (elementApi) => {
     if (elementApi.id === 'end2') throw new Error(`<${elementApi.id}> should not have been taken`);
   });
@@ -394,6 +418,8 @@ function sequence() {
   engine.once('end', () => {
     console.log('WOHO!');
   });
+
+  return engine;
 }
 
 // Task loop over collection
@@ -443,10 +469,12 @@ function loop() {
   engine.once('end', () => {
     console.log(sum, 'aught to be 13 blazing fast');
   });
+
+  return engine;
 }
 
 // Extend form behaviour
-function extendBehaviour() {
+function extendBehaviour(listener = null) {
   // Pass an extend function with options.
 
   const source = `
@@ -489,7 +517,10 @@ function extendBehaviour() {
     }
   });
 
-  const listener = new EventEmitter();
+  if (!listener) {
+    listener = new EventEmitter();
+  }
+
 
   listener.on('wait', (elementApi) => {
     if (elementApi.content.form) {
@@ -523,6 +554,8 @@ function extendBehaviour() {
       activity.broker.publish('format', 'run.form', { form });
     });
   }
+
+  return engine;
 }
 
 // Extend service task behaviour
@@ -583,10 +616,12 @@ function serviceBehaviour() {
     if (err) throw err;
     console.log(instance.name, instance.environment.output);
   });
+
+  return engine;
 }
 
 // Human performer and potential owner
-function human() {
+function human(listener = null) {
   // Publish event when human involvement is required.
 
 
@@ -632,7 +667,10 @@ function human() {
     });
   }
 
-  const listener = new EventEmitter();
+  if (!listener) {
+    listener = new EventEmitter();
+  }
+
 
   const engine = Engine({
     name: 'call humans',
@@ -659,6 +697,8 @@ function human() {
     if (err) throw err;
     console.log(instance.name, 'completed');
   });
+
+  return engine;
 }
 
 
