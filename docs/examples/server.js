@@ -9,58 +9,93 @@ const app = express();
 const PORT = 8080;
 const engines = [];
 const states = [];
+const jsonParser = express.json();
 
-app.get('/start', async (req, res) => {
+const start = async () => {
   const listener = new EventEmitter();
+  listener.once('activity.wait', (task) => {
+    console.log('activity.wait');
+  });
+  listener.on('flow.take', (flow) => {
+    console.log(`flow <${flow.id}> was taken`);
+  });
   const engine = listen(listener);
   const state = await engine.getState();
   states.push(state);
-  console.log(state);
-  res.json(state);
+  return state;
+};
+
+app.get('/start', async (req, res) => {
+  res.json(await start());
+});
+
+start();
+
+app.get('/states', async (req, res) => {
+  const list = states.map((s, index) => {
+    return {
+      name: s.name,
+      index
+    };
+  });
+  res.json(list);
 });
 
 
-app.post('/answer/:index', (req, res) => {
+app.post('/answer/:index', jsonParser, async (req, res) => {
   const listener = new EventEmitter();
-
+  const engine = Engine();
   let state = states[req.params.index];
 
-  const engine = Engine();
   engine.recover(state);
-  listener.once('wait', (task) => {
-    console.log(task);
-
-    // d: 'userInput',
-    //       value: req.body.data,
-    task.signal({
-      ioSpecification: {
-        dataOutputs: Object.keys(req.body).map(key => {
-          return {
-            id: key,
-            value: req.body[key]
-          };
-        })
-      }
-    });
-  });
-  console.log(state);
 
   engine.once('end', (execution) => {
     console.log(execution.environment.variables);
     console.log(`User sirname is ${execution.environment.output.data.inputFromUser}`);
   });
 
-  engine.execute({
-    listener
-  }, (err) => {
-    if (err) {
-      console.log(err);
-      throw err;
-    }
-
+  engine.once('error', (error) => {
+    console.log(error);
   });
 
-  res.json(state);
+  listener.once('activity.enter', (task) => {
+    console.log(task);
+  });
+  listener.once('activity.start', (task) => {
+    console.log(task);
+  });
+  listener.once('activity.wait', (task) => {
+    console.log(task);
+  });
+  listener.on('flow.take', (flow) => {
+    console.log(`flow <${flow.id}> was taken`);
+  });
+
+  const api = await engine.resume({
+    listener
+  });
+
+  const info = {
+    ioSpecification: {
+      dataOutputs: Object.keys(req.body).map(key => {
+        return {
+          id: key,
+          value: req.body[key]
+        };
+      })
+    }
+  };
+
+  const post = api.getPostponed();
+  // console.log(api, api.getState(), api.getPostponed(), post);
+  const [task] = post;
+  if (task) {
+    task.signal(info);
+  }
+
+  res.json({
+    state
+  });
 });
 
 app.get('/all', (req, res) => {
