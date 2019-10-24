@@ -21,6 +21,7 @@
   "scripts": {
     "test": "mocha -R dot",
     "posttest": "eslint . --cache && npm run toc",
+    "examples": "node -r babel-register -r babel-polyfill  docs/examples/run.js",
     "wintest": "node_modules/.bin/mocha",
     "toc": "node scripts/generate-api-toc ./docs/API.md,./docs/Examples.md",
     "test-md": "node scripts/test-markdown.js ./docs/API.md && node scripts/test-markdown.js ./docs/Examples.md"
@@ -46,6 +47,10 @@
     ]
   },
   "devDependencies": {
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-stage-3": "^6.24.1",
+    "babel-register": "^6.26.0",
     "bent": "^7.0.2",
     "camunda-bpmn-moddle": "^4.2.0",
     "chai": "^4.1.2",
