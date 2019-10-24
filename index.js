@@ -6,17 +6,17 @@ const elements = require('bpmn-elements');
 const getOptionsAndCallback = require('./lib/getOptionsAndCallback');
 const JavaScripts = require('./lib/JavaScripts');
 const ProcessOutputDataObject = require('./lib/extensions/ProcessOutputDataObject');
-const {Broker} = require('smqp');
-const {default: serializer, deserialize, TypeResolver} = require('moddle-context-serializer');
-const {EventEmitter} = require('events');
-const {version: engineVersion} = require('./package.json');
+const { Broker } = require('smqp');
+const { default: serializer, deserialize, TypeResolver } = require('moddle-context-serializer');
+const { EventEmitter } = require('events');
+const { version: engineVersion } = require('./package.json');
 
-module.exports = {Engine};
+module.exports = { Engine };
 
 function Engine(options = {}) {
-  options = {Logger: DebugLogger, scripts: JavaScripts(), ...options};
+  options = { Logger: DebugLogger, scripts: JavaScripts(), ...options };
 
-  let {name, Logger} = options;
+  let { name, Logger } = options;
 
   let loadedDefinitions, execution;
   const logger = Logger('engine');
@@ -52,7 +52,7 @@ function Engine(options = {}) {
   });
 
   const broker = Broker(engine);
-  broker.assertExchange('event', 'topic', {autoDelete: false});
+  broker.assertExchange('event', 'topic', { autoDelete: false });
 
   Object.defineProperty(engine, 'broker', {
     enumerable: true,
@@ -223,7 +223,7 @@ function Engine(options = {}) {
 }
 
 function Execution(engine, definitions, options) {
-  const {environment, logger, waitFor, broker} = engine;
+  const { environment, logger, waitFor, broker } = engine;
   broker.on('return', onBrokerReturn);
 
   let state = 'idle';
@@ -272,9 +272,9 @@ function Execution(engine, definitions, options) {
 
     clearConsumers();
 
-    broker.subscribeOnce('event', 'engine.stop', cbLeave, {consumerTag: 'ctag-cb-stop'});
-    broker.subscribeOnce('event', 'engine.end', cbLeave, {consumerTag: 'ctag-cb-end'});
-    broker.subscribeOnce('event', 'engine.error', cbError, {consumerTag: 'ctag-cb-error'});
+    broker.subscribeOnce('event', 'engine.stop', cbLeave, { consumerTag: 'ctag-cb-stop' });
+    broker.subscribeOnce('event', 'engine.end', cbLeave, { consumerTag: 'ctag-cb-end' });
+    broker.subscribeOnce('event', 'engine.error', cbError, { consumerTag: 'ctag-cb-error' });
 
     function cbLeave() {
       clearConsumers();
@@ -308,15 +308,15 @@ function Execution(engine, definitions, options) {
     function setupDefinition(definition) {
       if (listener) definition.environment.options.listener = listener;
 
-      definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, {noAck: true, consumerTag: '_engine_definition'});
-      definition.broker.subscribeTmp('event', 'process.#', onChildMessage, {noAck: true, consumerTag: '_engine_process'});
-      definition.broker.subscribeTmp('event', 'activity.#', onChildMessage, {noAck: true, consumerTag: '_engine_activity'});
-      definition.broker.subscribeTmp('event', 'flow.#', onChildMessage, {noAck: true, consumerTag: '_engine_flow'});
+      definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, { noAck: true, consumerTag: '_engine_definition' });
+      definition.broker.subscribeTmp('event', 'process.#', onChildMessage, { noAck: true, consumerTag: '_engine_process' });
+      definition.broker.subscribeTmp('event', 'activity.#', onChildMessage, { noAck: true, consumerTag: '_engine_activity' });
+      definition.broker.subscribeTmp('event', 'flow.#', onChildMessage, { noAck: true, consumerTag: '_engine_flow' });
     }
   }
 
   function onChildMessage(routingKey, message, owner) {
-    const {environment: ownerEnvironment} = owner;
+    const { environment: ownerEnvironment } = owner;
     const listener = ownerEnvironment.options && ownerEnvironment.options.listener;
     state = 'running';
 
@@ -351,7 +351,7 @@ function Execution(engine, definitions, options) {
           switch (key) {
             case 'data': {
               environment.output.data = environment.output.data || {};
-              environment.output.data = {...environment.output.data, ...message.content.output.data};
+              environment.output.data = { ...environment.output.data, ...message.content.output.data };
               break;
             }
             default: {
@@ -364,7 +364,7 @@ function Execution(engine, definitions, options) {
     }
 
     emitListenerEvent(routingKey, elementApi, Api());
-    broker.publish('event', routingKey, {...message.content}, {...message.properties, mandatory: false});
+    broker.publish('event', routingKey, { ...message.content }, { ...message.properties, mandatory: false });
 
     if (executionStopped) {
       state = 'stopped';
@@ -381,12 +381,12 @@ function Execution(engine, definitions, options) {
     }
 
     function onComplete(eventName) {
-      broker.publish('event', `engine.${eventName}`, {}, {type: eventName});
+      broker.publish('event', `engine.${eventName}`, {}, { type: eventName });
       engine.emit(eventName, Api());
     }
 
     function onError(err) {
-      broker.publish('event', 'engine.error', err, {type: 'error', mandatory: true});
+      broker.publish('event', 'engine.error', err, { type: 'error', mandatory: true });
     }
 
     function emitListenerEvent(...args) {
