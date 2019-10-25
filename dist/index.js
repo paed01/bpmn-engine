@@ -4,6 +4,12 @@ function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try
 
 function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
 
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(source, true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(source).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 const BpmnModdle = require('bpmn-moddle');
 
 const DebugLogger = require('./lib/Logger');
@@ -164,11 +170,10 @@ function Engine(options = {}) {
     };
   })();
 
-  options = {
+  options = _objectSpread({
     Logger: DebugLogger,
-    scripts: JavaScripts(),
-    ...options
-  };
+    scripts: JavaScripts()
+  }, options);
   let {
     name,
     Logger
@@ -176,9 +181,7 @@ function Engine(options = {}) {
   let loadedDefinitions, execution;
   const logger = Logger('engine');
   const sources = [];
-  const typeResolver = TypeResolver({ ...elements,
-    ...(options.elements || {})
-  }, defaultTypeResolver);
+  const typeResolver = TypeResolver(_objectSpread({}, elements, {}, options.elements || {}), defaultTypeResolver);
 
   function defaultTypeResolver(elementTypes) {
     if (options.typeResolver) return options.typeResolver(elementTypes);
@@ -279,11 +282,11 @@ function Engine(options = {}) {
   }
 
   function loadDefinition(serializedContext, executeOptions) {
-    const context = elements.Context(serializedContext, environment.clone({
-      listener: environment.options.listener,
-      ...executeOptions,
+    const context = elements.Context(serializedContext, environment.clone(_objectSpread({
+      listener: environment.options.listener
+    }, executeOptions, {
       source: serializedContext
-    }));
+    })));
     return elements.Definition(context);
   }
 
@@ -454,9 +457,7 @@ function Execution(engine, definitions, options) {
               case 'data':
                 {
                   environment.output.data = environment.output.data || {};
-                  environment.output.data = { ...environment.output.data,
-                    ...message.content.output.data
-                  };
+                  environment.output.data = _objectSpread({}, environment.output.data, {}, message.content.output.data);
                   break;
                 }
 
@@ -472,10 +473,9 @@ function Execution(engine, definitions, options) {
     }
 
     emitListenerEvent(routingKey, elementApi, Api());
-    broker.publish('event', routingKey, { ...message.content
-    }, { ...message.properties,
+    broker.publish('event', routingKey, _objectSpread({}, message.content), _objectSpread({}, message.properties, {
       mandatory: false
-    });
+    }));
 
     if (executionStopped) {
       state = 'stopped';
@@ -530,9 +530,9 @@ function Execution(engine, definitions, options) {
   }
 
   function getDefinitionState(definition) {
-    return { ...definition.getState(),
+    return _objectSpread({}, definition.getState(), {
       source: definition.environment.options.source.serialize()
-    };
+    });
   }
 
   function onBrokerReturn(message) {
