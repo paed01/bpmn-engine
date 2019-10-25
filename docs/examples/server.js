@@ -73,26 +73,26 @@ app.post('/test', rawParser, async (req, res) => {
     }
   });
 
-try{
-  const api = await engine.execute({
-    listener,
-    services: {
-      isBelow: (input, test) => {
-        return input < test;
+  try {
+    const api = await engine.execute({
+      listener,
+      services: {
+        isBelow: (input, test) => {
+          return input < test;
+        },
+        serviceFn(scope, callback) {
+          callback(null, { data: 1 });
+        }
       },
-      serviceFn(scope, callback) {
-        callback(null, { data: 1 });
+      variables: {
+        input: 2
       }
-    },
-    variables: {
-      input: 2
-    }
-  });
-  res.json({});
-}catch(e){
-  res.json(e)
-}
-  
+    });
+    res.json({});
+  } catch (e) {
+    res.json(e)
+  }
+
 });
 
 app.listen(PORT, e => {

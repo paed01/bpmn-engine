@@ -55,8 +55,8 @@ function test(source, listener, options) {
     ...options
   });
 
-  engine.execute({listener},(err, execution) => {
-    console.log('Execution completed with id', execution ?execution.environment.variables.id:null);
+  engine.execute({ listener }, (err, execution) => {
+    console.log('Execution completed with id', execution ? execution.environment.variables.id : null);
   });
 
   return engine;
