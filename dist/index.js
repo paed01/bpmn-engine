@@ -1,27 +1,182 @@
 'use strict';
 
-const BpmnModdle = require('bpmn-moddle');
-const DebugLogger = require('./lib/Logger');
-const elements = require('bpmn-elements');
-const getOptionsAndCallback = require('./lib/getOptionsAndCallback');
-const JavaScripts = require('./lib/JavaScripts');
-const ProcessOutputDataObject = require('./lib/extensions/ProcessOutputDataObject');
-const { Broker } = require('smqp');
-const { default: serializer, deserialize, TypeResolver } = require('moddle-context-serializer');
-const { EventEmitter } = require('events');
-const { version: engineVersion } = require('./package.json');
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
 
-module.exports = { Engine };
+function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+
+const BpmnModdle = require('bpmn-moddle');
+
+const DebugLogger = require('./lib/Logger');
+
+const elements = require('bpmn-elements');
+
+const getOptionsAndCallback = require('./lib/getOptionsAndCallback');
+
+const JavaScripts = require('./lib/JavaScripts');
+
+const ProcessOutputDataObject = require('./lib/extensions/ProcessOutputDataObject');
+
+const {
+  Broker
+} = require('smqp');
+
+const {
+  default: serializer,
+  deserialize,
+  TypeResolver
+} = require('moddle-context-serializer');
+
+const {
+  EventEmitter
+} = require('events');
+
+const {
+  version: engineVersion
+} = require('./package.json');
+
+module.exports = {
+  Engine
+};
 
 function Engine(options = {}) {
-  options = { Logger: DebugLogger, scripts: JavaScripts(), ...options };
+  let execute = (() => {
+    var _ref = _asyncToGenerator(function* (...args) {
+      const [executeOptions, callback] = getOptionsAndCallback(...args);
+      let runSources;
 
-  let { name, Logger } = options;
+      try {
+        runSources = yield Promise.all(pendingSources);
+      } catch (err) {
+        if (callback) return callback(err);
+        throw err;
+      }
 
+      const definitions = runSources.map(function (source) {
+        return loadDefinition(source, executeOptions);
+      });
+      execution = Execution(engine, definitions, options);
+      return execution.execute(executeOptions, callback);
+    });
+
+    return function execute() {
+      return _ref.apply(this, arguments);
+    };
+  })();
+
+  let stop = (() => {
+    var _ref2 = _asyncToGenerator(function* () {
+      if (!execution) return;
+      return execution.stop();
+    });
+
+    return function stop() {
+      return _ref2.apply(this, arguments);
+    };
+  })();
+
+  let resume = (() => {
+    var _ref3 = _asyncToGenerator(function* (...args) {
+      const [resumeOptions, callback] = getOptionsAndCallback(...args);
+
+      if (!execution) {
+        const definitions = yield getDefinitions();
+        execution = Execution(engine, definitions, options);
+      }
+
+      return execution.resume(resumeOptions, callback);
+    });
+
+    return function resume() {
+      return _ref3.apply(this, arguments);
+    };
+  })();
+
+  let getDefinitions = (() => {
+    var _ref4 = _asyncToGenerator(function* (executeOptions) {
+      if (loadedDefinitions && loadedDefinitions.length) return loadedDefinitions;
+      return Promise.all(pendingSources).then(function (srcs) {
+        return srcs.map(function (src) {
+          return loadDefinition(src, executeOptions);
+        });
+      });
+    });
+
+    return function getDefinitions(_x) {
+      return _ref4.apply(this, arguments);
+    };
+  })();
+
+  let getDefinitionById = (() => {
+    var _ref5 = _asyncToGenerator(function* (id) {
+      return (yield getDefinitions()).find(function (d) {
+        return d.id === id;
+      });
+    });
+
+    return function getDefinitionById(_x2) {
+      return _ref5.apply(this, arguments);
+    };
+  })();
+
+  let getState = (() => {
+    var _ref6 = _asyncToGenerator(function* () {
+      if (execution) return execution.getState();
+      const definitions = yield getDefinitions();
+      return Execution(engine, definitions, options).getState();
+    });
+
+    return function getState() {
+      return _ref6.apply(this, arguments);
+    };
+  })();
+
+  let serializeSource = (() => {
+    var _ref7 = _asyncToGenerator(function* (source) {
+      const moddleContext = yield getModdleContext(source);
+      return serializeModdleContext(moddleContext);
+    });
+
+    return function serializeSource(_x3) {
+      return _ref7.apply(this, arguments);
+    };
+  })();
+
+  let waitFor = (() => {
+    var _ref8 = _asyncToGenerator(function* (eventName) {
+      return new Promise(function (resolve, reject) {
+        engine.once(eventName, onEvent);
+        engine.once('error', onError);
+
+        function onEvent(api) {
+          engine.removeListener('error', onError);
+          resolve(api);
+        }
+
+        function onError(err) {
+          engine.removeListener(eventName, onError);
+          reject(err);
+        }
+      });
+    });
+
+    return function waitFor(_x4) {
+      return _ref8.apply(this, arguments);
+    };
+  })();
+
+  options = {
+    Logger: DebugLogger,
+    scripts: JavaScripts(),
+    ...options
+  };
+  let {
+    name,
+    Logger
+  } = options;
   let loadedDefinitions, execution;
   const logger = Logger('engine');
-  const typeResolver = TypeResolver({
-    ...elements,
+  const sources = [];
+  const typeResolver = TypeResolver({ ...elements,
     ...(options.elements || {})
   }, defaultTypeResolver);
 
@@ -33,10 +188,8 @@ function Engine(options = {}) {
   const pendingSources = [];
   if (options.source) pendingSources.push(serializeSource(options.source));
   if (options.moddleContext) pendingSources.push(serializeModdleContext(options.moddleContext));
-
   let environment = elements.Environment(options);
   const emitter = new EventEmitter();
-
   const engine = Object.assign(emitter, {
     execute,
     logger,
@@ -46,148 +199,97 @@ function Engine(options = {}) {
     recover,
     resume,
     stop,
-    waitFor,
+    waitFor
   });
-
   const broker = Broker(engine);
-  broker.assertExchange('event', 'topic', { autoDelete: false });
-
+  broker.assertExchange('event', 'topic', {
+    autoDelete: false
+  });
   Object.defineProperty(engine, 'broker', {
     enumerable: true,
+
     get() {
       return broker;
     }
-  });
 
+  });
   Object.defineProperty(engine, 'name', {
     enumerable: true,
+
     get() {
       return name;
     },
+
     set(value) {
       name = value;
-    },
-  });
+    }
 
+  });
   Object.defineProperty(engine, 'environment', {
     enumerable: true,
+
     get() {
       return environment;
-    },
-  });
+    }
 
+  });
   Object.defineProperty(engine, 'state', {
     enumerable: true,
+
     get() {
       if (execution) return execution.state;
       return 'idle';
-    },
-  });
+    }
 
+  });
   Object.defineProperty(engine, 'stopped', {
     enumerable: true,
+
     get() {
       if (execution) return execution.stopped;
       return false;
-    },
-  });
+    }
 
+  });
   Object.defineProperty(engine, 'execution', {
     enumerable: true,
+
     get() {
       return execution;
-    },
-  });
-
-  return engine;
-
-  async function execute(...args) {
-    const [executeOptions, callback] = getOptionsAndCallback(...args);
-    let runSources;
-    try {
-      runSources = await Promise.all(pendingSources);
-    } catch (err) {
-      if (callback) return callback(err);
-      throw err;
     }
-    const definitions = runSources.map((source) => loadDefinition(source, executeOptions));
-    execution = Execution(engine, definitions, options);
-    return execution.execute(executeOptions, callback);
-  }
 
-  async function stop() {
-    if (!execution) return;
-    return execution.stop();
-  }
+  });
+  return engine;
 
   function recover(savedState, recoverOptions) {
     if (!savedState) return engine;
-
     logger.debug(`<${name}> recover`);
-
     if (!name) name = savedState.name;
     if (recoverOptions) environment = elements.Environment(recoverOptions);
     if (savedState.environment) environment = environment.recover(savedState.environment);
-
     if (!savedState.definitions) return engine;
-
-    loadedDefinitions = savedState.definitions.map((dState) => {
+    loadedDefinitions = savedState.definitions.map(dState => {
       const source = deserialize(JSON.parse(dState.source), typeResolver);
-
       logger.debug(`<${name}> recover ${dState.type} <${dState.id}>`);
-
       const definition = loadDefinition(source);
       definition.recover(dState);
-
       return definition;
     });
-
     return engine;
-  }
-
-  async function resume(...args) {
-    const [resumeOptions, callback] = getOptionsAndCallback(...args);
-
-    if (!execution) {
-      const definitions = await getDefinitions();
-      execution = Execution(engine, definitions, options);
-    }
-    return execution.resume(resumeOptions, callback);
-  }
-
-  async function getDefinitions(executeOptions) {
-    if (loadedDefinitions && loadedDefinitions.length) return loadedDefinitions;
-    return Promise.all(pendingSources).then((srcs) => srcs.map((src) => loadDefinition(src, executeOptions)));
-  }
-
-  async function getDefinitionById(id) {
-    return (await getDefinitions()).find((d) => d.id === id);
-  }
-
-  async function getState() {
-    if (execution) return execution.getState();
-
-    const definitions = await getDefinitions();
-    return Execution(engine, definitions, options).getState();
   }
 
   function loadDefinition(serializedContext, executeOptions) {
     const context = elements.Context(serializedContext, environment.clone({
       listener: environment.options.listener,
       ...executeOptions,
-      source: serializedContext,
+      source: serializedContext
     }));
-
     return elements.Definition(context);
-  }
-
-  async function serializeSource(source) {
-    const moddleContext = await getModdleContext(source);
-    return serializeModdleContext(moddleContext);
   }
 
   function serializeModdleContext(moddleContext) {
     const serialized = serializer(moddleContext, typeResolver);
+    sources.push(serialized);
     return serialized;
   }
 
@@ -200,82 +302,70 @@ function Engine(options = {}) {
       });
     });
   }
-
-  async function waitFor(eventName) {
-    return new Promise((resolve, reject) => {
-      engine.once(eventName, onEvent);
-      engine.once('error', onError);
-
-      function onEvent(api) {
-        engine.removeListener('error', onError);
-        resolve(api);
-      }
-      function onError(err) {
-        engine.removeListener(eventName, onError);
-        reject(err);
-      }
-    });
-  }
 }
 
 function Execution(engine, definitions, options) {
-  const { environment, logger, waitFor, broker } = engine;
+  const {
+    environment,
+    logger,
+    waitFor,
+    broker
+  } = engine;
   broker.on('return', onBrokerReturn);
-
   let state = 'idle';
   let stopped;
-
   return {
     get state() {
       return state;
     },
+
     get stopped() {
       return stopped;
     },
+
     execute,
     getState,
     resume,
-    stop,
+    stop
   };
 
   function execute(executeOptions, callback) {
     setup(executeOptions);
     stopped = false;
     logger.debug(`<${engine.name}> execute`);
-
     addConsumerCallbacks(callback);
-    definitions.forEach((definition) => definition.run());
-
+    definitions.forEach(definition => definition.run());
     return Api();
   }
 
   function resume(resumeOptions, callback) {
     setup(resumeOptions);
-
     stopped = false;
     logger.debug(`<${engine.name}> resume`);
     addConsumerCallbacks(callback);
-
-    definitions.forEach((definition) => definition.resume());
-
+    definitions.forEach(definition => definition.resume());
     return Api();
   }
 
   function addConsumerCallbacks(callback) {
     if (!callback) return;
-
     broker.off('return', onBrokerReturn);
-
     clearConsumers();
-
-    broker.subscribeOnce('event', 'engine.stop', cbLeave, { consumerTag: 'ctag-cb-stop' });
-    broker.subscribeOnce('event', 'engine.end', cbLeave, { consumerTag: 'ctag-cb-end' });
-    broker.subscribeOnce('event', 'engine.error', cbError, { consumerTag: 'ctag-cb-error' });
+    broker.subscribeOnce('event', 'engine.stop', cbLeave, {
+      consumerTag: 'ctag-cb-stop'
+    });
+    broker.subscribeOnce('event', 'engine.end', cbLeave, {
+      consumerTag: 'ctag-cb-end'
+    });
+    broker.subscribeOnce('event', 'engine.error', cbError, {
+      consumerTag: 'ctag-cb-error'
+    });
 
     function cbLeave() {
       clearConsumers();
       return callback(null, Api());
     }
+
     function cbError(_, message) {
       clearConsumers();
       return callback(message.content);
@@ -291,76 +381,101 @@ function Execution(engine, definitions, options) {
 
   function stop() {
     const prom = waitFor('stop');
-    definitions.forEach((d) => d.stop());
+    definitions.forEach(d => d.stop());
     return prom;
   }
 
   function setup(setupOptions = {}) {
     const listener = setupOptions.listener || options.listener;
     if (listener && typeof listener.emit !== 'function') throw new Error('listener.emit is not a function');
-
     definitions.forEach(setupDefinition);
 
     function setupDefinition(definition) {
       if (listener) definition.environment.options.listener = listener;
-
-      definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, { noAck: true, consumerTag: '_engine_definition' });
-      definition.broker.subscribeTmp('event', 'process.#', onChildMessage, { noAck: true, consumerTag: '_engine_process' });
-      definition.broker.subscribeTmp('event', 'activity.#', onChildMessage, { noAck: true, consumerTag: '_engine_activity' });
-      definition.broker.subscribeTmp('event', 'flow.#', onChildMessage, { noAck: true, consumerTag: '_engine_flow' });
+      definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, {
+        noAck: true,
+        consumerTag: '_engine_definition'
+      });
+      definition.broker.subscribeTmp('event', 'process.#', onChildMessage, {
+        noAck: true,
+        consumerTag: '_engine_process'
+      });
+      definition.broker.subscribeTmp('event', 'activity.#', onChildMessage, {
+        noAck: true,
+        consumerTag: '_engine_activity'
+      });
+      definition.broker.subscribeTmp('event', 'flow.#', onChildMessage, {
+        noAck: true,
+        consumerTag: '_engine_flow'
+      });
     }
   }
 
   function onChildMessage(routingKey, message, owner) {
-    const { environment: ownerEnvironment } = owner;
+    const {
+      environment: ownerEnvironment
+    } = owner;
     const listener = ownerEnvironment.options && ownerEnvironment.options.listener;
     state = 'running';
-
     let executionStopped, executionCompleted, executionErrored;
     const elementApi = owner.getApi && owner.getApi(message);
 
     switch (routingKey) {
       case 'definition.stop':
         teardownDefinition(owner);
-        if (definitions.some((d) => d.isRunning)) break;
-
+        if (definitions.some(d => d.isRunning)) break;
         executionStopped = true;
         stopped = true;
         break;
+
       case 'definition.leave':
         teardownDefinition(owner);
-        if (definitions.some((d) => d.isRunning)) break;
-
+        if (definitions.some(d => d.isRunning)) break;
         executionCompleted = true;
         break;
+
       case 'definition.error':
         teardownDefinition(owner);
         executionErrored = true;
         break;
-      case 'activity.wait': {
-        emitListenerEvent('wait', owner.getApi(message), Api());
-        break;
-      }
-      case 'process.end': {
-        if (!message.content.output) break;
-        for (const key in message.content.output) {
-          switch (key) {
-            case 'data': {
-              environment.output.data = environment.output.data || {};
-              environment.output.data = { ...environment.output.data, ...message.content.output.data };
-              break;
-            }
-            default: {
-              environment.output[key] = message.content.output[key];
+
+      case 'activity.wait':
+        {
+          emitListenerEvent('wait', owner.getApi(message), Api());
+          break;
+        }
+
+      case 'process.end':
+        {
+          if (!message.content.output) break;
+
+          for (const key in message.content.output) {
+            switch (key) {
+              case 'data':
+                {
+                  environment.output.data = environment.output.data || {};
+                  environment.output.data = { ...environment.output.data,
+                    ...message.content.output.data
+                  };
+                  break;
+                }
+
+              default:
+                {
+                  environment.output[key] = message.content.output[key];
+                }
             }
           }
+
+          break;
         }
-        break;
-      }
     }
 
     emitListenerEvent(routingKey, elementApi, Api());
-    broker.publish('event', routingKey, { ...message.content }, { ...message.properties, mandatory: false });
+    broker.publish('event', routingKey, { ...message.content
+    }, { ...message.properties,
+      mandatory: false
+    });
 
     if (executionStopped) {
       state = 'stopped';
@@ -377,12 +492,17 @@ function Execution(engine, definitions, options) {
     }
 
     function onComplete(eventName) {
-      broker.publish('event', `engine.${eventName}`, {}, { type: eventName });
+      broker.publish('event', `engine.${eventName}`, {}, {
+        type: eventName
+      });
       engine.emit(eventName, Api());
     }
 
     function onError(err) {
-      broker.publish('event', 'engine.error', err, { type: 'error', mandatory: true });
+      broker.publish('event', 'engine.error', err, {
+        type: 'error',
+        mandatory: true
+      });
     }
 
     function emitListenerEvent(...args) {
@@ -405,14 +525,13 @@ function Execution(engine, definitions, options) {
       stopped,
       engineVersion,
       environment: environment.getState(),
-      definitions: definitions.map(getDefinitionState),
+      definitions: definitions.map(getDefinitionState)
     };
   }
 
   function getDefinitionState(definition) {
-    return {
-      ...definition.getState(),
-      source: definition.environment.options.source.serialize(),
+    return { ...definition.getState(),
+      source: definition.environment.options.source.serialize()
     };
   }
 
@@ -425,23 +544,28 @@ function Execution(engine, definitions, options) {
   function Api() {
     return {
       name: engine.name,
+
       get state() {
         return state;
       },
+
       get stopped() {
         return stopped;
       },
+
       environment,
       definitions,
       stop,
       getState,
+
       getPostponed() {
         return definitions.reduce((result, definition) => {
           result = result.concat(definition.getPostponed());
           return result;
         }, []);
       },
-      waitFor,
+
+      waitFor
     };
   }
 }

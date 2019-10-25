@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "8.5.0",
+  "version": "8.5.1",
   "main": "dist/index.js",
   "source": "index.js",
   "module": "dist/index.esm.js",
@@ -28,6 +28,7 @@
     "toc": "node scripts/generate-api-toc ./docs/API.md,./docs/Examples.md",
     "test-md": "node scripts/test-markdown.js ./docs/API.md && node scripts/test-markdown.js ./docs/Examples.md",
     "build": "rollup -c",
+    "dist": "npx babel index.js -d dist && rm -rf dist/lib && npx babel lib -d dist/lib",
     "server": "nodemon -r babel-register -r babel-polyfill  docs/examples/server.js",
     "examples": "node -r babel-register -r babel-polyfill  docs/examples/run.js"
   },
@@ -52,8 +53,16 @@
     ]
   },
   "devDependencies": {
+    "@babel/cli": "^7.6.4",
+    "@babel/core": "^7.6.4",
+    "@babel/preset-env": "^7.6.3",
+    "babel-cli": "^6.26.0",
+    "babel-plugin-styled-components": "^1.10.6",
+    "babel-plugin-transform-runtime": "^6.23.0",
     "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
     "babel-preset-es2015": "^6.24.1",
+    "babel-preset-stage-0": "^6.24.1",
     "babel-preset-stage-3": "^6.24.1",
     "babel-register": "^6.26.0",
     "bent": "^7.0.2",
@@ -77,9 +86,10 @@
     "unnecessary": "^1.3.4"
   },
   "dependencies": {
+    "babel-preset-react": "^6.24.1",
     "bpmn-elements": "^0.11.0",
-    "camunda-bpmn-moddle": "^4.2.0",
     "bpmn-moddle": "^6.0.0",
+    "camunda-bpmn-moddle": "^4.2.0",
     "debug": "^4.1.1",
     "moddle-context-serializer": "^0.11.0",
     "smqp": "^1.10.0"
