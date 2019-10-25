@@ -1,14 +1,17 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "8.4.0",
-  "main": "index.js",
+  "version": "8.5.0",
+  "main": "dist/index.js",
+  "source": "index.js",
+  "module": "dist/index.esm.js",
+  "umd:mainDist": "dist/bpmn-engine.umd.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/paed01/bpmn-engine"
   },
   "author": {
-    "name": "Pål Edman",
+    "name": "Pål Edman, Mario Mol <mariohmol@gmail.com>",
     "url": "https://github.com/paed01"
   },
   "engines": {
@@ -24,6 +27,7 @@
     "wintest": "node_modules/.bin/mocha",
     "toc": "node scripts/generate-api-toc ./docs/API.md,./docs/Examples.md",
     "test-md": "node scripts/test-markdown.js ./docs/API.md && node scripts/test-markdown.js ./docs/Examples.md",
+    "build": "rollup -c",
     "server": "nodemon -r babel-register -r babel-polyfill  docs/examples/server.js",
     "examples": "node -r babel-register -r babel-polyfill  docs/examples/run.js"
   },
@@ -53,7 +57,6 @@
     "babel-preset-stage-3": "^6.24.1",
     "babel-register": "^6.26.0",
     "bent": "^7.0.2",
-    "camunda-bpmn-moddle": "^4.2.0",
     "chai": "^4.1.2",
     "coveralls": "^3.0.7",
     "eslint": "^6.5.1",
@@ -63,11 +66,18 @@
     "mocha-cakes-2": "^3.3.0",
     "nock": "^11.4.0",
     "nodemon": "^1.19.4",
+    "npm-run-all": "^4.1.5",
     "nyc": "^14.1.1",
+    "rollup": "^1.25.2",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-json": "^4.0.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-terser": "^5.1.2",
     "unnecessary": "^1.3.4"
   },
   "dependencies": {
     "bpmn-elements": "^0.11.0",
+    "camunda-bpmn-moddle": "^4.2.0",
     "bpmn-moddle": "^6.0.0",
     "debug": "^4.1.1",
     "moddle-context-serializer": "^0.11.0",

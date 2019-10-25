@@ -20,9 +20,9 @@ export function ServiceExpression(activity) {
 
 
 
-export function runEngine(source, listener, options) {
+export async function runEngine(source, listener, options, state = null) {
 
-  const engine = Engine({
+  const configEngine = {
     name: 'execution example',
     // enableDummyService
     moddleOptions: {
@@ -51,13 +51,21 @@ export function runEngine(source, listener, options) {
       },
     },
     ...options
-  });
+  };
+  let engine = Engine(configEngine);
+  let api;
+  if (state) {
+    engine = engine.recover(state);
+    api = await engine.resume({
+      listener
+    });
+  } else {
+    engine.execute({ listener }, (err, execution) => {
+      console.log('Execution completed with id', execution ? execution.environment.variables.id : null);
+    });
+  }
 
-  engine.execute({ listener }, (err, execution) => {
-    console.log('Execution completed with id', execution ? execution.environment.variables.id : null);
-  });
-
-  return engine;
+  return { engine, api };
 }
 
 

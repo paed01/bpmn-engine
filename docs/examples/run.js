@@ -10,7 +10,7 @@ import { runEngine} from './libs';
 console.log('Running Examples');
 const main = async () => {
   const command = process.argv[2];
-  let listener, options, state, engine, source;
+  let listener, options, state, engine, source, runData;
   switch (command) {
 
     case 'startResume':
@@ -107,7 +107,8 @@ const main = async () => {
 
       source = fs.readFileSync(path.join(__dirname, 'bpmn/testservice.bpmn'));
 
-      engine = runEngine(source, listener, options);
+      runData = runEngine(source, listener, options);
+      engine = runData.engine;
       state = await engine.getState();
       console.log(state.name);
       break;

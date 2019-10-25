@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Examples",
             "runtimeExecutable": "nodemon",
-            "args": ["${workspaceRoot}/docs/examples/run.js","startResume"],
+            "args": ["${workspaceRoot}/docs/examples/run.js","test"],
             "restart": true,
             "protocol": "inspector",
             "stopOnEntry": false,
