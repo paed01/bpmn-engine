@@ -1,5 +1,13 @@
 'use strict';
 
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+
+function _iterableToArrayLimit(arr, i) { if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) { return; } var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
 
 function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
@@ -10,279 +18,382 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-const BpmnModdle = require('bpmn-moddle');
+var BpmnModdle = require('bpmn-moddle');
 
-const DebugLogger = require('./lib/Logger');
+var DebugLogger = require('./lib/Logger');
 
-const elements = require('bpmn-elements');
+var elements = require('bpmn-elements');
 
-const getOptionsAndCallback = require('./lib/getOptionsAndCallback');
+var getOptionsAndCallback = require('./lib/getOptionsAndCallback');
 
-const JavaScripts = require('./lib/JavaScripts');
+var JavaScripts = require('./lib/JavaScripts');
 
-const ProcessOutputDataObject = require('./lib/extensions/ProcessOutputDataObject');
+var ProcessOutputDataObject = require('./lib/extensions/ProcessOutputDataObject');
 
-const {
-  Broker
-} = require('smqp');
+var _require = require('smqp'),
+    Broker = _require.Broker;
 
-const {
-  default: serializer,
-  deserialize,
-  TypeResolver
-} = require('moddle-context-serializer');
+var _require2 = require('moddle-context-serializer'),
+    serializer = _require2["default"],
+    deserialize = _require2.deserialize,
+    TypeResolver = _require2.TypeResolver;
 
-const {
-  EventEmitter
-} = require('events');
+var _require3 = require('events'),
+    EventEmitter = _require3.EventEmitter;
 
-const {
-  version: engineVersion
-} = require('./package.json');
+var _require4 = require('./package.json'),
+    engineVersion = _require4.version;
 
 module.exports = {
-  Engine
+  Engine: Engine
 };
 
-function Engine(options = {}) {
-  let execute = (() => {
-    var _ref = _asyncToGenerator(function* (...args) {
-      const [executeOptions, callback] = getOptionsAndCallback(...args);
-      let runSources;
-
-      try {
-        runSources = yield Promise.all(pendingSources);
-      } catch (err) {
-        if (callback) return callback(err);
-        throw err;
-      }
-
-      const definitions = runSources.map(function (source) {
-        return loadDefinition(source, executeOptions);
-      });
-      execution = Execution(engine, definitions, options);
-      return execution.execute(executeOptions, callback);
-    });
-
-    return function execute() {
-      return _ref.apply(this, arguments);
-    };
-  })();
-
-  let stop = (() => {
-    var _ref2 = _asyncToGenerator(function* () {
-      if (!execution) return;
-      return execution.stop();
-    });
-
-    return function stop() {
-      return _ref2.apply(this, arguments);
-    };
-  })();
-
-  let resume = (() => {
-    var _ref3 = _asyncToGenerator(function* (...args) {
-      const [resumeOptions, callback] = getOptionsAndCallback(...args);
-
-      if (!execution) {
-        const definitions = yield getDefinitions();
-        execution = Execution(engine, definitions, options);
-      }
-
-      return execution.resume(resumeOptions, callback);
-    });
-
-    return function resume() {
-      return _ref3.apply(this, arguments);
-    };
-  })();
-
-  let getDefinitions = (() => {
-    var _ref4 = _asyncToGenerator(function* (executeOptions) {
-      if (loadedDefinitions && loadedDefinitions.length) return loadedDefinitions;
-      return Promise.all(pendingSources).then(function (srcs) {
-        return srcs.map(function (src) {
-          return loadDefinition(src, executeOptions);
-        });
-      });
-    });
-
-    return function getDefinitions(_x) {
-      return _ref4.apply(this, arguments);
-    };
-  })();
-
-  let getDefinitionById = (() => {
-    var _ref5 = _asyncToGenerator(function* (id) {
-      return (yield getDefinitions()).find(function (d) {
-        return d.id === id;
-      });
-    });
-
-    return function getDefinitionById(_x2) {
-      return _ref5.apply(this, arguments);
-    };
-  })();
-
-  let getState = (() => {
-    var _ref6 = _asyncToGenerator(function* () {
-      if (execution) return execution.getState();
-      const definitions = yield getDefinitions();
-      return Execution(engine, definitions, options).getState();
-    });
-
-    return function getState() {
-      return _ref6.apply(this, arguments);
-    };
-  })();
-
-  let serializeSource = (() => {
-    var _ref7 = _asyncToGenerator(function* (source) {
-      const moddleContext = yield getModdleContext(source);
-      return serializeModdleContext(moddleContext);
-    });
-
-    return function serializeSource(_x3) {
-      return _ref7.apply(this, arguments);
-    };
-  })();
-
-  let waitFor = (() => {
-    var _ref8 = _asyncToGenerator(function* (eventName) {
-      return new Promise(function (resolve, reject) {
-        engine.once(eventName, onEvent);
-        engine.once('error', onError);
-
-        function onEvent(api) {
-          engine.removeListener('error', onError);
-          resolve(api);
-        }
-
-        function onError(err) {
-          engine.removeListener(eventName, onError);
-          reject(err);
-        }
-      });
-    });
-
-    return function waitFor(_x4) {
-      return _ref8.apply(this, arguments);
-    };
-  })();
-
+function Engine() {
+  var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   options = _objectSpread({
     Logger: DebugLogger,
     scripts: JavaScripts()
   }, options);
-  let {
-    name,
-    Logger
-  } = options;
-  let loadedDefinitions, execution;
-  const logger = Logger('engine');
-  const sources = [];
-  const typeResolver = TypeResolver(_objectSpread({}, elements, {}, options.elements || {}), defaultTypeResolver);
+  var _options = options,
+      name = _options.name,
+      Logger = _options.Logger;
+  var loadedDefinitions, execution;
+  var logger = Logger('engine');
+  var sources = [];
+  var typeResolver = TypeResolver(_objectSpread({}, elements, {}, options.elements || {}), defaultTypeResolver);
 
   function defaultTypeResolver(elementTypes) {
     if (options.typeResolver) return options.typeResolver(elementTypes);
     elementTypes['bpmn:DataObject'] = ProcessOutputDataObject;
   }
 
-  const pendingSources = [];
+  var pendingSources = [];
   if (options.source) pendingSources.push(serializeSource(options.source));
   if (options.moddleContext) pendingSources.push(serializeModdleContext(options.moddleContext));
-  let environment = elements.Environment(options);
-  const emitter = new EventEmitter();
-  const engine = Object.assign(emitter, {
-    execute,
-    logger,
-    getDefinitionById,
-    getDefinitions,
-    getState,
-    recover,
-    resume,
-    stop,
-    waitFor
+  var environment = elements.Environment(options);
+  var emitter = new EventEmitter();
+  var engine = Object.assign(emitter, {
+    execute: execute,
+    logger: logger,
+    getDefinitionById: getDefinitionById,
+    getDefinitions: getDefinitions,
+    getState: getState,
+    recover: recover,
+    resume: resume,
+    stop: stop,
+    waitFor: waitFor
   });
-  const broker = Broker(engine);
+  var broker = Broker(engine);
   broker.assertExchange('event', 'topic', {
     autoDelete: false
   });
   Object.defineProperty(engine, 'broker', {
     enumerable: true,
-
-    get() {
+    get: function get() {
       return broker;
     }
-
   });
   Object.defineProperty(engine, 'name', {
     enumerable: true,
-
-    get() {
+    get: function get() {
       return name;
     },
-
-    set(value) {
+    set: function set(value) {
       name = value;
     }
-
   });
   Object.defineProperty(engine, 'environment', {
     enumerable: true,
-
-    get() {
+    get: function get() {
       return environment;
     }
-
   });
   Object.defineProperty(engine, 'state', {
     enumerable: true,
-
-    get() {
+    get: function get() {
       if (execution) return execution.state;
       return 'idle';
     }
-
   });
   Object.defineProperty(engine, 'stopped', {
     enumerable: true,
-
-    get() {
+    get: function get() {
       if (execution) return execution.stopped;
       return false;
     }
-
   });
   Object.defineProperty(engine, 'execution', {
     enumerable: true,
-
-    get() {
+    get: function get() {
       return execution;
     }
-
   });
   return engine;
 
+  function execute() {
+    return _execute.apply(this, arguments);
+  }
+
+  function _execute() {
+    _execute = _asyncToGenerator(
+    /*#__PURE__*/
+    regeneratorRuntime.mark(function _callee() {
+      var _getOptionsAndCallbac,
+          _getOptionsAndCallbac2,
+          executeOptions,
+          callback,
+          runSources,
+          definitions,
+          _args = arguments;
+
+      return regeneratorRuntime.wrap(function _callee$(_context) {
+        while (1) {
+          switch (_context.prev = _context.next) {
+            case 0:
+              _getOptionsAndCallbac = getOptionsAndCallback.apply(void 0, _args), _getOptionsAndCallbac2 = _slicedToArray(_getOptionsAndCallbac, 2), executeOptions = _getOptionsAndCallbac2[0], callback = _getOptionsAndCallbac2[1];
+              _context.prev = 1;
+              _context.next = 4;
+              return Promise.all(pendingSources);
+
+            case 4:
+              runSources = _context.sent;
+              _context.next = 12;
+              break;
+
+            case 7:
+              _context.prev = 7;
+              _context.t0 = _context["catch"](1);
+
+              if (!callback) {
+                _context.next = 11;
+                break;
+              }
+
+              return _context.abrupt("return", callback(_context.t0));
+
+            case 11:
+              throw _context.t0;
+
+            case 12:
+              definitions = runSources.map(function (source) {
+                return loadDefinition(source, executeOptions);
+              });
+              execution = Execution(engine, definitions, options);
+              return _context.abrupt("return", execution.execute(executeOptions, callback));
+
+            case 15:
+            case "end":
+              return _context.stop();
+          }
+        }
+      }, _callee, null, [[1, 7]]);
+    }));
+    return _execute.apply(this, arguments);
+  }
+
+  function stop() {
+    return _stop.apply(this, arguments);
+  }
+
+  function _stop() {
+    _stop = _asyncToGenerator(
+    /*#__PURE__*/
+    regeneratorRuntime.mark(function _callee2() {
+      return regeneratorRuntime.wrap(function _callee2$(_context2) {
+        while (1) {
+          switch (_context2.prev = _context2.next) {
+            case 0:
+              if (execution) {
+                _context2.next = 2;
+                break;
+              }
+
+              return _context2.abrupt("return");
+
+            case 2:
+              return _context2.abrupt("return", execution.stop());
+
+            case 3:
+            case "end":
+              return _context2.stop();
+          }
+        }
+      }, _callee2);
+    }));
+    return _stop.apply(this, arguments);
+  }
+
   function recover(savedState, recoverOptions) {
     if (!savedState) return engine;
-    logger.debug(`<${name}> recover`);
+    logger.debug("<".concat(name, "> recover"));
     if (!name) name = savedState.name;
     if (recoverOptions) environment = elements.Environment(recoverOptions);
     if (savedState.environment) environment = environment.recover(savedState.environment);
     if (!savedState.definitions) return engine;
-    loadedDefinitions = savedState.definitions.map(dState => {
-      const source = deserialize(JSON.parse(dState.source), typeResolver);
-      logger.debug(`<${name}> recover ${dState.type} <${dState.id}>`);
-      const definition = loadDefinition(source);
+    loadedDefinitions = savedState.definitions.map(function (dState) {
+      var source = deserialize(JSON.parse(dState.source), typeResolver);
+      logger.debug("<".concat(name, "> recover ").concat(dState.type, " <").concat(dState.id, ">"));
+      var definition = loadDefinition(source);
       definition.recover(dState);
       return definition;
     });
     return engine;
   }
 
+  function resume() {
+    return _resume.apply(this, arguments);
+  }
+
+  function _resume() {
+    _resume = _asyncToGenerator(
+    /*#__PURE__*/
+    regeneratorRuntime.mark(function _callee3() {
+      var _getOptionsAndCallbac3,
+          _getOptionsAndCallbac4,
+          resumeOptions,
+          callback,
+          definitions,
+          _args3 = arguments;
+
+      return regeneratorRuntime.wrap(function _callee3$(_context3) {
+        while (1) {
+          switch (_context3.prev = _context3.next) {
+            case 0:
+              _getOptionsAndCallbac3 = getOptionsAndCallback.apply(void 0, _args3), _getOptionsAndCallbac4 = _slicedToArray(_getOptionsAndCallbac3, 2), resumeOptions = _getOptionsAndCallbac4[0], callback = _getOptionsAndCallbac4[1];
+
+              if (execution) {
+                _context3.next = 6;
+                break;
+              }
+
+              _context3.next = 4;
+              return getDefinitions();
+
+            case 4:
+              definitions = _context3.sent;
+              execution = Execution(engine, definitions, options);
+
+            case 6:
+              return _context3.abrupt("return", execution.resume(resumeOptions, callback));
+
+            case 7:
+            case "end":
+              return _context3.stop();
+          }
+        }
+      }, _callee3);
+    }));
+    return _resume.apply(this, arguments);
+  }
+
+  function getDefinitions(_x) {
+    return _getDefinitions.apply(this, arguments);
+  }
+
+  function _getDefinitions() {
+    _getDefinitions = _asyncToGenerator(
+    /*#__PURE__*/
+    regeneratorRuntime.mark(function _callee4(executeOptions) {
+      return regeneratorRuntime.wrap(function _callee4$(_context4) {
+        while (1) {
+          switch (_context4.prev = _context4.next) {
+            case 0:
+              if (!(loadedDefinitions && loadedDefinitions.length)) {
+                _context4.next = 2;
+                break;
+              }
+
+              return _context4.abrupt("return", loadedDefinitions);
+
+            case 2:
+              return _context4.abrupt("return", Promise.all(pendingSources).then(function (srcs) {
+                return srcs.map(function (src) {
+                  return loadDefinition(src, executeOptions);
+                });
+              }));
+
+            case 3:
+            case "end":
+              return _context4.stop();
+          }
+        }
+      }, _callee4);
+    }));
+    return _getDefinitions.apply(this, arguments);
+  }
+
+  function getDefinitionById(_x2) {
+    return _getDefinitionById.apply(this, arguments);
+  }
+
+  function _getDefinitionById() {
+    _getDefinitionById = _asyncToGenerator(
+    /*#__PURE__*/
+    regeneratorRuntime.mark(function _callee5(id) {
+      return regeneratorRuntime.wrap(function _callee5$(_context5) {
+        while (1) {
+          switch (_context5.prev = _context5.next) {
+            case 0:
+              _context5.next = 2;
+              return getDefinitions();
+
+            case 2:
+              _context5.t0 = function (d) {
+                return d.id === id;
+              };
+
+              return _context5.abrupt("return", _context5.sent.find(_context5.t0));
+
+            case 4:
+            case "end":
+              return _context5.stop();
+          }
+        }
+      }, _callee5);
+    }));
+    return _getDefinitionById.apply(this, arguments);
+  }
+
+  function getState() {
+    return _getState.apply(this, arguments);
+  }
+
+  function _getState() {
+    _getState = _asyncToGenerator(
+    /*#__PURE__*/
+    regeneratorRuntime.mark(function _callee6() {
+      var definitions;
+      return regeneratorRuntime.wrap(function _callee6$(_context6) {
+        while (1) {
+          switch (_context6.prev = _context6.next) {
+            case 0:
+              if (!execution) {
+                _context6.next = 2;
+                break;
+              }
+
+              return _context6.abrupt("return", execution.getState());
+
+            case 2:
+              _context6.next = 4;
+              return getDefinitions();
+
+            case 4:
+              definitions = _context6.sent;
+              return _context6.abrupt("return", Execution(engine, definitions, options).getState());
+
+            case 6:
+            case "end":
+              return _context6.stop();
+          }
+        }
+      }, _callee6);
+    }));
+    return _getState.apply(this, arguments);
+  }
+
   function loadDefinition(serializedContext, executeOptions) {
-    const context = elements.Context(serializedContext, environment.clone(_objectSpread({
+    var context = elements.Context(serializedContext, environment.clone(_objectSpread({
       listener: environment.options.listener
     }, executeOptions, {
       source: serializedContext
@@ -290,33 +401,98 @@ function Engine(options = {}) {
     return elements.Definition(context);
   }
 
+  function serializeSource(_x3) {
+    return _serializeSource.apply(this, arguments);
+  }
+
+  function _serializeSource() {
+    _serializeSource = _asyncToGenerator(
+    /*#__PURE__*/
+    regeneratorRuntime.mark(function _callee7(source) {
+      var moddleContext;
+      return regeneratorRuntime.wrap(function _callee7$(_context7) {
+        while (1) {
+          switch (_context7.prev = _context7.next) {
+            case 0:
+              _context7.next = 2;
+              return getModdleContext(source);
+
+            case 2:
+              moddleContext = _context7.sent;
+              return _context7.abrupt("return", serializeModdleContext(moddleContext));
+
+            case 4:
+            case "end":
+              return _context7.stop();
+          }
+        }
+      }, _callee7);
+    }));
+    return _serializeSource.apply(this, arguments);
+  }
+
   function serializeModdleContext(moddleContext) {
-    const serialized = serializer(moddleContext, typeResolver);
+    var serialized = serializer(moddleContext, typeResolver);
     sources.push(serialized);
     return serialized;
   }
 
   function getModdleContext(source) {
-    return new Promise((resolve, reject) => {
-      const bpmnModdle = new BpmnModdle(options.moddleOptions);
-      bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim(), (err, _, moddleContext) => {
+    return new Promise(function (resolve, reject) {
+      var bpmnModdle = new BpmnModdle(options.moddleOptions);
+      bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim(), function (err, _, moddleContext) {
         if (err) return reject(err);
         resolve(moddleContext);
       });
     });
   }
+
+  function waitFor(_x4) {
+    return _waitFor.apply(this, arguments);
+  }
+
+  function _waitFor() {
+    _waitFor = _asyncToGenerator(
+    /*#__PURE__*/
+    regeneratorRuntime.mark(function _callee8(eventName) {
+      return regeneratorRuntime.wrap(function _callee8$(_context8) {
+        while (1) {
+          switch (_context8.prev = _context8.next) {
+            case 0:
+              return _context8.abrupt("return", new Promise(function (resolve, reject) {
+                engine.once(eventName, onEvent);
+                engine.once('error', onError);
+
+                function onEvent(api) {
+                  engine.removeListener('error', onError);
+                  resolve(api);
+                }
+
+                function onError(err) {
+                  engine.removeListener(eventName, onError);
+                  reject(err);
+                }
+              }));
+
+            case 1:
+            case "end":
+              return _context8.stop();
+          }
+        }
+      }, _callee8);
+    }));
+    return _waitFor.apply(this, arguments);
+  }
 }
 
 function Execution(engine, definitions, options) {
-  const {
-    environment,
-    logger,
-    waitFor,
-    broker
-  } = engine;
+  var environment = engine.environment,
+      logger = engine.logger,
+      waitFor = engine.waitFor,
+      broker = engine.broker;
   broker.on('return', onBrokerReturn);
-  let state = 'idle';
-  let stopped;
+  var state = 'idle';
+  var stopped;
   return {
     get state() {
       return state;
@@ -326,27 +502,31 @@ function Execution(engine, definitions, options) {
       return stopped;
     },
 
-    execute,
-    getState,
-    resume,
-    stop
+    execute: execute,
+    getState: getState,
+    resume: resume,
+    stop: stop
   };
 
   function execute(executeOptions, callback) {
     setup(executeOptions);
     stopped = false;
-    logger.debug(`<${engine.name}> execute`);
+    logger.debug("<".concat(engine.name, "> execute"));
     addConsumerCallbacks(callback);
-    definitions.forEach(definition => definition.run());
+    definitions.forEach(function (definition) {
+      return definition.run();
+    });
     return Api();
   }
 
   function resume(resumeOptions, callback) {
     setup(resumeOptions);
     stopped = false;
-    logger.debug(`<${engine.name}> resume`);
+    logger.debug("<".concat(engine.name, "> resume"));
     addConsumerCallbacks(callback);
-    definitions.forEach(definition => definition.resume());
+    definitions.forEach(function (definition) {
+      return definition.resume();
+    });
     return Api();
   }
 
@@ -383,13 +563,16 @@ function Execution(engine, definitions, options) {
   }
 
   function stop() {
-    const prom = waitFor('stop');
-    definitions.forEach(d => d.stop());
+    var prom = waitFor('stop');
+    definitions.forEach(function (d) {
+      return d.stop();
+    });
     return prom;
   }
 
-  function setup(setupOptions = {}) {
-    const listener = setupOptions.listener || options.listener;
+  function setup() {
+    var setupOptions = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    var listener = setupOptions.listener || options.listener;
     if (listener && typeof listener.emit !== 'function') throw new Error('listener.emit is not a function');
     definitions.forEach(setupDefinition);
 
@@ -415,25 +598,27 @@ function Execution(engine, definitions, options) {
   }
 
   function onChildMessage(routingKey, message, owner) {
-    const {
-      environment: ownerEnvironment
-    } = owner;
-    const listener = ownerEnvironment.options && ownerEnvironment.options.listener;
+    var ownerEnvironment = owner.environment;
+    var listener = ownerEnvironment.options && ownerEnvironment.options.listener;
     state = 'running';
-    let executionStopped, executionCompleted, executionErrored;
-    const elementApi = owner.getApi && owner.getApi(message);
+    var executionStopped, executionCompleted, executionErrored;
+    var elementApi = owner.getApi && owner.getApi(message);
 
     switch (routingKey) {
       case 'definition.stop':
         teardownDefinition(owner);
-        if (definitions.some(d => d.isRunning)) break;
+        if (definitions.some(function (d) {
+          return d.isRunning;
+        })) break;
         executionStopped = true;
         stopped = true;
         break;
 
       case 'definition.leave':
         teardownDefinition(owner);
-        if (definitions.some(d => d.isRunning)) break;
+        if (definitions.some(function (d) {
+          return d.isRunning;
+        })) break;
         executionCompleted = true;
         break;
 
@@ -452,7 +637,7 @@ function Execution(engine, definitions, options) {
         {
           if (!message.content.output) break;
 
-          for (const key in message.content.output) {
+          for (var key in message.content.output) {
             switch (key) {
               case 'data':
                 {
@@ -479,20 +664,20 @@ function Execution(engine, definitions, options) {
 
     if (executionStopped) {
       state = 'stopped';
-      logger.debug(`<${engine.name}> stopped`);
+      logger.debug("<".concat(engine.name, "> stopped"));
       onComplete('stop');
     } else if (executionCompleted) {
       state = 'idle';
-      logger.debug(`<${engine.name}> completed`);
+      logger.debug("<".concat(engine.name, "> completed"));
       onComplete('end');
     } else if (executionErrored) {
       state = 'error';
-      logger.debug(`<${engine.name}> error`);
+      logger.debug("<".concat(engine.name, "> error"));
       onError(message.content.error);
     }
 
     function onComplete(eventName) {
-      broker.publish('event', `engine.${eventName}`, {}, {
+      broker.publish('event', "engine.".concat(eventName), {}, {
         type: eventName
       });
       engine.emit(eventName, Api());
@@ -505,9 +690,9 @@ function Execution(engine, definitions, options) {
       });
     }
 
-    function emitListenerEvent(...args) {
+    function emitListenerEvent() {
       if (!listener) return;
-      listener.emit(...args);
+      listener.emit.apply(listener, arguments);
     }
   }
 
@@ -521,9 +706,9 @@ function Execution(engine, definitions, options) {
   function getState() {
     return {
       name: engine.name,
-      state,
-      stopped,
-      engineVersion,
+      state: state,
+      stopped: stopped,
+      engineVersion: engineVersion,
       environment: environment.getState(),
       definitions: definitions.map(getDefinitionState)
     };
@@ -553,19 +738,17 @@ function Execution(engine, definitions, options) {
         return stopped;
       },
 
-      environment,
-      definitions,
-      stop,
-      getState,
-
-      getPostponed() {
-        return definitions.reduce((result, definition) => {
+      environment: environment,
+      definitions: definitions,
+      stop: stop,
+      getState: getState,
+      getPostponed: function getPostponed() {
+        return definitions.reduce(function (result, definition) {
           result = result.concat(definition.getPostponed());
           return result;
         }, []);
       },
-
-      waitFor
+      waitFor: waitFor
     };
   }
 }

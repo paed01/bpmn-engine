@@ -1,6 +1,6 @@
 'use strict';
 
-const Debug = require('debug');
+var Debug = require('debug');
 
 module.exports = function Logger(scope) {
   return {
