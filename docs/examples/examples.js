@@ -43,6 +43,25 @@ function simpleExecute() {
   return engine;
 }
 
+function test(source, listener, options) {
+
+  const engine = Engine({
+    name: 'execution example',
+    // enableDummyService
+    moddleOptions: {
+      camunda: require('camunda-bpmn-moddle/resources/camunda')
+    },
+    source,
+    ...options
+  });
+
+  engine.execute({listener},(err, execution) => {
+    console.log('Execution completed with id', execution ?execution.environment.variables.id:null);
+  });
+
+  return engine;
+}
+
 // Listen for events
 async function listen(listener = null) {
   const source = `
@@ -769,5 +788,5 @@ const startResume = async () => {
 export {
   serviceTask, userTask, scriptTask, human, serviceBehaviour, extendBehaviour,
   loop, sequence, expressionCall, gateway, listen, simpleExecute,
-  startState, resumeState, startResume
+  startState, resumeState, startResume, test
 };
