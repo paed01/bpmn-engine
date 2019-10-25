@@ -1,10 +1,11 @@
 import {
   serviceTask, startResume, userTask, human, serviceBehaviour, extendBehaviour,
-  loop, sequence, expressionCall, scriptTask, gateway, listen, simpleExecute, test
+  loop, sequence, expressionCall, scriptTask, gateway, listen, simpleExecute
 } from './examples';
 import fs from 'fs';
 import path from 'path';
-const { EventEmitter } = require('events');
+import { EventEmitter } from 'events';
+import { runEngine} from './libs';
 
 console.log('Running Examples');
 const main = async () => {
@@ -102,27 +103,11 @@ const main = async () => {
         console.log(`flow <${flow.id}> was taken`);
       });
 
-      options = {
-        // extension: Extension,
-        services: {
-          dummy: (executionContext, serviceCallback) => {
-            console.log('dummy');
-            const result = executionContext['dummy'] || ['dummy'];
-
-            serviceCallback(null, result);
-          },
-          runAction: (executionContext, serviceCallback) => {
-            console.log('------------ un Action');
-            const result = executionContext['dummy'] || ['dummy'];
-
-            serviceCallback(null, result);
-          },
-        },
-      };
+      options = { };
 
       source = fs.readFileSync(path.join(__dirname, 'bpmn/testservice.bpmn'));
 
-      engine = test(source, listener, options);
+      engine = runEngine(source, listener, options);
       state = await engine.getState();
       console.log(state.name);
       break;
@@ -133,47 +118,5 @@ const main = async () => {
   }
 
 };
-
-export function Extension(activity) {
-  if (!activity.behaviour.extensionElements) return;
-
-  const { broker, environment } = activity;
-  const myExtensions = [];
-
-  for (const extension of activity.behaviour.extensionElements.values) {
-    switch (extension.$type) {
-      case 'camunda:ExecutionListener': {
-        myExtensions.push(ExecutionListener(extension));
-        break;
-      }
-    }
-  }
-
-  return {
-    extensions: myExtensions,
-    activate(...args) {
-      myExtensions.forEach((e) => e.activate(...args));
-    },
-    deactivate() {
-      myExtensions.forEach((e) => e.deactivate());
-    },
-  };
-
-  function ExecutionListener(extension) {
-    return {
-      activate() {
-        const script = environment.scripts.getScript(extension.script.scriptFormat, { id: extension.script.resource });
-        broker.subscribeTmp('event', `activity.${extension.event}`, (routingKey, message) => {
-          script.execute(message);
-        }, { noAck: true, consumerTag: '_my-extension' });
-      },
-      deactivate() {
-        broker.cancel('_my-extension');
-      }
-    };
-  }
-
-}
-
 
 main();

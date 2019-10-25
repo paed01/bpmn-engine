@@ -25,7 +25,7 @@
     <bpmn:sequenceFlow id="SequenceFlow_responde" sourceRef="resolvidoSuporte" targetRef="respondeUsuario">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">enviaDev === true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sendTask id="respondeUsuario" name="Responde Usuario" camunda:type="external" camunda:topic="">
+    <bpmn:sendTask id="respondeUsuario" name="Responde Usuario" camunda:expression="${environment.services.serviceFn}" camunda:resultVariable="result">
       <bpmn:extensionElements>
         <camunda:properties>
           <camunda:property name="service" value="runAction" />

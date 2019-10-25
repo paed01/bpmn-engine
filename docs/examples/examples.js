@@ -1,7 +1,7 @@
 
 'use strict';
 
-const { Engine } = require('../../index');
+import { Engine } from '../../index';
 const { EventEmitter } = require('events');
 const bent = require('bent');
 const getJson = require('bent')('json');
@@ -38,25 +38,6 @@ function simpleExecute() {
 
   engine.execute((err, execution) => {
     console.log('Execution completed with id', execution.environment.variables.id);
-  });
-
-  return engine;
-}
-
-function test(source, listener, options) {
-
-  const engine = Engine({
-    name: 'execution example',
-    // enableDummyService
-    moddleOptions: {
-      camunda: require('camunda-bpmn-moddle/resources/camunda')
-    },
-    source,
-    ...options
-  });
-
-  engine.execute({ listener }, (err, execution) => {
-    console.log('Execution completed with id', execution ? execution.environment.variables.id : null);
   });
 
   return engine;
@@ -788,5 +769,5 @@ const startResume = async () => {
 export {
   serviceTask, userTask, scriptTask, human, serviceBehaviour, extendBehaviour,
   loop, sequence, expressionCall, gateway, listen, simpleExecute,
-  startState, resumeState, startResume, test
+  startState, resumeState, startResume
 };
