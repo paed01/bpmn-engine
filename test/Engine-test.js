@@ -1,9 +1,7 @@
-'use strict';
-
 const Bpmn = require('..');
 const factory = require('./helpers/factory');
 const testHelpers = require('./helpers/testHelpers');
-const {EventEmitter} = require('events');
+const { EventEmitter } = require('events');
 
 describe('Engine', () => {
   describe('options', () => {
@@ -48,7 +46,7 @@ describe('Engine', () => {
 
     it('but not function', (done) => {
       const engine = Bpmn.Engine({
-        source() {}
+        source() { }
       });
 
       engine.getDefinitions().catch((err) => {
@@ -696,7 +694,7 @@ describe('Engine', () => {
         source: factory.userTask()
       });
 
-      const engine = Bpmn.Engine({name: 'my new name'}).recover(await sourceEngine.getState());
+      const engine = Bpmn.Engine({ name: 'my new name' }).recover(await sourceEngine.getState());
       expect(engine).to.have.property('name', 'my new name');
     });
 
@@ -737,7 +735,7 @@ describe('Engine', () => {
           recovered: true,
         },
         services: {
-          get() {},
+          get() { },
         }
       });
 
@@ -787,14 +785,14 @@ describe('Engine', () => {
       engine.recover(JSON.parse(JSON.stringify(engineState)));
       engine.once('end', done.bind(null, null));
 
-      engine.resume({listener});
+      engine.resume({ listener });
     });
 
     it('resume with new listener replaces listener', async () => {
       const listener = new EventEmitter();
       const engine = Bpmn.Engine();
       engine.recover(engineState);
-      engine.resume({listener});
+      engine.resume({ listener });
 
       const definitions = await engine.getDefinitions();
       expect(definitions).to.have.length(1);
@@ -821,7 +819,7 @@ describe('Engine', () => {
 
       const completed = engine.waitFor('end');
 
-      api = await engine.resume({listener});
+      api = await engine.resume({ listener });
 
       expect(api.definitions[0]).to.have.property('stopped', false);
 
@@ -848,7 +846,7 @@ describe('Engine', () => {
       const messages = [];
       engine.broker.subscribeTmp('event', '#', (routingKey) => {
         messages.push(routingKey);
-      }, {noAck: true});
+      }, { noAck: true });
 
       await engine.execute();
 
@@ -950,7 +948,7 @@ describe('Engine', () => {
         </process>
       </definitions>`;
 
-      const engine = Bpmn.Engine({source});
+      const engine = Bpmn.Engine({ source });
 
       try {
         await engine.execute();
@@ -971,7 +969,7 @@ describe('Engine', () => {
         </process>
       </definitions>`;
 
-      const engine = Bpmn.Engine({source});
+      const engine = Bpmn.Engine({ source });
       const completed = engine.waitFor('end');
       try {
         await engine.execute();
@@ -1005,7 +1003,7 @@ describe('Engine', () => {
         </process>
       </definitions>`;
 
-      const engine = Bpmn.Engine({source});
+      const engine = Bpmn.Engine({ source });
       const listener = new EventEmitter();
       listener.on('wait', (userTask) => {
         expect(userTask.content).to.have.property('ioSpecification').with.property('dataOutputs').with.length(1);
@@ -1019,7 +1017,7 @@ describe('Engine', () => {
         });
       });
 
-      engine.execute({listener}, (err, api) => {
+      engine.execute({ listener }, (err, api) => {
         if (err) return done(err);
         expect(api.environment.output).to.have.property('data').with.property('inputFromUser', 'von Rosen');
         done();

@@ -1,5 +1,3 @@
-'use strict';
-
 const BpmnModdle = require('bpmn-moddle');
 
 module.exports = {
@@ -18,7 +16,7 @@ function moddleContext(source, options) {
   });
 }
 
-function serializeModdleContext({rootHandler, elementsById, references, warnings}) {
+function serializeModdleContext({ rootHandler, elementsById, references, warnings }) {
   const clonedContext = {
     rootHandler: {
       element: JSON.parse(JSON.stringify(rootHandler.element))

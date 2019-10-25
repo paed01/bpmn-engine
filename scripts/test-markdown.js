@@ -1,11 +1,10 @@
 /* eslint no-console:0 */
-'use strict';
 
 const fs = require('fs');
 const vm = require('vm');
 const nock = require('nock');
 
-const {name, main} = require('../package.json');
+const { name, main } = require('../package.json');
 
 process.on('unhandledRejection', (error) => {
   console.log('unhandledRejection', error);
@@ -14,7 +13,7 @@ process.on('unhandledRejection', (error) => {
 nock.enableNetConnect(/(localhost|127\.0\.0\.1):\d+/);
 nock('https://example.com')
   .get(/.*/)
-  .reply(200, {data: 1})
+  .reply(200, { data: 1 })
   .persist();
 
 const exPattern = /```javascript\n([\s\S]*?)```/ig;
@@ -44,7 +43,7 @@ function parseDoc(filePath) {
       });
     });
 
-    blocks.forEach(({line, script}, idx) => {
+    blocks.forEach(({ line, script }, idx) => {
       if (isNaN(blockIdx) || idx === blockIdx) {
         console.log(`${idx}: ${filePath}:${line}`);
         execute(script);
@@ -75,7 +74,7 @@ function execute(script) {
         callback(new Error('No state'));
       },
       getState: (id, callback) => {
-        callback(null, {definitions: []});
+        callback(null, { definitions: [] });
       }
     }
   };

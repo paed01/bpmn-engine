@@ -1,12 +1,12 @@
 import { terser } from 'rollup-plugin-terser';
-import copy from 'rollup-plugin-copy'
+import copy from 'rollup-plugin-copy';
 import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import json from 'rollup-plugin-json';
 
 import pkg from './package.json';
 
-function pgl(plugins=[]) {
+function pgl(plugins = []) {
   return [
     json(),
     ...plugins
@@ -56,7 +56,7 @@ export default [
       'min-dash',
       'moddle',
       'moddle-xml'
-    ], 
+    ],
     plugins: [
       pgl(),
       copy({
@@ -65,6 +65,6 @@ export default [
           { src: 'package.json', dest: 'dist/' }
         ]
       })
-  ]
+    ]
   }
 ];

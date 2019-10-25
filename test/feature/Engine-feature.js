@@ -1,8 +1,6 @@
-'use strict';
-
 const factory = require('../helpers/factory');
-const {Engine} = require('../..');
-const {EventEmitter} = require('events');
+const { Engine } = require('../..');
+const { EventEmitter } = require('events');
 
 Feature('Engine', () => {
   Scenario('Mother of all', () => {
@@ -121,7 +119,7 @@ Feature('Engine', () => {
     });
 
     When('source is executed', () => {
-      engine.execute({listener});
+      engine.execute({ listener });
     });
 
     And('user task is in a waiting state', async () => {
@@ -172,7 +170,7 @@ Feature('Engine', () => {
     });
 
     When('resumed', () => {
-      recovered.resume({listener});
+      recovered.resume({ listener });
     });
 
     Then('engine is running', () => {
@@ -214,7 +212,7 @@ Feature('Engine', () => {
     let end;
     When('source is executed', () => {
       end = engine.waitFor('end');
-      return engine.execute({listener});
+      return engine.execute({ listener });
     });
 
     let endApi;
@@ -259,14 +257,14 @@ Feature('Engine', () => {
             const endRoutingKey = 'run.form.end';
 
             activity.on('enter', () => {
-              activity.broker.publish('format', 'run.form.start', {endRoutingKey});
+              activity.broker.publish('format', 'run.form.start', { endRoutingKey });
 
               getForm(activity).then((form) => {
-                activity.broker.publish('format', endRoutingKey, {form});
+                activity.broker.publish('format', endRoutingKey, { form });
               });
             });
           },
-          saveToEnvironmentOutput(activity, {environment}) {
+          saveToEnvironmentOutput(activity, { environment }) {
             activity.on('end', (api) => {
               environment.output[api.id] = api.content.output;
             });
@@ -325,7 +323,7 @@ Feature('Engine', () => {
     });
 
     And('extension have saved output in environment', () => {
-      expect(engine.environment.output).to.have.property('task1').that.eql({surname: 'von Rosen'});
+      expect(engine.environment.output).to.have.property('task1').that.eql({ surname: 'von Rosen' });
       expect(engine.environment.output).to.have.property('task2', 2);
     });
   });
@@ -361,7 +359,7 @@ Feature('Engine', () => {
       complete = engine.waitFor('end');
 
       callbackCalled = new Promise((resolve, reject) => {
-        engine.execute({listener}, (err, endApi) => {
+        engine.execute({ listener }, (err, endApi) => {
           if (err) return reject(err);
           resolve(endApi);
         });
@@ -406,7 +404,7 @@ Feature('Engine', () => {
       stopped = engine.waitFor('stop');
 
       callbackCalled = new Promise((resolve, reject) => {
-        engine.execute({listener}, (err, endApi) => {
+        engine.execute({ listener }, (err, endApi) => {
           if (err) return reject(err);
           resolve(endApi);
         });
@@ -434,7 +432,7 @@ Feature('Engine', () => {
       ended = engine.waitFor('end');
 
       callbackCalled = new Promise((resolve, reject) => {
-        engine.resume({listener}, (err, endApi) => {
+        engine.resume({ listener }, (err, endApi) => {
           if (err) return reject(err);
           resolve(endApi);
         });

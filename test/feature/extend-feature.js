@@ -1,8 +1,6 @@
-'use strict';
-
-const {Activity} = require('bpmn-elements');
-const {Engine} = require('../..');
-const {EventEmitter} = require('events');
+const { Activity } = require('bpmn-elements');
+const { Engine } = require('../..');
+const { EventEmitter } = require('events');
 
 Feature('extending behaviour', () => {
   Scenario('Activity form', () => {
@@ -34,14 +32,14 @@ Feature('extending behaviour', () => {
             const endRoutingKey = 'run.form.end';
 
             activity.on('enter', () => {
-              activity.broker.publish('format', 'run.form.start', {endRoutingKey});
+              activity.broker.publish('format', 'run.form.start', { endRoutingKey });
 
               getForm(activity).then((form) => {
-                activity.broker.publish('format', endRoutingKey, {form});
+                activity.broker.publish('format', endRoutingKey, { form });
               });
             });
           },
-          saveToEnvironmentOutput(activity, {environment}) {
+          saveToEnvironmentOutput(activity, { environment }) {
             activity.on('end', (api) => {
               environment.output[api.id] = api.content.output;
             });
@@ -100,7 +98,7 @@ Feature('extending behaviour', () => {
     });
 
     And('extension have saved output in environment', () => {
-      expect(engine.environment.output).to.have.property('task1').that.eql({surname: 'von Rosen'});
+      expect(engine.environment.output).to.have.property('task1').that.eql({ surname: 'von Rosen' });
       expect(engine.environment.output).to.have.property('task2', 2);
     });
   });
@@ -121,7 +119,7 @@ Feature('extending behaviour', () => {
     let ServiceExpression;
     And('an service expression function', () => {
       ServiceExpression = function ServiceExpressionFn(activity) {
-        const {type: atype, behaviour, environment} = activity;
+        const { type: atype, behaviour, environment } = activity;
         const expression = behaviour.expression;
 
         const type = `${atype}:expression`;
@@ -151,7 +149,7 @@ Feature('extending behaviour', () => {
         },
         services: {
           serviceFn(scope, callback) {
-            callback(null, {data: 1});
+            callback(null, { data: 1 });
           }
         },
         extensions: {
@@ -180,7 +178,7 @@ Feature('extending behaviour', () => {
     });
 
     Then('extension have saved output in environment', () => {
-      expect(engine.environment.output).to.have.property('result').that.eql({data: 1});
+      expect(engine.environment.output).to.have.property('result').that.eql({ data: 1 });
     });
   });
 
@@ -203,7 +201,7 @@ Feature('extending behaviour', () => {
         name: 'Engine feature',
         source,
         scripts: {
-          register() {},
+          register() { },
           getScript(scriptType, activity) {
             if (activity.id === 'task1') {
               return {
@@ -285,7 +283,7 @@ Feature('extending behaviour', () => {
         activity.on('enter', (elementApi) => {
           activity.broker.publish('format', 'run.io', {
             io: {
-              input: io.input.map(({name, value}) => ({
+              input: io.input.map(({ name, value }) => ({
                 name,
                 value: elementApi.resolveExpression(value),
               }))
@@ -356,7 +354,7 @@ Feature('extending behaviour', () => {
       };
 
       function ExclusiveGatewayBehaviour(activity) {
-        const {broker, outbound: outboundFlows} = activity;
+        const { broker, outbound: outboundFlows } = activity;
 
         return {
           execute,
@@ -366,12 +364,12 @@ Feature('extending behaviour', () => {
           broker.publish('event', 'activity.decide', {
             ...executeMessage.content,
             decisions: outboundFlows.map((f) => {
-              const {id, name, type} = f;
-              return {id, name, type};
+              const { id, name, type } = f;
+              return { id, name, type };
             })
           });
 
-          broker.subscribeTmp('api', 'activity.#', onApiMessage, {noAck: true, consumerTag: '_my-exclusive-gateway'});
+          broker.subscribeTmp('api', 'activity.#', onApiMessage, { noAck: true, consumerTag: '_my-exclusive-gateway' });
 
           function onApiMessage(_, message) {
             const type = message.properties.type;
@@ -384,8 +382,8 @@ Feature('extending behaviour', () => {
                 const takenId = message.content.message.id;
                 const outbound = [];
                 for (const flow of outboundFlows) {
-                  if (flow.id === takenId) outbound.push({id: flow.id, action: 'take'});
-                  else outbound.push({id: flow.id, action: 'discard'});
+                  if (flow.id === takenId) outbound.push({ id: flow.id, action: 'take' });
+                  else outbound.push({ id: flow.id, action: 'discard' });
                 }
 
                 return broker.publish('execution', 'execute.completed', {
@@ -490,7 +488,7 @@ Feature('extending behaviour', () => {
       function Extension(activity) {
         if (!activity.behaviour.extensionElements) return;
 
-        const {broker, environment} = activity;
+        const { broker, environment } = activity;
         const myExtensions = [];
 
         for (const extension of activity.behaviour.extensionElements.values) {
@@ -515,10 +513,10 @@ Feature('extending behaviour', () => {
         function ExecutionListener(extension) {
           return {
             activate() {
-              const script = environment.scripts.getScript(extension.script.scriptFormat, {id: extension.script.resource});
+              const script = environment.scripts.getScript(extension.script.scriptFormat, { id: extension.script.resource });
               broker.subscribeTmp('event', `activity.${extension.event}`, (routingKey, message) => {
                 script.execute(message);
-              }, {noAck: true, consumerTag: '_my-extension'});
+              }, { noAck: true, consumerTag: '_my-extension' });
             },
             deactivate() {
               broker.cancel('_my-extension');
@@ -548,7 +546,7 @@ Feature('extending behaviour', () => {
           register,
         };
 
-        function getScript(_, {id}) {
+        function getScript(_, { id }) {
           if (id === '/Users/workflowtest/hello.js') {
             return {
               execute(message) {
@@ -558,7 +556,7 @@ Feature('extending behaviour', () => {
           }
         }
 
-        function register() {}
+        function register() { }
       }
     });
 

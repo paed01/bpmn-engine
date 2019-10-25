@@ -1,11 +1,10 @@
-'use strict';
 // From https://github.com/hapijs/joi/blob/master/generate-readme-toc.js
 
 // Load modules
 
 const Toc = require('markdown-toc');
 const Fs = require('fs');
-const {version} = require('../package.json');
+const { version } = require('../package.json');
 
 // Declare internals
 
@@ -20,7 +19,7 @@ function generate(filename) {
   const api = Fs.readFileSync(filename, 'utf8');
   const tocOptions = {
     bullets: '-',
-    slugify: function(text) {
+    slugify: (text) => {
 
       return text.toLowerCase()
         .replace(/\s/g, '-')

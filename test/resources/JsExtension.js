@@ -1,5 +1,3 @@
-'use strict';
-
 const moddleOptions = require('./js-bpmn-moddle.json');
 
 const safePattern = /[./\\#*:\s]/g;
@@ -15,7 +13,7 @@ function Js(activity, context) {
 
   return {
     type: 'js:extension',
-    extensions: {resultVariable, formKey},
+    extensions: { resultVariable, formKey },
     activate(msg) {
       if (resultVariable) resultVariable.activate(msg);
       if (formKey) formKey.activate(msg);
@@ -28,12 +26,12 @@ function Js(activity, context) {
 }
 
 function ResultVariableIo(activity, context) {
-  const {id, logger, behaviour} = activity;
-  const {result} = behaviour;
+  const { id, logger, behaviour } = activity;
+  const { result } = behaviour;
   if (!result) return;
 
-  const {broker} = activity;
-  const {environment} = context;
+  const { broker } = activity;
+  const { environment } = context;
 
   const type = 'js:resultvariable';
   let activityConsumer;
@@ -50,7 +48,7 @@ function ResultVariableIo(activity, context) {
 
   function activate() {
     if (activityConsumer) return;
-    activityConsumer = broker.subscribeTmp('event', 'activity.end', onActivityEnd, {noAck: true});
+    activityConsumer = broker.subscribeTmp('event', 'activity.end', onActivityEnd, { noAck: true });
   }
 
   function onActivityEnd(_, message) {
@@ -62,12 +60,12 @@ function ResultVariableIo(activity, context) {
 }
 
 function FormKey(activity, context) {
-  const {id, logger, behaviour} = activity;
-  const {formKey} = behaviour;
+  const { id, logger, behaviour } = activity;
+  const { formKey } = behaviour;
   if (!formKey) return;
 
-  const {broker} = activity;
-  const {environment} = context;
+  const { broker } = activity;
+  const { environment } = context;
 
   const type = 'js:formkey';
   const safeType = brokerSafeId(type).toLowerCase();
@@ -85,7 +83,7 @@ function FormKey(activity, context) {
 
   function activate() {
     if (activityConsumer) return;
-    activityConsumer = broker.subscribeTmp('event', 'activity.start', onActivityStart, {noAck: true});
+    activityConsumer = broker.subscribeTmp('event', 'activity.start', onActivityStart, { noAck: true });
   }
 
   function onActivityStart(_, message) {
