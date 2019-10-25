@@ -18106,7 +18106,7 @@
 
   var name$5 = "bpmn-engine";
   var description = "BPMN 2.0 execution engine. Open source javascript workflow engine.";
-  var version = "8.4.0";
+  var version = "8.5.0";
   var main = "dist/index.js";
   var source = "index.js";
   var module = "dist/index.esm.js";
@@ -18115,7 +18115,7 @@
   	url: "git://github.com/paed01/bpmn-engine"
   };
   var author = {
-  	name: "Pål Edman",
+  	name: "Pål Edman, Mario Mol <mariohmol@gmail.com>",
   	url: "https://github.com/paed01"
   };
   var engines = {
@@ -18174,6 +18174,7 @@
   	nyc: "^14.1.1",
   	rollup: "^1.25.2",
   	"rollup-plugin-commonjs": "^10.1.0",
+  	"rollup-plugin-copy": "^3.1.0",
   	"rollup-plugin-json": "^4.0.0",
   	"rollup-plugin-node-resolve": "^5.2.0",
   	"rollup-plugin-terser": "^5.1.2",

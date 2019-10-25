@@ -1,5 +1,5 @@
 import { terser } from 'rollup-plugin-terser';
-
+import copy from 'rollup-plugin-copy'
 import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import json from 'rollup-plugin-json';
@@ -56,7 +56,15 @@ export default [
       'min-dash',
       'moddle',
       'moddle-xml'
-    ],
-    plugins: pgl()
+    ], 
+    plugins: [
+      pgl(),
+      copy({
+        targets: [
+          { src: 'lib', dest: 'dist/' },
+          { src: 'package.json', dest: 'dist/' }
+        ]
+      })
+  ]
   }
 ];
