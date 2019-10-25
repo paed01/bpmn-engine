@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "8.5.3",
+  "version": "8.5.4",
   "main": "dist/index.js",
   "source": "index.js",
   "module": "dist/index.esm.js",
@@ -57,15 +57,6 @@
     "@babel/core": "^7.6.4",
     "@babel/plugin-proposal-object-rest-spread": "^7.6.2",
     "@babel/preset-env": "^7.6.3",
-    "babel-cli": "^6.26.0",
-    "babel-plugin-styled-components": "^1.10.6",
-    "babel-plugin-transform-runtime": "^6.23.0",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-env": "^1.7.0",
-    "babel-preset-es2015": "^6.24.1",
-    "babel-preset-stage-0": "^6.24.1",
-    "babel-preset-stage-3": "^6.24.1",
-    "babel-register": "^6.26.0",
     "bent": "^7.0.2",
     "chai": "^4.1.2",
     "coveralls": "^3.0.7",
@@ -87,7 +78,6 @@
     "unnecessary": "^1.3.4"
   },
   "dependencies": {
-    "babel-preset-react": "^6.24.1",
     "bpmn-elements": "^0.11.0",
     "bpmn-moddle": "^6.0.0",
     "camunda-bpmn-moddle": "^4.2.0",

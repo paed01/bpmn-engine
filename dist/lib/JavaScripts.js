@@ -6,20 +6,23 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-var _require = require('vm'),
-    Script = _require.Script;
+var {
+  Script
+} = require('vm');
 
 module.exports = function Scripts() {
   var scripts = {};
   return {
-    getScript: getScript,
-    register: register
+    getScript,
+    register
   };
 
   function register(_ref) {
-    var id = _ref.id,
-        type = _ref.type,
-        behaviour = _ref.behaviour;
+    var {
+      id,
+      type,
+      behaviour
+    } = _ref;
     var scriptBody,
         language = 'javascript';
 
@@ -46,12 +49,14 @@ module.exports = function Scripts() {
   }
 
   function getScript(scriptType, _ref2) {
-    var id = _ref2.id;
+    var {
+      id
+    } = _ref2;
     if (!/^javascript$/i.test(scriptType)) return;
     var script = scripts[id];
     if (!script) return;
     return {
-      execute: execute
+      execute
     };
 
     function execute(executionContext, callback) {

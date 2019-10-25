@@ -3,7 +3,10 @@
     [
       "@babel/preset-env",
       {
-        "modules": "commonjs"
+        "modules": "cjs",
+        "targets": {
+          "esmodules": true
+        }
       }
     ]
   ],

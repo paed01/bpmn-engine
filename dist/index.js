@@ -1,13 +1,5 @@
 'use strict';
 
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
-
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
-
-function _iterableToArrayLimit(arr, i) { if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) { return; } var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
-
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
 
 function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
@@ -30,22 +22,26 @@ var JavaScripts = require('./lib/JavaScripts');
 
 var ProcessOutputDataObject = require('./lib/extensions/ProcessOutputDataObject');
 
-var _require = require('smqp'),
-    Broker = _require.Broker;
+var {
+  Broker
+} = require('smqp');
 
-var _require2 = require('moddle-context-serializer'),
-    serializer = _require2["default"],
-    deserialize = _require2.deserialize,
-    TypeResolver = _require2.TypeResolver;
+var {
+  default: serializer,
+  deserialize,
+  TypeResolver
+} = require('moddle-context-serializer');
 
-var _require3 = require('events'),
-    EventEmitter = _require3.EventEmitter;
+var {
+  EventEmitter
+} = require('events');
 
-var _require4 = require('./package.json'),
-    engineVersion = _require4.version;
+var {
+  version: engineVersion
+} = require('./package.json');
 
 module.exports = {
-  Engine: Engine
+  Engine
 };
 
 function Engine() {
@@ -54,9 +50,10 @@ function Engine() {
     Logger: DebugLogger,
     scripts: JavaScripts()
   }, options);
-  var _options = options,
-      name = _options.name,
-      Logger = _options.Logger;
+  var {
+    name,
+    Logger
+  } = options;
   var loadedDefinitions, execution;
   var logger = Logger('engine');
   var sources = [];
@@ -73,15 +70,15 @@ function Engine() {
   var environment = elements.Environment(options);
   var emitter = new EventEmitter();
   var engine = Object.assign(emitter, {
-    execute: execute,
-    logger: logger,
-    getDefinitionById: getDefinitionById,
-    getDefinitions: getDefinitions,
-    getState: getState,
-    recover: recover,
-    resume: resume,
-    stop: stop,
-    waitFor: waitFor
+    execute,
+    logger,
+    getDefinitionById,
+    getDefinitions,
+    getState,
+    recover,
+    resume,
+    stop,
+    waitFor
   });
   var broker = Broker(engine);
   broker.assertExchange('event', 'topic', {
@@ -89,44 +86,57 @@ function Engine() {
   });
   Object.defineProperty(engine, 'broker', {
     enumerable: true,
-    get: function get() {
+
+    get() {
       return broker;
     }
+
   });
   Object.defineProperty(engine, 'name', {
     enumerable: true,
-    get: function get() {
+
+    get() {
       return name;
     },
-    set: function set(value) {
+
+    set(value) {
       name = value;
     }
+
   });
   Object.defineProperty(engine, 'environment', {
     enumerable: true,
-    get: function get() {
+
+    get() {
       return environment;
     }
+
   });
   Object.defineProperty(engine, 'state', {
     enumerable: true,
-    get: function get() {
+
+    get() {
       if (execution) return execution.state;
       return 'idle';
     }
+
   });
   Object.defineProperty(engine, 'stopped', {
     enumerable: true,
-    get: function get() {
+
+    get() {
       if (execution) return execution.stopped;
       return false;
     }
+
   });
   Object.defineProperty(engine, 'execution', {
     enumerable: true,
-    get: function get() {
+
+    get() {
       return execution;
     }
+
   });
   return engine;
 
@@ -135,59 +145,21 @@ function Engine() {
   }
 
   function _execute() {
-    _execute = _asyncToGenerator(
-    /*#__PURE__*/
-    regeneratorRuntime.mark(function _callee() {
-      var _getOptionsAndCallbac,
-          _getOptionsAndCallbac2,
-          executeOptions,
-          callback,
-          runSources,
-          definitions,
-          _args = arguments;
+    _execute = _asyncToGenerator(function* () {
+      var [executeOptions, callback] = getOptionsAndCallback(...arguments);
+      var runSources;
 
-      return regeneratorRuntime.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              _getOptionsAndCallbac = getOptionsAndCallback.apply(void 0, _args), _getOptionsAndCallbac2 = _slicedToArray(_getOptionsAndCallbac, 2), executeOptions = _getOptionsAndCallbac2[0], callback = _getOptionsAndCallbac2[1];
-              _context.prev = 1;
-              _context.next = 4;
-              return Promise.all(pendingSources);
+      try {
+        runSources = yield Promise.all(pendingSources);
+      } catch (err) {
+        if (callback) return callback(err);
+        throw err;
+      }
 
-            case 4:
-              runSources = _context.sent;
-              _context.next = 12;
-              break;
-
-            case 7:
-              _context.prev = 7;
-              _context.t0 = _context["catch"](1);
-
-              if (!callback) {
-                _context.next = 11;
-                break;
-              }
-
-              return _context.abrupt("return", callback(_context.t0));
-
-            case 11:
-              throw _context.t0;
-
-            case 12:
-              definitions = runSources.map(function (source) {
-                return loadDefinition(source, executeOptions);
-              });
-              execution = Execution(engine, definitions, options);
-              return _context.abrupt("return", execution.execute(executeOptions, callback));
-
-            case 15:
-            case "end":
-              return _context.stop();
-          }
-        }
-      }, _callee, null, [[1, 7]]);
-    }));
+      var definitions = runSources.map(source => loadDefinition(source, executeOptions));
+      execution = Execution(engine, definitions, options);
+      return execution.execute(executeOptions, callback);
+    });
     return _execute.apply(this, arguments);
   }
 
@@ -196,30 +168,10 @@ function Engine() {
   }
 
   function _stop() {
-    _stop = _asyncToGenerator(
-    /*#__PURE__*/
-    regeneratorRuntime.mark(function _callee2() {
-      return regeneratorRuntime.wrap(function _callee2$(_context2) {
-        while (1) {
-          switch (_context2.prev = _context2.next) {
-            case 0:
-              if (execution) {
-                _context2.next = 2;
-                break;
-              }
-
-              return _context2.abrupt("return");
-
-            case 2:
-              return _context2.abrupt("return", execution.stop());
-
-            case 3:
-            case "end":
-              return _context2.stop();
-          }
-        }
-      }, _callee2);
-    }));
+    _stop = _asyncToGenerator(function* () {
+      if (!execution) return;
+      return execution.stop();
+    });
     return _stop.apply(this, arguments);
   }
 
@@ -230,7 +182,7 @@ function Engine() {
     if (recoverOptions) environment = elements.Environment(recoverOptions);
     if (savedState.environment) environment = environment.recover(savedState.environment);
     if (!savedState.definitions) return engine;
-    loadedDefinitions = savedState.definitions.map(function (dState) {
+    loadedDefinitions = savedState.definitions.map(dState => {
       var source = deserialize(JSON.parse(dState.source), typeResolver);
       logger.debug("<".concat(name, "> recover ").concat(dState.type, " <").concat(dState.id, ">"));
       var definition = loadDefinition(source);
@@ -245,44 +197,16 @@ function Engine() {
   }
 
   function _resume() {
-    _resume = _asyncToGenerator(
-    /*#__PURE__*/
-    regeneratorRuntime.mark(function _callee3() {
-      var _getOptionsAndCallbac3,
-          _getOptionsAndCallbac4,
-          resumeOptions,
-          callback,
-          definitions,
-          _args3 = arguments;
+    _resume = _asyncToGenerator(function* () {
+      var [resumeOptions, callback] = getOptionsAndCallback(...arguments);
 
-      return regeneratorRuntime.wrap(function _callee3$(_context3) {
-        while (1) {
-          switch (_context3.prev = _context3.next) {
-            case 0:
-              _getOptionsAndCallbac3 = getOptionsAndCallback.apply(void 0, _args3), _getOptionsAndCallbac4 = _slicedToArray(_getOptionsAndCallbac3, 2), resumeOptions = _getOptionsAndCallbac4[0], callback = _getOptionsAndCallbac4[1];
+      if (!execution) {
+        var definitions = yield getDefinitions();
+        execution = Execution(engine, definitions, options);
+      }
 
-              if (execution) {
-                _context3.next = 6;
-                break;
-              }
-
-              _context3.next = 4;
-              return getDefinitions();
-
-            case 4:
-              definitions = _context3.sent;
-              execution = Execution(engine, definitions, options);
-
-            case 6:
-              return _context3.abrupt("return", execution.resume(resumeOptions, callback));
-
-            case 7:
-            case "end":
-              return _context3.stop();
-          }
-        }
-      }, _callee3);
-    }));
+      return execution.resume(resumeOptions, callback);
+    });
     return _resume.apply(this, arguments);
   }
 
@@ -291,34 +215,10 @@ function Engine() {
   }
 
   function _getDefinitions() {
-    _getDefinitions = _asyncToGenerator(
-    /*#__PURE__*/
-    regeneratorRuntime.mark(function _callee4(executeOptions) {
-      return regeneratorRuntime.wrap(function _callee4$(_context4) {
-        while (1) {
-          switch (_context4.prev = _context4.next) {
-            case 0:
-              if (!(loadedDefinitions && loadedDefinitions.length)) {
-                _context4.next = 2;
-                break;
-              }
-
-              return _context4.abrupt("return", loadedDefinitions);
-
-            case 2:
-              return _context4.abrupt("return", Promise.all(pendingSources).then(function (srcs) {
-                return srcs.map(function (src) {
-                  return loadDefinition(src, executeOptions);
-                });
-              }));
-
-            case 3:
-            case "end":
-              return _context4.stop();
-          }
-        }
-      }, _callee4);
-    }));
+    _getDefinitions = _asyncToGenerator(function* (executeOptions) {
+      if (loadedDefinitions && loadedDefinitions.length) return loadedDefinitions;
+      return Promise.all(pendingSources).then(srcs => srcs.map(src => loadDefinition(src, executeOptions)));
+    });
     return _getDefinitions.apply(this, arguments);
   }
 
@@ -327,30 +227,9 @@ function Engine() {
   }
 
   function _getDefinitionById() {
-    _getDefinitionById = _asyncToGenerator(
-    /*#__PURE__*/
-    regeneratorRuntime.mark(function _callee5(id) {
-      return regeneratorRuntime.wrap(function _callee5$(_context5) {
-        while (1) {
-          switch (_context5.prev = _context5.next) {
-            case 0:
-              _context5.next = 2;
-              return getDefinitions();
-
-            case 2:
-              _context5.t0 = function (d) {
-                return d.id === id;
-              };
-
-              return _context5.abrupt("return", _context5.sent.find(_context5.t0));
-
-            case 4:
-            case "end":
-              return _context5.stop();
-          }
-        }
-      }, _callee5);
-    }));
+    _getDefinitionById = _asyncToGenerator(function* (id) {
+      return (yield getDefinitions()).find(d => d.id === id);
+    });
     return _getDefinitionById.apply(this, arguments);
   }
 
@@ -359,36 +238,11 @@ function Engine() {
   }
 
   function _getState() {
-    _getState = _asyncToGenerator(
-    /*#__PURE__*/
-    regeneratorRuntime.mark(function _callee6() {
-      var definitions;
-      return regeneratorRuntime.wrap(function _callee6$(_context6) {
-        while (1) {
-          switch (_context6.prev = _context6.next) {
-            case 0:
-              if (!execution) {
-                _context6.next = 2;
-                break;
-              }
-
-              return _context6.abrupt("return", execution.getState());
-
-            case 2:
-              _context6.next = 4;
-              return getDefinitions();
-
-            case 4:
-              definitions = _context6.sent;
-              return _context6.abrupt("return", Execution(engine, definitions, options).getState());
-
-            case 6:
-            case "end":
-              return _context6.stop();
-          }
-        }
-      }, _callee6);
-    }));
+    _getState = _asyncToGenerator(function* () {
+      if (execution) return execution.getState();
+      var definitions = yield getDefinitions();
+      return Execution(engine, definitions, options).getState();
+    });
     return _getState.apply(this, arguments);
   }
 
@@ -406,28 +260,10 @@ function Engine() {
   }
 
   function _serializeSource() {
-    _serializeSource = _asyncToGenerator(
-    /*#__PURE__*/
-    regeneratorRuntime.mark(function _callee7(source) {
-      var moddleContext;
-      return regeneratorRuntime.wrap(function _callee7$(_context7) {
-        while (1) {
-          switch (_context7.prev = _context7.next) {
-            case 0:
-              _context7.next = 2;
-              return getModdleContext(source);
-
-            case 2:
-              moddleContext = _context7.sent;
-              return _context7.abrupt("return", serializeModdleContext(moddleContext));
-
-            case 4:
-            case "end":
-              return _context7.stop();
-          }
-        }
-      }, _callee7);
-    }));
+    _serializeSource = _asyncToGenerator(function* (source) {
+      var moddleContext = yield getModdleContext(source);
+      return serializeModdleContext(moddleContext);
+    });
     return _serializeSource.apply(this, arguments);
   }
 
@@ -438,9 +274,9 @@ function Engine() {
   }
 
   function getModdleContext(source) {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       var bpmnModdle = new BpmnModdle(options.moddleOptions);
-      bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim(), function (err, _, moddleContext) {
+      bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim(), (err, _, moddleContext) => {
         if (err) return reject(err);
         resolve(moddleContext);
       });
@@ -452,44 +288,33 @@ function Engine() {
   }
 
   function _waitFor() {
-    _waitFor = _asyncToGenerator(
-    /*#__PURE__*/
-    regeneratorRuntime.mark(function _callee8(eventName) {
-      return regeneratorRuntime.wrap(function _callee8$(_context8) {
-        while (1) {
-          switch (_context8.prev = _context8.next) {
-            case 0:
-              return _context8.abrupt("return", new Promise(function (resolve, reject) {
-                engine.once(eventName, onEvent);
-                engine.once('error', onError);
+    _waitFor = _asyncToGenerator(function* (eventName) {
+      return new Promise((resolve, reject) => {
+        engine.once(eventName, onEvent);
+        engine.once('error', onError);
 
-                function onEvent(api) {
-                  engine.removeListener('error', onError);
-                  resolve(api);
-                }
-
-                function onError(err) {
-                  engine.removeListener(eventName, onError);
-                  reject(err);
-                }
-              }));
-
-            case 1:
-            case "end":
-              return _context8.stop();
-          }
+        function onEvent(api) {
+          engine.removeListener('error', onError);
+          resolve(api);
         }
-      }, _callee8);
-    }));
+
+        function onError(err) {
+          engine.removeListener(eventName, onError);
+          reject(err);
+        }
+      });
+    });
     return _waitFor.apply(this, arguments);
   }
 }
 
 function Execution(engine, definitions, options) {
-  var environment = engine.environment,
-      logger = engine.logger,
-      waitFor = engine.waitFor,
-      broker = engine.broker;
+  var {
+    environment,
+    logger,
+    waitFor,
+    broker
+  } = engine;
   broker.on('return', onBrokerReturn);
   var state = 'idle';
   var stopped;
@@ -502,10 +327,10 @@ function Execution(engine, definitions, options) {
       return stopped;
     },
 
-    execute: execute,
-    getState: getState,
-    resume: resume,
-    stop: stop
+    execute,
+    getState,
+    resume,
+    stop
   };
 
   function execute(executeOptions, callback) {
@@ -513,9 +338,7 @@ function Execution(engine, definitions, options) {
     stopped = false;
     logger.debug("<".concat(engine.name, "> execute"));
     addConsumerCallbacks(callback);
-    definitions.forEach(function (definition) {
-      return definition.run();
-    });
+    definitions.forEach(definition => definition.run());
     return Api();
   }
 
@@ -524,9 +347,7 @@ function Execution(engine, definitions, options) {
     stopped = false;
     logger.debug("<".concat(engine.name, "> resume"));
     addConsumerCallbacks(callback);
-    definitions.forEach(function (definition) {
-      return definition.resume();
-    });
+    definitions.forEach(definition => definition.resume());
     return Api();
   }
 
@@ -564,9 +385,7 @@ function Execution(engine, definitions, options) {
 
   function stop() {
     var prom = waitFor('stop');
-    definitions.forEach(function (d) {
-      return d.stop();
-    });
+    definitions.forEach(d => d.stop());
     return prom;
   }
 
@@ -598,7 +417,9 @@ function Execution(engine, definitions, options) {
   }
 
   function onChildMessage(routingKey, message, owner) {
-    var ownerEnvironment = owner.environment;
+    var {
+      environment: ownerEnvironment
+    } = owner;
     var listener = ownerEnvironment.options && ownerEnvironment.options.listener;
     state = 'running';
     var executionStopped, executionCompleted, executionErrored;
@@ -607,18 +428,14 @@ function Execution(engine, definitions, options) {
     switch (routingKey) {
       case 'definition.stop':
         teardownDefinition(owner);
-        if (definitions.some(function (d) {
-          return d.isRunning;
-        })) break;
+        if (definitions.some(d => d.isRunning)) break;
         executionStopped = true;
         stopped = true;
         break;
 
       case 'definition.leave':
         teardownDefinition(owner);
-        if (definitions.some(function (d) {
-          return d.isRunning;
-        })) break;
+        if (definitions.some(d => d.isRunning)) break;
         executionCompleted = true;
         break;
 
@@ -692,7 +509,7 @@ function Execution(engine, definitions, options) {
 
     function emitListenerEvent() {
       if (!listener) return;
-      listener.emit.apply(listener, arguments);
+      listener.emit(...arguments);
     }
   }
 
@@ -706,9 +523,9 @@ function Execution(engine, definitions, options) {
   function getState() {
     return {
       name: engine.name,
-      state: state,
-      stopped: stopped,
-      engineVersion: engineVersion,
+      state,
+      stopped,
+      engineVersion,
       environment: environment.getState(),
       definitions: definitions.map(getDefinitionState)
     };
@@ -738,17 +555,19 @@ function Execution(engine, definitions, options) {
         return stopped;
       },
 
-      environment: environment,
-      definitions: definitions,
-      stop: stop,
-      getState: getState,
-      getPostponed: function getPostponed() {
-        return definitions.reduce(function (result, definition) {
+      environment,
+      definitions,
+      stop,
+      getState,
+
+      getPostponed() {
+        return definitions.reduce((result, definition) => {
           result = result.concat(definition.getPostponed());
           return result;
         }, []);
       },
-      waitFor: waitFor
+
+      waitFor
     };
   }
 }
