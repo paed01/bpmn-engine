@@ -88,9 +88,10 @@ app.post('/test', rawParser, async (req, res) => {
         input: 2
       }
     });
+    console.log(api);
     res.json({});
   } catch (e) {
-    res.json(e)
+    res.json(e);
   }
 
 });
