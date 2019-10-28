@@ -18,10 +18,12 @@ export function ServiceExpression(activity) {
   }
 }
 
+export async function makeAndRunEngine(source, listener, options, state = null) {
+  const engine = makeEngine(source, options);
+  return await executeEngine(engine, listener, state);
+}
 
-
-export async function runEngine(source, listener, options, state = null) {
-  let engine = makeEngine(source, options);
+export async function executeEngine(engine, listener, state = null) {
   let api;
   if (state) {
     engine = engine.recover(state);
@@ -31,7 +33,6 @@ export async function runEngine(source, listener, options, state = null) {
   } else {
     api = await engine.execute({ listener });
   }
-
   return { engine, api };
 }
 
@@ -75,7 +76,9 @@ export async function getEndFlowIds(engine) {
   const [bp] = definition.getProcesses();
   const flows = bp.getSequenceFlows();
   return flows.reduce((result, flow) => {
-    if (bp.getActivityById(flow.targetId).isEnd) result.push(flow.id);
+    if (bp.getActivityById(flow.targetId).isEnd) {
+      result.push(flow.id);
+    }
     return result;
   }, []);
 }

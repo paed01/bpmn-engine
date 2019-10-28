@@ -95,6 +95,7 @@ const main = async () => {
       listener = new EventEmitter();
       listener.once('wait', (task) => {
         console.log('wait', task.id);
+        // Without this signal the process will idle waiting for a response
         task.signal({
           ioSpecification: {
             dataOutputs: [{
@@ -104,7 +105,6 @@ const main = async () => {
           }
         });
       });
-
 
       listener.on('activity.start', (task) => {
         console.log('\n \n activity.start', task.id);
@@ -129,12 +129,13 @@ const main = async () => {
        * RUN ENGINE
        */
       api = await engine.execute({ listener });
+      //api.owner.behaviour.extensionElements
       state = await engine.getState();
       console.log(state.name, api.id);
       break;
 
     default:
-      console.log(`Choose a valide function:  startResume, serviceTask, userTask,scriptTask, human, serviceBehaviour, extendBehaviour,
+      console.log(`Choose a valide function:  test, startResume, serviceTask, userTask,scriptTask, human, serviceBehaviour, extendBehaviour,
       loop, sequence, expressionCall, gateway, listen, simpleExecute`);
   }
 
