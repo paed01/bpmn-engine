@@ -11,7 +11,7 @@ console.log('Running Examples');
 const main = async () => {
   const command = process.argv[2];
   let listener, options, state, engine,
-    endFlows, source, runData, api;
+    endFlows, source, api;
   switch (command) {
 
     case 'startResume':
@@ -113,7 +113,7 @@ const main = async () => {
           // debugger
         }
         if (task.owner.behaviour.extensionElements) {
-          console.log('task behaviour (extensionElements):', JSON.stringify(task.owner.behaviour.extensionElements, null , 4));
+          console.log('task behaviour (extensionElements):', JSON.stringify(task.owner.behaviour.extensionElements, null, 4));
         }
       });
 
