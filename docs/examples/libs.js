@@ -21,6 +21,21 @@ export function ServiceExpression(activity) {
 
 
 export async function runEngine(source, listener, options, state = null) {
+  let engine = makeEngine(source, options);
+  let api;
+  if (state) {
+    engine = engine.recover(state);
+    api = await engine.resume({
+      listener
+    });
+  } else {
+    api = await engine.execute({ listener });
+  }
+
+  return { engine, api };
+}
+
+export function makeEngine(source, options) {
 
   const configEngine = {
     name: 'execution example',
@@ -52,22 +67,18 @@ export async function runEngine(source, listener, options, state = null) {
     },
     ...options
   };
-  let engine = Engine(configEngine);
-  let api;
-  if (state) {
-    engine = engine.recover(state);
-    api = await engine.resume({
-      listener
-    });
-  } else {
-    engine.execute({ listener }, (err, execution) => {
-      console.log('Execution completed with id', execution ? execution.environment.variables.id : null);
-    });
-  }
-
-  return { engine, api };
+  return Engine(configEngine);
 }
 
+export async function getEndFlowIds(engine) {
+  const [definition] = await engine.getDefinitions();
+  const [bp] = definition.getProcesses();
+  const flows = bp.getSequenceFlows();
+  return flows.reduce((result, flow) => {
+    if (bp.getActivityById(flow.targetId).isEnd) result.push(flow.id);
+    return result;
+  }, []);
+}
 
 // export function Extension(activity) {
 //   if (!activity.behaviour.extensionElements) return;

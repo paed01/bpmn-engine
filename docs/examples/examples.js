@@ -689,6 +689,8 @@ function human(listener = null) {
   listener.on('activity.call', (api) => {
     console.log('Make call to', api.content.humanPerformer);
     console.log('Owner:', api.content.potentialOwner);
+    // Get data from behaviour as extensionElements
+    console.log('activity.start', api.owner.behaviour);
   });
 
   engine.execute({ listener }, (err, instance) => {

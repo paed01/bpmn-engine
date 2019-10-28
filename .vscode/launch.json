@@ -32,9 +32,9 @@
             "stopOnEntry": false,
             "runtimeArgs": [
               "--require",
-              "babel-register",
+              "@babel/register",
               "--require",
-              "babel-polyfill"
+              "@babel/polyfill"
             ],
             "sourceMaps": true
         }

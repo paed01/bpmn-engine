@@ -5,12 +5,13 @@ import {
 import fs from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
-import { runEngine} from './libs';
+import { makeEngine, getEndFlowIds } from './libs';
 
 console.log('Running Examples');
 const main = async () => {
   const command = process.argv[2];
-  let listener, options, state, engine, source, runData;
+  let listener, options, state, engine,
+    endFlows, source, runData, api;
   switch (command) {
 
     case 'startResume':
@@ -67,8 +68,21 @@ const main = async () => {
 
     case 'test':
 
-      console.log('test running');
       /**
+       * MAKE ENGINE
+       *
+       */
+      console.log('test running');
+      options = {};
+      source = fs.readFileSync(path.join(__dirname, 'bpmn/testservice.bpmn'));
+      engine = makeEngine(source, options);
+
+      // Find the end
+      endFlows = await getEndFlowIds(engine);
+      console.log('End flows found: ', endFlows);
+
+      /**
+       * LISTENERS
       activity.enter: An activity is entered
       activity.start: An activity is started
       activity.wait: The activity is postponed for some reason, e.g. a user task is waiting to be signaled or a message is expected
@@ -91,26 +105,32 @@ const main = async () => {
         });
       });
 
+
       listener.on('activity.start', (task) => {
-        console.log('activity.start', task.id);
+        console.log('\n \n activity.start', task.id);
         if (task.id === 'EnviaSuporte') {
-          console.log(task);
+          console.log(task.id); // task
           // debugger
+        }
+        if (task.owner.behaviour.extensionElements) {
+          console.log('task behaviour (extensionElements):', JSON.stringify(task.owner.behaviour.extensionElements, null , 4));
         }
       });
 
       listener.on('flow.take', (flow) => {
+        if (endFlows && endFlows.find(id => id === flow.id)) {
+          console.log('reached a end flow, process terminated', flow.id);
+        }
         console.log(`flow <${flow.id}> was taken`);
       });
 
-      options = { };
 
-      source = fs.readFileSync(path.join(__dirname, 'bpmn/testservice.bpmn'));
-
-      runData = runEngine(source, listener, options);
-      engine = runData.engine;
+      /**
+       * RUN ENGINE
+       */
+      api = await engine.execute({ listener });
       state = await engine.getState();
-      console.log(state.name);
+      console.log(state.name, api.id);
       break;
 
     default:
