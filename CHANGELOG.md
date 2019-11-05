@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 8.5.0
+
+- Bump [bpmn-elements@0.12.1](/paed01/bpmn-elements/blob/master/CHANGELOG.md#0121)
+
 # 8.4.0
 
 - Bump bpmn-elements@0.11.0 with new ability to use process extensions

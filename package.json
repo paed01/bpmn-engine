@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "8.4.1",
+  "version": "8.5.0",
   "main": "index.js",
   "repository": {
     "type": "git",
