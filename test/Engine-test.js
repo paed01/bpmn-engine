@@ -96,6 +96,28 @@ describe('Engine', () => {
       expect(definitions[0]).to.property('run').that.is.a('function');
     });
 
+    it('returns definitions with processes', async () => {
+      const engine = Bpmn.Engine({
+        source: factory.valid(),
+        listener: new EventEmitter()
+      });
+
+      const [definition] = await engine.getDefinitions();
+      expect(definition).to.be.ok;
+
+      const processes = definition.getProcesses();
+      expect(processes).to.have.length(1);
+
+      const flows = processes[0].getSequenceFlows();
+      expect(flows).to.have.length(3);
+
+      expect(flows[2]).to.have.property('targetId', 'end2');
+
+      const target = processes[0].getActivityById(flows[2].targetId);
+      expect(target).to.have.property('type', 'bpmn:EndEvent');
+      expect(target).to.have.property('isEnd', true);
+    });
+
     it('definition has listener as option', async () => {
       const engine = Bpmn.Engine({
         source: factory.valid(),
@@ -117,7 +139,7 @@ describe('Engine', () => {
       });
     });
 
-    it('returns none no definition sources', async () => {
+    it('returns empty if without definition sources', async () => {
       const engine = Bpmn.Engine();
       expect(await engine.getDefinitions()).to.have.length(0);
     });

@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "8.4.0",
+  "version": "8.4.1",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -47,22 +47,22 @@
   },
   "devDependencies": {
     "bent": "^7.0.2",
-    "camunda-bpmn-moddle": "^4.2.0",
+    "camunda-bpmn-moddle": "^4.3.0",
     "chai": "^4.1.2",
     "coveralls": "^3.0.7",
-    "eslint": "^6.5.1",
+    "eslint": "^6.6.0",
     "markdown-toc": "^1.2.0",
-    "mocha": "^6.2.1",
+    "mocha": "^6.2.2",
     "mocha-cakes-2": "^3.3.0",
-    "nock": "^11.4.0",
+    "nock": "^11.7.0",
     "nyc": "^14.1.1",
     "unnecessary": "^1.3.4"
   },
   "dependencies": {
-    "bpmn-elements": "^0.11.0",
+    "bpmn-elements": "^0.12.1",
     "bpmn-moddle": "^6.0.0",
     "debug": "^4.1.1",
-    "moddle-context-serializer": "^0.11.0",
+    "moddle-context-serializer": "^0.12.1",
     "smqp": "^1.10.0"
   }
 }
