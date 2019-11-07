@@ -719,6 +719,7 @@ const engine = Engine({
 listener.on('activity.call', (api) => {
   console.log('Make call to', api.content.humanPerformer);
   console.log('Owner:', api.content.potentialOwner);
+  api.signal();
 });
 
 engine.execute({listener}, (err, instance) => {
