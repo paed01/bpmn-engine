@@ -16,6 +16,7 @@
   },
   "files": [
     "lib/",
+    "types/",
     "index.js"
   ],
   "scripts": {
