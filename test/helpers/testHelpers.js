@@ -9,20 +9,14 @@ module.exports = {
 
 function moddleContext(source, options) {
   const bpmnModdle = new BpmnModdle(options);
-
-  return new Promise((resolve, reject) => {
-    bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source, (err, definitions, moddleCtx) => {
-      if (err) return reject(err);
-      resolve(moddleCtx);
-    });
-  });
+  return bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source);
 }
 
-function serializeModdleContext({rootHandler, elementsById, references, warnings}) {
+function serializeModdleContext({rootElement, rootHandler, elementsById, references, warnings}) {
+  const serializedRoot = JSON.parse(JSON.stringify(rootElement || rootHandler.element));
+
   const clonedContext = {
-    rootHandler: {
-      element: JSON.parse(JSON.stringify(rootHandler.element))
-    },
+    rootElement: serializedRoot,
     elementsById: JSON.parse(JSON.stringify(elementsById)),
     references: JSON.parse(JSON.stringify(references)),
     warnings: warnings.slice()

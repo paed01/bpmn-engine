@@ -196,13 +196,8 @@ function Engine(options = {}) {
   }
 
   function getModdleContext(source) {
-    return new Promise((resolve, reject) => {
-      const bpmnModdle = new BpmnModdle(options.moddleOptions);
-      bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim(), (err, _, moddleContext) => {
-        if (err) return reject(err);
-        resolve(moddleContext);
-      });
-    });
+    const bpmnModdle = new BpmnModdle(options.moddleOptions);
+    return bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim());
   }
 
   async function waitFor(eventName) {

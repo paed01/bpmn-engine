@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 8.7.0
+
+- Add typescript declaration file (Saeed Tabrizi)
+
 # 8.6.0
 
 - Add typescript declaration file (Saeed Tabrizi)

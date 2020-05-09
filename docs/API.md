@@ -1,5 +1,5 @@
 <!-- version -->
-# 8.6.0 API Reference
+# 8.7.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
