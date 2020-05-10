@@ -3,7 +3,7 @@ Changelog
 
 # 8.7.0
 
-- Add typescript declaration file (Saeed Tabrizi)
+- Bump bpmn-moddle, bpmn-elements, and smqp to latest
 
 # 8.6.0
 
