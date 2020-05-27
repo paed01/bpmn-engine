@@ -47,13 +47,13 @@
     ]
   },
   "devDependencies": {
-    "bent": "^7.3.0",
+    "bent": "^7.3.1",
     "camunda-bpmn-moddle": "^4.4.0",
     "chai": "^4.1.2",
     "coveralls": "^3.1.0",
-    "eslint": "^7.0.0",
+    "eslint": "^7.1.0",
     "markdown-toc": "^1.2.0",
-    "mocha": "^7.1.2",
+    "mocha": "^7.2.0",
     "mocha-cakes-2": "^3.3.0",
     "nock": "^12.0.3",
     "nyc": "^15.0.1",

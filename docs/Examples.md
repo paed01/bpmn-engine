@@ -104,7 +104,7 @@ listener.on('flow.take', (flow) => {
 
 engine.once('end', (execution) => {
   console.log(execution.environment.variables);
-  console.log(`User sirname is ${execution.environment.output.inputFromUser}`);
+  console.log(`User sirname is ${execution.environment.output.data.inputFromUser}`);
 });
 
 engine.execute({

@@ -371,7 +371,7 @@ Feature('extending behaviour', () => {
             })
           });
 
-          broker.subscribeTmp('api', 'activity.#', onApiMessage, {noAck: true, consumerTag: '_my-exclusive-gateway'});
+          broker.subscribeTmp('api', 'activity.#', onApiMessage, {noAck: true, consumerTag: '_my-call-activity'});
 
           function onApiMessage(_, message) {
             const type = message.properties.type;
@@ -572,6 +572,108 @@ Feature('extending behaviour', () => {
     });
 
     And('run completed', () => {
+      return end;
+    });
+  });
+
+  Scenario('New element behaviour (issue #97)', () => {
+    let source;
+    Given('a source with a call activity', () => {
+      source = `
+      <?xml version="1.0" encoding="UTF-8"?>
+      <definitions id="Definition" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" targetNamespace="http://bpmn.io/schema/bpmn">
+        <process id="Process_0" isExecutable="true">
+          <startEvent id="StartEvent_1">
+            <outgoing>Flow_0aneq7u</outgoing>
+          </startEvent>
+          <sequenceFlow id="Flow_0aneq7u" sourceRef="StartEvent_1" targetRef="callSubprocess" />
+          <endEvent id="Event_13xhcbq">
+            <incoming>Flow_19ctx7j</incoming>
+          </endEvent>
+          <sequenceFlow id="Flow_19ctx7j" sourceRef="callSubprocess" targetRef="Event_13xhcbq" />
+          <callActivity id="callSubprocess" calledElement="externalProcess">
+            <incoming>Flow_0aneq7u</incoming>
+            <outgoing>Flow_19ctx7j</outgoing>
+          </callActivity>
+        </process>
+      </definitions>`;
+    });
+
+    let MyCallActivity;
+    And('a CallActivity behaviour', () => {
+      MyCallActivity = function CallActivity(activityDef, context) {
+        return Activity(CallActivityBehaviour, activityDef, context);
+      };
+
+      function CallActivityBehaviour(activity) {
+        const {broker} = activity;
+        const calledElement = activity.behaviour.calledElement;
+
+        return {
+          execute,
+        };
+
+        function execute(executeMessage) {
+          broker.publish('event', 'activity.call', {
+            ...executeMessage.content,
+            calledElement,
+          });
+
+          broker.subscribeTmp('api', 'activity.#', onApiMessage, {noAck: true, consumerTag: '_my-call-activity'});
+
+          function onApiMessage(_, message) {
+            const type = message.properties.type;
+            switch (type) {
+              case 'discard':
+              case 'stop': {
+                return broker.cancel('_my-call-activity');
+              }
+              case 'signal': {
+                return broker.publish('execution', 'execute.completed', {
+                  ...executeMessage.content,
+                });
+              }
+            }
+          }
+        }
+      }
+    });
+
+    let listener, callApi;
+    And('a listening device', () => {
+      listener = new EventEmitter();
+
+      listener.on('activity.call', (elementApi) => {
+        callApi = elementApi;
+      });
+    });
+
+    let engine, end;
+    And('an engine with CallActivity element option', () => {
+      engine = Engine({
+        source,
+        listener,
+        elements: {
+          CallActivity: MyCallActivity
+        }
+      });
+      end = engine.waitFor('end');
+    });
+
+    When('executing', () => {
+      return engine.execute();
+    });
+
+    Then('decision message has the expected decisions', () => {
+      expect(callApi).to.be.ok;
+      expect(callApi.content).to.have.property('calledElement', 'externalProcess');
+    });
+
+    When('called activtiy has completed', () => {
+      callApi.signal({fakeOutput: true});
+    });
+
+    Then('run completes', () => {
       return end;
     });
   });
