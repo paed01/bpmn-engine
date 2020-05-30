@@ -16,6 +16,7 @@
     - [`stop()`](#stop)
     - [`recover(state[, recoverOptions])`](#recoverstate-recoveroptions)
     - [`resume([options, [callback]])`](#resumeoptions-callback)
+- [Execution API](#execution-api)
 - [Engine events](#engine-events)
   - [Activity events](#activity-events)
   - [Event Api](#event-api)
@@ -85,6 +86,8 @@ Execute definition with:
   - `execution`: Engine execution
 
 Execute options overrides the initial options passed to the engine before executing the definition.
+
+Returns [Execution API](#execution-api)
 
 ```javascript
 const {Engine} = require('bpmn-engine');
@@ -420,6 +423,21 @@ engine.resume({listener}, () => {
 });
 ```
 
+# Execution API
+
+- `name`: engine name
+- `state`: execution state
+- `stopped`: is execution stopped?
+- `broker`: engine message broker
+- `environment`: execution environment
+- `definitions`: list of definitions
+- `getActivityById(activityId)`: get activity/element by id, returns first found among definitions
+- `getState()`: get execution state
+- `getPostponed()`: get postponed activities, i.e. activities waiting for some interaction or signal
+- `signal(payload)`: send signal to execution, distributed to all definitions
+- `stop()`: stop execution
+- `waitFor(event)`: wait for [execution events](#engine-events), returns Promise
+
 # Engine events
 
 Engine emits the following events:
@@ -450,8 +468,8 @@ Events are emitted with api with execution properties
 - `environment`: engine environment
 - `definitions`: executing definitions
 - `stop()`: stop execution
-- `getState`()`: get execution serializable state
-- `getPostponed`()`: get activities in a postponed state
+- `getState()`: get execution serializable state
+- `getPostponed()`: get activities in a postponed state
 
 ## Sequence flow events
 

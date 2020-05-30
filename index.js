@@ -408,6 +408,26 @@ function Execution(engine, definitions, options) {
     };
   }
 
+  function getActivityById(activityId) {
+    for (const definition of definitions) {
+      const activity = definition.getActivityById(activityId);
+      if (activity) return activity;
+    }
+  }
+
+  function getPostponed() {
+    return definitions.reduce((result, definition) => {
+      result = result.concat(definition.getPostponed());
+      return result;
+    }, []);
+  }
+
+  function signal(payload) {
+    for (const definition of definitions) {
+      definition.signal(payload);
+    }
+  }
+
   function getDefinitionState(definition) {
     return {
       ...definition.getState(),
@@ -430,16 +450,14 @@ function Execution(engine, definitions, options) {
       get stopped() {
         return stopped;
       },
+      broker,
       environment,
       definitions,
-      stop,
+      getActivityById,
       getState,
-      getPostponed() {
-        return definitions.reduce((result, definition) => {
-          result = result.concat(definition.getPostponed());
-          return result;
-        }, []);
-      },
+      getPostponed,
+      signal,
+      stop,
       waitFor,
     };
   }
