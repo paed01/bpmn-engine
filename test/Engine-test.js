@@ -70,20 +70,9 @@ describe('Engine', () => {
       engine.name = 'still no source';
       expect(engine.name).to.equal('still no source');
     });
-
-    it('exposes execution when running', async () => {
-      const source = Buffer.from(factory.valid());
-      const engine = Bpmn.Engine({
-        name: 'execution prop',
-        source
-      });
-
-      await engine.execute();
-      expect(engine.execution).to.be.ok;
-    });
   });
 
-  describe('getDefinitions()', () => {
+  describe('async getDefinitions()', () => {
     it('returns definitions', async () => {
       const engine = Bpmn.Engine({
         source: factory.valid(),
@@ -214,6 +203,17 @@ describe('Engine', () => {
       expect(engineDefs[0] === api.definitions[0], 'same instance');
     });
 
+    it('exposes execution when running', async () => {
+      const source = Buffer.from(factory.valid());
+      const engine = Bpmn.Engine({
+        name: 'execution prop',
+        source
+      });
+
+      await engine.execute();
+      expect(engine.execution).to.be.ok;
+    });
+
     it('with options runs definitions with options', (done) => {
       const engine = Bpmn.Engine({
         source: factory.valid(),
@@ -271,7 +271,7 @@ describe('Engine', () => {
       });
     });
 
-    it('rejects if not well formatted xml', (done) => {
+    it('rejects if source is not well formatted xml', (done) => {
       const engine = Bpmn.Engine({
         source: 'jdalsk'
       });
@@ -281,7 +281,7 @@ describe('Engine', () => {
       });
     });
 
-    it('returns error in callback if not well formatted xml', (done) => {
+    it('returns error in callback if source is not well formatted xml', (done) => {
       const engine = Bpmn.Engine({
         source: 'jdalsk'
       });
@@ -1003,6 +1003,69 @@ describe('Engine', () => {
 
       expect(err).to.not.be.ok;
       return completed;
+    });
+  });
+
+  describe('expressions', () => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theProcess" isExecutable="true">
+        <serviceTask id="task" implementation="myService" resultVariable="meme" />
+      </process>
+    </definitions>`;
+
+    it('accepts expressions option as engine option', async () => {
+      let myServiceCalled = false;
+
+      const engine = Bpmn.Engine({
+        name: 'override expressions',
+        source,
+        expressions: {
+          resolveExpression(expression) {
+            if (expression === 'myService') return myService;
+          }
+        }
+      });
+
+      const end = engine.waitFor('end');
+      engine.execute();
+
+      await end;
+
+      expect(myServiceCalled).to.be.true;
+
+      function myService(...args) {
+        myServiceCalled = true;
+        args.pop()(null, 'myResult');
+      }
+    });
+
+    it('accepts expressions option as engine execute option', async () => {
+      let myServiceCalled = false;
+
+      const engine = Bpmn.Engine({
+        name: 'override expressions',
+        source,
+      });
+
+      const end = engine.waitFor('end');
+      engine.execute({
+        expressions: {
+          resolveExpression(expression) {
+            if (expression === 'myService') return myService;
+          }
+        }
+      });
+
+      await end;
+
+      expect(myServiceCalled).to.be.true;
+
+      function myService(...args) {
+        myServiceCalled = true;
+        args.pop()(null, 'myResult');
+      }
     });
   });
 

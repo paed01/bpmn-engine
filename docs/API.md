@@ -39,7 +39,8 @@ Arguments:
   - `source`: BPMN 2.0 definition source as string
   - `moddleOptions`: optional bpmn-moddle options
   - `moddleContext`: optional BPMN 2.0 definition moddle context
-  - `scripts`: optional [inline script handler](https://github.com/paed01/bpmn-elements/blob/master/docs/Scripts.md), defaults to vm module handling, i.e. JavaScript
+  - `scripts`: optional [inline script handler](https://github.com/paed01/bpmn-elements/blob/master/docs/Scripts.md), defaults to nodejs vm module handling, i.e. JavaScript
+  - `expressions`: optional expressions handler, defaults to built in [expressions](https://github.com/paed01/bpmn-elements/blob/master/docs/Expression.md)
   - `Logger`: optional [Logger factory](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md#logger), defaults to [debug](https://www.npmjs.com/package/debug) logger
   - `elements`: optional object with element type mapping override
 
@@ -81,6 +82,7 @@ Execute definition with:
   - [`listener`](#execution-listener): Listen for [activity events](#activity-events), an `EventEmitter` object
   - [`variables`](#execution-variables): Optional object with instance variables
   - [`services`](#execution-services): Optional object with service functions
+  - `expressions`: Optional expression handling override
 - `callback`: optional callback
   - `err`: Error if any
   - `execution`: Engine execution
