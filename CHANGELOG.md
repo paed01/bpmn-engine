@@ -1,9 +1,13 @@
 Changelog
 =========
 
-# 8.7.1
+# 9.0.0
 
-- Bump bpmn-moddle and smqp to latest and fix insecure badge
+## Additions
+- Add signal function to engine execution api
+
+## Breaking changes
+- Bump bpmn-elements to v1.0.0 with some [breaking changes](/paed01/bpmn-elements/blob/master/CHANGELOG.md) regarding MessageEventDefinition and SignalEventDefinition
 
 # 8.7.0
 

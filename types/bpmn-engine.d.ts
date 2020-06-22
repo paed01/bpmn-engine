@@ -14,7 +14,7 @@ export interface BpmnExecution {
   state: "idle" | "running";
 
   stopped: boolean;
-  execute(executeOptions?: any): BpmnProcessExeuctionApi;
+  execute(executeOptions?: any): BpmnProcessExecutionApi;
   getState<R>(): R;
 
   resume(resumeOptions?: any): void;
@@ -68,7 +68,7 @@ export interface BpmnProcess {
 
   stopped: boolean;
 
-  getApi(message: any): BpmnProcessExeuctionApi;
+  getApi(message: any): BpmnProcessExecutionApi;
   getActivities(): BpmnProcessActivity[];
   getActivityById(id: string): BpmnProcessActivity;
 
@@ -152,7 +152,7 @@ export interface BpmnProcessActivity extends EventEmitter {
 
   discard(): void;
 
-  getApi(message: any): BpmnProcessExeuctionApi;
+  getApi(message: any): BpmnProcessExecutionApi;
 
   getActivityById(id: string): BpmnProcessActivity;
 
@@ -280,33 +280,33 @@ export interface BpmnProcessExecutionState {
 
   entered: boolean;
 }
-export interface BpmnProcessExeuctionApi {
+export interface BpmnProcessExecutionApi {
   /**
    * engine name
    *
    * @type {string}
-   * @memberof BpmnProcessExeuctionApi
+   * @memberof BpmnProcessExecutionApi
    */
   name: string;
   /**
    * state of execution, i.e running or idle
    *
    * @type {("running"| "idle")}
-   * @memberof BpmnProcessExeuctionApi
+   * @memberof BpmnProcessExecutionApi
    */
   state: "running" | "idle";
   /**
    * is the execution stopped
    *
    * @type {boolean}
-   * @memberof BpmnProcessExeuctionApi
+   * @memberof BpmnProcessExecutionApi
    */
   stopped: boolean;
   /**
    * engine environment
    *
    * @type {BpmnProcessExecutionEnvironment}
-   * @memberof BpmnProcessExeuctionApi
+   * @memberof BpmnProcessExecutionApi
    */
   environment: BpmnProcessExecutionEnvironment;
 
@@ -314,28 +314,28 @@ export interface BpmnProcessExeuctionApi {
    * executing definitions
    *
    * @type {BpmnProcessExecutionDefinition}
-   * @memberof BpmnProcessExeuctionApi
+   * @memberof BpmnProcessExecutionApi
    */
   definitions: BpmnProcessExecutionDefinition;
   /**
    * get execution serializable state
    *
    * @returns {BpmnProcessExecutionState}
-   * @memberof BpmnProcessExeuctionApi
+   * @memberof BpmnProcessExecutionApi
    */
   getState(): BpmnProcessExecutionState;
 
   /**
    * stop execution
    *
-   * @memberof BpmnProcessExeuctionApi
+   * @memberof BpmnProcessExecutionApi
    */
   stop(): void;
 
   /**
    * get activities in a postponed state
    *
-   * @memberof BpmnProcessExeuctionApi
+   * @memberof BpmnProcessExecutionApi
    */
   getPostponed(): void;
 }

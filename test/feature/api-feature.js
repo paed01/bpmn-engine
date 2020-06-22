@@ -75,8 +75,8 @@ Feature('Api', () => {
     });
 
     When('admin approves new spot price', () => {
-      const [,, approveNewPriceTask] = execution.getPostponed();
-      approveNewPriceTask.signal({
+      execution.signal({
+        id: 'approveSpotPrice',
         form: {
           newPrice: 110
         }
@@ -97,7 +97,12 @@ Feature('Api', () => {
     });
 
     When('trader trades', () => {
-      tradeTask.signal({form: {amount: 42}});
+      execution.signal({
+        id: 'tradeTask',
+        form: {
+          amount: 42,
+        },
+      });
     });
 
     And('trade task is taken', () => {
@@ -114,6 +119,92 @@ Feature('Api', () => {
         amount: 42,
         price: 110,
         spotPrice: 110,
+      });
+    });
+
+    Given('definition is ran again', async () => {
+      end = engine.waitFor('end');
+      execution = await engine.execute({
+        variables: {
+          spotPrice: 110,
+        },
+      });
+    });
+
+    When('trader trades again', async () => {
+      execution.signal({
+        id: 'tradeTask',
+        form: {
+          amount: 42,
+        }
+      });
+    });
+
+    Then('run completes', async () => {
+      return end;
+    });
+
+    And('execution output has amount and new spot price', async () => {
+      expect(execution.environment.output).to.deep.equal({
+        amount: 42,
+        price: 110,
+        spotPrice: 110,
+      });
+    });
+
+    Given('definition is ran again', async () => {
+      end = engine.waitFor('end');
+      execution = await engine.execute({
+        variables: {
+          spotPrice: 120,
+        },
+      });
+    });
+
+    let state;
+    And('trader pauses trade', async () => {
+      state = execution.getState();
+      execution.stop();
+    });
+
+    When('execution is resumed', async () => {
+      engine.recover(state);
+      end = engine.waitFor('end');
+      execution = await engine.resume();
+    });
+
+    And('spot price is updated', async () => {
+      const signal = execution.getActivityById('spotPriceUpdate');
+      execution.signal(signal.resolve());
+    });
+
+    Then('admin approves new spot price', () => {
+      execution.signal({
+        id: 'approveSpotPrice',
+        form: {
+          newPrice: 130
+        }
+      });
+    });
+
+    When('trader resumes trade', async () => {
+      execution.signal({
+        id: 'tradeTask',
+        form: {
+          amount: 52,
+        }
+      });
+    });
+
+    Then('run completes', async () => {
+      return end;
+    });
+
+    And('execution output has amount and new approved spot price', async () => {
+      expect(execution.environment.output).to.deep.equal({
+        amount: 52,
+        price: 130,
+        spotPrice: 130,
       });
     });
   });

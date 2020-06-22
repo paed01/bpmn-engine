@@ -17,6 +17,9 @@
     - [`recover(state[, recoverOptions])`](#recoverstate-recoveroptions)
     - [`resume([options, [callback]])`](#resumeoptions-callback)
 - [Execution API](#execution-api)
+  - [`getActivityById(activityId)`](#getactivitybyidactivityid)
+  - [`getState()`](#getstate)
+  - [`signal(message)`](#signalmessage)
 - [Engine events](#engine-events)
   - [Activity events](#activity-events)
   - [Event Api](#event-api)
@@ -433,12 +436,34 @@ engine.resume({listener}, () => {
 - `broker`: engine message broker
 - `environment`: execution environment
 - `definitions`: list of definitions
-- `getActivityById(activityId)`: get activity/element by id, returns first found among definitions
+- `getActivityById(activityId)`(#getactivitybyid-activityid): get activity/element by id, returns first found among definitions
 - `getState()`: get execution state
 - `getPostponed()`: get postponed activities, i.e. activities waiting for some interaction or signal
-- `signal(payload)`: send signal to execution, distributed to all definitions
+- `signal(message)`(#signal-message): send signal to execution, distributed to all definitions
 - `stop()`: stop execution
-- `waitFor(event)`: wait for [execution events](#engine-events), returns Promise
+- `waitFor(event)`: wait for [engine events](#engine-events), returns Promise
+
+## `getActivityById(activityId)`
+
+Get activity/element by id. Loops the definitions and returns the first found activity with id.
+
+- `activityId`: Activity or element id
+
+Returns [activity](/paed01/bpmn-elements/blob/master/docs/Activity.md).
+
+## `getState()`
+
+Get execution state.
+
+## `signal(message)`
+
+Delegate a signal message to all interested parties, usually MessageEventDefinition, SignalEventDefinition, SignalTask (user, manual), and ReceiveTask.
+
+Arguments:
+  - `message`: optional object
+    - `id`: optional task/element id to signal, also matched with Message and Signal id. If not passed only anonymous Signal- and MessageEventDefinitions will pick up the signal.
+    - `executionId`: optional execution id to signal, specially for looped tasks, also works for signal tasks that are not looped
+    - `[name]*`: any other properties will be forwarded as message to activity
 
 # Engine events
 
