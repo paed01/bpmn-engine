@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 8.7.1
+
+- Bump bpmn-moddle and smqp to latest and fix insecure badge
+
 # 8.7.0
 
 - Bump bpmn-moddle, bpmn-elements, and smqp to latest
