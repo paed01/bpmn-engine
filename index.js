@@ -16,7 +16,7 @@ module.exports = {Engine};
 function Engine(options = {}) {
   options = {Logger: DebugLogger, scripts: JavaScripts(), ...options};
 
-  let {name, Logger} = options;
+  let {name, Logger, sourceContext} = options;
 
   let loadedDefinitions, execution;
   const logger = Logger('engine');
@@ -105,14 +105,13 @@ function Engine(options = {}) {
 
   async function execute(...args) {
     const [executeOptions, callback] = getOptionsAndCallback(...args);
-    let runSources;
     try {
-      runSources = await Promise.all(pendingSources);
+      var definitions = await loadDefinitions(executeOptions); // eslint-disable-line no-var
     } catch (err) {
       if (callback) return callback(err);
       throw err;
     }
-    const definitions = runSources.map((source) => loadDefinition(source, executeOptions));
+
     execution = Execution(engine, definitions, options);
     return execution.execute(executeOptions, callback);
   }
@@ -160,7 +159,7 @@ function Engine(options = {}) {
 
   async function getDefinitions(executeOptions) {
     if (loadedDefinitions && loadedDefinitions.length) return loadedDefinitions;
-    return Promise.all(pendingSources).then((srcs) => srcs.map((src) => loadDefinition(src, executeOptions)));
+    return loadDefinitions(executeOptions);
   }
 
   async function getDefinitionById(id) {
@@ -172,6 +171,13 @@ function Engine(options = {}) {
 
     const definitions = await getDefinitions();
     return Execution(engine, definitions, options).getState();
+  }
+
+  async function loadDefinitions(executeOptions) {
+    const runSources = await Promise.all(pendingSources);
+    if (sourceContext) runSources.push(sourceContext);
+    loadedDefinitions = runSources.map((source) => loadDefinition(source, executeOptions));
+    return loadedDefinitions;
   }
 
   function loadDefinition(serializedContext, executeOptions) {

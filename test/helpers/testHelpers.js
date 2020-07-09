@@ -1,11 +1,25 @@
 'use strict';
 
 const BpmnModdle = require('bpmn-moddle');
+const elements = require('bpmn-elements');
+const {default: serializer, TypeResolver} = require('moddle-context-serializer');
 
 module.exports = {
+  context,
   moddleContext,
   serializeModdleContext,
 };
+
+async function context(source, options = {}) {
+  const mdlContext = await moddleContext(source, options);
+
+  const types = TypeResolver({
+    ...elements,
+    ...options.elements,
+  });
+
+  return serializer(mdlContext, types, options.extendFn);
+}
 
 function moddleContext(source, options) {
   const bpmnModdle = new BpmnModdle(options);
@@ -23,3 +37,4 @@ function serializeModdleContext({rootElement, rootHandler, elementsById, referen
   };
   return clonedContext;
 }
+

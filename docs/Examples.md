@@ -14,6 +14,7 @@ Examples
 - [Extend form behaviour](#extend-form-behaviour)
 - [Extend service task behaviour](#extend-service-task-behaviour)
 - [Human performer and potential owner](#human-performer-and-potential-owner)
+- [Traverse activities using definition shake](#traverse-activities-using-definition-shake)
 
 <!-- tocstop -->
 
@@ -172,7 +173,7 @@ engine.on('end', () => {
 
 # Script task
 
-A script task will receive the data available on the process instance. So if `request` or another module is needed it has to be passed when starting the process. The script task also has a callback called `next` that has to be called for the task to complete.
+A script task will receive the data available on the process instance. So if `bent` or another module is needed it has to be passed when starting the process. The script task also has a callback called `next` that has to be called for the task to complete.
 
 The `next` callback takes the following arguments:
 - `err`: occasional error
@@ -301,7 +302,7 @@ const getJson = require('bent')('json');
 
 async function getRequest(scope, callback) {
   try {
-    var result = await getJson(scope.environment.variables.apiPath);
+    var result = await getJson(scope.environment.variables.apiPath); // eslint-disable-line no-var
   } catch (err) {
     return callback(null, err);
   }
@@ -467,8 +468,7 @@ const source = `
       <errorEventDefinition />
     </boundaryEvent>
   </process>
-</definitions>
-`;
+</definitions>`;
 
 const engine = Engine({
   name: 'loop collection',
@@ -726,4 +726,64 @@ engine.execute({listener}, (err, instance) => {
   if (err) throw err;
   console.log(instance.name, 'completed');
 });
+```
+
+# Traverse activities using definition shake
+
+Publish event when human involvement is required.
+
+```javascript
+const {Engine} = require('bpmn-engine');
+const BpmnModdle = require('bpmn-moddle');
+const elements = require('bpmn-elements');
+const {default: Serializer, TypeResolver} = require('moddle-context-serializer');
+
+const source = `
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="Process_1" isExecutable="true">
+    <startEvent id="start">
+      <outgoing>toSayHiTask1</outgoing>
+    </startEvent>
+    <task id="sayHiTask" name="say hi">
+      <incoming>toSayHiTask1</incoming>
+      <outgoing>toEnd1</outgoing>
+      <outgoing>toEnd2</outgoing>
+    </task>
+    <sequenceFlow id="toSayHiTask1" sourceRef="start" targetRef="sayHiTask" />
+    <endEvent id="end1">
+      <incoming>toEnd1</incoming>
+    </endEvent>
+    <sequenceFlow id="toEnd1" sourceRef="sayHiTask" targetRef="end1" />
+    <endEvent id="end2">
+      <incoming>toEnd2</incoming>
+    </endEvent>
+    <sequenceFlow id="toEnd2" sourceRef="sayHiTask" targetRef="end2" />
+  </process>
+</definitions>`;
+
+(async function IIFE() {
+  const moddleContext = await (new BpmnModdle({
+    camunda: require('camunda-bpmn-moddle/resources/camunda.json'),
+  })).fromXML(source);
+
+  const sourceContext = Serializer(moddleContext, TypeResolver(elements));
+
+  const engine = Engine({
+    sourceContext,
+  });
+
+  const [definition] = await engine.getDefinitions();
+
+  const shakenStarts = definition.shake();
+
+  console.log('first sequence', shakenStarts.start[0].sequence.reduce(printSequence, ''));
+  console.log('second sequence', shakenStarts.start[1].sequence.reduce(printSequence, ''));
+
+  function printSequence(res, s) {
+    if (!res) return s.id;
+    res += ' -> ' + s.id;
+    return res;
+  }
+})();
 ```

@@ -1,6 +1,14 @@
 Changelog
 =========
 
+# 9.1.0
+
+- Bump bpmn-elements to version with shake activity functionality
+- Bump moddle-context-serializer@0.16 with scripts and timers
+
+## Additions
+- Add engine option `sourceContext` to hold pre-serialized context
+
 # 9.0.0
 
 ## Additions

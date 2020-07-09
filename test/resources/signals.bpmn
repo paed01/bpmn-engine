@@ -77,7 +77,7 @@
       <bpmn:outgoing>toEnd</bpmn:outgoing>
       <bpmn:signalEventDefinition signalRef="spotPriceChanged" />
     </bpmn:intermediateThrowEvent>
-    <bpmn:startEvent id="startPriceAdmin" camunda:initiator="me">
+    <bpmn:startEvent id="startPriceAdmin">
       <bpmn:outgoing>toApprove</bpmn:outgoing>
       <bpmn:signalEventDefinition signalRef="spotPriceUpdate" />
     </bpmn:startEvent>

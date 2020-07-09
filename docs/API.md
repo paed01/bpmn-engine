@@ -1,5 +1,5 @@
 <!-- version -->
-# 9.0.0 API Reference
+# 9.1.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -38,14 +38,16 @@ Creates a new Engine.
 
 Arguments:
 - `options`: Optional options, passed to [environment](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md):
-  - `name`: optional name of engine,
-  - `source`: BPMN 2.0 definition source as string
-  - `moddleOptions`: optional bpmn-moddle options
-  - `moddleContext`: optional BPMN 2.0 definition moddle context
-  - `scripts`: optional [inline script handler](https://github.com/paed01/bpmn-elements/blob/master/docs/Scripts.md), defaults to nodejs vm module handling, i.e. JavaScript
+  - `elements`: optional object with element type mapping override
   - `expressions`: optional expressions handler, defaults to built in [expressions](https://github.com/paed01/bpmn-elements/blob/master/docs/Expression.md)
   - `Logger`: optional [Logger factory](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md#logger), defaults to [debug](https://www.npmjs.com/package/debug) logger
-  - `elements`: optional object with element type mapping override
+  - `moddleContext`: optional BPMN 2.0 definition moddle context
+  - `moddleOptions`: optional bpmn-moddle options to be passed to bpmn-moddle
+  - `name`: optional name of engine,
+  - `scripts`: optional [inline script handler](https://github.com/paed01/bpmn-elements/blob/master/docs/Scripts.md), defaults to nodejs vm module handling, i.e. JavaScript
+  - `source`: optional BPMN 2.0 definition source as string
+  - `sourceContext`: optional serialized context supplied by [moddle-context-serializer](https://github.com/paed01/moddle-context-serializer)
+  - `typeResolver`: optional type resolver function passed to moddle-context-serializer
 
 Returns:
 - `name`: engine name

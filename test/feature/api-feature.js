@@ -1,51 +1,23 @@
 'use strict';
 
 const factory = require('../helpers/factory');
+const testHelpers = require('../helpers/testHelpers');
 const {Engine} = require('../..');
 
 const signalsSource = factory.resource('signals.bpmn');
 
 Feature('Api', () => {
+  let sourceContext;
+  before('create context', async () => {
+    sourceContext = await testHelpers.context(signalsSource, {
+      camunda: require('camunda-bpmn-moddle/resources/camunda')
+    });
+  });
+
   Scenario('Two processes that communicates with signals', () => {
     let engine;
     Given('a trade process waiting for spot price update signal and another admin processs that updates price', async () => {
-      engine = Engine({
-        name: 'Signal feature',
-        source: signalsSource,
-        moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
-        },
-        services: {
-          getSpotPrice(context, callback) {
-            const price = this.environment.variables.spotPrice;
-            return callback(null, price);
-          }
-        },
-        extensions: {
-          camunda(activity, context) {
-            if (activity.behaviour.extensionElements) {
-              for (const extension of activity.behaviour.extensionElements.values) {
-                switch (extension.$type) {
-                  case 'camunda:FormData':
-                    formFormatting(activity, context, extension);
-                    break;
-                  case 'camunda:InputOutput':
-                    ioFormatting(activity, context, extension);
-                    break;
-                }
-              }
-            }
-            if (activity.behaviour.expression) {
-              activity.behaviour.Service = ServiceExpression;
-            }
-            if (activity.behaviour.resultVariable) {
-              activity.on('end', (api) => {
-                activity.environment.output[activity.behaviour.resultVariable] = api.content.output;
-              });
-            }
-          },
-        },
-      });
+      engine = getExtendedEngine(sourceContext);
     });
 
     let end, execution;
@@ -164,10 +136,10 @@ Feature('Api', () => {
     let state;
     And('trader pauses trade', async () => {
       state = execution.getState();
-      execution.stop();
     });
 
     When('execution is resumed', async () => {
+      engine = getExtendedEngine(sourceContext);
       engine.recover(state);
       end = engine.waitFor('end');
       execution = await engine.resume();
@@ -207,8 +179,135 @@ Feature('Api', () => {
         spotPrice: 130,
       });
     });
+
+    Given('definition is ran again', async () => {
+      engine = getExtendedEngine(sourceContext);
+      execution = await engine.execute({
+        variables: {
+          spotPrice: 100,
+        },
+      });
+    });
+
+    And('trader pauses trade', async () => {
+      state = execution.getState();
+    });
+
+    When('execution is recovered, resumed, and immediately signaled with spot price update', async () => {
+      engine = getExtendedEngine();
+      engine.recover(state);
+      execution = await engine.resume();
+
+      const starter = execution.getActivityById('startPriceAdmin');
+      const signal = execution.getActivityById(starter.behaviour.eventDefinitions[0].behaviour.signalRef.id);
+      execution.signal(signal.resolve());
+    });
+
+    Then('admin approves new spot price', () => {
+      execution.signal({
+        id: 'approveSpotPrice',
+        form: {
+          newPrice: 200,
+        }
+      });
+    });
+
+    When('trader resumes trade', async () => {
+      end = engine.waitFor('end');
+      execution.signal({
+        id: 'tradeTask',
+        form: {
+          amount: 52,
+        }
+      });
+    });
+
+    Then('run completes', async () => {
+      return end;
+    });
+
+    And('execution output has amount and new approved spot price', async () => {
+      expect(execution.environment.output).to.deep.equal({
+        amount: 52,
+        price: 200,
+        spotPrice: 200,
+      });
+    });
+  });
+
+  Scenario('Determine run sequences for an activity', () => {
+    let engine, source;
+    Given('a bpmn source with user tasks', () => {
+      source = `
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
+        <process id="theProcess" isExecutable="true">
+          <userTask id="task1" camunda:formKey="taskForm" />
+          <sequenceFlow id="flow" sourceRef="task1" targetRef="task2" />
+          <userTask id="task2" />
+        </process>
+      </definitions>`;
+    });
+
+    let definition;
+    And('an engine loaded with extension for fetching form and saving output', async () => {
+      engine = Engine({
+        name: 'Shake feature',
+        sourceContext: await testHelpers.context(source),
+      });
+
+      [definition] = await engine.getDefinitions();
+    });
+
+    let result;
+    When('start task is shaken', () => {
+      result = definition.shake('task1');
+    });
+
+    Then('run sequences are determined', () => {
+      expect(result).to.have.property('task1').with.length(1);
+      expect(result.task1[0]).to.have.property('sequence').with.length(3);
+    });
   });
 });
+
+function getExtendedEngine(sourceContext) {
+  return Engine({
+    name: 'Signal feature',
+    sourceContext,
+    services: {
+      getSpotPrice(context, callback) {
+        const price = this.environment.variables.spotPrice;
+        return callback(null, price);
+      }
+    },
+    extensions: {
+      camunda(activity, context) {
+        if (activity.behaviour.extensionElements) {
+          for (const extension of activity.behaviour.extensionElements.values) {
+            switch (extension.$type) {
+              case 'camunda:FormData':
+                formFormatting(activity, context, extension);
+                break;
+              case 'camunda:InputOutput':
+                ioFormatting(activity, context, extension);
+                break;
+            }
+          }
+        }
+        if (activity.behaviour.expression) {
+          activity.behaviour.Service = ServiceExpression;
+        }
+        if (activity.behaviour.resultVariable) {
+          activity.on('end', (api) => {
+            activity.environment.output[activity.behaviour.resultVariable] = api.content.output;
+          });
+        }
+      },
+    },
+  });
+}
 
 function ServiceExpression(activity) {
   const {type: atype, behaviour, environment} = activity;
