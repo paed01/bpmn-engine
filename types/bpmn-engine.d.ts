@@ -29,6 +29,7 @@ export interface BpmnProcessOptions {
   name?: string;
   id?: string;
   source?: string;
+  sourceContext?: any;
   variables?: any;
 
   Logger?: BpmnLogger;
@@ -45,6 +46,15 @@ export interface BpmnProcessOptions {
   moddleOptions?: any;
 
   extensions?: any;
+  expressions?: Expressions;
+}
+
+export interface Expressions {
+  resolveExpression<R>(
+    expression: string,
+    message?: any,
+    expressionFnContext?: any,
+  ): R;
 }
 
 export interface BpmnProcess {
@@ -253,6 +263,7 @@ export interface BpmnProcessExecutionDefinition extends EventEmitter {
   stopped: boolean;
   type: string;
   signal: (message: any) => void;
+  shake: (activityId?: string) => any;
   broker: any;
   id: string;
   isRunning: boolean;
@@ -337,7 +348,7 @@ export interface BpmnProcessExecutionApi {
    *
    * @memberof BpmnProcessExecutionApi
    */
-  getPostponed(): void;
+  getPostponed(): any[];
 }
 
 }
