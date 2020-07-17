@@ -1,5 +1,5 @@
 <!-- version -->
-# 9.1.0 API Reference
+# 9.1.1 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -30,7 +30,7 @@
 
 # Engine
 
-The engine. Executes passed BPMN definitions.
+The engine. Executes passed BPMN 2.0 definitions.
 
 ## `Engine([options])`
 
@@ -459,7 +459,7 @@ Get execution state.
 
 ## `signal(message)`
 
-Delegate a signal message to all interested parties, usually MessageEventDefinition, SignalEventDefinition, SignalTask (user, manual), and ReceiveTask.
+Delegate a signal message to all interested parties, usually MessageEventDefinition, SignalEventDefinition, SignalTask (user, manual), ReceiveTask, or a StartEvent that has a form.
 
 Arguments:
   - `message`: optional object

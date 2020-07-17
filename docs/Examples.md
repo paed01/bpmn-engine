@@ -15,6 +15,7 @@ Examples
 - [Extend service task behaviour](#extend-service-task-behaviour)
 - [Human performer and potential owner](#human-performer-and-potential-owner)
 - [Traverse activities using definition shake](#traverse-activities-using-definition-shake)
+- [Persist state on events](#persist-state-on-events)
 
 <!-- tocstop -->
 
@@ -730,7 +731,7 @@ engine.execute({listener}, (err, instance) => {
 
 # Traverse activities using definition shake
 
-Publish event when human involvement is required.
+Shake down the possible sequences an activity can have.
 
 ```javascript
 const {Engine} = require('bpmn-engine');
@@ -788,7 +789,7 @@ const source = `
 })();
 ```
 
-## Persist state on events
+# Persist state on events
 
 One way to persist state is to subscribe to activity and engine events through a listener.
 

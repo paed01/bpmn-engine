@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 9.1.1
+
+- Bump bpmn-elements to version with ability to signal waiting start event from definition
+
 # 9.1.0
 
 - Bump bpmn-elements to version with shake activity functionality
