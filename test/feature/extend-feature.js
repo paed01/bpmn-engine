@@ -198,9 +198,9 @@ Feature('extending behaviour', () => {
       </definitions>`;
     });
 
-    And('an engine loaded with extension for fetching form and saving output', () => {
+    And('an engine loaded with scripts option', () => {
       engine = Engine({
-        name: 'Engine feature',
+        name: 'Scripts feature',
         source,
         scripts: {
           register() {},
@@ -421,6 +421,46 @@ Feature('extending behaviour', () => {
     });
 
     let execution;
+    When('executing', async () => {
+      execution = await engine.execute();
+    });
+
+    Then('decision message has the expected decisions', () => {
+      expect(decideApi).to.be.ok;
+      expect(decideApi.content).to.have.property('decisions').with.length(2);
+      expect(decideApi.content.decisions[0]).to.have.property('name', 'pick me');
+      expect(decideApi.content.decisions[1]).to.have.property('name', 'no, pick me');
+    });
+
+    When('decision is made by signal', () => {
+      decideApi.signal(decideApi.content.decisions[0]);
+    });
+
+    Then('run completes', () => {
+      return end;
+    });
+
+    And('decided flow was taken', () => {
+      const flow = execution.definitions[0].context.getSequenceFlowById('flow2');
+      expect(flow.counters).to.have.property('take', 1);
+    });
+
+    And('second flow was discarded', () => {
+      const flow = execution.definitions[0].context.getSequenceFlowById('flow3');
+      expect(flow.counters).to.have.property('discard', 1);
+    });
+
+    Given('an engine with type resolver function with new behaviour', () => {
+      engine = Engine({
+        source,
+        listener,
+        typeResolver(types) {
+          types['bpmn:ExclusiveGateway'] = MyExclusiveGateway;
+        },
+      });
+      end = engine.waitFor('end');
+    });
+
     When('executing', async () => {
       execution = await engine.execute();
     });

@@ -695,6 +695,16 @@ describe('Engine', () => {
       expect(engine === recovered).to.be.true;
     });
 
+    it('recover without state definitions is kind of ignored', async () => {
+      const engine = Bpmn.Engine().recover({
+        name: 'recovered'
+      });
+      const recovered = engine.recover();
+
+      expect(engine === recovered).to.be.true;
+      expect(recovered).to.have.property('name', 'recovered');
+    });
+
     it('recovers definition running state', async () => {
       const sourceEngine = Bpmn.Engine({
         name: 'test recover',

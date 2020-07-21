@@ -140,7 +140,6 @@ export interface BpmnProcessActivity extends EventEmitter {
   isStart: boolean;
   isSubProcess: boolean;
 
-  // logger: BpmnLogger;
   outbound: any[];
   parent?: BpmnProcessActivity;
   status: any;
@@ -253,6 +252,7 @@ export interface BpmnProcessExecutionDefinition extends EventEmitter {
   stopped: boolean;
   type: string;
   signal: (message: any) => void;
+  cancelActivity: (message?: any) => void;
   broker: any;
   id: string;
   isRunning: boolean;

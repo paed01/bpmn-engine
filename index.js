@@ -123,10 +123,10 @@ function Engine(options = {}) {
 
   function recover(savedState, recoverOptions) {
     if (!savedState) return engine;
+    if (!name) name = savedState.name;
 
     logger.debug(`<${name}> recover`);
 
-    if (!name) name = savedState.name;
     if (recoverOptions) environment = elements.Environment(recoverOptions);
     if (savedState.environment) environment = environment.recover(savedState.environment);
 
@@ -434,6 +434,12 @@ function Execution(engine, definitions, options) {
     }
   }
 
+  function cancelActivity(payload) {
+    for (const definition of definitions) {
+      definition.cancelActivity(payload);
+    }
+  }
+
   function getDefinitionState(definition) {
     return {
       ...definition.getState(),
@@ -463,6 +469,7 @@ function Execution(engine, definitions, options) {
       getState,
       getPostponed,
       signal,
+      cancelActivity,
       stop,
       waitFor,
     };

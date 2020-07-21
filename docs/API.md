@@ -1,5 +1,5 @@
 <!-- version -->
-# 9.1.1 API Reference
+# 9.2.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -20,6 +20,7 @@
   - [`getActivityById(activityId)`](#getactivitybyidactivityid)
   - [`getState()`](#getstate)
   - [`signal(message)`](#signalmessage)
+  - [`cancelActivity(message)`](#cancelactivitymessage)
 - [Engine events](#engine-events)
   - [Activity events](#activity-events)
   - [Event Api](#event-api)
@@ -442,6 +443,7 @@ engine.resume({listener}, () => {
 - `getState()`: get execution state
 - `getPostponed()`: get postponed activities, i.e. activities waiting for some interaction or signal
 - [`signal(message)`](#signalmessage): send signal to execution, distributed to all definitions
+- [`cancelActivity(message)`](#cancelactivitymessage): send cancel activity to execution, distributed to all definitions
 - `stop()`: stop execution
 - `waitFor(event)`: wait for [engine events](#engine-events), returns Promise
 
@@ -465,6 +467,16 @@ Arguments:
   - `message`: optional object
     - `id`: optional task/element id to signal, also matched with Message and Signal id. If not passed only anonymous Signal- and MessageEventDefinitions will pick up the signal.
     - `executionId`: optional execution id to signal, specially for looped tasks, also works for signal tasks that are not looped
+    - `[name]*`: any other properties will be forwarded as message to activity
+
+## `cancelActivity(message)`
+
+Delegate a cancel message to all interested parties, perhaps a stalled TimerEventDefinition.
+
+Arguments:
+  - `message`: optional object
+    - `id`: optional activity id to cancel execution
+    - `executionId`: optional execution id to signal, useful for an event with multiple event defintions
     - `[name]*`: any other properties will be forwarded as message to activity
 
 # Engine events

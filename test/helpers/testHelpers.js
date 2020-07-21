@@ -2,6 +2,7 @@
 
 const BpmnModdle = require('bpmn-moddle');
 const elements = require('bpmn-elements');
+const Logger = require('../../lib/Logger');
 const {default: serializer, TypeResolver} = require('moddle-context-serializer');
 
 module.exports = {
@@ -11,14 +12,22 @@ module.exports = {
 };
 
 async function context(source, options = {}) {
-  const mdlContext = await moddleContext(source, options);
+  const logger = Logger('test-helpers:context');
+  const moddleCtx = await moddleContext(source, options);
+
+  if (moddleCtx.warnings) {
+    moddleCtx.warnings.forEach(({error, message, element, property}) => {
+      if (error) return logger.error(message);
+      logger.error(`<${element.id}> ${property}:`, message);
+    });
+  }
 
   const types = TypeResolver({
     ...elements,
     ...options.elements,
   });
 
-  return serializer(mdlContext, types, options.extendFn);
+  return serializer(moddleCtx, types, options.extendFn);
 }
 
 function moddleContext(source, options) {
