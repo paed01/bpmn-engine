@@ -966,6 +966,70 @@ describe('Engine', () => {
     });
   });
 
+
+  describe('addSource({sourceContext})', () => {
+    const source = `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <definitions id="pending" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="theWaitingGame" isExecutable="true">
+        <startEvent id="start" />
+        <parallelGateway id="fork" />
+        <userTask id="userTask1" />
+        <userTask id="userTask2" />
+        <task id="task" />
+        <parallelGateway id="join" />
+        <endEvent id="end" />
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="fork" />
+        <sequenceFlow id="flow2" sourceRef="fork" targetRef="userTask1" />
+        <sequenceFlow id="flow3" sourceRef="fork" targetRef="userTask2" />
+        <sequenceFlow id="flow4" sourceRef="fork" targetRef="task" />
+        <sequenceFlow id="flow5" sourceRef="userTask1" targetRef="join" />
+        <sequenceFlow id="flow6" sourceRef="userTask2" targetRef="join" />
+        <sequenceFlow id="flow7" sourceRef="task" targetRef="join" />
+        <sequenceFlow id="flowEnd" sourceRef="join" targetRef="end" />
+      </process>
+    </definitions>`;
+
+    let engine;
+    beforeEach('given an engine', () => {
+      engine = Bpmn.Engine({
+        name: 'add source',
+      });
+    });
+
+    it('can be executed after source is added', async () => {
+      const listener = new EventEmitter();
+
+      const updateContext = await testHelpers.context(source);
+      engine.addSource({
+        sourceContext: updateContext,
+      });
+
+      let engineApi;
+      listener.once('wait', (_, api) => {
+        engineApi = api;
+      });
+      await engine.execute({
+        listener
+      });
+
+      expect(engineApi.definitions).to.have.length(1);
+
+      const completed = engine.waitFor('end');
+
+      engineApi.getPostponed().forEach((c) => {
+        c.signal();
+      });
+
+      return completed;
+    });
+
+    it('ignored if called without arguments', async () => {
+      engine.addSource();
+      expect(await engine.getDefinitions()).to.have.length(0);
+    });
+  });
+
   describe('scripts', () => {
     it('throws if unsupported script format', async () => {
       const source = `

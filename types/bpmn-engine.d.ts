@@ -12,6 +12,7 @@ export interface BpmnLogger {
 export interface BpmnExecution {
   definitions: BpmnProcessExecutionDefinition[];
   state: "idle" | "running";
+  environment: BpmnProcessExecutionEnvironment;
 
   stopped: boolean;
   execute(executeOptions?: any): BpmnProcessExecutionApi;
@@ -21,7 +22,6 @@ export interface BpmnExecution {
 
   stop(): void;
 
-  environment: BpmnProcessExecutionEnvironment;
 }
 
 // tslint:disable: max-line-length

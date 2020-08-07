@@ -269,6 +269,46 @@ engine.execute({
 
 Get definition by id, returns Promise
 
+### `addSource({sourceContext})`
+
+Add definition source by source context.
+
+Arguments:
+- `source`: object
+  - `sourceContext`: serializable source
+
+```javascript
+      engine = Bpmn.Engine({
+        name: 'add source',
+      });
+    });
+
+    it('can be executed after source is added', async () => {
+      const listener = new EventEmitter();
+
+      const updateContext = await testHelpers.context(source);
+      engine.addSource({
+        sourceContext: updateContext,
+      });
+
+      let engineApi;
+      listener.once('wait', (_, api) => {
+        engineApi = api;
+      });
+      await engine.execute({
+        listener
+      });
+
+      expect(engineApi.definitions).to.have.length(1);
+
+      const completed = engine.waitFor('end');
+
+      engineApi.getPostponed().forEach((c) => {
+        c.signal();
+      });
+
+```
+
 ### `getDefinitions()`
 
 Get all definitions

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 9.2.0
+
+- Bump bpmn-elements from 1.2 to 1.6, see [change log](/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+- Support adding definition source with `addSource` function
+
 # 9.1.1
 
 - Bump bpmn-elements to version with ability to signal waiting start event from definition

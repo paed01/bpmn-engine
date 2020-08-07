@@ -40,8 +40,9 @@ function Engine(options = {}) {
   const emitter = new EventEmitter();
 
   const engine = Object.assign(emitter, {
-    execute,
     logger,
+    addSource,
+    execute,
     getDefinitionById,
     getDefinitions,
     getState,
@@ -132,8 +133,11 @@ function Engine(options = {}) {
 
     if (!savedState.definitions) return engine;
 
+    pendingSources.splice(0);
+
     loadedDefinitions = savedState.definitions.map((dState) => {
       const source = deserialize(JSON.parse(dState.source), typeResolver);
+      pendingSources.push(source);
 
       logger.debug(`<${name}> recover ${dState.type} <${dState.id}>`);
 
@@ -155,6 +159,10 @@ function Engine(options = {}) {
     }
 
     return execution.resume(resumeOptions, callback);
+  }
+
+  function addSource({sourceContext: addContext} = {}) {
+    if (addContext) pendingSources.push(addContext);
   }
 
   async function getDefinitions(executeOptions) {
@@ -229,6 +237,7 @@ function Execution(engine, definitions, options) {
 
   let state = 'idle';
   let stopped;
+  const executing = [];
 
   return {
     get state() {
@@ -240,6 +249,7 @@ function Execution(engine, definitions, options) {
     execute,
     getState,
     resume,
+    signal,
     stop,
   };
 
@@ -249,7 +259,17 @@ function Execution(engine, definitions, options) {
     logger.debug(`<${engine.name}> execute`);
 
     addConsumerCallbacks(callback);
-    definitions.forEach((definition) => definition.run());
+    const definitionExecutions = definitions.reduce((result, definition) => {
+      if (!definition.getExecutableProcesses().length) return result;
+      result.push(definition.run());
+      return result;
+    }, []);
+
+    if (!definitionExecutions.length) {
+      const error = new Error('No executable processes');
+      if (!callback) return engine.emit('error', error);
+      return callback(error);
+    }
 
     return Api();
   }
@@ -261,6 +281,7 @@ function Execution(engine, definitions, options) {
     logger.debug(`<${engine.name}> resume`);
     addConsumerCallbacks(callback);
 
+    executing.splice(0);
     definitions.forEach((definition) => definition.resume());
 
     return Api();
@@ -276,6 +297,8 @@ function Execution(engine, definitions, options) {
     broker.subscribeOnce('event', 'engine.stop', cbLeave, {consumerTag: 'ctag-cb-stop'});
     broker.subscribeOnce('event', 'engine.end', cbLeave, {consumerTag: 'ctag-cb-end'});
     broker.subscribeOnce('event', 'engine.error', cbError, {consumerTag: 'ctag-cb-error'});
+
+    return callback;
 
     function cbLeave() {
       clearConsumers();
@@ -296,7 +319,7 @@ function Execution(engine, definitions, options) {
 
   function stop() {
     const prom = waitFor('stop');
-    definitions.forEach((d) => d.stop());
+    executing.splice(0).forEach((d) => d.stop());
     return prom;
   }
 
@@ -325,16 +348,24 @@ function Execution(engine, definitions, options) {
     const elementApi = owner.getApi && owner.getApi(message);
 
     switch (routingKey) {
+      case 'definition.resume':
+      case 'definition.enter': {
+        const idx = executing.indexOf(owner);
+        if (idx > -1) break;
+        executing.push(owner);
+        break;
+      }
       case 'definition.stop':
         teardownDefinition(owner);
-        if (definitions.some((d) => d.isRunning)) break;
+        if (executing.some((d) => d.isRunning)) break;
 
         executionStopped = true;
         stopped = true;
         break;
       case 'definition.leave':
         teardownDefinition(owner);
-        if (definitions.some((d) => d.isRunning)) break;
+
+        if (executing.some((d) => d.isRunning)) break;
 
         executionCompleted = true;
         break;
@@ -397,6 +428,9 @@ function Execution(engine, definitions, options) {
   }
 
   function teardownDefinition(definition) {
+    const idx = executing.indexOf(definition);
+    if (idx > -1) executing.splice(idx, 1);
+
     definition.broker.cancel('_engine_definition');
     definition.broker.cancel('_engine_process');
     definition.broker.cancel('_engine_activity');
@@ -422,20 +456,21 @@ function Execution(engine, definitions, options) {
   }
 
   function getPostponed() {
-    return definitions.reduce((result, definition) => {
+    return executing.reduce((result, definition) => {
       result = result.concat(definition.getPostponed());
       return result;
     }, []);
   }
 
-  function signal(payload) {
-    for (const definition of definitions) {
+  function signal(payload, {ignoreSameDefinition} = {}) {
+    for (const definition of executing) {
+      if (ignoreSameDefinition && payload && payload.parent && payload.parent.id === definition.id) continue;
       definition.signal(payload);
     }
   }
 
   function cancelActivity(payload) {
-    for (const definition of definitions) {
+    for (const definition of executing) {
       definition.cancelActivity(payload);
     }
   }
