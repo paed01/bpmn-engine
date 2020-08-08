@@ -10,7 +10,8 @@
       - [Execution `listener`](#execution-listener)
       - [Execution `variables`](#execution-variables)
       - [Execution `services`](#execution-services)
-    - [`getDefinitionById(id)`](#getdefinitionbyidid)
+    - [`async getDefinitionById(id)`](#async-getdefinitionbyidid)
+    - [`addSource({sourceContext})`](#addsourcesourcecontext)
     - [`getDefinitions()`](#getdefinitions)
     - [`getState()`](#getstate)
     - [`stop()`](#stop)
@@ -19,7 +20,7 @@
 - [Execution API](#execution-api)
   - [`getActivityById(activityId)`](#getactivitybyidactivityid)
   - [`getState()`](#getstate)
-  - [`signal(message)`](#signalmessage)
+  - [`signal(message[, options])`](#signalmessage-options)
   - [`cancelActivity(message)`](#cancelactivitymessage)
 - [Engine events](#engine-events)
   - [Activity events](#activity-events)
@@ -265,7 +266,7 @@ engine.execute({
 });
 ```
 
-### `getDefinitionById(id)`
+### `async getDefinitionById(id)`
 
 Get definition by id, returns Promise
 
@@ -278,35 +279,67 @@ Arguments:
   - `sourceContext`: serializable source
 
 ```javascript
-      engine = Bpmn.Engine({
-        name: 'add source',
-      });
+const BpmnModdle = require('bpmn-moddle');
+const elements = require('bpmn-elements');
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
+const {default: serializer, TypeResolver} = require('moddle-context-serializer');
+
+const engine = Engine({
+  name: 'add source',
+});
+
+(async function IIFE(source) {
+  const sourceContext = await getContext(source);
+  engine.addSource({
+    sourceContext,
+  });
+
+  const listener = new EventEmitter();
+  listener.once('wait', (api) => {
+    console.log(api.name, 'is waiting');
+    api.signal();
+  });
+
+  await engine.execute({
+    listener
+  });
+
+  await engine.waitFor('end');
+})(`
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="start" />
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+    <userTask id="task" name="lazy source user" />
+    <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
+    <endEvent id="end" />
+  </process>
+</definitions>
+`);
+
+async function getContext(source, options = {}) {
+  const moddleContext = await getModdleContext(source, options);
+
+  if (moddleContext.warnings) {
+    moddleContext.warnings.forEach(({error, message, element, property}) => {
+      if (error) return console.error(message);
+      console.error(`<${element.id}> ${property}:`, message);
     });
+  }
 
-    it('can be executed after source is added', async () => {
-      const listener = new EventEmitter();
+  const types = TypeResolver({
+    ...elements,
+    ...options.elements,
+  });
 
-      const updateContext = await testHelpers.context(source);
-      engine.addSource({
-        sourceContext: updateContext,
-      });
+  return serializer(moddleContext, types, options.extendFn);
+}
 
-      let engineApi;
-      listener.once('wait', (_, api) => {
-        engineApi = api;
-      });
-      await engine.execute({
-        listener
-      });
-
-      expect(engineApi.definitions).to.have.length(1);
-
-      const completed = engine.waitFor('end');
-
-      engineApi.getPostponed().forEach((c) => {
-        c.signal();
-      });
-
+function getModdleContext(source, options) {
+  const bpmnModdle = new BpmnModdle(options);
+  return bpmnModdle.fromXML(source);
+}
 ```
 
 ### `getDefinitions()`
@@ -499,25 +532,34 @@ Returns [activity](/paed01/bpmn-elements/blob/master/docs/Activity.md).
 
 Get execution state.
 
-## `signal(message)`
+## `signal(message[, options])`
 
 Delegate a signal message to all interested parties, usually MessageEventDefinition, SignalEventDefinition, SignalTask (user, manual), ReceiveTask, or a StartEvent that has a form.
 
 Arguments:
-  - `message`: optional object
-    - `id`: optional task/element id to signal, also matched with Message and Signal id. If not passed only anonymous Signal- and MessageEventDefinitions will pick up the signal.
-    - `executionId`: optional execution id to signal, specially for looped tasks, also works for signal tasks that are not looped
-    - `[name]*`: any other properties will be forwarded as message to activity
+- `message`: optional object
+  - `id`: optional task/element id to signal, also matched with Message and Signal id. If not passed only anonymous Signal- and MessageEventDefinitions will pick up the signal.
+  - `executionId`: optional execution id to signal, specially for looped tasks, also works for signal tasks that are not looped
+  - `[name]*`: any other properties will be forwarded as message to activity
+- options: optional options object
+  - `ignoreSameDefinition`: boolean, ignore same definition, used when a signal is forwarded from another definition execution, see example
+
+An example on how to setup signal forwarding between definitions:
+```js
+engine.broker.subscribeTmp('event', 'activity.signal', (routingKey, msg) => {
+  engine.execution.signal(msg.content.message, {ignoreSameDefinition: true});
+}, {noAck: true});
+```
 
 ## `cancelActivity(message)`
 
 Delegate a cancel message to all interested parties, perhaps a stalled TimerEventDefinition.
 
 Arguments:
-  - `message`: optional object
-    - `id`: optional activity id to cancel execution
-    - `executionId`: optional execution id to signal, useful for an event with multiple event defintions
-    - `[name]*`: any other properties will be forwarded as message to activity
+- `message`: optional object
+  - `id`: optional activity id to cancel execution
+  - `executionId`: optional execution id to signal, useful for an event with multiple event defintions
+  - `[name]*`: any other properties will be forwarded as message to activity
 
 # Engine events
 
