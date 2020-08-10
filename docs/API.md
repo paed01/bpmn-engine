@@ -41,7 +41,7 @@ Creates a new Engine.
 Arguments:
 - `options`: Optional options, passed to [environment](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md):
   - `elements`: optional object with element type mapping override
-  - `expressions`: optional expressions handler, defaults to built in [expressions](https://github.com/paed01/bpmn-elements/blob/master/docs/Expression.md)
+  - `expressions`: optional override [expressions](#expressions) handler
   - `Logger`: optional [Logger factory](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md#logger), defaults to [debug](https://www.npmjs.com/package/debug) logger
   - `moddleContext`: optional BPMN 2.0 definition moddle context
   - `moddleOptions`: optional bpmn-moddle options to be passed to bpmn-moddle
@@ -83,8 +83,9 @@ const engine = Engine({
 
 ### `execute([options[, callback]])`
 
-Execute definition with:
+Execute definition.
 
+Arguments:
 - `options`: Optional object with options to override the initial engine options
   - [`listener`](#execution-listener): Listen for [activity events](#activity-events), an `EventEmitter` object
   - [`variables`](#execution-variables): Optional object with instance variables
@@ -566,6 +567,7 @@ Arguments:
 Engine emits the following events:
 
 - `error`: An non-recoverable error has occurred
+- `stop`: Executions was stopped
 - `end`: Execution completed
 
 ## Activity events
@@ -575,6 +577,7 @@ Each activity and flow emits events when changing state.
 - `activity.enter`: An activity is entered
 - `activity.start`: An activity is started
 - `activity.wait`: The activity is postponed for some reason, e.g. a user task is waiting to be signaled or a message is expected
+- `wait`: Same as above
 - `activity.end`: An activity has ended successfully
 - `activity.leave`: The execution left the activity
 - `activity.stop`: Activity run was stopped
@@ -602,35 +605,7 @@ Events are emitted with api with execution properties
 
 # Expressions
 
-Expressions come in the form of `${<variables or services>.<property name>}`.
-
-The following expressions are supported:
-
-- `${variables.input}` - resolves to the variable input
-- `${variables.input[0]}` - resolves to first item of the variable input array
-- `${variables.input[-1]}` - resolves to last item of the variable input array
-- `${variables.input[spaced name]}` - resolves to the variable input object property `spaced name`
-
-- `${services.getInput}` - return the service function `getInput`
-- `${services.getInput()}` - executes the service function `getInput` with the argument `{services, variables}`
-- `${services.isBelow(variables.input,2)}` - executes the service function `isBelow` with result of `variable.input` value and 2
-
-and, as utility:
-
-- `${true}` - return Boolean value `true`
-- `${false}` - return Boolean value `false`
-
-Expressions are supported by many elements, e.g.:
-- MultiInstanceLoopCharacteristics
-  - `camunda:collection`: variable collection, e.g. `${variables.list}`
-- ServiceTask
-  - `camunda:expression` element value. moddleOptions [`require('camunda-bpmn-moddle/resources/camunda')`][1] must be used.
-- SequenceFlow
-  - `conditionExpression` element value
-- TimerEvent
-  - `timeDuration` element value
-
-Expressions in expressions is **not** supported.
+If not overridden [bpmn-elements](/paed01/bpmn-elements/blob/master/docs/Expression.md) expressions handler is used.
 
 [1]: https://www.npmjs.com/package/camunda-bpmn-moddle
 [2]: https://www.npmjs.com/package/bpmn-moddle
