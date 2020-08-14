@@ -160,7 +160,7 @@ engine.execute({
 
 #### Execution `listener`
 
-An `EventEmitter` object with listeners. [Event names](#activity-events) are composed by activity event name and activity id, e.g. `wait-userTask`.
+An `EventEmitter` object with listeners. Listen for [activity events](#activity-events).
 
 ```javascript
 const {Engine} = require('bpmn-engine');
