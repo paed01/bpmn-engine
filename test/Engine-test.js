@@ -134,7 +134,7 @@ describe('Engine', () => {
     });
   });
 
-  describe('getDefinitionById()', () => {
+  describe('async getDefinitionById()', () => {
     it('returns definition of passed moddle context', async () => {
       const moddleContext = await testHelpers.moddleContext(factory.valid('contextTest'));
 
@@ -159,7 +159,7 @@ describe('Engine', () => {
     });
   });
 
-  describe('execute([options, callback])', () => {
+  describe('async execute([options, callback])', () => {
     it('runs definition and emits end when completed', (done) => {
       const engine = Bpmn.Engine({
         source: factory.valid()
@@ -895,13 +895,12 @@ describe('Engine', () => {
         'activity.start',
         'activity.execution.completed',
         'activity.end',
-        'flow.pre-flight',
-        'activity.leave',
         'flow.take',
         'activity.enter',
         'activity.start',
         'activity.execution.completed',
         'activity.end',
+        'activity.leave',
         'activity.leave',
         'process.end',
         'process.leave',

@@ -9,7 +9,6 @@ nock.enableNetConnect(/(localhost|127\.0\.0\.1):\d+/);
 
 
 module.exports = {
-  exit: true,
   recursive: true,
   reporter: 'spec',
   timeout: 1000,

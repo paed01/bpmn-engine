@@ -1,9 +1,19 @@
 Changelog
 =========
 
+# 10.0.0
+
+Untangle issue #105 which resulted in refactoring outbound sequence flow handling.
+
+- Bump bpmn-elements from 1.6 to 2, see [change log](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
+## Breaking
+- No more `flow.pre-flight` events from sequence flows, not sure that anyone used them, but still
+- Activities now publish (or emit) `activity.leave` when all outbound flows have been taken/discarded
+
 # 9.2.0
 
-- Bump bpmn-elements from 1.2 to 1.6, see [change log](/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+- Bump bpmn-elements from 1.2 to 1.6, see [change log](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 - Support adding definition source with `addSource` function
 
 # 9.1.1
@@ -24,7 +34,7 @@ Changelog
 - Add signal function to engine execution api
 
 ## Breaking changes
-- Bump bpmn-elements to v1.0.0 with some [breaking changes](/paed01/bpmn-elements/blob/master/CHANGELOG.md) regarding MessageEventDefinition and SignalEventDefinition
+- Bump bpmn-elements to v1.0.0 with some [breaking changes](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) regarding MessageEventDefinition and SignalEventDefinition
 
 # 8.7.0
 
@@ -36,7 +46,7 @@ Changelog
 
 # 8.5.0
 
-- Bump [bpmn-elements@0.12.1](/paed01/bpmn-elements/blob/master/CHANGELOG.md#0121)
+- Bump [bpmn-elements@0.12.1](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md#0121)
 
 # 8.4.0
 
