@@ -1,6 +1,7 @@
 'use strict';
 
 const {Engine} = require('../..');
+const {EventEmitter} = require('events');
 
 Feature('Issues', () => {
   Scenario('Save state on wait - issue #105', () => {
@@ -580,6 +581,163 @@ Feature('Issues', () => {
         expect(task.counters).to.have.property('taken', 1);
         expect(task.counters).to.have.property('discarded', 4);
       });
+    });
+  });
+
+  Scenario('Stop and save state on wait - issue #106', () => {
+    const source = `
+    <definitions id="Def_0" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <process id="Process_0" isExecutable="true">
+        <startEvent id="start" />
+        <sequenceFlow id="to-task1" sourceRef="start" targetRef="task1" />
+        <userTask id="task1" />
+        <sequenceFlow id="to-task2" sourceRef="task1" targetRef="task2" />
+        <userTask id="task2" />
+        <sequenceFlow id="to-decision" sourceRef="task2" targetRef="decision" />
+        <exclusiveGateway id="decision" default="to-task4" />
+        <sequenceFlow id="to-task3" sourceRef="decision" targetRef="task3">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">this.environment.variables.takeTask3&gt;=0</bpmn:conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="to-task4" sourceRef="decision" targetRef="task4" />
+        <userTask id="task3" />
+        <sequenceFlow id="from-task3" sourceRef="task3" targetRef="end" />
+        <userTask id="task4" />
+        <sequenceFlow id="from-task4" sourceRef="task4" targetRef="end" />
+        <endEvent id="end" />
+      </process>
+    </definitions>`;
+
+    let engine, options;
+    const states = [];
+    Given('two succeeding user tasks and decision to take third or fourth user task', async () => {
+      options = {
+        name: 'issue 106',
+        source,
+      };
+    });
+
+    async function onWait(activityApi, execution) {
+      if (activityApi.content.isRecovered) return;
+
+      execution.stop();
+      states.push(execution.getState());
+    }
+
+    let execution, listener;
+    When('engine is executed with listener on activity wait', async () => {
+      listener = new EventEmitter();
+      listener.on('activity.wait', onWait);
+
+      engine = Engine({
+        ...options,
+        variables: {
+          takeTask3: 1
+        },
+      });
+
+      execution = await engine.execute({listener});
+    });
+
+    Then('execution is stopped and state is saved', () => {
+      expect(execution.stopped).to.be.true;
+      expect(states).to.have.length(1);
+    });
+
+    When('execution is recovered', () => {
+      engine = Engine().recover(states.pop());
+    });
+
+    Then('first user task is still executing', async () => {
+      const [definition] = await engine.getDefinitions();
+      expect(definition.getActivityById('task1')).to.have.property('status', 'executing');
+    });
+
+    When('execution is resumed with listener', async () => {
+      execution = await engine.resume({listener});
+    });
+
+    And('first user task is signaled', () => {
+      execution.signal({id: 'task1'});
+    });
+
+    Then('first user task was taken', () => {
+      expect(execution.getActivityById('task1').counters).to.deep.equal({taken: 1, discarded: 0});
+    });
+
+    And('second user task is waiting', () => {
+      expect(execution.getActivityById('task2').counters).to.deep.equal({taken: 0, discarded: 0});
+    });
+
+    When('execution is recovered', () => {
+      engine = Engine().recover(states.pop());
+    });
+
+    Then('second user task is still executing', async () => {
+      const [definition] = await engine.getDefinitions();
+      expect(definition.getActivityById('task2')).to.have.property('status', 'executing');
+    });
+
+    When('execution is resumed with listener', async () => {
+      execution = await engine.resume({listener});
+    });
+
+    And('second user task is signaled', () => {
+      execution.signal({id: 'task2'});
+    });
+
+    Then('first user task was taken', () => {
+      expect(execution.getActivityById('task1').counters).to.deep.equal({taken: 1, discarded: 0});
+    });
+
+    And('second user task was taken', () => {
+      expect(execution.getActivityById('task2').counters).to.deep.equal({taken: 1, discarded: 0});
+    });
+
+    And('third user task is waiting', () => {
+      expect(execution.getActivityById('task3').counters).to.deep.equal({taken: 0, discarded: 0});
+    });
+
+    And('fourth user task was discarded', () => {
+      expect(execution.getActivityById('task4').counters).to.deep.equal({taken: 0, discarded: 1});
+    });
+
+    let end;
+    When('execution is recovered', () => {
+      engine = Engine().recover(states.pop());
+      end = engine.waitFor('end');
+    });
+
+    Then('third user task is still executing', async () => {
+      const [definition] = await engine.getDefinitions();
+      expect(definition.getActivityById('task3')).to.have.property('status', 'executing');
+    });
+
+    When('execution is resumed with listener', async () => {
+      execution = await engine.resume({listener});
+    });
+
+    And('third user task is signaled', () => {
+      execution.signal({id: 'task3'});
+    });
+
+    Then('first user task was taken', () => {
+      expect(execution.getActivityById('task1').counters).to.deep.equal({taken: 1, discarded: 0});
+    });
+
+    And('second user task was taken', () => {
+      expect(execution.getActivityById('task2').counters).to.deep.equal({taken: 1, discarded: 0});
+    });
+
+    And('third user task was taken', () => {
+      expect(execution.getActivityById('task3').counters).to.deep.equal({taken: 1, discarded: 0});
+    });
+
+    And('fourth user task was discarded', () => {
+      expect(execution.getActivityById('task4').counters).to.deep.equal({taken: 0, discarded: 1});
+    });
+
+    And('execution completed', () => {
+      return end;
     });
   });
 });
