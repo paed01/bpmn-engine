@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 10.1.0
+
+- Bump bpmn-elements to 2.1, adding support for Transaction and CancelEventDefinition see [change log](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
 # 10.0.0
 
 Untangle issue #105 which resulted in refactoring outbound sequence flow handling.
