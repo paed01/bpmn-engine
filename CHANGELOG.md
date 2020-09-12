@@ -1,9 +1,56 @@
 Changelog
 =========
 
+# 10.1.0
+
+- Bump bpmn-elements to 2.1, adding support for Transaction and CancelEventDefinition see [change log](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
+# 10.0.0
+
+Untangle issue #105 which resulted in refactoring outbound sequence flow handling.
+
+- Bump bpmn-elements from 1.6 to 2, see [change log](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
+## Breaking
+- No more `flow.pre-flight` events from sequence flows, not sure that anyone used them, but still
+- Activities now publish (or emit) `activity.leave` when all outbound flows have been taken/discarded
+
+# 9.2.0
+
+- Bump bpmn-elements from 1.2 to 1.6, see [change log](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+- Support adding definition source with `addSource` function
+
+# 9.1.1
+
+- Bump bpmn-elements to version with ability to signal waiting start event from definition
+
+# 9.1.0
+
+- Bump bpmn-elements to version with shake activity functionality
+- Bump moddle-context-serializer@0.16 with scripts and timers
+
+## Additions
+- Add engine option `sourceContext` to hold pre-serialized context
+
+# 9.0.0
+
+## Additions
+- Add signal function to engine execution api
+
+## Breaking changes
+- Bump bpmn-elements to v1.0.0 with some [breaking changes](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) regarding MessageEventDefinition and SignalEventDefinition
+
+# 8.7.0
+
+- Bump bpmn-moddle, bpmn-elements, and smqp to latest
+
+# 8.6.0
+
+- Add typescript declaration file (Saeed Tabrizi)
+
 # 8.5.0
 
-- Bump [bpmn-elements@0.12.1](/paed01/bpmn-elements/blob/master/CHANGELOG.md#0121)
+- Bump [bpmn-elements@0.12.1](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md#0121)
 
 # 8.4.0
 

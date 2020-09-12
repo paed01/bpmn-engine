@@ -1,5 +1,5 @@
 <!-- version -->
-# 8.5.0 API Reference
+# 10.1.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -10,12 +10,18 @@
       - [Execution `listener`](#execution-listener)
       - [Execution `variables`](#execution-variables)
       - [Execution `services`](#execution-services)
-    - [`getDefinitionById(id)`](#getdefinitionbyidid)
+    - [`async getDefinitionById(id)`](#async-getdefinitionbyidid)
+    - [`addSource({sourceContext})`](#addsourcesourcecontext)
     - [`getDefinitions()`](#getdefinitions)
     - [`getState()`](#getstate)
     - [`stop()`](#stop)
     - [`recover(state[, recoverOptions])`](#recoverstate-recoveroptions)
     - [`resume([options, [callback]])`](#resumeoptions-callback)
+- [Execution API](#execution-api)
+  - [`getActivityById(activityId)`](#getactivitybyidactivityid)
+  - [`getState()`](#getstate)
+  - [`signal(message[, options])`](#signalmessage-options)
+  - [`cancelActivity(message)`](#cancelactivitymessage)
 - [Engine events](#engine-events)
   - [Activity events](#activity-events)
   - [Event Api](#event-api)
@@ -26,7 +32,7 @@
 
 # Engine
 
-The engine. Executes passed BPMN definitions.
+The engine. Executes passed BPMN 2.0 definitions.
 
 ## `Engine([options])`
 
@@ -34,13 +40,16 @@ Creates a new Engine.
 
 Arguments:
 - `options`: Optional options, passed to [environment](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md):
-  - `name`: optional name of engine,
-  - `source`: BPMN 2.0 definition source as string
-  - `moddleOptions`: optional bpmn-moddle options
-  - `moddleContext`: optional BPMN 2.0 definition moddle context
-  - `scripts`: optional [inline script handler](https://github.com/paed01/bpmn-elements/blob/master/docs/Scripts.md), defaults to vm module handling, i.e. JavaScript
-  - `Logger`: optional [Logger factory](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md#logger), defaults to [debug](https://www.npmjs.com/package/debug) logger
   - `elements`: optional object with element type mapping override
+  - `expressions`: optional override [expressions](#expressions) handler
+  - `Logger`: optional [Logger factory](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md#logger), defaults to [debug](https://www.npmjs.com/package/debug) logger
+  - `moddleContext`: optional BPMN 2.0 definition moddle context
+  - `moddleOptions`: optional bpmn-moddle options to be passed to bpmn-moddle
+  - `name`: optional name of engine,
+  - `scripts`: optional [inline script handler](https://github.com/paed01/bpmn-elements/blob/master/docs/Scripts.md), defaults to nodejs vm module handling, i.e. JavaScript
+  - `source`: optional BPMN 2.0 definition source as string
+  - `sourceContext`: optional serialized context supplied by [moddle-context-serializer](https://github.com/paed01/moddle-context-serializer)
+  - `typeResolver`: optional type resolver function passed to moddle-context-serializer
 
 Returns:
 - `name`: engine name
@@ -74,17 +83,21 @@ const engine = Engine({
 
 ### `execute([options[, callback]])`
 
-Execute definition with:
+Execute definition.
 
+Arguments:
 - `options`: Optional object with options to override the initial engine options
   - [`listener`](#execution-listener): Listen for [activity events](#activity-events), an `EventEmitter` object
   - [`variables`](#execution-variables): Optional object with instance variables
   - [`services`](#execution-services): Optional object with service functions
+  - `expressions`: Optional expression handling override
 - `callback`: optional callback
   - `err`: Error if any
   - `execution`: Engine execution
 
 Execute options overrides the initial options passed to the engine before executing the definition.
+
+Returns [Execution API](#execution-api)
 
 ```javascript
 const {Engine} = require('bpmn-engine');
@@ -147,7 +160,7 @@ engine.execute({
 
 #### Execution `listener`
 
-An `EventEmitter` object with listeners. [Event names](#activity-events) are composed by activity event name and activity id, e.g. `wait-userTask`.
+An `EventEmitter` object with listeners. Listen for [activity events](#activity-events).
 
 ```javascript
 const {Engine} = require('bpmn-engine');
@@ -254,9 +267,81 @@ engine.execute({
 });
 ```
 
-### `getDefinitionById(id)`
+### `async getDefinitionById(id)`
 
 Get definition by id, returns Promise
+
+### `addSource({sourceContext})`
+
+Add definition source by source context.
+
+Arguments:
+- `source`: object
+  - `sourceContext`: serializable source
+
+```javascript
+const BpmnModdle = require('bpmn-moddle');
+const elements = require('bpmn-elements');
+const {Engine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
+const {default: serializer, TypeResolver} = require('moddle-context-serializer');
+
+const engine = Engine({
+  name: 'add source',
+});
+
+(async function IIFE(source) {
+  const sourceContext = await getContext(source);
+  engine.addSource({
+    sourceContext,
+  });
+
+  const listener = new EventEmitter();
+  listener.once('wait', (api) => {
+    console.log(api.name, 'is waiting');
+    api.signal();
+  });
+
+  await engine.execute({
+    listener
+  });
+
+  await engine.waitFor('end');
+})(`
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="theProcess" isExecutable="true">
+    <startEvent id="start" />
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+    <userTask id="task" name="lazy source user" />
+    <sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
+    <endEvent id="end" />
+  </process>
+</definitions>
+`);
+
+async function getContext(source, options = {}) {
+  const moddleContext = await getModdleContext(source, options);
+
+  if (moddleContext.warnings) {
+    moddleContext.warnings.forEach(({error, message, element, property}) => {
+      if (error) return console.error(message);
+      console.error(`<${element.id}> ${property}:`, message);
+    });
+  }
+
+  const types = TypeResolver({
+    ...elements,
+    ...options.elements,
+  });
+
+  return serializer(moddleContext, types, options.extendFn);
+}
+
+function getModdleContext(source, options) {
+  const bpmnModdle = new BpmnModdle(options);
+  return bpmnModdle.fromXML(source);
+}
+```
 
 ### `getDefinitions()`
 
@@ -420,11 +505,69 @@ engine.resume({listener}, () => {
 });
 ```
 
+# Execution API
+
+- `name`: engine name
+- `state`: execution state
+- `stopped`: is execution stopped?
+- `broker`: engine message broker
+- `environment`: execution environment
+- `definitions`: list of definitions
+- `getActivityById(activityId)`(#getactivitybyid-activityid): get activity/element by id, returns first found among definitions
+- `getState()`: get execution state
+- `getPostponed()`: get postponed activities, i.e. activities waiting for some interaction or signal
+- [`signal(message)`](#signalmessage): send signal to execution, distributed to all definitions
+- [`cancelActivity(message)`](#cancelactivitymessage): send cancel activity to execution, distributed to all definitions
+- `stop()`: stop execution
+- `waitFor(event)`: wait for [engine events](#engine-events), returns Promise
+
+## `getActivityById(activityId)`
+
+Get activity/element by id. Loops the definitions and returns the first found activity with id.
+
+- `activityId`: Activity or element id
+
+Returns [activity](/paed01/bpmn-elements/blob/master/docs/Activity.md).
+
+## `getState()`
+
+Get execution state.
+
+## `signal(message[, options])`
+
+Delegate a signal message to all interested parties, usually MessageEventDefinition, SignalEventDefinition, SignalTask (user, manual), ReceiveTask, or a StartEvent that has a form.
+
+Arguments:
+- `message`: optional object
+  - `id`: optional task/element id to signal, also matched with Message and Signal id. If not passed only anonymous Signal- and MessageEventDefinitions will pick up the signal.
+  - `executionId`: optional execution id to signal, specially for looped tasks, also works for signal tasks that are not looped
+  - `[name]*`: any other properties will be forwarded as message to activity
+- options: optional options object
+  - `ignoreSameDefinition`: boolean, ignore same definition, used when a signal is forwarded from another definition execution, see example
+
+An example on how to setup signal forwarding between definitions:
+```js
+engine.broker.subscribeTmp('event', 'activity.signal', (routingKey, msg) => {
+  engine.execution.signal(msg.content.message, {ignoreSameDefinition: true});
+}, {noAck: true});
+```
+
+## `cancelActivity(message)`
+
+Delegate a cancel message to all interested parties, perhaps a stalled TimerEventDefinition.
+
+Arguments:
+- `message`: optional object
+  - `id`: optional activity id to cancel execution
+  - `executionId`: optional execution id to signal, useful for an event with multiple event defintions
+  - `[name]*`: any other properties will be forwarded as message to activity
+
 # Engine events
 
 Engine emits the following events:
 
 - `error`: An non-recoverable error has occurred
+- `stop`: Executions was stopped
 - `end`: Execution completed
 
 ## Activity events
@@ -434,6 +577,7 @@ Each activity and flow emits events when changing state.
 - `activity.enter`: An activity is entered
 - `activity.start`: An activity is started
 - `activity.wait`: The activity is postponed for some reason, e.g. a user task is waiting to be signaled or a message is expected
+- `wait`: Same as above
 - `activity.end`: An activity has ended successfully
 - `activity.leave`: The execution left the activity
 - `activity.stop`: Activity run was stopped
@@ -450,8 +594,8 @@ Events are emitted with api with execution properties
 - `environment`: engine environment
 - `definitions`: executing definitions
 - `stop()`: stop execution
-- `getState`()`: get execution serializable state
-- `getPostponed`()`: get activities in a postponed state
+- `getState()`: get execution serializable state
+- `getPostponed()`: get activities in a postponed state
 
 ## Sequence flow events
 
@@ -461,35 +605,7 @@ Events are emitted with api with execution properties
 
 # Expressions
 
-Expressions come in the form of `${<variables or services>.<property name>}`.
-
-The following expressions are supported:
-
-- `${variables.input}` - resolves to the variable input
-- `${variables.input[0]}` - resolves to first item of the variable input array
-- `${variables.input[-1]}` - resolves to last item of the variable input array
-- `${variables.input[spaced name]}` - resolves to the variable input object property `spaced name`
-
-- `${services.getInput}` - return the service function `getInput`
-- `${services.getInput()}` - executes the service function `getInput` with the argument `{services, variables}`
-- `${services.isBelow(variables.input,2)}` - executes the service function `isBelow` with result of `variable.input` value and 2
-
-and, as utility:
-
-- `${true}` - return Boolean value `true`
-- `${false}` - return Boolean value `false`
-
-Expressions are supported by many elements, e.g.:
-- MultiInstanceLoopCharacteristics
-  - `camunda:collection`: variable collection, e.g. `${variables.list}`
-- ServiceTask
-  - `camunda:expression` element value. moddleOptions [`require('camunda-bpmn-moddle/resources/camunda')`][1] must be used.
-- SequenceFlow
-  - `conditionExpression` element value
-- TimerEvent
-  - `timeDuration` element value
-
-Expressions in expressions is **not** supported.
+If not overridden [bpmn-elements](/paed01/bpmn-elements/blob/master/docs/Expression.md) expressions handler is used.
 
 [1]: https://www.npmjs.com/package/camunda-bpmn-moddle
 [2]: https://www.npmjs.com/package/bpmn-moddle

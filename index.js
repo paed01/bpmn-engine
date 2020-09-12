@@ -16,7 +16,7 @@ module.exports = {Engine};
 function Engine(options = {}) {
   options = {Logger: DebugLogger, scripts: JavaScripts(), ...options};
 
-  let {name, Logger} = options;
+  let {name, Logger, sourceContext} = options;
 
   let loadedDefinitions, execution;
   const logger = Logger('engine');
@@ -40,8 +40,9 @@ function Engine(options = {}) {
   const emitter = new EventEmitter();
 
   const engine = Object.assign(emitter, {
-    execute,
     logger,
+    addSource,
+    execute,
     getDefinitionById,
     getDefinitions,
     getState,
@@ -105,14 +106,13 @@ function Engine(options = {}) {
 
   async function execute(...args) {
     const [executeOptions, callback] = getOptionsAndCallback(...args);
-    let runSources;
     try {
-      runSources = await Promise.all(pendingSources);
+      var definitions = await loadDefinitions(executeOptions); // eslint-disable-line no-var
     } catch (err) {
       if (callback) return callback(err);
       throw err;
     }
-    const definitions = runSources.map((source) => loadDefinition(source, executeOptions));
+
     execution = Execution(engine, definitions, options);
     return execution.execute(executeOptions, callback);
   }
@@ -124,17 +124,20 @@ function Engine(options = {}) {
 
   function recover(savedState, recoverOptions) {
     if (!savedState) return engine;
+    if (!name) name = savedState.name;
 
     logger.debug(`<${name}> recover`);
 
-    if (!name) name = savedState.name;
     if (recoverOptions) environment = elements.Environment(recoverOptions);
     if (savedState.environment) environment = environment.recover(savedState.environment);
 
     if (!savedState.definitions) return engine;
 
+    pendingSources.splice(0);
+
     loadedDefinitions = savedState.definitions.map((dState) => {
       const source = deserialize(JSON.parse(dState.source), typeResolver);
+      pendingSources.push(source);
 
       logger.debug(`<${name}> recover ${dState.type} <${dState.id}>`);
 
@@ -158,9 +161,13 @@ function Engine(options = {}) {
     return execution.resume(resumeOptions, callback);
   }
 
+  function addSource({sourceContext: addContext} = {}) {
+    if (addContext) pendingSources.push(addContext);
+  }
+
   async function getDefinitions(executeOptions) {
     if (loadedDefinitions && loadedDefinitions.length) return loadedDefinitions;
-    return Promise.all(pendingSources).then((srcs) => srcs.map((src) => loadDefinition(src, executeOptions)));
+    return loadDefinitions(executeOptions);
   }
 
   async function getDefinitionById(id) {
@@ -172,6 +179,13 @@ function Engine(options = {}) {
 
     const definitions = await getDefinitions();
     return Execution(engine, definitions, options).getState();
+  }
+
+  async function loadDefinitions(executeOptions) {
+    const runSources = await Promise.all(pendingSources);
+    if (sourceContext) runSources.push(sourceContext);
+    loadedDefinitions = runSources.map((source) => loadDefinition(source, executeOptions));
+    return loadedDefinitions;
   }
 
   function loadDefinition(serializedContext, executeOptions) {
@@ -196,13 +210,8 @@ function Engine(options = {}) {
   }
 
   function getModdleContext(source) {
-    return new Promise((resolve, reject) => {
-      const bpmnModdle = new BpmnModdle(options.moddleOptions);
-      bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim(), (err, _, moddleContext) => {
-        if (err) return reject(err);
-        resolve(moddleContext);
-      });
-    });
+    const bpmnModdle = new BpmnModdle(options.moddleOptions);
+    return bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim());
   }
 
   async function waitFor(eventName) {
@@ -228,6 +237,7 @@ function Execution(engine, definitions, options) {
 
   let state = 'idle';
   let stopped;
+  const executing = [];
 
   return {
     get state() {
@@ -239,6 +249,7 @@ function Execution(engine, definitions, options) {
     execute,
     getState,
     resume,
+    signal,
     stop,
   };
 
@@ -248,7 +259,17 @@ function Execution(engine, definitions, options) {
     logger.debug(`<${engine.name}> execute`);
 
     addConsumerCallbacks(callback);
-    definitions.forEach((definition) => definition.run());
+    const definitionExecutions = definitions.reduce((result, definition) => {
+      if (!definition.getExecutableProcesses().length) return result;
+      result.push(definition.run());
+      return result;
+    }, []);
+
+    if (!definitionExecutions.length) {
+      const error = new Error('No executable processes');
+      if (!callback) return engine.emit('error', error);
+      return callback(error);
+    }
 
     return Api();
   }
@@ -260,6 +281,7 @@ function Execution(engine, definitions, options) {
     logger.debug(`<${engine.name}> resume`);
     addConsumerCallbacks(callback);
 
+    executing.splice(0);
     definitions.forEach((definition) => definition.resume());
 
     return Api();
@@ -275,6 +297,8 @@ function Execution(engine, definitions, options) {
     broker.subscribeOnce('event', 'engine.stop', cbLeave, {consumerTag: 'ctag-cb-stop'});
     broker.subscribeOnce('event', 'engine.end', cbLeave, {consumerTag: 'ctag-cb-end'});
     broker.subscribeOnce('event', 'engine.error', cbError, {consumerTag: 'ctag-cb-error'});
+
+    return callback;
 
     function cbLeave() {
       clearConsumers();
@@ -295,7 +319,7 @@ function Execution(engine, definitions, options) {
 
   function stop() {
     const prom = waitFor('stop');
-    definitions.forEach((d) => d.stop());
+    executing.splice(0).forEach((d) => d.stop());
     return prom;
   }
 
@@ -324,16 +348,24 @@ function Execution(engine, definitions, options) {
     const elementApi = owner.getApi && owner.getApi(message);
 
     switch (routingKey) {
+      case 'definition.resume':
+      case 'definition.enter': {
+        const idx = executing.indexOf(owner);
+        if (idx > -1) break;
+        executing.push(owner);
+        break;
+      }
       case 'definition.stop':
         teardownDefinition(owner);
-        if (definitions.some((d) => d.isRunning)) break;
+        if (executing.some((d) => d.isRunning)) break;
 
         executionStopped = true;
         stopped = true;
         break;
       case 'definition.leave':
         teardownDefinition(owner);
-        if (definitions.some((d) => d.isRunning)) break;
+
+        if (executing.some((d) => d.isRunning)) break;
 
         executionCompleted = true;
         break;
@@ -396,6 +428,9 @@ function Execution(engine, definitions, options) {
   }
 
   function teardownDefinition(definition) {
+    const idx = executing.indexOf(definition);
+    if (idx > -1) executing.splice(idx, 1);
+
     definition.broker.cancel('_engine_definition');
     definition.broker.cancel('_engine_process');
     definition.broker.cancel('_engine_activity');
@@ -411,6 +446,33 @@ function Execution(engine, definitions, options) {
       environment: environment.getState(),
       definitions: definitions.map(getDefinitionState),
     };
+  }
+
+  function getActivityById(activityId) {
+    for (const definition of definitions) {
+      const activity = definition.getActivityById(activityId);
+      if (activity) return activity;
+    }
+  }
+
+  function getPostponed() {
+    return executing.reduce((result, definition) => {
+      result = result.concat(definition.getPostponed());
+      return result;
+    }, []);
+  }
+
+  function signal(payload, {ignoreSameDefinition} = {}) {
+    for (const definition of executing) {
+      if (ignoreSameDefinition && payload && payload.parent && payload.parent.id === definition.id) continue;
+      definition.signal(payload);
+    }
+  }
+
+  function cancelActivity(payload) {
+    for (const definition of executing) {
+      definition.cancelActivity(payload);
+    }
   }
 
   function getDefinitionState(definition) {
@@ -435,16 +497,15 @@ function Execution(engine, definitions, options) {
       get stopped() {
         return stopped;
       },
+      broker,
       environment,
       definitions,
-      stop,
+      getActivityById,
       getState,
-      getPostponed() {
-        return definitions.reduce((result, definition) => {
-          result = result.concat(definition.getPostponed());
-          return result;
-        }, []);
-      },
+      getPostponed,
+      signal,
+      cancelActivity,
+      stop,
       waitFor,
     };
   }

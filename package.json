@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "8.5.0",
+  "version": "10.1.0",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -16,12 +16,14 @@
   },
   "files": [
     "lib/",
+    "types/",
     "index.js"
   ],
   "scripts": {
     "test": "mocha -R dot",
     "posttest": "eslint . --cache && npm run toc",
     "wintest": "node_modules/.bin/mocha",
+    "cov:html": "nyc mocha -R dot && nyc report --reporter=html",
     "toc": "node scripts/generate-api-toc ./docs/API.md,./docs/Examples.md",
     "test-md": "node scripts/test-markdown.js ./docs/API.md && node scripts/test-markdown.js ./docs/Examples.md"
   },
@@ -46,23 +48,24 @@
     ]
   },
   "devDependencies": {
-    "bent": "^7.0.2",
-    "camunda-bpmn-moddle": "^4.3.0",
+    "bent": "^7.3.10",
+    "camunda-bpmn-moddle": "^4.4.0",
     "chai": "^4.1.2",
-    "coveralls": "^3.0.7",
-    "eslint": "^6.6.0",
+    "chronokinesis": "^2.0.1",
+    "coveralls": "^3.1.0",
+    "eslint": "^7.7.0",
     "markdown-toc": "^1.2.0",
-    "mocha": "^6.2.2",
+    "mocha": "^8.1.3",
     "mocha-cakes-2": "^3.3.0",
-    "nock": "^11.7.0",
-    "nyc": "^14.1.1",
+    "nock": "^13.0.4",
+    "nyc": "^15.1.0",
     "unnecessary": "^1.3.4"
   },
   "dependencies": {
-    "bpmn-elements": "^0.12.1",
-    "bpmn-moddle": "^6.0.0",
+    "bpmn-elements": "^2.1.0",
+    "bpmn-moddle": "^7.0.3",
     "debug": "^4.1.1",
-    "moddle-context-serializer": "^0.12.1",
-    "smqp": "^1.10.0"
+    "moddle-context-serializer": "^0.16.0",
+    "smqp": "^3.0.1"
   }
 }

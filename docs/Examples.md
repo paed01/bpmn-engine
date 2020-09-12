@@ -14,6 +14,8 @@ Examples
 - [Extend form behaviour](#extend-form-behaviour)
 - [Extend service task behaviour](#extend-service-task-behaviour)
 - [Human performer and potential owner](#human-performer-and-potential-owner)
+- [Traverse activities using definition shake](#traverse-activities-using-definition-shake)
+- [Persist state on events](#persist-state-on-events)
 
 <!-- tocstop -->
 
@@ -104,7 +106,7 @@ listener.on('flow.take', (flow) => {
 
 engine.once('end', (execution) => {
   console.log(execution.environment.variables);
-  console.log(`User sirname is ${execution.environment.output.inputFromUser}`);
+  console.log(`User sirname is ${execution.environment.output.data.inputFromUser}`);
 });
 
 engine.execute({
@@ -172,7 +174,7 @@ engine.on('end', () => {
 
 # Script task
 
-A script task will receive the data available on the process instance. So if `request` or another module is needed it has to be passed when starting the process. The script task also has a callback called `next` that has to be called for the task to complete.
+A script task will receive the data available on the process instance. So if `bent` or another module is needed it has to be passed when starting the process. The script task also has a callback called `next` that has to be called for the task to complete.
 
 The `next` callback takes the following arguments:
 - `err`: occasional error
@@ -301,7 +303,7 @@ const getJson = require('bent')('json');
 
 async function getRequest(scope, callback) {
   try {
-    var result = await getJson(scope.environment.variables.apiPath);
+    var result = await getJson(scope.environment.variables.apiPath); // eslint-disable-line no-var
   } catch (err) {
     return callback(null, err);
   }
@@ -467,8 +469,7 @@ const source = `
       <errorEventDefinition />
     </boundaryEvent>
   </process>
-</definitions>
-`;
+</definitions>`;
 
 const engine = Engine({
   name: 'loop collection',
@@ -726,4 +727,139 @@ engine.execute({listener}, (err, instance) => {
   if (err) throw err;
   console.log(instance.name, 'completed');
 });
+```
+
+# Traverse activities using definition shake
+
+Shake down the possible sequences an activity can have.
+
+```javascript
+const {Engine} = require('bpmn-engine');
+const BpmnModdle = require('bpmn-moddle');
+const elements = require('bpmn-elements');
+const {default: Serializer, TypeResolver} = require('moddle-context-serializer');
+
+const source = `
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <process id="Process_1" isExecutable="true">
+    <startEvent id="start">
+      <outgoing>toSayHiTask1</outgoing>
+    </startEvent>
+    <task id="sayHiTask" name="say hi">
+      <incoming>toSayHiTask1</incoming>
+      <outgoing>toEnd1</outgoing>
+      <outgoing>toEnd2</outgoing>
+    </task>
+    <sequenceFlow id="toSayHiTask1" sourceRef="start" targetRef="sayHiTask" />
+    <endEvent id="end1">
+      <incoming>toEnd1</incoming>
+    </endEvent>
+    <sequenceFlow id="toEnd1" sourceRef="sayHiTask" targetRef="end1" />
+    <endEvent id="end2">
+      <incoming>toEnd2</incoming>
+    </endEvent>
+    <sequenceFlow id="toEnd2" sourceRef="sayHiTask" targetRef="end2" />
+  </process>
+</definitions>`;
+
+(async function IIFE() {
+  const moddleContext = await (new BpmnModdle({
+    camunda: require('camunda-bpmn-moddle/resources/camunda.json'),
+  })).fromXML(source);
+
+  const sourceContext = Serializer(moddleContext, TypeResolver(elements));
+
+  const engine = Engine({
+    sourceContext,
+  });
+
+  const [definition] = await engine.getDefinitions();
+
+  const shakenStarts = definition.shake();
+
+  console.log('first sequence', shakenStarts.start[0].sequence.reduce(printSequence, ''));
+  console.log('second sequence', shakenStarts.start[1].sequence.reduce(printSequence, ''));
+
+  function printSequence(res, s) {
+    if (!res) return s.id;
+    res += ' -> ' + s.id;
+    return res;
+  }
+})();
+```
+
+# Persist state on events
+
+One way to persist state is to subscribe to activity and engine events through a listener.
+
+In this example the state of the execution is published on a message broker. Subscribers to the broker will hopefylly know how to persist the state.
+
+```js
+const camundaModdle = require('camunda-bpmn-moddle/resources/camunda');
+const {Engine: BpmnEngine} = require('bpmn-engine');
+const {EventEmitter} = require('events');
+const {getSourceSync, getAllowedServices, getExtensions} = require('./utils');
+const {publish} = require('./dbbroker');
+const {v4: uuid} = require('uuid');
+
+function ignite(executionId, options = {}) {
+  const {name, settings} = options;
+  const listener = new EventEmitter();
+  listener.on('activity.wait', (_, execution) => {
+    return publishEvent('bpmn.state.update', {state: execution.getState()});
+  });
+  listener.on('activity.end', (_, execution) => {
+    return publishEvent('bpmn.state.update', {state: execution.getState()});
+  });
+  listener.on('activity.timer', (api, execution) => {
+    return publishEvent('bpmn.state.expires', {
+      expires: new Date(api.content.startedAt + api.content.timeout),
+      state: execution.getState(),
+    });
+  });
+  listener.on('activity.timeout', (_, execution) => {
+    return publishEvent('bpmn.state.expired', {
+      expired: new Date(),
+      state: execution.getState(),
+    });
+  });
+
+  const engine = BpmnEngine({
+    moddleOptions: {
+      camunda: camundaModdle
+    },
+    ...options,
+    settings: {
+      ...settings,
+      executionId,
+      enableDummyService: false,
+    }
+  });
+  engine.once('end', () => {
+    publishEvent('bpmn.completed');
+  });
+  engine.once('error', (err) => {
+    publishEvent('bpmn.error', {message: err.message, error: err});
+  });
+
+  return {engine, listener};
+
+  function publishEvent(routingKey, message) {
+    publish('events', routingKey, {
+      name,
+      executionId,
+      ...message,
+    });
+  }
+}
+
+const {engine} = ignite(uuid(), {
+  name: 'persisted engine #1',
+  source: getSourceSync('./mother-of-all.bpmn'),
+  services: getAllowedServices(),
+  extensions: getExtensions(),
+});
+
+engine.execute();
 ```

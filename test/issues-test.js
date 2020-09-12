@@ -61,33 +61,33 @@ describe('issues', () => {
       expect(Parallel1, 'state 0 Parallel1').to.have.property('status').that.is.undefined;
 
       [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[1].definitions[0].execution.processes[0].execution.children;
-      expect(Start, 'state 1 Start').to.have.property('status').that.is.undefined;
+      expect(Start, 'state 1 Start').to.have.property('status', 'end');
       expect(Parallel1, 'state 1 Parallel1').to.have.property('status', 'started');
       expect(Task_A, 'state 1 Task_A').to.have.property('status').that.is.undefined;
 
       [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[2].definitions[0].execution.processes[0].execution.children;
-      expect(Parallel1, 'state 2 Parallel1').to.have.property('status').that.is.undefined;
+      expect(Parallel1, 'state 2 Parallel1').to.have.property('status', 'end');
       expect(Task_A, 'state 2 Task_A').to.have.property('status', 'started');
       expect(Task_B, 'state 2 Task_B').to.have.property('status').that.is.undefined;
 
       [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[3].definitions[0].execution.processes[0].execution.children;
-      expect(Parallel1, 'state 3 Parallel1').to.have.property('status').that.is.undefined;
+      expect(Parallel1, 'state 3 Parallel1').to.have.property('status', 'end');
       expect(Task_A, 'state 3 Task_A').to.have.property('status').that.is.undefined;
       expect(Task_B, 'state 3 Task_B').to.have.property('status', 'started');
       expect(Parallel2, 'state 3 Parallel2').to.have.property('status').that.is.undefined;
 
       [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[4].definitions[0].execution.processes[0].execution.children;
       expect(Task_A, 'state 4 Task_A').to.have.property('status').that.is.undefined;
-      expect(Task_B, 'state 4 Task_B').to.have.property('status').that.is.undefined;
+      expect(Task_B, 'state 4 Task_B').to.have.property('status', 'end');
       expect(Parallel2, 'state 4 Parallel2').to.have.property('status', 'started');
 
       [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[5].definitions[0].execution.processes[0].execution.children;
-      expect(Parallel2, 'state 5 Parallel2').to.have.property('status').that.is.undefined;
+      expect(Parallel2, 'state 5 Parallel2').to.have.property('status', 'end');
       expect(Task_C, 'state 5 Task_C').to.have.property('status', 'started');
       expect(End, 'state 5 End').to.have.property('status').that.is.undefined;
 
       [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[6].definitions[0].execution.processes[0].execution.children;
-      expect(Task_C, 'state 6 Task_C').to.have.property('status').that.is.undefined;
+      expect(Task_C, 'state 6 Task_C').to.have.property('status', 'end');
       expect(End, 'state 6 End').to.have.property('status', 'started');
     });
   });

@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Signals_0" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.1.1">
+  <bpmn:collaboration id="Collaboration_1cap25j">
+    <bpmn:participant id="trader" name="Trader" processRef="tradeProcess" />
+    <bpmn:participant id="priceAdmin" name="Spot Price Admin" processRef="spotPriceProcess" />
+  </bpmn:collaboration>
+  <bpmn:process id="tradeProcess" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_1vkhxd4">
+      <bpmn:lane id="Lane_0qatxdu">
+        <bpmn:flowNodeRef>tradeTask</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>catchSpotUpdate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>startTrade</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>getSpotPrice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>endTrade</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:userTask id="tradeTask" name="Trade">
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="price" label="Price" type="long" defaultValue="${environment.output.spotPrice}" />
+          <camunda:formField id="amount" label="Amount" type="long" />
+        </camunda:formData>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="amount">${content.output.form.amount}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>toTradeTask</bpmn:incoming>
+      <bpmn:outgoing>toEndBuy</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="catchSpotUpdate" name="Spot price changed" attachedToRef="tradeTask">
+      <bpmn:outgoing>backToGetSpotPrice</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_1nz94rk" signalRef="spotPriceChanged" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="toGetSpotPrice" sourceRef="startTrade" targetRef="getSpotPrice" />
+    <bpmn:sequenceFlow id="toTradeTask" sourceRef="getSpotPrice" targetRef="tradeTask" />
+    <bpmn:sequenceFlow id="toEndBuy" sourceRef="tradeTask" targetRef="endTrade" />
+    <bpmn:sequenceFlow id="backToGetSpotPrice" sourceRef="catchSpotUpdate" targetRef="getSpotPrice" />
+    <bpmn:startEvent id="startTrade">
+      <bpmn:outgoing>toGetSpotPrice</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="getSpotPrice" name="Get spot price" camunda:expression="${environment.services.getSpotPrice}" camunda:resultVariable="spotPrice">
+      <bpmn:incoming>toGetSpotPrice</bpmn:incoming>
+      <bpmn:incoming>backToGetSpotPrice</bpmn:incoming>
+      <bpmn:outgoing>toTradeTask</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="endTrade">
+      <bpmn:incoming>toEndBuy</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:signal id="spotPriceChanged" name="newSpotPrice" />
+  <bpmn:process id="spotPriceProcess" isExecutable="false">
+    <bpmn:sequenceFlow id="toApprove" sourceRef="startPriceAdmin" targetRef="approveSpotPrice" />
+    <bpmn:sequenceFlow id="toEnd" sourceRef="throwNewSpotPrice" targetRef="endPriceAdmin" />
+    <bpmn:sequenceFlow id="toThrow" sourceRef="approveSpotPrice" targetRef="throwNewSpotPrice" />
+    <bpmn:endEvent id="endPriceAdmin">
+      <bpmn:incoming>toEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="approveSpotPrice" name="Approve">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="spotPrice">${content.output.form.newPrice}</camunda:outputParameter>
+        </camunda:inputOutput>
+        <camunda:formData>
+          <camunda:formField id="newPrice" label="Set new spot price" type="long" defaultValue="${environment.variables.message.price}" />
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>toApprove</bpmn:incoming>
+      <bpmn:outgoing>toThrow</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:intermediateThrowEvent id="throwNewSpotPrice" name="Change spot price">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="price">${environment.output.spotPrice}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>toThrow</bpmn:incoming>
+      <bpmn:outgoing>toEnd</bpmn:outgoing>
+      <bpmn:signalEventDefinition signalRef="spotPriceChanged" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:startEvent id="startPriceAdmin">
+      <bpmn:outgoing>toApprove</bpmn:outgoing>
+      <bpmn:signalEventDefinition signalRef="spotPriceUpdate" />
+    </bpmn:startEvent>
+  </bpmn:process>
+  <bpmn:signal id="spotPriceUpdate" name="newSpotPrice" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1cap25j">
+      <bpmndi:BPMNShape id="Participant_0ijaois_di" bpmnElement="trader" isHorizontal="true">
+        <dc:Bounds x="156" y="81" width="599" height="223" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0qatxdu_di" bpmnElement="Lane_0qatxdu" isHorizontal="true">
+        <dc:Bounds x="186" y="81" width="569" height="223" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_13vmjp7_di" bpmnElement="backToGetSpotPrice">
+        <di:waypoint x="564" y="226" />
+        <di:waypoint x="564" y="246" />
+        <di:waypoint x="391" y="246" />
+        <di:waypoint x="391" y="208" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1p5eppx_di" bpmnElement="toEndBuy">
+        <di:waypoint x="592" y="168" />
+        <di:waypoint x="649" y="168" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0jhted6_di" bpmnElement="toTradeTask">
+        <di:waypoint x="441" y="168" />
+        <di:waypoint x="492" y="168" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1qxrcms_di" bpmnElement="toGetSpotPrice">
+        <di:waypoint x="260" y="168" />
+        <di:waypoint x="341" y="168" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="UserTask_05k81sa_di" bpmnElement="tradeTask">
+        <dc:Bounds x="492" y="128" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_0dl31fx_di" bpmnElement="startTrade">
+        <dc:Bounds x="224" y="150" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_13834bs_di" bpmnElement="getSpotPrice">
+        <dc:Bounds x="341" y="128" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1eajl1b_di" bpmnElement="endTrade">
+        <dc:Bounds x="649" y="150" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_12bux0e_di" bpmnElement="catchSpotUpdate">
+        <dc:Bounds x="546" y="190" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="583" y="218" width="50" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_1en1l57_di" bpmnElement="priceAdmin" isHorizontal="true">
+        <dc:Bounds x="156" y="330" width="600" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0xuufgx_di" bpmnElement="toThrow">
+        <di:waypoint x="437" y="447" />
+        <di:waypoint x="515" y="447" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0yivfto_di" bpmnElement="toEnd">
+        <di:waypoint x="551" y="447" />
+        <di:waypoint x="641" y="447" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0aa16x8_di" bpmnElement="toApprove">
+        <di:waypoint x="259" y="447" />
+        <di:waypoint x="337" y="447" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_0i1686p_di" bpmnElement="endPriceAdmin">
+        <dc:Bounds x="641" y="429" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_12pw7h1_di" bpmnElement="approveSpotPrice">
+        <dc:Bounds x="337" y="407" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermediateThrowEvent_0546il3_di" bpmnElement="throwNewSpotPrice">
+        <dc:Bounds x="515" y="429" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="490" y="472" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_15nowqo_di" bpmnElement="startPriceAdmin">
+        <dc:Bounds x="223" y="429" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
