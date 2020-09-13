@@ -3,6 +3,7 @@
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
   "version": "10.1.0",
   "main": "index.js",
+  "types": "types/bpmn-engine.d.ts",
   "repository": {
     "type": "git",
     "url": "git://github.com/paed01/bpmn-engine"
