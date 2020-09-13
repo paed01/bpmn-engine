@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "10.1.0",
+  "version": "10.1.1",
   "main": "index.js",
   "types": "types/bpmn-engine.d.ts",
   "repository": {
@@ -54,7 +54,7 @@
     "chai": "^4.1.2",
     "chronokinesis": "^2.0.1",
     "coveralls": "^3.1.0",
-    "eslint": "^7.7.0",
+    "eslint": "^7.9.0",
     "markdown-toc": "^1.2.0",
     "mocha": "^8.1.3",
     "mocha-cakes-2": "^3.3.0",

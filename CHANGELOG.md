@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 10.1.1
+
+- Add type definition to package.json
+
 # 10.1.0
 
 - Bump bpmn-elements to 2.1, adding support for Transaction and CancelEventDefinition see [change log](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
