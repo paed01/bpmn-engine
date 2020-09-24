@@ -1,7 +1,188 @@
 // Author : Saeed Tabrizi
 
+import { EventEmitter } from "events";
+
 declare module "bpmn-engine" {
 
+  /**
+   * Engine emits the following events:
+
+      error: An non-recoverable error has occurred
+      stop: Executions was stopped
+      end: Execution completed
+   */
+  export type BpmnEngineEvent = 'error' | 'stop' | 'end';
+  /**
+   * Each activity and flow emits events when changing state.
+
+      activity.enter: An activity is entered
+      activity.start: An activity is started
+      activity.wait: The activity is postponed for some reason, e.g. a user task is waiting to be signaled or a message is expected
+      wait: Same as above
+      activity.end: An activity has ended successfully
+      activity.leave: The execution left the activity
+      activity.stop: Activity run was stopped
+      activity.throw: An recoverable error was thrown
+      activity.error: An non-recoverable error has occurred
+   */
+  export type BpmnActivityEvent = 'activity.enter' | 'activity.start' | 'activity.wait' | 'wait' | 'activity.end' | 'activity.leave' | 'activity.stop' | 'activity.throw' | 'activity.error';
+  /**
+   * Sequence flow events
+        flow.take: The sequence flow was taken
+        flow.discard: The sequence flow was discarded
+        flow.looped: The sequence is looped
+   */
+  export type BpmnSequenceFlowEvent = 'flow.take' | 'flow.discard' | 'flow.looped';
+  export type BpmnEngineVariable = Record<string,any>;
+  export interface BpmnMessage{
+    id?:string,executionId?: string, [name: string]: any
+  }
+   export interface BpmnEngineBroker{}
+
+   export interface BpmnEngineExecuteOptions {
+    variables?: BpmnEngineVariable;
+    listener?: EventEmitter;
+    services?: { [name: string]: Function };
+
+     /**
+     * optional override expressions handler
+     */
+    expressions?: Expressions;
+   }
+
+   export interface BpmnEngineOptions {
+    
+    /**
+     * optional name of engine,
+     */
+    name?: string;
+    /**
+     * optional BPMN 2.0 definition source as string
+     */
+    source?: string;
+    /**
+     *  optional serialized context supplied by moddle-context-serializer
+     */
+    sourceContext?: any;
+    variables?: BpmnEngineVariable;
+  /**
+   * optional Logger factory, defaults to debug logger
+   */
+    Logger?: BpmnLogger;
+  
+    /**
+     * optional inline script handler, defaults to nodejs vm module handling, i.e. JavaScript
+     */
+    scripts?: any;
+  
+    listener?: EventEmitter;
+    // tslint:disable-next-line:ban-types
+    services?: { [name: string]: Function };
+  
+    elements?: any;
+  
+    typeResolver?: <R>(...elements: any) => R;
+    /**
+     * optional bpmn-moddle options to be passed to bpmn-moddle
+     */
+    moddleOptions?: any;
+  
+    extensions?: any;
+    /**
+     * optional override expressions handler
+     */
+    expressions?: Expressions;
+  }
+  
+  export interface Expressions {
+    resolveExpression<R>(
+      expression: string,
+      message?: any,
+      expressionFnContext?: any,
+    ): R;
+  }
+  export interface BpmnEngine{
+    new(options?: BpmnEngineOptions): BpmnEngine;
+
+    /**
+     * engine name
+     */
+    name: string;
+    /**
+     * engine broker
+     */
+    broker: BpmnEngineBroker;
+    /**
+     * engine state
+     */
+    state: any;
+    /**
+     * boolean stopped
+     */
+    stopped: boolean;
+    /**
+     * current engine execution
+     */
+    execution: BpmnEngineExecution;
+    /**
+     * engine environment
+     */
+    environment: BpmnProcessExecutionEnvironment;
+    /**
+     *  engine logger
+     */
+    logger: BpmnLogger;
+   /**
+    * execute definition 
+    * @param options Optional object with options to override the initial engine options
+    * @summary Execute options overrides the initial options passed to the engine before executing the definition.
+    */
+    execute(options?:BpmnEngineExecuteOptions): Promise<BpmnEngineExecutionApi>;
+    /**
+     * get definition by id
+     * @param id id of definition
+     */
+    getDefinitionById(id: string): Promise<any>;
+    
+    /**
+     * get all definitions
+     */
+    getDefinitions(): Promise<any[]>;
+    /**
+     * get execution serialized state
+     */
+    getState(): Promise<BpmnProcessExecutionState>;
+
+    /**
+     * Recover engine from state
+     * @param state engine state
+     * @param recoverOptions  optional object with options that will completely override the options passed to the engine at init
+     */
+    recover(state: any,recoverOptions?:BpmnEngineOptions): BpmnEngine;
+
+    /**
+     * Resume execution function with previously saved engine state.
+     * @param options 
+     * @param callback 
+     */
+    resume(options?: BpmnEngineExecuteOptions, callback?:()=> void): void;
+
+    /**
+     * Stop execution. The instance is terminated.
+     */
+    stop(): void;
+
+    waitFor<R>(eventName: string): Promise<R>;
+
+    /**
+    * Add definition source by source context.
+    * @param options 
+    */
+    addSource(options?: {sourceContext: any}): void;
+
+  }
+
+  export function Engine(options?:BpmnEngineOptions): BpmnEngine;
 
 export interface BpmnLogger {
   debug(...args: any[]): void;
@@ -9,13 +190,13 @@ export interface BpmnLogger {
   warn(...args: any[]): void;
 }
 
-export interface BpmnExecution {
+export interface BpmnEngineExecution {
   definitions: BpmnProcessExecutionDefinition[];
   state: "idle" | "running";
   environment: BpmnProcessExecutionEnvironment;
 
   stopped: boolean;
-  execute(executeOptions?: any): BpmnProcessExecutionApi;
+  execute(executeOptions?: any): BpmnEngineExecutionApi;
   getState<R>(): R;
 
   resume(resumeOptions?: any): void;
@@ -25,40 +206,10 @@ export interface BpmnExecution {
 }
 
 // tslint:disable: max-line-length
-export interface BpmnProcessOptions {
-  name?: string;
-  id?: string;
-  source?: string;
-  sourceContext?: any;
-  variables?: any;
 
-  Logger?: BpmnLogger;
-
-  scripts?: any;
-
-  listener?: EventEmitter;
-  // tslint:disable-next-line:ban-types
-  services?: { [name: string]: Function };
-
-  elements?: any;
-
-  typeResolver?: <R>(...elements: any) => R;
-  moddleOptions?: any;
-
-  extensions?: any;
-  expressions?: Expressions;
-}
-
-export interface Expressions {
-  resolveExpression<R>(
-    expression: string,
-    message?: any,
-    expressionFnContext?: any,
-  ): R;
-}
 
 export interface BpmnProcess {
-  new (processDefinition: any, context: BpmnProcessExecutionContext);
+  new (processDefinition: any, context: BpmnProcessExecutionContext): BpmnProcess;
   id: string;
   type: string;
   name: string;
@@ -78,7 +229,7 @@ export interface BpmnProcess {
 
   stopped: boolean;
 
-  getApi(message: any): BpmnProcessExecutionApi;
+  getApi(message: any): BpmnEngineExecutionApi;
   getActivities(): BpmnProcessActivity[];
   getActivityById(id: string): BpmnProcessActivity;
 
@@ -106,7 +257,7 @@ export interface BpmnProcessExecutionContext {
     environment?: BpmnProcessExecutionEnvironment,
   ): BpmnProcessExecutionContext;
   getActivities(scopeId?: string): BpmnProcessActivity[];
-  getActivityById(id): BpmnProcessActivity;
+  getActivityById(id: string): BpmnProcessActivity;
   getExecutableProcesses(): any[];
   getDataObjectById(id: string): any;
 
@@ -161,7 +312,7 @@ export interface BpmnProcessActivity extends EventEmitter {
 
   discard(): void;
 
-  getApi(message: any): BpmnProcessExecutionApi;
+  getApi(message: any): BpmnEngineExecutionApi;
 
   getActivityById(id: string): BpmnProcessActivity;
 
@@ -188,7 +339,7 @@ export interface BpmnProcessExecutionEnvironment {
 
   scripts: any;
   output: any;
-  variables: any;
+  variables: BpmnEngineVariable;
 
   settings: any;
 
@@ -275,7 +426,7 @@ export interface BpmnProcessExecutionDefinitionState {
   state: "pending" | "running" | "completed";
   processes: {
     [processId: string]: {
-      variables: any;
+      variables: BpmnEngineVariable;
       services: any;
       children: BpmnProcessExecutionState[];
     };
@@ -291,33 +442,35 @@ export interface BpmnProcessExecutionState {
 
   entered: boolean;
 }
-export interface BpmnProcessExecutionApi {
-  /**
+
+
+export interface BpmnEngineEventApi {
+   /**
    * engine name
    *
    * @type {string}
-   * @memberof BpmnProcessExecutionApi
+   * 
    */
   name: string;
   /**
    * state of execution, i.e running or idle
    *
    * @type {("running"| "idle")}
-   * @memberof BpmnProcessExecutionApi
+   * 
    */
   state: "running" | "idle";
   /**
    * is the execution stopped
    *
    * @type {boolean}
-   * @memberof BpmnProcessExecutionApi
+   * 
    */
   stopped: boolean;
   /**
    * engine environment
    *
    * @type {BpmnProcessExecutionEnvironment}
-   * @memberof BpmnProcessExecutionApi
+   * 
    */
   environment: BpmnProcessExecutionEnvironment;
 
@@ -325,30 +478,102 @@ export interface BpmnProcessExecutionApi {
    * executing definitions
    *
    * @type {BpmnProcessExecutionDefinition}
-   * @memberof BpmnProcessExecutionApi
+   *
    */
   definitions: BpmnProcessExecutionDefinition;
   /**
    * get execution serializable state
    *
    * @returns {BpmnProcessExecutionState}
-   * @memberof BpmnProcessExecutionApi
+   * 
+   */
+  getState(): BpmnProcessExecutionState;
+
+  /**
+   * get activities in a postponed state
+   *
+   * 
+   */
+  getPostponed(): any[];
+}
+
+export interface BpmnEngineExecutionApi {
+  /**
+   * engine name
+   *
+   * @type {string}
+   * @
+   */
+  name: string;
+  /**
+   * state of execution, i.e running or idle
+   *
+   * @type {("running"| "idle")}
+   * 
+   */
+  state: "running" | "idle";
+  /**
+   * is the execution stopped
+   *
+   * @type {boolean}
+   *
+   */
+  stopped: boolean;
+  /**
+   * engine environment
+   *
+   * @type {BpmnProcessExecutionEnvironment}
+   * 
+   */
+  environment: BpmnProcessExecutionEnvironment;
+
+  /**
+   * executing definitions
+   *
+   * @type {BpmnProcessExecutionDefinition}
+   * 
+   */
+  definitions: BpmnProcessExecutionDefinition;
+  /**
+   * get execution serializable state
+   *
+   * @returns {BpmnProcessExecutionState}
+   * 
    */
   getState(): BpmnProcessExecutionState;
 
   /**
    * stop execution
    *
-   * @memberof BpmnProcessExecutionApi
+   * 
    */
   stop(): void;
 
   /**
    * get activities in a postponed state
    *
-   * @memberof BpmnProcessExecutionApi
+   * 
    */
   getPostponed(): any[];
+ /**
+  * send signal to execution, distributed to all definitions
+  * Delegate a signal message to all interested parties, usually MessageEventDefinition, SignalEventDefinition, SignalTask (user, manual), ReceiveTask, or a StartEvent that has a form.
+  * @param message {BpmnMessage}
+  */
+  signal(message?: BpmnMessage,options?: {ignoreSameDefinition?: boolean}): void;
+/**
+ * send cancel activity to execution, distributed to all definitions
+ * Delegate a cancel message to all interested parties, perhaps a stalled TimerEventDefinition.
+ * @param message 
+ */
+  cancelActivity(message?: BpmnMessage): void;
+
+  /**
+   * 
+   * @param event 
+   */
+  waitFor<T>(event: BpmnEngineEvent): Promise<T>;
+
 }
 
 }
