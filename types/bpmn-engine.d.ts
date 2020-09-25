@@ -34,20 +34,158 @@ declare module "bpmn-engine" {
    */
   export type BpmnSequenceFlowEvent = 'flow.take' | 'flow.discard' | 'flow.looped';
   export type BpmnEngineVariable = Record<string,any>;
+
+  export interface BpmnLogger {
+    debug(...args: any[]): void;
+    error(...args: any[]): void;
+    warn(...args: any[]): void;
+  }
   export interface BpmnMessage{
     id?:string,executionId?: string, [name: string]: any
   }
-   export interface BpmnEngineBroker{}
+
+  export interface BpmnEngineBrokerExchange {
+    name: string;
+    type: 'topic' | 'direct';
+    options: any;
+    bindingCount:number;
+    bindings: any[];
+    stopped: boolean;
+    bind(queue:string, pattern: string, bindOptions?: any):void;
+    close():void;
+    emit(eventName: string, content?:any): void;
+    getBinding(queueName:string, pattern:string):any;
+    getState<S>():S;
+    on(pattern:string, handler:()=>void, consumeOptions?: any):void;
+    off(pattern:string, handler:()=>void):void;
+    publish(routingKey:string, content?: any, properties?:any):void;
+    recover<S>(state:S, getQueue?:boolean):void;
+    stop():void;
+    unbind(queue:string, pattern:string):void;
+    unbindQueueByName(queueName:string): void;
+  }
+
+  export interface BpmnEngineBrokerQueue {
+    name: string;
+    options: any;
+    messages: any[];
+    messageCount:number;
+    consumerCount:number;
+    stopped: boolean;
+    exclusive: boolean;
+    maxLength: number;
+    readonly capacity: number;
+    messageTtl: number;
+    ack(message: any):void;
+    ackAll():void;
+    assertConsumer(onMessage:()=>void, consumeOptions?: any, owner?: any):void;
+    cancel(consumerTag:string):void;
+    close():void;
+    consume(onMessage:()=>void, consumeOptions?: any, owner?:any):void;
+    delete(deleteOptions?: any):void;
+    dequeueMessage(message: any): void;
+    dismiss(onMessage:()=>void): void;
+    get<T>(consumeOptions?: any): T;
+    getState<S>():S ;
+    nack(message:any, allUpTo?:boolean, requeue?: boolean ):void;
+    nackAll(requeue: boolean):void;
+    off(eventName:string, handler:()=>void): void;
+
+    on(eventName:string, handler:()=>void):void;
+
+    peek(ignoreDelivered?: boolean): void;
+    purge():void;
+
+    queueMessage(fields: any[], content?:any, properties?:any, onMessageQueued?:()=>void):void;
+    recover<S>(state:S):void;
+    reject(message:any, requeue?:boolean):void;
+    stop():void;
+    unbindConsumer(): void;
+  }
+
+  export interface BpmnEngineBrokerConsumer{
+    consumerTag: string;
+    noAck: any;
+    onMessage: ()=>void;
+    options: any;
+    priority: number;
+    queueName:string;
+    ackAll():void;
+    nackAll(requeue: boolean):void;
+    cancel():void;
+  }
+
+  export interface BpmnEngineBrokerMessage{
+    fields: {routingKey:string,redelivered:boolean,exchange: any,consumerTag:string}[];
+    content: any;
+    properties: {messageId: string,persistent: boolean,timestamp: Date,expiration:number};
+    ack(allUpTo?:boolean):void;
+    nack(allUpTo?: boolean, requeue?:boolean):void;
+    reject(requeue?: boolean ): void;
+    getRoutingKeyPattern(pattern: string): (test:string)=>boolean; 
+  }
+   export interface BpmnEngineBroker<W>{
+     new(owner:W):BpmnEngineBroker<W>;
+    readonly owner: W;
+    assertExchange(exchangeName:string, type: string, options?:any):void;
+    deleteExchange(exchangeName:string, ifUnused?:boolean):void;
+    bindExchange(source:string, destination:string, pattern: string, ...args: any[]):void;
+
+    unbindExchange(source:string, destination:string, pattern?: string):void;
+    assertQueue(queueName:string, options?: any):void;
+    bindQueue(queueName:string, exchangeName:string, pattern:string, options?: any):void;
+    unbindQueue(queueName:string, exchangeName:string, pattern:string):void;
+
+    consume(queueName:string, onMessage:()=>void, options?:any):void;
+    cancel(consumerTag:string):void;
+    createQueue<Q>():Q;
+    deleteQueue(queueName:string ,options?:{ifUnused:boolean, ifEmpty?:boolean}):void;
+
+    
+    getExchange<T>(exchangeName:string):T;
+    getQueue<Q>(queueName:string):Q;
+    getConsumers<C>():C[];
+    getConsumer<C>(consumerTag:string):C;
+    getState<S>():S;
+    recover<S>(state?:S):void;
+    purgeQueue(queueName:string):void;
+    sendToQueue(queueName:string, content: any, options?:any):void;
+    stop():void;
+    get(queueName:string, options?: any):void;
+
+    ack(message:any ,allUpTo?: boolean,):void;
+    ackAll():void;
+    nack(message:any ,allUpTo?: boolean, requeue?: boolean):void;
+    nackAll(requeue?:boolean):void;
+    reject(message:any, requeue?:boolean):void;
+
+    createShovel<S>(name:string, source:string, destination:string ,options?: any):S;
+    getShovel<S>(name:string):S;
+    closeShovel(name:string):void;
+    prefetch(count:number):void;
+
+    reset():void;
+    on(eventName:string, handler:()=>void):void;
+    off(eventName:string, handler:()=>void):void;
+    unsubscribe(queueName:string, onMessage:()=>void):void
+    cancel(eventName: string):void;
+    subscribe(exchangeName:string, pattern: string, queueName:string, onMessage:()=>void, options?: any):void;
+    subscribeTmp(exchangeName:string, pattern: string, queueName:string, onMessage:()=>void, options?: any):void;
+    subscribeOnce(exchangeName:string, pattern: string, queueName:string, onMessage:()=>void, options?: any):void;
+    publish(exchangeName:string, routingKey:string, content?:any, options?: any):void;
+    close(): void;
+
+   }
 
    export interface BpmnEngineExecuteOptions {
     variables?: BpmnEngineVariable;
     listener?: EventEmitter;
-    services?: { [name: string]: Function };
+    services?: BpmnEngineService;
 
      /**
      * optional override expressions handler
      */
-    expressions?: Expressions;
+    expressions?: BpmnEngineExpressions;
    }
 
    export interface BpmnEngineOptions {
@@ -77,7 +215,7 @@ declare module "bpmn-engine" {
   
     listener?: EventEmitter;
     // tslint:disable-next-line:ban-types
-    services?: { [name: string]: Function };
+    services?: BpmnEngineService;
   
     elements?: any;
   
@@ -87,51 +225,55 @@ declare module "bpmn-engine" {
      */
     moddleOptions?: any;
   
-    extensions?: any;
+    extensions?: BpmnEngineExtension;
     /**
      * optional override expressions handler
      */
-    expressions?: Expressions;
+    expressions?: BpmnEngineExpressions;
+  }
+
+  export interface BpmnEngineExtension{
+    [name: string]: (activiy?:BpmnEngineActivity,environment?:BpmnEngineExecutionEnvironment)=>void;
   }
   
-  export interface Expressions {
+  export interface BpmnEngineExpressions {
     resolveExpression<R>(
       expression: string,
       message?: any,
       expressionFnContext?: any,
     ): R;
   }
-  export interface BpmnEngine{
+  export interface BpmnEngine {
     new(options?: BpmnEngineOptions): BpmnEngine;
 
     /**
      * engine name
      */
-    name: string;
+    readonly name: string;
     /**
      * engine broker
      */
-    broker: BpmnEngineBroker;
+    broker: BpmnEngineBroker<BpmnEngine>;
     /**
      * engine state
      */
-    state: any;
+    readonly state: any;
     /**
      * boolean stopped
      */
-    stopped: boolean;
+    readonly stopped: boolean;
     /**
      * current engine execution
      */
-    execution: BpmnEngineExecution;
+    readonly  execution: BpmnEngineExecutionApi;
     /**
      * engine environment
      */
-    environment: BpmnProcessExecutionEnvironment;
+    readonly environment: BpmnEngineExecutionEnvironment;
     /**
      *  engine logger
      */
-    logger: BpmnLogger;
+    readonly logger: BpmnLogger;
    /**
     * execute definition 
     * @param options Optional object with options to override the initial engine options
@@ -151,7 +293,7 @@ declare module "bpmn-engine" {
     /**
      * get execution serialized state
      */
-    getState(): Promise<BpmnProcessExecutionState>;
+    getState(): Promise<BpmnEngineExecutionState>;
 
     /**
      * Recover engine from state
@@ -182,18 +324,12 @@ declare module "bpmn-engine" {
 
   }
 
-  export function Engine(options?:BpmnEngineOptions): BpmnEngine;
-
-export interface BpmnLogger {
-  debug(...args: any[]): void;
-  error(...args: any[]): void;
-  warn(...args: any[]): void;
-}
+export function Engine(options?:BpmnEngineOptions): BpmnEngine;
 
 export interface BpmnEngineExecution {
-  definitions: BpmnProcessExecutionDefinition[];
+  definitions: BpmnEngineExecutionDefinition[];
   state: "idle" | "running";
-  environment: BpmnProcessExecutionEnvironment;
+  environment: BpmnEngineExecutionEnvironment;
 
   stopped: boolean;
   execute(executeOptions?: any): BpmnEngineExecutionApi;
@@ -205,59 +341,19 @@ export interface BpmnEngineExecution {
 
 }
 
-// tslint:disable: max-line-length
-
-
-export interface BpmnProcess {
-  new (processDefinition: any, context: BpmnProcessExecutionContext): BpmnProcess;
-  id: string;
-  type: string;
-  name: string;
-  isExecutable: boolean;
-  broker: any;
-
-  context: BpmnProcessExecutionContext;
-  counters: any;
-  environment: BpmnProcessExecutionEnvironment;
-  execution: any;
-  executionId: string;
-  isRunning: boolean;
-
-  logger: BpmnLogger;
-  parent: BpmnProcess;
-  status: any;
-
-  stopped: boolean;
-
-  getApi(message: any): BpmnEngineExecutionApi;
-  getActivities(): BpmnProcessActivity[];
-  getActivityById(id: string): BpmnProcessActivity;
-
-  getSequenceFlows(): any[];
-  getPostponed(): BpmnProcessActivity[];
-
-  getState(): any;
-
-  recover(state: any): void;
-  resume(): void;
-  run(): void;
-  stop(): void;
-  waitFor<R>(eventName: string): Promise<R>;
-}
-
-export interface BpmnProcessExecutionContext {
+export interface BpmnEngineExecutionContext {
   id: string;
   name: string;
   type: string;
   sid: any;
   definitionContext: any;
-  environment: BpmnProcessExecutionEnvironment;
+  environment: BpmnEngineExecutionEnvironment;
 
   clone(
-    environment?: BpmnProcessExecutionEnvironment,
-  ): BpmnProcessExecutionContext;
-  getActivities(scopeId?: string): BpmnProcessActivity[];
-  getActivityById(id: string): BpmnProcessActivity;
+    environment?: BpmnEngineExecutionEnvironment,
+  ): BpmnEngineExecutionContext;
+  getActivities(scopeId?: string): BpmnEngineActivity[];
+  getActivityById(id: string): BpmnEngineActivity;
   getExecutableProcesses(): any[];
   getDataObjectById(id: string): any;
 
@@ -274,37 +370,73 @@ export interface BpmnProcessExecutionContext {
   getInboundSequenceFlows(activityId: string): any[];
   getOutboundSequenceFlows(activityId: string): any[];
 
-  loadExtensions(activity: BpmnProcessActivity): void;
+  loadExtensions(activity: BpmnEngineActivity): void;
+}
+export interface BpmnProcess {
+  new (processDefinition: any, context: BpmnEngineExecutionContext): BpmnProcess;
+  readonly id: string;
+  readonly type: string;
+  readonly name: string;
+  readonly isExecutable: boolean;
+  readonly broker: BpmnEngineBroker<BpmnEngine>;
+
+  readonly context: BpmnEngineExecutionContext;
+  readonly counters: Record<string,number>;
+  readonly environment: BpmnEngineExecutionEnvironment;
+  readonly execution: BpmnEngineExecutionApi;
+  readonly executionId: string;
+  readonly isRunning: boolean;
+
+  readonly logger: BpmnLogger;
+  readonly parent: BpmnProcess;
+  readonly status: any;
+
+  readonly stopped: boolean;
+
+  getApi(message: any): BpmnEngineExecutionApi;
+  getActivities(): BpmnEngineActivity[];
+  getActivityById(id: string): BpmnEngineActivity;
+
+  getSequenceFlows(): any[];
+  getPostponed(): BpmnEngineActivity[];
+
+  getState<S>(): S;
+
+  recover<S>(state: S): void;
+  resume(): void;
+  run(): void;
+  stop(): void;
+  waitFor<R>(eventName: string): Promise<R>;
 }
 
-export interface BpmnProcessActivity extends EventEmitter {
-  id: string;
-  type: string;
-  name: string;
+export interface BpmnEngineActivity extends EventEmitter {
+  readonly id: string;
+  readonly type: string;
+  readonly  name: string;
 
-  attachedTo: any;
+  readonly attachedTo: any;
 
-  Behaviour: any;
+  readonly  Behaviour: any;
 
-  behaviour: any;
+  readonly  behaviour: any;
 
-  broker: any;
+  readonly broker: BpmnEngineBroker<BpmnEngine>;
 
-  counters: any;
-  environment: BpmnProcessExecutionEnvironment;
-  execution: any;
-  executionId: string;
-  extensions: any[];
-  logger: BpmnLogger;
-  inbound: any[];
-  isRunning: boolean;
-  isStart: boolean;
-  isSubProcess: boolean;
+  readonly counters: Record<string,number>;
+  readonly environment: BpmnEngineExecutionEnvironment;
+  readonly execution: BpmnEngineExecutionApi;
+  readonly executionId: string;
+  readonly  extensions: BpmnEngineExtension;
+  readonly logger: BpmnLogger;
+  readonly inbound: any[];
+  readonly isRunning: boolean;
+  readonly isStart: boolean;
+  readonly isSubProcess: boolean;
 
-  outbound: any[];
-  parent?: BpmnProcessActivity;
-  status: any;
-  stopped: boolean;
+  readonly  outbound: any[];
+  readonly  parent?: BpmnEngineActivity | BpmnProcess;
+  readonly  status: any;
+  readonly stopped: boolean;
 
   activate(): void;
 
@@ -312,17 +444,17 @@ export interface BpmnProcessActivity extends EventEmitter {
 
   discard(): void;
 
-  getApi(message: any): BpmnEngineExecutionApi;
+  getApi(message?: any): BpmnEngineExecutionApi;
 
-  getActivityById(id: string): BpmnProcessActivity;
+  getActivityById(id: string): BpmnEngineActivity;
 
-  getState(): any;
+  getState<S>(): S;
 
   message(messageContent: any): void;
-  signal: (message?: any, options?: any) => void;
+  signal: (message?: BpmnMessage, options?: any) => void;
   next(): void;
 
-  recover(state: any): void;
+  recover<S>(state: S): void;
 
   resume(): void;
 
@@ -333,26 +465,29 @@ export interface BpmnProcessActivity extends EventEmitter {
   waitFor<R>(eventName: string): Promise<R>;
 }
 
-export interface BpmnProcessExecutionEnvironment {
-  options: any;
-  extensions: any;
+export interface BpmnEngineService {
+  [name: string]: Function
+}
+export interface BpmnEngineExecutionEnvironment {
+  readonly options: any;
+  readonly extensions: BpmnEngineExtension;
 
-  scripts: any;
-  output: any;
-  variables: BpmnEngineVariable;
+  readonly scripts: any;
+  readonly output: any;
+  readonly variables: BpmnEngineVariable;
 
-  settings: any;
+  readonly settings: any;
 
-  Logger: BpmnLogger;
-  services: any;
+  readonly Logger: BpmnLogger;
+  readonly services: BpmnEngineService;
   // tslint:disable: ban-types
   addService(name: string, serviceFn: Function): void;
   assignVariables(...vars: any): void;
-  clone(overrideOptions?: any): BpmnProcessExecutionEnvironment;
+  clone(overrideOptions?: any): BpmnEngineExecutionEnvironment;
   getScript(scriptType: string, activity: any): any;
   getServiceByName(name: string): any;
 
-  getState(): BpmnProcessExecutionState;
+  getState(): BpmnEngineExecutionState;
 
   registerScript(activity: any): void;
 
@@ -365,23 +500,23 @@ export interface BpmnProcessExecutionEnvironment {
   recover(state: any): void;
 }
 export interface BpmnExecutionEventMessageContent {
-  id: string;
-  type: string;
-  executionId: string;
-  parent?: BpmnExecutionEventMessageContent;
-  path?: BpmnExecutionEventMessageContent[];
+   id: string;
+   type: string;
+   executionId: string;
+   parent?: BpmnExecutionEventMessageContent;
+   path?: BpmnExecutionEventMessageContent[];
 }
 export interface BpmnExecutionEventMessageApi {
-  id: string;
-  type: string;
-  name: string;
-  executionId: string;
-  environment: BpmnProcessExecutionEnvironment;
-  fields: any;
+  readonly  id: string;
+  readonly type: string;
+  readonly  name: string;
+  readonly executionId: string;
+  readonly  environment: BpmnEngineExecutionEnvironment;
+  readonly fields: any;
 
-  content: BpmnExecutionEventMessageContent;
-  messageProperties: any;
-  owner: any;
+  readonly content: BpmnExecutionEventMessageContent;
+  readonly  messageProperties: any;
+  readonly owner: BpmnEngine;
 
   cancel(): void;
   discard(): void;
@@ -391,7 +526,7 @@ export interface BpmnExecutionEventMessageApi {
   resolveExpression<R>(expression: any): R;
   createMessage(overrideContent?: any): BpmnExecutionEventMessageApi;
 }
-export interface BpmnProcessExecutionDefinition extends EventEmitter {
+export interface BpmnEngineExecutionDefinition extends EventEmitter {
   state: "pending" | "running" | "completed";
   run: (callback?: any) => void;
   resume: (callback?: any) => void;
@@ -401,48 +536,47 @@ export interface BpmnProcessExecutionDefinition extends EventEmitter {
   sendMessage: (message: any) => void;
 
   executionId: string;
-  execution: any;
+  execution: BpmnEngineExecutionApi;
   getProcesses: () => any[];
 
   getExecutableProcesses: () => any[];
   getApi: <T>(message: any) => T;
   getElementById: (elementId: string) => any;
   getActivityById: (childId: string) => any;
-  environment: BpmnProcessExecutionEnvironment;
+  environment: BpmnEngineExecutionEnvironment;
   status: string;
   stopped: boolean;
   type: string;
-  signal: (message: any, options?: any) => void;
+  signal: (message: BpmnMessage, options?: any) => void;
   cancelActivity: (message?: any) => void;
   shake: (activityId?: string) => any;
-  broker: any;
+  broker: BpmnEngineBroker<BpmnEngine>;
   id: string;
   isRunning: boolean;
   name: string;
   logger: BpmnLogger;
   waitFor(name: string, fn: Function): void;
 }
-export interface BpmnProcessExecutionDefinitionState {
-  state: "pending" | "running" | "completed";
-  processes: {
+export interface BpmnEngineExecutionDefinitionState {
+  readonly state: "pending" | "running" | "completed";
+  readonly  processes: {
     [processId: string]: {
       variables: BpmnEngineVariable;
-      services: any;
-      children: BpmnProcessExecutionState[];
+      services: BpmnEngineService;
+      children: BpmnEngineExecutionState[];
     };
   };
 }
-export interface BpmnProcessExecutionState {
-  name: string;
-  state: "idle" | "running";
-  stopped: boolean;
-  engineVersion: string;
-  environment: BpmnProcessExecutionEnvironment;
-  definitions: BpmnProcessExecutionDefinitionState[];
+export interface BpmnEngineExecutionState {
+  readonly name: string;
+  readonly state: "idle" | "running";
+  readonly stopped: boolean;
+  readonly engineVersion: string;
+  readonly environment: BpmnEngineExecutionEnvironment;
+  readonly  definitions: BpmnEngineExecutionDefinitionState[];
 
-  entered: boolean;
+  readonly entered: boolean;
 }
-
 
 export interface BpmnEngineEventApi {
    /**
@@ -469,25 +603,25 @@ export interface BpmnEngineEventApi {
   /**
    * engine environment
    *
-   * @type {BpmnProcessExecutionEnvironment}
+   * @type {BpmnEngineExecutionEnvironment}
    * 
    */
-  environment: BpmnProcessExecutionEnvironment;
+  environment: BpmnEngineExecutionEnvironment;
 
   /**
    * executing definitions
    *
-   * @type {BpmnProcessExecutionDefinition}
+   * @type {BpmnEngineExecutionDefinition}
    *
    */
-  definitions: BpmnProcessExecutionDefinition;
+  definitions: BpmnEngineExecutionDefinition;
   /**
    * get execution serializable state
    *
-   * @returns {BpmnProcessExecutionState}
+   * @returns {BpmnEngineExecutionState}
    * 
    */
-  getState(): BpmnProcessExecutionState;
+  getState(): BpmnEngineExecutionState;
 
   /**
    * get activities in a postponed state
@@ -504,43 +638,49 @@ export interface BpmnEngineExecutionApi {
    * @type {string}
    * @
    */
-  name: string;
+  readonly name: string;
   /**
    * state of execution, i.e running or idle
    *
    * @type {("running"| "idle")}
    * 
    */
-  state: "running" | "idle";
+  readonly state: "running" | "idle";
   /**
    * is the execution stopped
    *
    * @type {boolean}
    *
    */
-  stopped: boolean;
+  readonly stopped: boolean;
   /**
    * engine environment
    *
-   * @type {BpmnProcessExecutionEnvironment}
+   * @type {BpmnEngineExecutionEnvironment}
    * 
    */
-  environment: BpmnProcessExecutionEnvironment;
+  readonly environment: BpmnEngineExecutionEnvironment;
 
   /**
    * executing definitions
    *
-   * @type {BpmnProcessExecutionDefinition}
+   * @type {BpmnEngineExecutionDefinition}
    * 
    */
-  definitions: BpmnProcessExecutionDefinition;
+  readonly definitions: BpmnEngineExecutionDefinition;
+
+  /**
+   * Get activity/element by id. Loops the definitions and returns the first found activity with id.
+   * @param activityId Activity or element id
+   */
+  getActivityById(activityId: string):BpmnEngineActivity;
   /**
    * get execution serializable state
    *
-   * @returns {BpmnProcessExecutionState}
+   * @returns {BpmnEngineExecutionState}
    * 
    */
-  getState(): BpmnProcessExecutionState;
+  getState(): BpmnEngineExecutionState;
 
   /**
    * stop execution
@@ -554,7 +694,7 @@ export interface BpmnEngineExecutionApi {
    *
    * 
    */
-  getPostponed(): any[];
+  getPostponed(): BpmnEngineActivity[];
  /**
   * send signal to execution, distributed to all definitions
   * Delegate a signal message to all interested parties, usually MessageEventDefinition, SignalEventDefinition, SignalTask (user, manual), ReceiveTask, or a StartEvent that has a form.
