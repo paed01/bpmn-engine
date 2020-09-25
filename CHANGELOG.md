@@ -1,6 +1,12 @@
 Changelog
 =========
 
+# 10.1.2-3
+
+Type definitions courtesy of @saeedtabrizi.
+
+- Some type fix and add engine broker types
+
 # 10.1.1
 
 - Add type definition to package.json
