@@ -527,7 +527,7 @@ Get activity/element by id. Loops the definitions and returns the first found ac
 
 - `activityId`: Activity or element id
 
-Returns [activity](/paed01/bpmn-elements/blob/master/docs/Activity.md).
+Returns [activity](https://github.com/paed01/bpmn-elements/blob/master/docs/Activity.md).
 
 ## `getState()`
 
@@ -605,7 +605,7 @@ Events are emitted with api with execution properties
 
 # Expressions
 
-If not overridden [bpmn-elements](/paed01/bpmn-elements/blob/master/docs/Expression.md) expressions handler is used.
+If not overridden [bpmn-elements](https://github.com/paed01/bpmn-elements/blob/master/docs/Expression.md) expressions handler is used.
 
 [1]: https://www.npmjs.com/package/camunda-bpmn-moddle
 [2]: https://www.npmjs.com/package/bpmn-moddle
