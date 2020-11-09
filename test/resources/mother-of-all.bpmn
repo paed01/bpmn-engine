@@ -80,7 +80,7 @@ next();</bpmn:script>
     <bpmn:sequenceFlow id="toDecision" sourceRef="join" targetRef="decision" />
     <bpmn:sequenceFlow id="toFinal" sourceRef="decision" targetRef="theEnd" />
     <bpmn:sequenceFlow id="toLoop" name="Enter loop" sourceRef="decision" targetRef="scriptTask2">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">!environment.variables.stopLoop</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="JavaScript">next(null, !environment.variables.stopLoop);</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="toPickMe1" sourceRef="manyDecisions" targetRef="noPickMeTask" />
     <bpmn:sequenceFlow id="toPickMe3" sourceRef="manyDecisions" targetRef="pickMeTask" />

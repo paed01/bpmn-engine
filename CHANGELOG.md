@@ -1,6 +1,17 @@
 Changelog
 =========
 
+# 11.0.0
+
+All conditional flows from `bpmn-elements@3`.
+
+## Breaking
+- Outbound sequence flow with script condition requires `next(err, result)` to be called where result decides if it should be taken or discarded
+
+## Addititions
+- Outbound sequence flow conditions are evaluated for all activities, as well as default flow
+- Process now also have `cancelActivity` function for facilitation
+
 # 10.1.2-3
 
 Type definitions courtesy of @saeedtabrizi.

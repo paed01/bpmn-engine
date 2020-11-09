@@ -40,16 +40,16 @@ Feature('Issues', () => {
           <bpmn:sequenceFlow id="Flow3" name="Flow3" sourceRef="Task2" targetRef="Gateway1" />
           <bpmn:sequenceFlow id="Flow4" name="Flow4" sourceRef="UserTask" targetRef="Gateway2" />
           <bpmn:sequenceFlow id="FlowFirst" name="FlowFirst" sourceRef="Gateway1" targetRef="UserTask">
-            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">this.environment.variables.passTask2&gt;=0</bpmn:conditionExpression>
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">next(null, this.environment.variables.passTask2&gt;=0);</bpmn:conditionExpression>
           </bpmn:sequenceFlow>
           <bpmn:sequenceFlow id="FlowLater" name="FlowLater" sourceRef="Gateway1" targetRef="End">
-            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">this.environment.variables.passTask2&lt;0</bpmn:conditionExpression>
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">next(null, this.environment.variables.passTask2&lt;0);</bpmn:conditionExpression>
           </bpmn:sequenceFlow>
           <bpmn:sequenceFlow id="FlowFalse2" name="FlowFalse2" sourceRef="Gateway2" targetRef="End">
-            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">false</bpmn:conditionExpression>
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">next(null, false);</bpmn:conditionExpression>
           </bpmn:sequenceFlow>
           <bpmn:sequenceFlow id="FlowTrue1" name="FlowTrue1" sourceRef="Gateway2" targetRef="Task2">
-            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">true</bpmn:conditionExpression>
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">next(null, true);</bpmn:conditionExpression>
           </bpmn:sequenceFlow>
         </bpmn:process>
       </bpmn:definitions>`;
@@ -93,19 +93,19 @@ Feature('Issues', () => {
           <bpmn:sequenceFlow id="Flow3" name="Flow3" sourceRef="Task2" targetRef="Gateway1" />
           <bpmn:sequenceFlow id="Flow4" name="Flow4" sourceRef="UserTask" targetRef="Gateway2" />
           <bpmn:sequenceFlow id="FlowFirst" name="FlowFirst" sourceRef="Gateway1" targetRef="UserTask">
-            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">this.environment.variables.passTask2&gt;=0</bpmn:conditionExpression>
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">next(null, this.environment.variables.passTask2&gt;=0);</bpmn:conditionExpression>
           </bpmn:sequenceFlow>
           <bpmn:sequenceFlow id="FlowLater" name="FlowLater" sourceRef="Gateway1" targetRef="End">
-            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">this.environment.variables.passTask2&lt;0</bpmn:conditionExpression>
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">next(null, this.environment.variables.passTask2&lt;0);</bpmn:conditionExpression>
           </bpmn:sequenceFlow>
           <bpmn:sequenceFlow id="FlowFalse1" name="FlowFalse1" sourceRef="Gateway2" targetRef="Task1">
-            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">false</bpmn:conditionExpression>
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">next(null, false);</bpmn:conditionExpression>
           </bpmn:sequenceFlow>
           <bpmn:sequenceFlow id="FlowFalse2" name="FlowFalse2" sourceRef="Gateway2" targetRef="End">
-            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">false</bpmn:conditionExpression>
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">next(null, false);</bpmn:conditionExpression>
           </bpmn:sequenceFlow>
           <bpmn:sequenceFlow id="FlowTrue1" name="FlowTrue1" sourceRef="Gateway2" targetRef="Task2">
-            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">true</bpmn:conditionExpression>
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">next(null, true);</bpmn:conditionExpression>
           </bpmn:sequenceFlow>
         </bpmn:process>
       </bpmn:definitions>`;
@@ -596,7 +596,7 @@ Feature('Issues', () => {
         <sequenceFlow id="to-decision" sourceRef="task2" targetRef="decision" />
         <exclusiveGateway id="decision" default="to-task4" />
         <sequenceFlow id="to-task3" sourceRef="decision" targetRef="task3">
-          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">this.environment.variables.takeTask3&gt;=0</bpmn:conditionExpression>
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="javascript">next(null, this.environment.variables.takeTask3&gt;=0);</bpmn:conditionExpression>
         </sequenceFlow>
         <sequenceFlow id="to-task4" sourceRef="decision" targetRef="task4" />
         <userTask id="task3" />
