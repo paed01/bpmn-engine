@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 11.1.0
+
+- [`bpmn-elements@3.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
 # 11.0.0
 
 All conditional flows from `bpmn-elements@3`.
