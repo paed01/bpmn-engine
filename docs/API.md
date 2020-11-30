@@ -1,5 +1,5 @@
 <!-- version -->
-# 11.1.0 API Reference
+# 11.2.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -40,6 +40,7 @@ Creates a new Engine.
 
 Arguments:
 - `options`: Optional options, passed to [environment](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md):
+  - `disableDummyScript`: optional boolean to disable dummy script supplied to empty ScriptTask
   - `elements`: optional object with element type mapping override
   - `expressions`: optional override [expressions](#expressions) handler
   - `Logger`: optional [Logger factory](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md#logger), defaults to [debug](https://www.npmjs.com/package/debug) logger

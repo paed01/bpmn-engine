@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 11.2.0
+
+- Major bump of [`bpmn-elements@4`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md). No apparent breaking change to engine except that gives more power to a custom script handler
+
 # 11.1.0
 
 - [`bpmn-elements@3.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)

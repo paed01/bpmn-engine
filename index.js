@@ -14,7 +14,7 @@ const {version: engineVersion} = require('./package.json');
 module.exports = {Engine};
 
 function Engine(options = {}) {
-  options = {Logger: DebugLogger, scripts: JavaScripts(), ...options};
+  options = {Logger: DebugLogger, scripts: JavaScripts(options.disableDummyScript), ...options};
 
   let {name, Logger, sourceContext} = options;
 
