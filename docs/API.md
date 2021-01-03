@@ -1,5 +1,5 @@
 <!-- version -->
-# 11.2.1 API Reference
+# 11.2.2 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -479,7 +479,7 @@ Recover engine from state.
 
 Arguments:
 - `state`: engine state
-- `recoverOptions`: optional object with options that will completely override the options passed to the engine at init
+- `recoverOptions`: optional object with options that will override options passed to the engine at init, but not options recovered from state
 
 ```js
 const {Engine} = require('bpmn-engine');
@@ -491,6 +491,14 @@ const engine = Engine().recover(state);
 ### `resume([options, [callback]])`
 
 Resume execution function with previously saved engine state.
+
+Arguments:
+- `options`: optional resume options object
+  - [`listener`](#execution-listener): execution listener
+- `callback`: optional callback
+  - `err`: Error if any
+  - `execution`: Resumed engine execution
+
 
 ```js
 const {Engine} = require('bpmn-engine');

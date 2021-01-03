@@ -188,10 +188,20 @@ function Engine(options = {}) {
     return loadedDefinitions;
   }
 
-  function loadDefinition(serializedContext, executeOptions) {
+  function loadDefinition(serializedContext, executeOptions = {}) {
+    const {settings, variables} = executeOptions;
+
     const context = elements.Context(serializedContext, environment.clone({
       listener: environment.options.listener,
       ...executeOptions,
+      settings: {
+        ...environment.settings,
+        ...settings,
+      },
+      variables: {
+        ...environment.variables,
+        ...variables,
+      },
       source: serializedContext,
     }));
 
@@ -456,7 +466,8 @@ function Execution(engine, definitions, options) {
   }
 
   function getPostponed() {
-    return executing.reduce((result, definition) => {
+    const defs = stopped ? definitions : executing;
+    return defs.reduce((result, definition) => {
       result = result.concat(definition.getPostponed());
       return result;
     }, []);

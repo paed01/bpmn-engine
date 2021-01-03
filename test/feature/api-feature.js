@@ -188,10 +188,22 @@ Feature('Api', () => {
       updateDefinition.run({processId: updateProcess.id});
     });
 
-    let state;
+    let stopped, state;
     And('trade is paused', async () => {
+      stopped = engine.waitFor('stop');
       execution.stop();
       state = execution.getState();
+    });
+
+    When('engine has stopped', async () => {
+      await stopped;
+      expect(execution.stopped).to.be.true;
+      expect(engine.stopped).to.be.true;
+    });
+
+    Then('postponed activities are still accessible', () => {
+      const postponed = execution.getPostponed();
+      expect(postponed).to.have.length(3);
     });
 
     When('execution is resumed', async () => {

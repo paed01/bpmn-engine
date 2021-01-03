@@ -11,10 +11,17 @@ Feature('Engine', () => {
       source = factory.resource('mother-of-all.bpmn');
     });
 
-    And('an engine', () => {
+    And('an engine with preset settings and variables', () => {
       engine = Engine({
         name: 'Engine feature',
         source,
+        settings: {
+          enableDummyService: true,
+          someSetting: 'preset',
+        },
+        variables: {
+          someVar: 1,
+        },
         services: {
           serviceFn(...args) {
             args.pop()();
@@ -24,11 +31,29 @@ Feature('Engine', () => {
     });
 
     let api;
-    When('source is executed', async () => {
-      api = await engine.execute();
+    When('source is executed with new settings and variables', async () => {
+      api = await engine.execute({
+        settings: {
+          enableDummyService: false,
+          defSetting: 'in',
+        },
+        variables: {
+          defVar: 2,
+        },
+      });
     });
 
-    Then('engine has postponed activities', () => {
+    Then('definitions has preset settings and variables', () => {
+      for (const def of api.definitions) {
+        expect(def.environment.settings).to.have.property('someSetting', 'preset');
+        expect(def.environment.settings).to.have.property('defSetting', 'in');
+        expect(def.environment.settings).to.have.property('enableDummyService', false);
+        expect(def.environment.variables).to.have.property('someVar', 1);
+        expect(def.environment.variables).to.have.property('defVar', 2);
+      }
+    });
+
+    And('engine has postponed activities', () => {
       expect(api.getPostponed()).to.have.length(1);
     });
 
@@ -91,11 +116,13 @@ Feature('Engine', () => {
 
   Scenario('Execution is stopped and resumed', () => {
     let engine, listener, source;
-    Given('a bpmn source with one user task', () => {
+    Given('a bpmn source with a sub processes with one user task', () => {
       source = `
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="theProcess" isExecutable="true">
-          <userTask id="task" />
+          <subProcess id="inner">
+            <userTask id="task" />
+          </subProcess>
         </process>
       </definitions>`;
     });
@@ -103,7 +130,13 @@ Feature('Engine', () => {
     Given('an engine with source', () => {
       engine = Engine({
         name: 'Engine feature',
-        source
+        source,
+        settings: {
+          mySetting: 1,
+        },
+        services: {
+          serviceFn() {},
+        },
       });
     });
 
@@ -140,27 +173,66 @@ Feature('Engine', () => {
     });
 
     let recovered;
-    When('engine is recovered', () => {
+    When('engine is recovered with a new setting and one overridden setting', () => {
       recovered = Engine({
         name: 'Recovered engine',
-      }).recover(state);
+      }).recover(state, {
+        settings: {
+          recoverSetting: true,
+          mySetting: 3,
+        },
+        services: {
+          serviceFn() {},
+        },
+      });
     });
 
     Then('engine state is idle', async () => {
       expect(recovered).to.have.property('state', 'idle');
     });
 
-    let definition;
-    But('definitions has a resumed state', async () => {
+    let definition, subProcess, activity;
+    But('definitions has a recovered state with new setting igoring overridden setting', async () => {
       const definitions = await recovered.getDefinitions();
+
+      expect(recovered.environment.settings).to.contain({
+        mySetting: 1,
+        recoverSetting: true,
+      }, 'execution environment settings');
+
       expect(definitions.length).to.equal(1);
 
       [definition] = definitions;
-      expect(definition.getActivityById('task')).to.be.ok;
+
+      expect(definition.environment.settings).to.contain({
+        mySetting: 1,
+        recoverSetting: true,
+      }, 'definition environment settings');
+
+      expect(definition.getProcesses()[0].environment.settings).to.contain({
+        mySetting: 1,
+        recoverSetting: true,
+      }, 'process environment settings');
+
+      subProcess = definition.getActivityById('inner');
+      expect(subProcess, 'sub process').to.be.ok;
+      expect(subProcess.environment.settings).to.contain({
+        mySetting: 1,
+        recoverSetting: true,
+      }, 'subProcess environment settings');
+
+      activity = subProcess.getActivityById('task');
+      expect(activity, 'user task').to.be.ok;
+      expect(activity.environment.settings).to.contain({
+        mySetting: 1,
+        recoverSetting: true,
+      }, 'userTask environment settings');
+
+      expect(activity.environment.services).to.have.property('serviceFn').that.is.a('function');
     });
 
     And('user task is in executing state', () => {
-      expect(definition.getActivityById('task')).to.have.property('status', 'executing');
+      expect(definition.getActivityById('inner')).to.have.property('status', 'executing');
     });
 
     And('listening once for wait', () => {
@@ -171,12 +243,57 @@ Feature('Engine', () => {
       });
     });
 
-    When('resumed', () => {
-      recovered.resume({listener});
+    let execution;
+    When('resumed with a new setting', async () => {
+      execution = await recovered.resume({
+        listener,
+        settings: {
+          resumeSetting: true,
+        }
+      });
     });
 
     Then('engine is running', () => {
       expect(recovered.state).to.equal('running');
+    });
+
+    And('resumed setting is ignored', async () => {
+      const definitions = execution.definitions;
+
+      expect(execution.environment.settings).to.contain({
+        mySetting: 1,
+        recoverSetting: true,
+      }, 'execution environment');
+
+      expect(execution.environment.settings).to.not.have.property('resumeSetting');
+
+      expect(definitions.length).to.equal(1);
+
+      [definition] = definitions;
+
+      expect(definition.environment.settings).to.contain({
+        mySetting: 1,
+        recoverSetting: true,
+      }, 'definition environment');
+
+      expect(definition.getProcesses()[0].environment.settings).to.contain({
+        mySetting: 1,
+        recoverSetting: true,
+      }, 'process environment');
+
+      subProcess = definition.getActivityById('inner');
+      expect(subProcess, 'sub process').to.be.ok;
+      expect(subProcess.environment.settings).to.contain({
+        mySetting: 1,
+        recoverSetting: true,
+      }, 'subProcess environment');
+
+      activity = subProcess.getActivityById('task');
+      expect(activity, 'user task').to.be.ok;
+      expect(activity.environment.settings).to.contain({
+        mySetting: 1,
+        recoverSetting: true,
+      }, 'userTask environment');
     });
 
     When('task is signaled', async () => {
