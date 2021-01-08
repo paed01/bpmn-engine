@@ -50,4 +50,81 @@ Feature('Scripts', () => {
       return end;
     });
   });
+
+  Scenario('Process with setTimeout in inline scripts task', () => {
+    let engine, source;
+    Given('a bpmn source with script task with setTimeout', () => {
+      source = `
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <scriptTask id="scriptTask" scriptFormat="javascript">
+            <script>
+              <![CDATA[
+                setTimeout(next, 1);
+              ]]>
+            </script>
+          </scriptTask>
+        </process>
+      </definitions>`;
+    });
+
+    let end;
+    When('source is executed', async () => {
+      engine = Engine({
+        name: 'Script feature',
+        source,
+        disableDummyScript: true,
+      });
+
+      end = engine.waitFor('end');
+
+      engine.execute();
+    });
+
+    Then('execution completed', () => {
+      return end;
+    });
+  });
+
+  Scenario('Process with long running timer can be stopped', () => {
+    let engine, source;
+    Given('a bpmn source with script task with setTimeout', () => {
+      source = `
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <scriptTask id="scriptTask" scriptFormat="javascript">
+            <script>
+              <![CDATA[
+                setTimeout(next, 60000);
+              ]]>
+            </script>
+          </scriptTask>
+        </process>
+      </definitions>`;
+    });
+
+    When('source is executed', async () => {
+      engine = Engine({
+        name: 'Script feature',
+        source,
+        disableDummyScript: true,
+      });
+
+      engine.execute();
+    });
+
+    Then('timer is running', () => {
+      expect(engine.environment.timers.executing).to.have.length(1);
+    });
+
+    When('execution is stopped', () => {
+      return engine.stop();
+    });
+
+    Then('timer is stopped', () => {
+      expect(engine.environment.timers.executing).to.have.length(0);
+    });
+  });
 });

@@ -1,6 +1,12 @@
 Changelog
 =========
 
+# 11.3.0
+
+- Bump [`bpmn-elements@4.3.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) to version with timer tracking
+- Add the above timers, i.e. `setTimeout` and `clearTimeout`, to inline script context
+- Clear all timers when execution is stopped
+
 # 11.2.1
 
 - [`bpmn-elements@4.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)

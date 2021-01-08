@@ -87,7 +87,8 @@ Feature('Timers', () => {
 
     And('time date is executing', () => {
       const [timer] = activity.getExecuting();
-      expect(timer.content).to.have.property('timeDate').to.deep.equal(new Date('1993-06-26'));
+      expect(timer.content).to.have.property('expireAt').to.deep.equal(new Date('1993-06-26'));
+      expect(timer.content).to.have.property('timeDate').to.equal('1993-06-26');
     });
 
     When('throw event is canceled', () => {
@@ -223,7 +224,8 @@ Feature('Timers', () => {
     });
 
     Then('throw time date has timed out', () => {
-      expect(timeoutMessage.content).to.have.property('timeDate').to.deep.equal(new Date('1993-06-26'));
+      expect(timeoutMessage.content).to.have.property('expireAt').to.deep.equal(new Date('1993-06-26'));
+      expect(timeoutMessage.content).to.have.property('timeDate').to.equal('1993-06-26');
     });
   });
 });

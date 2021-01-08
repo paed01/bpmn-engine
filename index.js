@@ -329,6 +329,8 @@ function Execution(engine, definitions, options) {
 
   function stop() {
     const prom = waitFor('stop');
+    const timers = environment.timers;
+    timers.executing.slice().forEach((ref) => timers.clearTimeout(ref));
     executing.splice(0).forEach((d) => d.stop());
     return prom;
   }
