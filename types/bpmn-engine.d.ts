@@ -307,7 +307,7 @@ declare module "bpmn-engine" {
      * @param options 
      * @param callback 
      */
-    resume(options?: BpmnEngineExecuteOptions, callback?:()=> void): void;
+    resume(options?: BpmnEngineExecuteOptions, callback?:()=> void): Promise<BpmnEngineExecutionApi>;
 
     /**
      * Stop execution. The instance is terminated.
