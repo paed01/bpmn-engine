@@ -15,6 +15,8 @@ Feature('Api', () => {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       });
       engine = getExtendedEngine(signalContext);
+
+      expect(await engine.getDefinitions()).to.have.length(1);
     });
 
     And('a second definition that updates spot price', async () => {
@@ -25,6 +27,8 @@ Feature('Api', () => {
       engine.addSource({
         sourceContext: updateContext,
       });
+
+      expect(await engine.getDefinitions()).to.have.length(2);
     });
 
     let end, execution;
@@ -49,7 +53,7 @@ Feature('Api', () => {
     });
 
     When('spot price is updated', async () => {
-      const [updateDefinition] = execution.definitions;
+      const [, updateDefinition] = execution.definitions;
       const [updateProcess] = updateDefinition.getProcesses();
 
       updateDefinition.on('activity.wait', () => {
@@ -113,13 +117,13 @@ Feature('Api', () => {
     And('run is completed', async () => {
       const [tradeDef, updateDef] = execution.definitions;
 
-      expect(updateDef).to.have.property('id', 'Signals_0');
-      expect(updateDef.counters).to.have.property('completed', 1);
-      expect(updateDef.counters).to.have.property('discarded', 0);
-
-      expect(tradeDef).to.have.property('id', 'SendSignals_0');
+      expect(tradeDef).to.have.property('id', 'Signals_0');
       expect(tradeDef.counters).to.have.property('completed', 1);
       expect(tradeDef.counters).to.have.property('discarded', 0);
+
+      expect(updateDef).to.have.property('id', 'SendSignals_0');
+      expect(updateDef.counters).to.have.property('completed', 1);
+      expect(updateDef.counters).to.have.property('discarded', 0);
 
       return end;
     });
@@ -153,13 +157,13 @@ Feature('Api', () => {
     Then('run completes', async () => {
       const [tradeDef, updateDef] = execution.definitions;
 
-      expect(updateDef).to.have.property('id', 'Signals_0');
-      expect(updateDef.counters).to.have.property('completed', 1);
-      expect(updateDef.counters).to.have.property('discarded', 0);
-
-      expect(tradeDef).to.have.property('id', 'SendSignals_0');
-      expect(tradeDef.counters).to.have.property('completed', 0);
+      expect(tradeDef).to.have.property('id', 'Signals_0');
+      expect(tradeDef.counters).to.have.property('completed', 1);
       expect(tradeDef.counters).to.have.property('discarded', 0);
+
+      expect(updateDef).to.have.property('id', 'SendSignals_0');
+      expect(updateDef.counters).to.have.property('completed', 0);
+      expect(updateDef.counters).to.have.property('discarded', 0);
 
       return end;
     });
@@ -182,7 +186,7 @@ Feature('Api', () => {
     });
 
     And('spot price is on the verge to be updated', async () => {
-      const [updateDefinition] = execution.definitions;
+      const [, updateDefinition] = execution.definitions;
       const [updateProcess] = updateDefinition.getProcesses();
 
       updateDefinition.run({processId: updateProcess.id});
@@ -215,7 +219,7 @@ Feature('Api', () => {
 
     let setSpotPrice;
     Then('trader is ready to trade', () => {
-      [setSpotPrice,, tradeTask] = execution.getPostponed();
+      [, tradeTask, setSpotPrice] = execution.getPostponed();
       expect(tradeTask).to.have.property('id', 'tradeTask');
     });
 
@@ -272,13 +276,13 @@ Feature('Api', () => {
     Then('run completes', async () => {
       const [tradeDef, updateDef] = execution.definitions;
 
-      expect(updateDef).to.have.property('id', 'Signals_0');
-      expect(updateDef.counters, 'Signals_0 counters').to.have.property('completed', 1);
-      expect(updateDef.counters, 'Signals_0 counters').to.have.property('discarded', 0);
+      expect(tradeDef).to.have.property('id', 'Signals_0');
+      expect(tradeDef.counters, 'Signals_0 counters').to.have.property('completed', 1);
+      expect(tradeDef.counters, 'Signals_0 counters').to.have.property('discarded', 0);
 
-      expect(tradeDef).to.have.property('id', 'SendSignals_0');
-      expect(tradeDef.counters, 'SendSignals_0 counters').to.have.property('completed', 1);
-      expect(tradeDef.counters, 'SendSignals_0 counters').to.have.property('discarded', 0);
+      expect(updateDef).to.have.property('id', 'SendSignals_0');
+      expect(updateDef.counters, 'SendSignals_0 counters').to.have.property('completed', 1);
+      expect(updateDef.counters, 'SendSignals_0 counters').to.have.property('discarded', 0);
 
       return end;
     });
@@ -306,7 +310,7 @@ Feature('Api', () => {
     });
 
     And('spot price is updated', async () => {
-      const [updateDefinition] = execution.definitions;
+      const [, updateDefinition] = execution.definitions;
       const [updateProcess] = updateDefinition.getProcesses();
 
       updateDefinition.on('activity.wait', () => {
@@ -343,13 +347,13 @@ Feature('Api', () => {
     Then('run completes', async () => {
       const [tradeDef, updateDef] = execution.definitions;
 
-      expect(updateDef).to.have.property('id', 'Signals_0');
-      expect(updateDef.counters, 'Signals_0 counters').to.have.property('completed', 1);
-      expect(updateDef.counters, 'Signals_0 counters').to.have.property('discarded', 0);
+      expect(tradeDef).to.have.property('id', 'Signals_0');
+      expect(tradeDef.counters, 'Signals_0 counters').to.have.property('completed', 1);
+      expect(tradeDef.counters, 'Signals_0 counters').to.have.property('discarded', 0);
 
-      expect(tradeDef).to.have.property('id', 'SendSignals_0');
-      expect(tradeDef.counters, 'SendSignals_0 counters').to.have.property('completed', 1);
-      expect(tradeDef.counters, 'SendSignals_0 counters').to.have.property('discarded', 0);
+      expect(updateDef).to.have.property('id', 'SendSignals_0');
+      expect(updateDef.counters, 'SendSignals_0 counters').to.have.property('completed', 1);
+      expect(updateDef.counters, 'SendSignals_0 counters').to.have.property('discarded', 0);
 
       return end;
     });

@@ -35,6 +35,7 @@ function Engine(options = {}) {
   const pendingSources = [];
   if (options.source) pendingSources.push(serializeSource(options.source));
   if (options.moddleContext) pendingSources.push(serializeModdleContext(options.moddleContext));
+  if (sourceContext) pendingSources.push(sourceContext);
 
   let environment = elements.Environment(options);
   const emitter = new EventEmitter();
@@ -133,10 +134,13 @@ function Engine(options = {}) {
 
     if (!savedState.definitions) return engine;
 
-    pendingSources.splice(0);
+    const preSources = pendingSources.splice(0);
 
     loadedDefinitions = savedState.definitions.map((dState) => {
-      const source = deserialize(JSON.parse(dState.source), typeResolver);
+      let source;
+      if (dState.source) source = deserialize(JSON.parse(dState.source), typeResolver);
+      else source = preSources.find((s) => s.id === dState.id);
+
       pendingSources.push(source);
 
       logger.debug(`<${name}> recover ${dState.type} <${dState.id}>`);
@@ -162,7 +166,9 @@ function Engine(options = {}) {
   }
 
   function addSource({sourceContext: addContext} = {}) {
-    if (addContext) pendingSources.push(addContext);
+    if (!addContext) return;
+    if (loadedDefinitions) loadedDefinitions.splice(0);
+    pendingSources.push(addContext);
   }
 
   async function getDefinitions(executeOptions) {
@@ -183,7 +189,6 @@ function Engine(options = {}) {
 
   async function loadDefinitions(executeOptions) {
     const runSources = await Promise.all(pendingSources);
-    if (sourceContext) runSources.push(sourceContext);
     loadedDefinitions = runSources.map((source) => loadDefinition(source, executeOptions));
     return loadedDefinitions;
   }

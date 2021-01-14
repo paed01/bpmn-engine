@@ -1,6 +1,14 @@
 Changelog
 =========
 
+# 11.3.1
+
+## Type definition
+- Engine.resume returns Promise that resolves BpmnEngineExecutionApi by @mdwheele
+
+## Misc
+- Pick recovered definition source from passed sources if not present on definition state
+
 # 11.3.0
 
 - Bump [`bpmn-elements@4.3.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) to version with timer tracking
