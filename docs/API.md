@@ -1,5 +1,5 @@
 <!-- version -->
-# 11.3.1 API Reference
+# 11.3.2 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -50,6 +50,7 @@ Arguments:
   - `scripts`: optional [inline script handler](https://github.com/paed01/bpmn-elements/blob/master/docs/Scripts.md), defaults to nodejs vm module handling, i.e. JavaScript
   - `source`: optional BPMN 2.0 definition source as string
   - `sourceContext`: optional serialized context supplied by [moddle-context-serializer](https://github.com/paed01/moddle-context-serializer)
+  - `timers`: [Timers instance](https://github.com/paed01/bpmn-elements/blob/master/docs/Timers.md)
   - `typeResolver`: optional type resolver function passed to moddle-context-serializer
 
 Returns:

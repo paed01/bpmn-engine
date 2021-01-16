@@ -740,4 +740,155 @@ Feature('Issues', () => {
       return end;
     });
   });
+
+  Scenario('Parallel Join stuck in postponed state - issue #125', () => {
+    async function Start(source) {
+      const engine = Engine({
+        name: 'issue 125',
+        source,
+      });
+
+      const complete = stopOrEnd(engine);
+
+      const execution = await engine.execute();
+      const waiting = execution.getPostponed();
+      execution.stop();
+
+      const status = await complete;
+
+      const startState = execution.getState();
+      return {engine, waiting, state: startState, status};
+    }
+
+    async function Tick(state) {
+      const engine = Engine({
+        name: 'issue 125 - recover',
+      }).recover(state);
+
+      const complete = stopOrEnd(engine);
+      const execution = await engine.resume();
+
+      const waiting = execution.getPostponed();
+      await engine.stop();
+
+      const status = await complete;
+
+      const tickState = execution.getState();
+      return {engine, waiting, state: tickState, status};
+    }
+
+    async function Input(state, signalId) {
+      const engine = Engine({
+        name: 'issue 125 - signal',
+      }).recover(state);
+
+      const complete = stopOrEnd(engine);
+      const execution = await engine.resume();
+
+      execution.signal({
+        id: signalId,
+      });
+
+      execution.stop();
+
+      const waiting = execution.getPostponed();
+      const inputState = execution.getState();
+
+      const status = await complete;
+
+      return {engine, waiting, state: inputState, status};
+    }
+
+    function stopOrEnd(engine) {
+      return new Promise((resolve, reject) => {
+        engine.once('end', onEnd);
+        engine.once('stop', onStop);
+        engine.once('error', onError);
+
+        function onEnd() {
+          engine.removeListener('stop', onStop);
+          engine.removeListener('error', onError);
+          resolve('end');
+        }
+        function onStop() {
+          engine.removeListener('end', onEnd);
+          engine.removeListener('error', onError);
+          resolve('stop');
+        }
+        function onError(err) {
+          engine.removeListener('end', onEnd);
+          engine.removeListener('stop', onStop);
+          reject(err);
+        }
+      });
+    }
+
+    let result;
+    When('forking two user tasks, then join, and immediate stop', async () => {
+      const source = `<?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Issue_125" targetNamespace="http://bpmn.io/schema/bpmn">
+        <process id="parallel" isExecutable="true">
+          <startEvent id="start" name="START" />
+          <sequenceFlow id="to-fork" sourceRef="start" targetRef="fork" />
+          <parallelGateway id="fork" name="FORK" />
+          <sequenceFlow id="to-a" sourceRef="fork" targetRef="A" />
+          <sequenceFlow id="to-b" sourceRef="fork" targetRef="B" />
+          <sequenceFlow id="from-a" sourceRef="A" targetRef="join" />
+          <parallelGateway id="join" name="JOIN" />
+          <sequenceFlow id="from-b" sourceRef="B" targetRef="join" />
+          <userTask id="A" name="A" />
+          <userTask id="B" name="B" />
+          <sequenceFlow id="to-end" sourceRef="join" targetRef="end" />
+          <endEvent id="end" />
+        </process>
+      </definitions>`;
+
+      result = await Start(source);
+    });
+
+    Then('status is stopped', () => {
+      expect(result.status).to.equal('stop');
+    });
+
+    When('ticked', async () => {
+      result = await Tick(result.state);
+    });
+
+    Then('user tasks are waiting', () => {
+      expect(result.status).to.equal('stop');
+      expect(result.waiting).to.have.length(2);
+      expect(result.waiting[0]).to.have.property('id', 'A');
+      expect(result.waiting[1]).to.have.property('id', 'B');
+    });
+
+    When('first user task is signaled', async () => {
+      result = await Input(result.state, 'A');
+    });
+
+    Then('second user task is still waiting', () => {
+      expect(result.status).to.equal('stop');
+      expect(result.waiting.find(({id}) => id === 'B')).to.be.ok;
+    });
+
+    When('ticked', async () => {
+      result = await Tick(result.state);
+    });
+
+    Then('second user task is still waiting', () => {
+      expect(result.status).to.equal('stop');
+      expect(result.waiting.find(({id}) => id === 'B')).to.be.ok;
+    });
+
+    When('second user task is signaled', async () => {
+      result = await Input(result.state, 'B');
+    });
+
+    Then('no user task is waiting', () => {
+      expect(result.waiting.some(({type}) => type === 'bpmn:UserTask')).to.not.be.ok;
+    });
+
+    And('run has completed', () => {
+      expect(result.status).to.equal('end');
+    });
+  });
 });
