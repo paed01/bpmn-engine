@@ -118,7 +118,7 @@ function Engine(options = {}) {
     return execution.execute(executeOptions, callback);
   }
 
-  async function stop() {
+  function stop() {
     if (!execution) return;
     return execution.stop();
   }
@@ -151,6 +151,8 @@ function Engine(options = {}) {
       return definition;
     });
 
+    execution = Execution(engine, loadedDefinitions, {}, true);
+
     return engine;
   }
 
@@ -159,6 +161,11 @@ function Engine(options = {}) {
 
     if (!execution) {
       const definitions = await getDefinitions();
+      if (!definitions.length) {
+        const err = new Error('nothing to resume');
+        if (callback) return callback(err);
+        throw err;
+      }
       execution = Execution(engine, definitions, options);
     }
 
@@ -246,15 +253,16 @@ function Engine(options = {}) {
   }
 }
 
-function Execution(engine, definitions, options) {
+function Execution(engine, definitions, options, isRecovered = false) {
   const {environment, logger, waitFor, broker} = engine;
   broker.on('return', onBrokerReturn);
 
   let state = 'idle';
-  let stopped;
+  let stopped = isRecovered;
   const executing = [];
 
   return {
+    ...Api(),
     get state() {
       return state;
     },
@@ -262,10 +270,7 @@ function Execution(engine, definitions, options) {
       return stopped;
     },
     execute,
-    getState,
     resume,
-    signal,
-    stop,
   };
 
   function execute(executeOptions, callback) {
@@ -332,12 +337,15 @@ function Execution(engine, definitions, options) {
     }
   }
 
-  function stop() {
+  async function stop() {
     const prom = waitFor('stop');
+    stopped = true;
     const timers = environment.timers;
     timers.executing.slice().forEach((ref) => timers.clearTimeout(ref));
     executing.splice(0).forEach((d) => d.stop());
-    return prom;
+    const result = await prom;
+    state = 'stopped';
+    return result;
   }
 
   function setup(setupOptions = {}) {

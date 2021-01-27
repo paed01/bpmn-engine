@@ -651,10 +651,11 @@ describe('Engine', () => {
 
       await engine.stop();
 
-      expect(engine).to.have.property('state', 'stopped');
-      expect(engine).to.have.property('stopped', true);
       expect(api).to.have.property('stopped', true);
       expect(api.definitions[0]).to.have.property('stopped', true);
+
+      expect(engine).to.have.property('stopped', true);
+      expect(engine).to.have.property('state', 'stopped');
     });
 
     it('stop by api stops execution', async () => {
@@ -750,6 +751,24 @@ describe('Engine', () => {
       expect(recovered.environment.variables).to.have.property('execVersion', 1);
     });
 
+    it('execution is recovered as stopped', async () => {
+      const engine = Bpmn.Engine({
+        name: 'test recover',
+        source: factory.userTask(),
+        variables: {
+          execVersion: 1,
+        }
+      });
+
+      await engine.execute();
+      await engine.stop();
+
+      const recovered = Bpmn.Engine().recover(await engine.getState());
+
+      expect(recovered.execution).to.be.ok;
+      expect(recovered.execution.stopped).to.be.true;
+    });
+
     it('recover options initializes new environment and passes options to recovered definitions', async () => {
       const engine = Bpmn.Engine({
         name: 'test recover',
@@ -822,6 +841,16 @@ describe('Engine', () => {
       engine.resume({listener});
     });
 
+    it('is not stopped', async () => {
+      const engine = Bpmn.Engine();
+      engine.recover(JSON.parse(JSON.stringify(engineState)));
+
+      await engine.resume();
+
+      expect(engine.stopped).to.be.false;
+      expect(engine.state).to.equal('running');
+    });
+
     it('resume with new listener replaces listener', async () => {
       const listener = new EventEmitter();
       const engine = Bpmn.Engine();
@@ -858,6 +887,31 @@ describe('Engine', () => {
       expect(api.definitions[0]).to.have.property('stopped', false);
 
       return completed;
+    });
+
+    it('resume with source does basically nothing', async () => {
+      const engine = Bpmn.Engine({
+        name: 'test resume with source',
+        source: factory.userTask()
+      });
+
+      await engine.resume();
+    });
+
+    it('resume without recovered definitions throws', (done) => {
+      const engine = Bpmn.Engine();
+      engine.resume().catch((err) => {
+        expect(err).to.match(/nothing to resume/i);
+        done();
+      });
+    });
+
+    it('resume without recovered definitions returns error in callback', (done) => {
+      const engine = Bpmn.Engine();
+      engine.resume((err) => {
+        expect(err).to.match(/nothing to resume/i);
+        done();
+      });
     });
   });
 
@@ -942,7 +996,7 @@ describe('Engine', () => {
       });
     });
 
-    it('returns activities in a postponed state', async () => {
+    it('execution api returns activities in a postponed state', async () => {
       const listener = new EventEmitter();
       let engineApi;
       listener.once('wait', (_, api) => {
@@ -958,6 +1012,21 @@ describe('Engine', () => {
       const completed = engine.waitFor('end');
 
       engineApi.getPostponed().forEach((c) => {
+        c.signal();
+      });
+
+      return completed;
+    });
+
+    it('on engine.execution returns activities in a postponed state', async () => {
+      const listener = new EventEmitter();
+      await engine.execute({
+        listener
+      });
+
+      const completed = engine.waitFor('end');
+
+      engine.execution.getPostponed().forEach((c) => {
         c.signal();
       });
 
