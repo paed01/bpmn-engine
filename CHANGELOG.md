@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 11.4.0
+
+- Expose execution api on property `engine.execution` since it is basically the same as when returned on events
+
 # 11.3.2
 
 - Bump [`bpmn-elements@4.3.2`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
