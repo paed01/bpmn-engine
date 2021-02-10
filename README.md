@@ -25,7 +25,7 @@ The aim is to, at least, have BPMN 2.0 [core support](https://www.omg.org/bpmn/S
 
 # Debug
 
-The module uses [debug](github.com/visionmedia/debug) so run with environment variable `DEBUG=bpmn-engine:*` or provide your own logger.
+The module uses [debug](https://github.com/visionmedia/debug) so run with environment variable `DEBUG=bpmn-engine:*` or provide your own logger.
 
 # A pretty image of a process
 
