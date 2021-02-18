@@ -137,12 +137,12 @@ const source = `
     <sequenceFlow id="flow1" sourceRef="start" targetRef="decision" />
     <sequenceFlow id="flow2" sourceRef="decision" targetRef="end1">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.environment.variables.input <= 50
+      next(null, this.environment.variables.input <= 50);
       ]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow3" sourceRef="decision" targetRef="end2">
       <conditionExpression xsi:type="tFormalExpression" language="JavaScript"><![CDATA[
-      this.environment.variables.input > 50
+      next(null, this.environment.variables.input > 50);
       ]]></conditionExpression>
     </sequenceFlow>
   </process>

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 11.4.1
+
+- Patch `moddle-context-serializer@0.16.1`
+- Patch [`bpmn-elements@4.3.4`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
 # 11.4.0
 
 - Expose execution api on property `engine.execution` since it is basically the same as when returned on events

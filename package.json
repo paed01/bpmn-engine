@@ -50,23 +50,23 @@
   },
   "devDependencies": {
     "bent": "^7.3.12",
-    "camunda-bpmn-moddle": "^4.5.0",
-    "chai": "^4.1.2",
+    "camunda-bpmn-moddle": "^5.0.0",
+    "chai": "^4.3.0",
     "chronokinesis": "^3.0.0",
     "coveralls": "^3.1.0",
-    "eslint": "^7.19.0",
+    "eslint": "^7.20.0",
     "markdown-toc": "^1.2.0",
-    "mocha": "^8.2.1",
+    "mocha": "^8.3.0",
     "mocha-cakes-2": "^3.3.0",
     "nock": "^13.0.7",
     "nyc": "^15.1.0",
     "unnecessary": "^1.3.4"
   },
   "dependencies": {
-    "bpmn-elements": "^4.3.3",
+    "bpmn-elements": "^4.3.4",
     "bpmn-moddle": "^7.0.4",
     "debug": "^4.3.1",
-    "moddle-context-serializer": "^0.16.0",
+    "moddle-context-serializer": "^0.16.1",
     "smqp": "^3.2.0"
   }
 }
