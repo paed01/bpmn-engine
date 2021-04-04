@@ -3,7 +3,7 @@ bpmn-engine
 
 [![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
-[![Build Status](https://travis-ci.com/paed01/bpmn-engine.svg?branch=master)](https://travis-ci.com/paed01/bpmn-engine)[![Build status](https://ci.appveyor.com/api/projects/status/670n39fivq1g3nu5?svg=true)](https://ci.appveyor.com/project/paed01/bpmn-engine)
+[![Build Status](https://travis-ci.com/paed01/bpmn-engine.svg?branch=master)](https://travis-ci.com/paed01/bpmn-engine)[![Build status](https://ci.appveyor.com/api/projects/status/670n39fivq1g3nu5?svg=true)](https://ci.appveyor.com/project/paed01/bpmn-engine)[![Coverage Status](https://coveralls.io/repos/github/paed01/bpmn-engine/badge.svg?branch=master)](https://coveralls.io/github/paed01/bpmn-engine?branch=master)
 
 # Introduction
 

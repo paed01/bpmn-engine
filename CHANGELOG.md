@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 11.4.2
+
+- Bump [`bpmn-elements@4.4.2`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+- Add badge [![Coverage Status](https://coveralls.io/repos/github/paed01/bpmn-engine/badge.svg?branch=master)](https://coveralls.io/github/paed01/bpmn-engine?branch=master)
+
 # 11.4.1
 
 - Patch `moddle-context-serializer@0.16.1`
