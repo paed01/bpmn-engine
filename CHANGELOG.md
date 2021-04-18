@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 12.0.0
+
+- Something about loop characteristics in [`bpmn-elements@5.0.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md). Not sure that a major was necessary, but semver is semver. In most cases it should be safe to update, unless you have used parallel loops without collection or cardinality (∞)?
+
 # 11.4.2
 
 - Bump [`bpmn-elements@4.4.2`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
