@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 12.0.1
+
+- Bump [`bpmn-elements@5.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) with "support" for bpmn:Group and Category. Kinda bugfix for the engine to be honest.
+
 # 12.0.0
 
 - Something about loop characteristics in [`bpmn-elements@5.0.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md). Not sure that a major was necessary, but semver is semver. In most cases it should be safe to update, unless you have used parallel loops without collection or cardinality (∞)?
