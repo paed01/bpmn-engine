@@ -617,5 +617,7 @@ Events are emitted with api with execution properties
 
 If not overridden [bpmn-elements](https://github.com/paed01/bpmn-elements/blob/master/docs/Expression.md) expressions handler is used.
 
+Try out [`expression-parser`](/aircall/aircall-expression-parser) by [Aircall](/aircall) if you expect advanced expressions with operators.
+
 [1]: https://www.npmjs.com/package/camunda-bpmn-moddle
 [2]: https://www.npmjs.com/package/bpmn-moddle
