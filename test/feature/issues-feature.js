@@ -1,5 +1,6 @@
 'use strict';
 
+const factory = require('../helpers/factory');
 const {Engine} = require('../..');
 const {EventEmitter} = require('events');
 
@@ -889,6 +890,69 @@ Feature('Issues', () => {
 
     And('run has completed', () => {
       expect(result.status).to.equal('end');
+    });
+  });
+
+  Scenario('One or the other manual task - issue #138', () => {
+    let engine, execution;
+    When('forking two manual tasks, then signal to cancel the other', async () => {
+      const source = factory.resource('one-or-the-other.bpmn');
+
+      engine = Engine({
+        source,
+      });
+
+      execution = await engine.execute();
+    });
+
+    Then('execution waits for both tasks', () => {
+      const postponed = execution.getPostponed();
+      expect(postponed.find(({id}) => id === 'task1')).to.be.ok;
+      expect(postponed.find(({id}) => id === 'task2')).to.be.ok;
+    });
+
+    let ended;
+    When('first task is signaled', () => {
+      ended = engine.waitFor('end');
+      execution.signal({id: 'task1'});
+    });
+
+    Then('execution completes', () => {
+      return ended;
+    });
+
+    And('second task was discarded', () => {
+      expect(execution.getActivityById('task2').counters).to.include({
+        taken: 0,
+        discarded: 1,
+      });
+    });
+
+    When('ran again', async () => {
+      execution = await engine.execute();
+    });
+
+    When('second task is signaled', () => {
+      ended = engine.waitFor('end');
+      execution.signal({id: 'task2'});
+    });
+
+    Then('execution completes', () => {
+      return ended;
+    });
+
+    And('second task was taken', () => {
+      expect(execution.getActivityById('task2').counters).to.include({
+        taken: 1,
+        discarded: 0,
+      });
+    });
+
+    And('firsts task was discarded', () => {
+      expect(execution.getActivityById('task1').counters).to.include({
+        taken: 0,
+        discarded: 1,
+      });
     });
   });
 });
