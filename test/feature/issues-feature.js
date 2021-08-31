@@ -955,4 +955,29 @@ Feature('Issues', () => {
       });
     });
   });
+
+  Scenario('Get name and association of a DataObject (BPMN:DataObjectReference) - issue 139', () => {
+    let engine, task;
+    When('activity have properties and DataObject references', async () => {
+      const source = factory.resource('issue-139.bpmn');
+
+      const listener = new EventEmitter();
+      listener.on('activity.start', (activityApi) => {
+        if (activityApi.type === 'bpmn:Task') {
+          task = activityApi;
+        }
+      });
+
+      engine = Engine({
+        source,
+        listener,
+      });
+
+      await engine.execute();
+    });
+
+    Then('activity contains properties and data object references', () => {
+      expect(task.content.properties).to.be.an('object').with.property('Property_0qusu4o');
+    });
+  });
 });

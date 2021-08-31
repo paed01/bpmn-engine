@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:qa="http://some-company/schema/bpmn/qa" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="_RdgBELNaEeSYkoSLDs6j-w" targetNamespace="http://camunda.org/schema/1.0/bpmn">
+   <bpmn2:process id="Process_1" isExecutable="true">
+      <bpmn2:startEvent id="Event_071j3c6" name="Start process">
+         <bpmn2:outgoing>Flow_0dk0y7o</bpmn2:outgoing>
+      </bpmn2:startEvent>
+      <bpmn2:task id="Activity_0ksziuo" name="Read Temp.">
+         <bpmn2:incoming>Flow_0dk0y7o</bpmn2:incoming>
+         <bpmn2:outgoing>Flow_076cdg5</bpmn2:outgoing>
+         <bpmn2:property id="Property_0qusu4o" name="__targetRef_placeholder" />
+         <bpmn2:dataInputAssociation id="DataInputAssociation_04dns9n">
+            <bpmn2:sourceRef>DataObjectReference_11hq8qm</bpmn2:sourceRef>
+            <bpmn2:targetRef>Property_0qusu4o</bpmn2:targetRef>
+         </bpmn2:dataInputAssociation>
+      </bpmn2:task>
+      <bpmn2:sequenceFlow id="Flow_0dk0y7o" sourceRef="Event_071j3c6" targetRef="Activity_0ksziuo" />
+      <bpmn2:endEvent id="Event_08mzzqt" name="Ende process">
+         <bpmn2:incoming>Flow_076cdg5</bpmn2:incoming>
+      </bpmn2:endEvent>
+      <bpmn2:sequenceFlow id="Flow_076cdg5" sourceRef="Activity_0ksziuo" targetRef="Event_08mzzqt" />
+      <bpmn2:dataObjectReference id="DataObjectReference_11hq8qm" name="Temp" dataObjectRef="DataObject_14zge3i" />
+      <bpmn2:dataObject id="DataObject_14zge3i" />
+   </bpmn2:process>
+   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+      <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+         <bpmndi:BPMNEdge id="Flow_0dk0y7o_di" bpmnElement="Flow_0dk0y7o">
+            <di:waypoint x="288" y="190" />
+            <di:waypoint x="340" y="190" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="Flow_076cdg5_di" bpmnElement="Flow_076cdg5">
+            <di:waypoint x="440" y="190" />
+            <di:waypoint x="492" y="190" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNShape id="Event_071j3c6_di" bpmnElement="Event_071j3c6">
+            <dc:Bounds x="252" y="172" width="36" height="36" />
+            <bpmndi:BPMNLabel>
+               <dc:Bounds x="237" y="215" width="66" height="14" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="Activity_0ksziuo_di" bpmnElement="Activity_0ksziuo">
+            <dc:Bounds x="340" y="150" width="100" height="80" />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="Event_08mzzqt_di" bpmnElement="Event_08mzzqt">
+            <dc:Bounds x="492" y="172" width="36" height="36" />
+            <bpmndi:BPMNLabel>
+               <dc:Bounds x="476" y="215" width="68" height="14" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="DataObjectReference_11hq8qm_di" bpmnElement="DataObjectReference_11hq8qm">
+            <dc:Bounds x="372" y="25" width="36" height="50" />
+            <bpmndi:BPMNLabel>
+               <dc:Bounds x="376" y="3" width="27" height="14" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="DataInputAssociation_04dns9n_di" bpmnElement="DataInputAssociation_04dns9n">
+            <di:waypoint x="390" y="75" />
+            <di:waypoint x="390" y="150" />
+         </bpmndi:BPMNEdge>
+      </bpmndi:BPMNPlane>
+   </bpmndi:BPMNDiagram>
+</bpmn2:definitions>

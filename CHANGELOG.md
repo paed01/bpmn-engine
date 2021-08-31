@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 12.0.3
+
+- Bump [`bpmn-elements@5.2.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) with support for bpmn:Property (#139)
+- Bump [`smqp@5`](https://github.com/paed01/smqp/blob/default/CHANGELOG.md)
+
 # 12.0.2
 
 - Bump [`bpmn-elements@5.1.2`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
