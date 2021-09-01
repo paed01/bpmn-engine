@@ -1,6 +1,12 @@
 Changelog
 =========
 
+# 12.0.4
+
+Update package.json to reflect what was stated in v12.0.3.
+
+- And add tests for issue #142
+
 # 12.0.3
 
 - Bump [`bpmn-elements@5.2.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) with support for bpmn:Property (#139)

@@ -980,4 +980,135 @@ Feature('Issues', () => {
       expect(task.content.properties).to.be.an('object').with.property('Property_0qusu4o');
     });
   });
+
+  Scenario('boundary timeout', () => {
+    let engine, execution;
+    When('a flow with user task and a bound timeout is executed', async () => {
+      const source = factory.resource('boundary-timeout.bpmn');
+
+      engine = Engine({
+        source,
+        timers: TimersWithoutScope(),
+      });
+
+      execution = await engine.execute();
+    });
+
+    Then('user task is waiting to be signaled', () => {
+      const postponed = execution.getPostponed();
+      expect(postponed.find(({id}) => id === 'userTask')).to.be.ok;
+    });
+
+    let ended;
+    When('user task is signaled', () => {
+      ended = engine.waitFor('end');
+      execution.signal({id: 'userTask'});
+    });
+
+    Then('execution completes', () => {
+      return ended;
+    });
+
+    And('user task was taken', () => {
+      expect(execution.getActivityById('userTask').counters).to.include({
+        taken: 1,
+        discarded: 0,
+      });
+    });
+
+    And('timeout was was discarded', () => {
+      expect(execution.getActivityById('boundTimeoutEvent').counters).to.include({
+        taken: 0,
+        discarded: 1,
+      });
+    });
+
+    And('no timers was left lingering', () => {
+      expect(execution.environment.timers.executing).to.have.length(0);
+    });
+
+    When('executed again', async () => {
+      ended = engine.waitFor('end');
+      execution = await engine.execute();
+    });
+
+    Then('execution completes', () => {
+      return ended;
+    });
+
+    And('user task was discarded', () => {
+      expect(execution.getActivityById('userTask').counters).to.include({
+        taken: 0,
+        discarded: 1,
+      });
+    });
+
+    And('timeout was taken', () => {
+      expect(execution.getActivityById('boundTimeoutEvent').counters).to.include({
+        taken: 1,
+        discarded: 0,
+      });
+    });
+
+    And('no timers was left lingering', () => {
+      expect(execution.environment.timers.executing).to.have.length(0);
+    });
+  });
 });
+
+function TimersWithoutScope(options) {
+  let count = 0;
+  const executing = [];
+
+  options = {
+    setTimeout,
+    clearTimeout,
+    ...options,
+  };
+
+  const timersApi = {
+    get executing() {
+      return executing.slice();
+    },
+    register,
+    setTimeout: wrappedSetTimeout,
+    clearTimeout: wrappedClearTimeout,
+  };
+
+  return timersApi;
+
+  function register(owner) {
+    return {
+      setTimeout: registerTimeout(owner),
+      clearTimeout: timersApi.clearTimeout,
+    };
+  }
+
+  function registerTimeout(owner) {
+    return function registeredSetTimeout(...args) {
+      return timersApi.setTimeout.call(owner, ...args);
+    };
+  }
+
+  function wrappedSetTimeout(callback, delay, ...args) {
+    const ref = {timerId: `timer_${count++}`, callback, delay, args, owner: this};
+    executing.push(ref);
+    ref.timerRef = options.setTimeout.call(null, onTimeout, delay, ...args);
+    return ref;
+
+    function onTimeout(...rargs) {
+      const idx = executing.indexOf(ref);
+      if (idx > -1) executing.splice(idx, 1);
+      return callback(...rargs);
+    }
+  }
+
+  function wrappedClearTimeout(ref) {
+    const idx = executing.indexOf(ref);
+    if (idx > -1) {
+      executing.splice(idx, 1);
+      return options.clearTimeout.call(null, ref.timerRef);
+    }
+    return options.clearTimeout(ref);
+  }
+}
