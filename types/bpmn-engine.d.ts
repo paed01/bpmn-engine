@@ -291,9 +291,10 @@ declare module 'bpmn-engine' {
     /**
      * execute definition
      * @param options Optional object with options to override the initial engine options
+     * @param cb Callback called before the throw
      * @summary Execute options overrides the initial options passed to the engine before executing the definition.
      */
-    execute(options?: BpmnEngineExecuteOptions): Promise<BpmnEngineExecutionApi>;
+    execute(options?:BpmnEngineExecuteOptions, cb?: (err) => void): Promise<BpmnEngineExecutionApi>;
 
     /**
      * get definition by id
@@ -444,16 +445,16 @@ declare module 'bpmn-engine' {
     readonly environment: BpmnEngineExecutionEnvironment;
     readonly execution: BpmnEngineExecutionApi;
     readonly executionId: string;
-    readonly  extensions: BpmnEngineExtension;
+    readonly extensions: BpmnEngineExtension;
     readonly logger: BpmnLogger;
     readonly inbound: any[];
     readonly isRunning: boolean;
     readonly isStart: boolean;
     readonly isSubProcess: boolean;
 
-    readonly  outbound: any[];
-    readonly  parent?: BpmnEngineActivity | BpmnProcess;
-    readonly  status: any;
+    readonly outbound: any[];
+    readonly parent?: BpmnEngineActivity | BpmnProcess;
+    readonly status: any;
     readonly stopped: boolean;
 
     activate(): void;
@@ -598,7 +599,7 @@ declare module 'bpmn-engine' {
     readonly stopped: boolean;
     readonly engineVersion: string;
     readonly environment: BpmnEngineExecutionEnvironment;
-    readonly  definitions: BpmnEngineExecutionDefinitionState[];
+    readonly definitions: BpmnEngineExecutionDefinitionState[];
 
     readonly entered: boolean;
   }
@@ -693,7 +694,7 @@ declare module 'bpmn-engine' {
      * @type {BpmnEngineExecutionDefinition}
      *
      */
-    readonly definitions: BpmnEngineExecutionDefinition;
+    readonly definitions: BpmnEngineExecutionDefinition[];
 
     /**
      * Get activity/element by id. Loops the definitions and returns the first found activity with id.
@@ -727,6 +728,7 @@ declare module 'bpmn-engine' {
      * send signal to execution, distributed to all definitions
      * Delegate a signal message to all interested parties, usually MessageEventDefinition, SignalEventDefinition, SignalTask (user, manual), ReceiveTask, or a StartEvent that has a form.
      * @param message {BpmnMessage}
+     * @param options
      */
     signal(message?: BpmnMessage, options?: {ignoreSameDefinition?: boolean}): void;
 
