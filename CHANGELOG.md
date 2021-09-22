@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 12.0.5
+
+- Prettify and actualize ts types
+
 # 12.0.4
 
 Update package.json to reflect what was stated in v12.0.3.

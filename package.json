@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "12.0.4",
+  "version": "12.0.5",
   "main": "index.js",
   "types": "types/bpmn-engine.d.ts",
   "repository": {
@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "bent": "^7.3.12",
-    "camunda-bpmn-moddle": "^5.0.0",
+    "camunda-bpmn-moddle": "^6.1.0",
     "chai": "^4.3.0",
     "chronokinesis": "^3.0.0",
     "eslint": "^7.23.0",
