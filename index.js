@@ -2,7 +2,7 @@
 
 const BpmnModdle = require('bpmn-moddle');
 const DebugLogger = require('./lib/Logger');
-const elements = require('bpmn-elements');
+const Elements = require('bpmn-elements');
 const getOptionsAndCallback = require('./lib/getOptionsAndCallback');
 const JavaScripts = require('./lib/JavaScripts');
 const ProcessOutputDataObject = require('./lib/extensions/ProcessOutputDataObject');
@@ -11,528 +11,556 @@ const {default: serializer, deserialize, TypeResolver} = require('moddle-context
 const {EventEmitter} = require('events');
 const {version: engineVersion} = require('./package.json');
 
-module.exports = {Engine};
+const kEngine = Symbol.for('engine');
+const kEnvironment = Symbol.for('environment');
+const kExecuting = Symbol.for('executing');
+const kExecution = Symbol.for('execution');
+const kLoadedDefinitions = Symbol.for('loaded definitions');
+const kOnBrokerReturn = Symbol.for('onBrokerReturn');
+const kPendingSources = Symbol.for('pending sources');
+const kSources = Symbol.for('sources');
+const kState = Symbol.for('state');
+const kStopped = Symbol.for('stopped');
+const kTypeResolver = Symbol.for('type resolver');
+
+module.exports = {Engine, Execution};
 
 function Engine(options = {}) {
-  options = {Logger: DebugLogger, scripts: JavaScripts(options.disableDummyScript), ...options};
+  if (!(this instanceof Engine)) return new Engine(options);
 
-  let {name, Logger, sourceContext} = options;
+  EventEmitter.call(this);
 
-  let loadedDefinitions, execution;
-  const logger = Logger('engine');
+  const opts = this.options = {
+    Logger: DebugLogger,
+    scripts: new JavaScripts(options.disableDummyScript),
+    ...options,
+  };
 
-  const sources = [];
-  const typeResolver = TypeResolver({
-    ...elements,
-    ...(options.elements || {})
-  }, defaultTypeResolver);
+  this.logger = opts.Logger('engine');
 
-  function defaultTypeResolver(elementTypes) {
-    if (options.typeResolver) return options.typeResolver(elementTypes);
-    elementTypes['bpmn:DataObject'] = ProcessOutputDataObject;
-  }
+  this[kTypeResolver] = TypeResolver({
+    ...Elements,
+    ...(opts.elements || {})
+  }, opts.typeResolver || defaultTypeResolver);
 
-  const pendingSources = [];
-  if (options.source) pendingSources.push(serializeSource(options.source));
-  if (options.moddleContext) pendingSources.push(serializeModdleContext(options.moddleContext));
-  if (sourceContext) pendingSources.push(sourceContext);
+  this[kEnvironment] = new Elements.Environment(opts);
 
-  let environment = elements.Environment(options);
-  const emitter = new EventEmitter();
-
-  const engine = Object.assign(emitter, {
-    logger,
-    addSource,
-    execute,
-    getDefinitionById,
-    getDefinitions,
-    getState,
-    recover,
-    resume,
-    stop,
-    waitFor,
-  });
-
-  const broker = Broker(engine);
+  const broker = this.broker = new Broker(this);
   broker.assertExchange('event', 'topic', {autoDelete: false});
 
-  Object.defineProperty(engine, 'broker', {
-    enumerable: true,
-    get() {
-      return broker;
-    }
+  this[kExecution] = null;
+  this[kLoadedDefinitions] = null;
+  this[kSources] = [];
+
+  const pendingSources = this[kPendingSources] = [];
+  if (opts.source) pendingSources.push(this._serializeSource(opts.source));
+  if (opts.moddleContext) pendingSources.push(this._serializeModdleContext(opts.moddleContext));
+  if (opts.sourceContext) pendingSources.push(opts.sourceContext);
+}
+
+function defaultTypeResolver(elementTypes) {
+  elementTypes['bpmn:DataObject'] = ProcessOutputDataObject;
+  elementTypes['bpmn:DataStoreReference'] = ProcessOutputDataObject;
+}
+
+Engine.prototype = Object.create(EventEmitter.prototype);
+
+Object.defineProperty(Engine.prototype, 'name', {
+  enumerable: true,
+  get() {
+    return this.options.name;
+  },
+  set(value) {
+    this.options.name = value;
+  },
+});
+
+Object.defineProperty(Engine.prototype, 'environment', {
+  enumerable: true,
+  get() {
+    return this[kEnvironment];
+  },
+});
+
+Object.defineProperty(Engine.prototype, 'state', {
+  enumerable: true,
+  get() {
+    const execution = this.execution;
+    if (execution) return execution.state;
+    return 'idle';
+  },
+});
+
+Object.defineProperty(Engine.prototype, 'stopped', {
+  enumerable: true,
+  get() {
+    const execution = this.execution;
+    if (execution) return execution.stopped;
+    return false;
+  },
+});
+
+Object.defineProperty(Engine.prototype, 'execution', {
+  enumerable: true,
+  get() {
+    return this[kExecution];
+  },
+});
+
+Engine.prototype.execute = async function execute(...args) {
+  const [executeOptions, callback] = getOptionsAndCallback(...args);
+  try {
+    var definitions = await this._loadDefinitions(executeOptions); // eslint-disable-line no-var
+  } catch (err) {
+    if (callback) return callback(err);
+    throw err;
+  }
+
+  const execution = this[kExecution] = new Execution(this, definitions, this.options);
+  return execution._execute(executeOptions, callback);
+};
+
+Engine.prototype.stop = function stop() {
+  const execution = this.execution;
+  if (!execution) return;
+  return execution.stop();
+};
+
+Engine.prototype.recover = function recover(savedState, recoverOptions) {
+  if (!savedState) return this;
+
+  let name = this.name;
+  if (!name) name = this.name = savedState.name;
+
+  this.logger.debug(`<${name}> recover`);
+
+  if (recoverOptions) this[kEnvironment] = new Elements.Environment(recoverOptions);
+  if (savedState.environment) this[kEnvironment] = this[kEnvironment].recover(savedState.environment);
+
+  if (!savedState.definitions) return this;
+
+  const pendingSources = this[kPendingSources];
+  const preSources = pendingSources.splice(0);
+
+  const typeResolver = this[kTypeResolver];
+  const loadedDefinitions = this[kLoadedDefinitions] = savedState.definitions.map((dState) => {
+    let source;
+    if (dState.source) source = deserialize(JSON.parse(dState.source), typeResolver);
+    else source = preSources.find((s) => s.id === dState.id);
+
+    pendingSources.push(source);
+
+    this.logger.debug(`<${name}> recover ${dState.type} <${dState.id}>`);
+
+    const definition = this._loadDefinition(source);
+    definition.recover(dState);
+
+    return definition;
   });
 
-  Object.defineProperty(engine, 'name', {
-    enumerable: true,
-    get() {
-      return name;
-    },
-    set(value) {
-      name = value;
-    },
-  });
+  this[kExecution] = new Execution(this, loadedDefinitions, {}, true);
 
-  Object.defineProperty(engine, 'environment', {
-    enumerable: true,
-    get() {
-      return environment;
-    },
-  });
+  return this;
+};
 
-  Object.defineProperty(engine, 'state', {
-    enumerable: true,
-    get() {
-      if (execution) return execution.state;
-      return 'idle';
-    },
-  });
+Engine.prototype.resume = async function resume(...args) {
+  const [resumeOptions, callback] = getOptionsAndCallback(...args);
 
-  Object.defineProperty(engine, 'stopped', {
-    enumerable: true,
-    get() {
-      if (execution) return execution.stopped;
-      return false;
-    },
-  });
-
-  Object.defineProperty(engine, 'execution', {
-    enumerable: true,
-    get() {
-      return execution;
-    },
-  });
-
-  return engine;
-
-  async function execute(...args) {
-    const [executeOptions, callback] = getOptionsAndCallback(...args);
-    try {
-      var definitions = await loadDefinitions(executeOptions); // eslint-disable-line no-var
-    } catch (err) {
+  let execution = this.execution;
+  if (!execution) {
+    const definitions = await this.getDefinitions();
+    if (!definitions.length) {
+      const err = new Error('nothing to resume');
       if (callback) return callback(err);
       throw err;
     }
-
-    execution = Execution(engine, definitions, options);
-    return execution.execute(executeOptions, callback);
+    execution = this[kExecution] = new Execution(this, definitions, this.options);
   }
 
-  function stop() {
-    if (!execution) return;
-    return execution.stop();
-  }
+  return execution._resume(resumeOptions, callback);
+};
 
-  function recover(savedState, recoverOptions) {
-    if (!savedState) return engine;
-    if (!name) name = savedState.name;
+Engine.prototype.addSource = function addSource({sourceContext: addContext} = {}) {
+  if (!addContext) return;
+  const loadedDefinitions = this[kLoadedDefinitions];
+  if (loadedDefinitions) loadedDefinitions.splice(0);
+  this[kPendingSources].push(addContext);
+};
 
-    logger.debug(`<${name}> recover`);
+Engine.prototype.getDefinitions = async function getDefinitions(executeOptions) {
+  const loadedDefinitions = this[kLoadedDefinitions];
+  if (loadedDefinitions && loadedDefinitions.length) return loadedDefinitions;
+  return this._loadDefinitions(executeOptions);
+};
 
-    if (recoverOptions) environment = elements.Environment(recoverOptions);
-    if (savedState.environment) environment = environment.recover(savedState.environment);
+Engine.prototype.getDefinitionById = async function getDefinitionById(id) {
+  return (await this.getDefinitions()).find((d) => d.id === id);
+};
 
-    if (!savedState.definitions) return engine;
+Engine.prototype.getState = async function getState() {
+  const execution = this.execution;
+  if (execution) return execution.getState();
 
-    const preSources = pendingSources.splice(0);
+  const definitions = await this.getDefinitions();
+  return new Execution(this, definitions, this.options).getState();
+};
 
-    loadedDefinitions = savedState.definitions.map((dState) => {
-      let source;
-      if (dState.source) source = deserialize(JSON.parse(dState.source), typeResolver);
-      else source = preSources.find((s) => s.id === dState.id);
+Engine.prototype._loadDefinitions = async function loadDefinitions(executeOptions) {
+  const runSources = await Promise.all(this[kPendingSources]);
+  const loadedDefinitions = this[kLoadedDefinitions] = runSources.map((source) => this._loadDefinition(source, executeOptions));
+  return loadedDefinitions;
+};
 
-      pendingSources.push(source);
+Engine.prototype._loadDefinition = function loadDefinition(serializedContext, executeOptions = {}) {
+  const {settings, variables} = executeOptions;
 
-      logger.debug(`<${name}> recover ${dState.type} <${dState.id}>`);
+  const environment = this.environment;
+  const context = new Elements.Context(serializedContext, environment.clone({
+    listener: environment.options.listener,
+    ...executeOptions,
+    settings: {
+      ...environment.settings,
+      ...settings,
+    },
+    variables: {
+      ...environment.variables,
+      ...variables,
+    },
+    source: serializedContext,
+  }));
 
-      const definition = loadDefinition(source);
-      definition.recover(dState);
+  return new Elements.Definition(context);
+};
 
-      return definition;
-    });
+Engine.prototype._serializeSource = async function serializeSource(source) {
+  const moddleContext = await this._getModdleContext(source);
+  return this._serializeModdleContext(moddleContext);
+};
 
-    execution = Execution(engine, loadedDefinitions, {}, true);
+Engine.prototype._serializeModdleContext = function serializeModdleContext(moddleContext) {
+  const serialized = serializer(moddleContext, this[kTypeResolver]);
+  this[kSources].push(serialized);
+  return serialized;
+};
 
-    return engine;
-  }
+Engine.prototype._getModdleContext = function getModdleContext(source) {
+  const bpmnModdle = new BpmnModdle(this.options.moddleOptions);
+  return bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim());
+};
 
-  async function resume(...args) {
-    const [resumeOptions, callback] = getOptionsAndCallback(...args);
+Engine.prototype.waitFor = function waitFor(eventName) {
+  const self = this;
+  return new Promise((resolve, reject) => {
+    self.once(eventName, onEvent);
+    self.once('error', onError);
 
-    if (!execution) {
-      const definitions = await getDefinitions();
-      if (!definitions.length) {
-        const err = new Error('nothing to resume');
-        if (callback) return callback(err);
-        throw err;
-      }
-      execution = Execution(engine, definitions, options);
+    function onEvent(api) {
+      self.removeListener('error', onError);
+      resolve(api);
     }
-
-    return execution.resume(resumeOptions, callback);
-  }
-
-  function addSource({sourceContext: addContext} = {}) {
-    if (!addContext) return;
-    if (loadedDefinitions) loadedDefinitions.splice(0);
-    pendingSources.push(addContext);
-  }
-
-  async function getDefinitions(executeOptions) {
-    if (loadedDefinitions && loadedDefinitions.length) return loadedDefinitions;
-    return loadDefinitions(executeOptions);
-  }
-
-  async function getDefinitionById(id) {
-    return (await getDefinitions()).find((d) => d.id === id);
-  }
-
-  async function getState() {
-    if (execution) return execution.getState();
-
-    const definitions = await getDefinitions();
-    return Execution(engine, definitions, options).getState();
-  }
-
-  async function loadDefinitions(executeOptions) {
-    const runSources = await Promise.all(pendingSources);
-    loadedDefinitions = runSources.map((source) => loadDefinition(source, executeOptions));
-    return loadedDefinitions;
-  }
-
-  function loadDefinition(serializedContext, executeOptions = {}) {
-    const {settings, variables} = executeOptions;
-
-    const context = elements.Context(serializedContext, environment.clone({
-      listener: environment.options.listener,
-      ...executeOptions,
-      settings: {
-        ...environment.settings,
-        ...settings,
-      },
-      variables: {
-        ...environment.variables,
-        ...variables,
-      },
-      source: serializedContext,
-    }));
-
-    return elements.Definition(context);
-  }
-
-  async function serializeSource(source) {
-    const moddleContext = await getModdleContext(source);
-    return serializeModdleContext(moddleContext);
-  }
-
-  function serializeModdleContext(moddleContext) {
-    const serialized = serializer(moddleContext, typeResolver);
-    sources.push(serialized);
-    return serialized;
-  }
-
-  function getModdleContext(source) {
-    const bpmnModdle = new BpmnModdle(options.moddleOptions);
-    return bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim());
-  }
-
-  async function waitFor(eventName) {
-    return new Promise((resolve, reject) => {
-      engine.once(eventName, onEvent);
-      engine.once('error', onError);
-
-      function onEvent(api) {
-        engine.removeListener('error', onError);
-        resolve(api);
-      }
-      function onError(err) {
-        engine.removeListener(eventName, onEvent);
-        reject(err);
-      }
-    });
-  }
-}
+    function onError(err) {
+      self.removeListener(eventName, onEvent);
+      reject(err);
+    }
+  });
+};
 
 function Execution(engine, definitions, options, isRecovered = false) {
-  const {environment, logger, waitFor, broker} = engine;
-  broker.on('return', onBrokerReturn);
+  this.name = engine.name;
+  this.options = options;
+  this.definitions = definitions;
+  this[kState] = 'idle';
+  this[kStopped] = isRecovered;
+  this[kEnvironment] = engine.environment;
+  this[kEngine] = engine;
+  this[kExecuting] = [];
+  const onBrokerReturn = this[kOnBrokerReturn] = this._onBrokerReturn.bind(this);
+  engine.broker.on('return', onBrokerReturn);
+}
 
-  let state = 'idle';
-  let stopped = isRecovered;
-  const executing = [];
+Object.defineProperty(Execution.prototype, 'state', {
+  enumerable: true,
+  get() {
+    return this[kState];
+  },
+});
 
-  return {
-    ...Api(),
-    get state() {
-      return state;
-    },
-    get stopped() {
-      return stopped;
-    },
-    execute,
-    resume,
-  };
+Object.defineProperty(Execution.prototype, 'stopped', {
+  enumerable: true,
+  get() {
+    return this[kStopped];
+  },
+});
 
-  function execute(executeOptions, callback) {
-    setup(executeOptions);
-    stopped = false;
-    logger.debug(`<${engine.name}> execute`);
+Object.defineProperty(Execution.prototype, 'broker', {
+  enumerable: true,
+  get() {
+    return this[kEngine].broker;
+  },
+});
 
-    addConsumerCallbacks(callback);
-    const definitionExecutions = definitions.reduce((result, definition) => {
-      if (!definition.getExecutableProcesses().length) return result;
-      result.push(definition.run());
-      return result;
-    }, []);
+Object.defineProperty(Execution.prototype, 'environment', {
+  enumerable: true,
+  get() {
+    return this[kEnvironment];
+  },
+});
 
-    if (!definitionExecutions.length) {
-      const error = new Error('No executable processes');
-      if (!callback) return engine.emit('error', error);
-      return callback(error);
-    }
+Execution.prototype._execute = function execute(executeOptions, callback) {
+  this._setup(executeOptions);
+  this[kStopped] = false;
+  this._debug('execute');
 
-    return Api();
-  }
-
-  function resume(resumeOptions, callback) {
-    setup(resumeOptions);
-
-    stopped = false;
-    logger.debug(`<${engine.name}> resume`);
-    addConsumerCallbacks(callback);
-
-    executing.splice(0);
-    definitions.forEach((definition) => definition.resume());
-
-    return Api();
-  }
-
-  function addConsumerCallbacks(callback) {
-    if (!callback) return;
-
-    broker.off('return', onBrokerReturn);
-
-    clearConsumers();
-
-    broker.subscribeOnce('event', 'engine.stop', cbLeave, {consumerTag: 'ctag-cb-stop'});
-    broker.subscribeOnce('event', 'engine.end', cbLeave, {consumerTag: 'ctag-cb-end'});
-    broker.subscribeOnce('event', 'engine.error', cbError, {consumerTag: 'ctag-cb-error'});
-
-    return callback;
-
-    function cbLeave() {
-      clearConsumers();
-      return callback(null, Api());
-    }
-    function cbError(_, message) {
-      clearConsumers();
-      return callback(message.content);
-    }
-
-    function clearConsumers() {
-      broker.cancel('ctag-cb-stop');
-      broker.cancel('ctag-cb-end');
-      broker.cancel('ctag-cb-error');
-      broker.on('return', onBrokerReturn);
-    }
-  }
-
-  async function stop() {
-    const prom = waitFor('stop');
-    stopped = true;
-    const timers = environment.timers;
-    timers.executing.slice().forEach((ref) => timers.clearTimeout(ref));
-    executing.splice(0).forEach((d) => d.stop());
-    const result = await prom;
-    state = 'stopped';
+  this._addConsumerCallbacks(callback);
+  const definitionExecutions = this.definitions.reduce((result, definition) => {
+    if (!definition.getExecutableProcesses().length) return result;
+    result.push(definition.run());
     return result;
+  }, []);
+
+
+  if (!definitionExecutions.length) {
+    const error = new Error('No executable processes');
+    if (!callback) return this[kEngine].emit('error', error);
+    return callback(error);
   }
 
-  function setup(setupOptions = {}) {
-    const listener = setupOptions.listener || options.listener;
-    if (listener && typeof listener.emit !== 'function') throw new Error('listener.emit is not a function');
+  return this;
+};
 
-    definitions.forEach(setupDefinition);
+Execution.prototype._resume = function resume(resumeOptions, callback) {
+  this._setup(resumeOptions);
 
-    function setupDefinition(definition) {
-      if (listener) definition.environment.options.listener = listener;
+  this[kStopped] = false;
+  this._debug('resume');
+  this._addConsumerCallbacks(callback);
 
-      definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, {noAck: true, consumerTag: '_engine_definition'});
-      definition.broker.subscribeTmp('event', 'process.#', onChildMessage, {noAck: true, consumerTag: '_engine_process'});
-      definition.broker.subscribeTmp('event', 'activity.#', onChildMessage, {noAck: true, consumerTag: '_engine_activity'});
-      definition.broker.subscribeTmp('event', 'flow.#', onChildMessage, {noAck: true, consumerTag: '_engine_flow'});
+  this[kExecuting].splice(0);
+  this.definitions.forEach((definition) => definition.resume());
+
+  return this;
+};
+
+Execution.prototype._addConsumerCallbacks = function addConsumerCallbacks(callback) {
+  if (!callback) return;
+
+  const broker = this.broker;
+  const onBrokerReturn = this[kOnBrokerReturn];
+
+  broker.off('return', onBrokerReturn);
+
+  clearConsumers();
+
+  broker.subscribeOnce('event', 'engine.stop', () => {
+    clearConsumers();
+    return callback(null, this);
+  }, {consumerTag: 'ctag-cb-stop'});
+
+  broker.subscribeOnce('event', 'engine.end', () => {
+    clearConsumers();
+    return callback(null, this);
+  }, {consumerTag: 'ctag-cb-end'});
+
+  broker.subscribeOnce('event', 'engine.error', (_, message) => {
+    clearConsumers();
+    return callback(message.content);
+  }, {consumerTag: 'ctag-cb-error'});
+
+  return callback;
+
+  function clearConsumers() {
+    broker.cancel('ctag-cb-stop');
+    broker.cancel('ctag-cb-end');
+    broker.cancel('ctag-cb-error');
+    broker.on('return', onBrokerReturn);
+  }
+};
+
+Execution.prototype.stop = async function stop() {
+  const engine = this[kEngine];
+  const prom = engine.waitFor('stop');
+  this[kStopped] = true;
+  const timers = engine.environment.timers;
+
+  timers.executing.slice().forEach((ref) => timers.clearTimeout(ref));
+
+  this[kExecuting].splice(0).forEach((d) => d.stop());
+
+  const result = await prom;
+  this[kState] = 'stopped';
+  return result;
+};
+
+Execution.prototype._setup = function setup(setupOptions = {}) {
+  const listener = setupOptions.listener || this.options.listener;
+  if (listener && typeof listener.emit !== 'function') throw new Error('listener.emit is not a function');
+
+  const onChildMessage = this._onChildMessage.bind(this);
+
+  for (const definition of this.definitions) {
+    if (listener) definition.environment.options.listener = listener;
+
+    definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, {noAck: true, consumerTag: '_engine_definition'});
+    definition.broker.subscribeTmp('event', 'process.#', onChildMessage, {noAck: true, consumerTag: '_engine_process'});
+    definition.broker.subscribeTmp('event', 'activity.#', onChildMessage, {noAck: true, consumerTag: '_engine_activity'});
+    definition.broker.subscribeTmp('event', 'flow.#', onChildMessage, {noAck: true, consumerTag: '_engine_flow'});
+  }
+};
+
+Execution.prototype._onChildMessage = function onChildMessage(routingKey, message, owner) {
+  const {environment: ownerEnvironment} = owner;
+  const listener = ownerEnvironment.options && ownerEnvironment.options.listener;
+  this[kState] = 'running';
+
+  let newState;
+  const elementApi = owner.getApi && owner.getApi(message);
+
+  switch (routingKey) {
+    case 'definition.resume':
+    case 'definition.enter': {
+      const executing = this[kExecuting];
+      const idx = executing.indexOf(owner);
+      if (idx > -1) break;
+      executing.push(owner);
+      break;
     }
-  }
+    case 'definition.stop': {
+      this._teardownDefinition(owner);
 
-  function onChildMessage(routingKey, message, owner) {
-    const {environment: ownerEnvironment} = owner;
-    const listener = ownerEnvironment.options && ownerEnvironment.options.listener;
-    state = 'running';
+      const executing = this[kExecuting];
+      if (executing.some((d) => d.isRunning)) break;
 
-    let executionStopped, executionCompleted, executionErrored;
-    const elementApi = owner.getApi && owner.getApi(message);
+      newState = 'stopped';
+      this[kStopped] = true;
+      break;
+    }
+    case 'definition.leave':
+      this._teardownDefinition(owner);
 
-    switch (routingKey) {
-      case 'definition.resume':
-      case 'definition.enter': {
-        const idx = executing.indexOf(owner);
-        if (idx > -1) break;
-        executing.push(owner);
-        break;
-      }
-      case 'definition.stop':
-        teardownDefinition(owner);
-        if (executing.some((d) => d.isRunning)) break;
+      if (this[kExecuting].some((d) => d.isRunning)) break;
 
-        executionStopped = true;
-        stopped = true;
-        break;
-      case 'definition.leave':
-        teardownDefinition(owner);
+      newState = 'idle';
+      break;
+    case 'definition.error':
+      this._teardownDefinition(owner);
+      newState = 'error';
+      break;
+    case 'activity.wait': {
+      if (listener) listener.emit('wait', owner.getApi(message), this);
+      break;
+    }
+    case 'process.end': {
+      if (!message.content.output) break;
+      const environment = this.environment;
 
-        if (executing.some((d) => d.isRunning)) break;
-
-        executionCompleted = true;
-        break;
-      case 'definition.error':
-        teardownDefinition(owner);
-        executionErrored = true;
-        break;
-      case 'activity.wait': {
-        emitListenerEvent('wait', owner.getApi(message), Api());
-        break;
-      }
-      case 'process.end': {
-        if (!message.content.output) break;
-        for (const key in message.content.output) {
-          switch (key) {
-            case 'data': {
-              environment.output.data = environment.output.data || {};
-              environment.output.data = {...environment.output.data, ...message.content.output.data};
-              break;
-            }
-            default: {
-              environment.output[key] = message.content.output[key];
-            }
+      for (const key in message.content.output) {
+        switch (key) {
+          case 'data': {
+            environment.output.data = environment.output.data || {};
+            environment.output.data = {...environment.output.data, ...message.content.output.data};
+            break;
+          }
+          default: {
+            environment.output[key] = message.content.output[key];
           }
         }
-        break;
       }
-    }
-
-    emitListenerEvent(routingKey, elementApi, Api());
-    broker.publish('event', routingKey, {...message.content}, {...message.properties, mandatory: false});
-
-    if (executionStopped) {
-      state = 'stopped';
-      logger.debug(`<${engine.name}> stopped`);
-      onComplete('stop');
-    } else if (executionCompleted) {
-      state = 'idle';
-      logger.debug(`<${engine.name}> completed`);
-      onComplete('end');
-    } else if (executionErrored) {
-      state = 'error';
-      logger.debug(`<${engine.name}> error`);
-      onError(message.content.error);
-    }
-
-    function onComplete(eventName) {
-      broker.publish('event', `engine.${eventName}`, {}, {type: eventName});
-      engine.emit(eventName, Api());
-    }
-
-    function onError(err) {
-      broker.publish('event', 'engine.error', err, {type: 'error', mandatory: true});
-    }
-
-    function emitListenerEvent(...args) {
-      if (!listener) return;
-      listener.emit(...args);
+      break;
     }
   }
 
-  function teardownDefinition(definition) {
-    const idx = executing.indexOf(definition);
-    if (idx > -1) executing.splice(idx, 1);
+  if (listener) listener.emit(routingKey, elementApi, this);
 
-    definition.broker.cancel('_engine_definition');
-    definition.broker.cancel('_engine_process');
-    definition.broker.cancel('_engine_activity');
-    definition.broker.cancel('_engine_flow');
+  const broker = this.broker;
+  broker.publish('event', routingKey, {...message.content}, {...message.properties, mandatory: false});
+
+  if (!newState) return;
+
+  this[kState] = newState;
+
+  switch (newState) {
+    case 'stopped':
+      this._debug('stopped');
+      broker.publish('event', 'engine.stop', {}, {type: 'stop'});
+      return this[kEngine].emit('stop', this);
+    case 'idle':
+      this._debug('completed');
+      broker.publish('event', 'engine.end', {}, {type: 'end'});
+      return this[kEngine].emit('end', this);
+    case 'error':
+      this._debug('error');
+      return broker.publish('event', 'engine.error', message.content.error, {type: 'error', mandatory: true});
   }
+};
 
-  function getState() {
-    return {
-      name: engine.name,
-      state,
-      stopped,
-      engineVersion,
-      environment: environment.getState(),
-      definitions: definitions.map(getDefinitionState),
-    };
-  }
+Execution.prototype._teardownDefinition = function teardownDefinition(definition) {
+  const executing = this[kExecuting];
+  const idx = executing.indexOf(definition);
+  if (idx > -1) executing.splice(idx, 1);
 
-  function getActivityById(activityId) {
-    for (const definition of definitions) {
-      const activity = definition.getActivityById(activityId);
-      if (activity) return activity;
-    }
-  }
+  definition.broker.cancel('_engine_definition');
+  definition.broker.cancel('_engine_process');
+  definition.broker.cancel('_engine_activity');
+  definition.broker.cancel('_engine_flow');
+};
 
-  function getPostponed() {
-    const defs = stopped ? definitions : executing;
-    return defs.reduce((result, definition) => {
-      result = result.concat(definition.getPostponed());
-      return result;
-    }, []);
-  }
-
-  function signal(payload, {ignoreSameDefinition} = {}) {
-    for (const definition of executing) {
-      if (ignoreSameDefinition && payload && payload.parent && payload.parent.id === definition.id) continue;
-      definition.signal(payload);
-    }
-  }
-
-  function cancelActivity(payload) {
-    for (const definition of executing) {
-      definition.cancelActivity(payload);
-    }
-  }
-
-  function getDefinitionState(definition) {
-    return {
+Execution.prototype.getState = function getState() {
+  const definitions = [];
+  for (const definition of this.definitions) {
+    definitions.push({
       ...definition.getState(),
       source: definition.environment.options.source.serialize(),
-    };
+    });
   }
 
-  function onBrokerReturn(message) {
-    if (message.properties.type === 'error') {
-      engine.emit('error', message.content);
-    }
-  }
+  return {
+    name: this[kEngine].name,
+    state: this.state,
+    stopped: this.stopped,
+    engineVersion,
+    environment: this.environment.getState(),
+    definitions,
+  };
+};
 
-  function Api() {
-    return {
-      name: engine.name,
-      get state() {
-        return state;
-      },
-      get stopped() {
-        return stopped;
-      },
-      broker,
-      environment,
-      definitions,
-      getActivityById,
-      getState,
-      getPostponed,
-      signal,
-      cancelActivity,
-      stop,
-      waitFor,
-    };
+Execution.prototype.getActivityById = function getActivityById(activityId) {
+  for (const definition of this.definitions) {
+    const activity = definition.getActivityById(activityId);
+    if (activity) return activity;
   }
-}
+};
+
+Execution.prototype.getPostponed = function getPostponed() {
+  const defs = this.stopped ? this.definitions : this[kExecuting];
+  return defs.reduce((result, definition) => {
+    result = result.concat(definition.getPostponed());
+    return result;
+  }, []);
+};
+
+Execution.prototype.signal = function signal(payload, {ignoreSameDefinition} = {}) {
+  for (const definition of this[kExecuting]) {
+    if (ignoreSameDefinition && payload && payload.parent && payload.parent.id === definition.id) continue;
+    definition.signal(payload);
+  }
+};
+
+Execution.prototype.cancelActivity = function cancelActivity(payload) {
+  for (const definition of this[kExecuting]) {
+    definition.cancelActivity(payload);
+  }
+};
+
+Execution.prototype.waitFor = function waitFor(...args) {
+  return this[kEngine].waitFor(...args);
+};
+
+Execution.prototype._onBrokerReturn = function onBrokerReturn(message) {
+  if (message.properties.type === 'error') {
+    this[kEngine].emit('error', message.content);
+  }
+};
+
+Execution.prototype._debug = function debug(msg) {
+  this[kEngine].logger.debug(`<${this.name}> ${msg}`);
+};

@@ -43,6 +43,7 @@ Arguments:
   - `disableDummyScript`: optional boolean to disable dummy script supplied to empty ScriptTask
   - `elements`: optional object with element type mapping override
   - `expressions`: optional override [expressions](#expressions) handler
+  - `extendFn`: optional extend [serializer](https://github.com/paed01/moddle-context-serializer/blob/master/API.md) function
   - `Logger`: optional [Logger factory](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md#logger), defaults to [debug](https://www.npmjs.com/package/debug) logger
   - `moddleContext`: optional BPMN 2.0 definition moddle context
   - `moddleOptions`: optional bpmn-moddle options to be passed to bpmn-moddle
@@ -74,7 +75,7 @@ Returns:
 const {Engine} = require('bpmn-engine');
 const fs = require('fs');
 
-const engine = Engine({
+const engine = new Engine({
   name: 'mother of all',
   source: fs.readFileSync('./test/resources/mother-of-all.bpmn'),
   moddleOptions: {
@@ -124,7 +125,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   name: 'first',
   source,
   variables: {
@@ -176,7 +177,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   name: 'first listener',
   source
 });
@@ -204,7 +205,7 @@ Execution variables are passed as the first argument to `#execute`.
 const {Engine} = require('bpmn-engine');
 const fs = require('fs');
 
-const engine = Engine({
+const engine = new Engine({
   name: 'using variables',
   source: fs.readFileSync('./test/resources/simple-task.bpmn')
 });
@@ -254,7 +255,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   name: 'services doc',
   source
 });
@@ -288,7 +289,7 @@ const {Engine} = require('bpmn-engine');
 const {EventEmitter} = require('events');
 const {default: serializer, TypeResolver} = require('moddle-context-serializer');
 
-const engine = Engine({
+const engine = new Engine({
   name: 'add source',
 });
 
@@ -364,7 +365,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   source
 });
 
@@ -408,7 +409,7 @@ const processXml = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   source: processXml
 });
 
@@ -453,7 +454,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   source
 });
 const listener = new EventEmitter();
@@ -486,7 +487,7 @@ Arguments:
 const {Engine} = require('bpmn-engine');
 
 const state = fetchSomeState();
-const engine = Engine().recover(state);
+const engine = new Engine().recover(state);
 ```
 
 ### `resume([options, [callback]])`
@@ -506,7 +507,7 @@ const {Engine} = require('bpmn-engine');
 const {EventEmitter} = require('events');
 
 const state = fetchSomeState();
-const engine = Engine().recover(state);
+const engine = new Engine().recover(state);
 
 const listener = new EventEmitter();
 
@@ -617,7 +618,7 @@ Events are emitted with api with execution properties
 
 If not overridden [bpmn-elements](https://github.com/paed01/bpmn-elements/blob/master/docs/Expression.md) expressions handler is used.
 
-Try out [`expression-parser`](/aircall/aircall-expression-parser) by [Aircall](/aircall) if you expect advanced expressions with operators.
+Try out [`aircall-expression-parser`](https://github.com/aircall/aircall-expression-parser) by [Aircall](https://github.com/aircall) if you expect advanced expressions with operators.
 
 [1]: https://www.npmjs.com/package/camunda-bpmn-moddle
 [2]: https://www.npmjs.com/package/bpmn-moddle

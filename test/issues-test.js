@@ -18,7 +18,7 @@ describe('issues', () => {
       };
 
       const listener = new EventEmitter();
-      const engine = Engine({
+      const engine = new Engine({
         name: 'Engine',
         source: factory.resource('issue-19.bpmn'),
         listener,
@@ -58,33 +58,33 @@ describe('issues', () => {
 
       let [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[0].definitions[0].execution.processes[0].execution.children;
       expect(Start, 'state 0 Start').to.have.property('status', 'started');
-      expect(Parallel1, 'state 0 Parallel1').to.have.property('status').that.is.undefined;
+      expect(Parallel1, 'state 0 Parallel1').to.not.have.property('status');
 
       [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[1].definitions[0].execution.processes[0].execution.children;
       expect(Start, 'state 1 Start').to.have.property('status', 'end');
       expect(Parallel1, 'state 1 Parallel1').to.have.property('status', 'started');
-      expect(Task_A, 'state 1 Task_A').to.have.property('status').that.is.undefined;
+      expect(Task_A, 'state 1 Task_A').to.not.have.property('status');
 
       [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[2].definitions[0].execution.processes[0].execution.children;
       expect(Parallel1, 'state 2 Parallel1').to.have.property('status', 'end');
       expect(Task_A, 'state 2 Task_A').to.have.property('status', 'started');
-      expect(Task_B, 'state 2 Task_B').to.have.property('status').that.is.undefined;
+      expect(Task_B, 'state 2 Task_B').to.not.have.property('status');
 
       [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[3].definitions[0].execution.processes[0].execution.children;
       expect(Parallel1, 'state 3 Parallel1').to.have.property('status', 'end');
-      expect(Task_A, 'state 3 Task_A').to.have.property('status').that.is.undefined;
+      expect(Task_A, 'state 3 Task_A').to.not.have.property('status');
       expect(Task_B, 'state 3 Task_B').to.have.property('status', 'started');
-      expect(Parallel2, 'state 3 Parallel2').to.have.property('status').that.is.undefined;
+      expect(Parallel2, 'state 3 Parallel2').to.not.have.property('status');
 
       [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[4].definitions[0].execution.processes[0].execution.children;
-      expect(Task_A, 'state 4 Task_A').to.have.property('status').that.is.undefined;
+      expect(Task_A, 'state 4 Task_A').to.not.have.property('status');
       expect(Task_B, 'state 4 Task_B').to.have.property('status', 'end');
       expect(Parallel2, 'state 4 Parallel2').to.have.property('status', 'started');
 
       [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[5].definitions[0].execution.processes[0].execution.children;
       expect(Parallel2, 'state 5 Parallel2').to.have.property('status', 'end');
       expect(Task_C, 'state 5 Task_C').to.have.property('status', 'started');
-      expect(End, 'state 5 End').to.have.property('status').that.is.undefined;
+      expect(End, 'state 5 End').to.not.have.property('status');
 
       [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[6].definitions[0].execution.processes[0].execution.children;
       expect(Task_C, 'state 6 Task_C').to.have.property('status', 'end');
@@ -121,7 +121,7 @@ describe('issues', () => {
 
     it('engine output is not altered during execution', async () => {
       const listener = new EventEmitter();
-      const engine = Engine({
+      const engine = new Engine({
         name: 'Engine',
         source,
         listener,
@@ -138,7 +138,7 @@ describe('issues', () => {
 
     it('merges execution output to engine output from a script at engine completion', async () => {
       const listener = new EventEmitter();
-      const engine = Engine({
+      const engine = new Engine({
         name: 'Engine',
         source,
         listener,
@@ -155,14 +155,14 @@ describe('issues', () => {
       let state;
 
       const listener = new EventEmitter();
-      const engine = Engine({
+      const engine = new Engine({
         name: 'Engine',
         source,
         listener,
       });
 
       const resumeListener = new EventEmitter();
-      const resumeEngine = Engine({
+      const resumeEngine = new Engine({
         name: 'Engine',
         source,
         listener: resumeListener,

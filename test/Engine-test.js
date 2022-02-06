@@ -6,10 +6,22 @@ const testHelpers = require('./helpers/testHelpers');
 const {EventEmitter} = require('events');
 
 describe('Engine', () => {
+  describe('constructor', () => {
+    it('instance of Engine', () => {
+      const engine = new Bpmn.Engine();
+      expect(engine).to.be.instanceof(Bpmn.Engine);
+    });
+
+    it('can be called without new', () => {
+      const engine = Bpmn.Engine();
+      expect(engine).to.be.instanceof(Bpmn.Engine);
+    });
+  });
+
   describe('options', () => {
     it('without arguments is ok', () => {
       expect(() => {
-        Bpmn.Engine();
+        new Bpmn.Engine();
       }).to.not.throw(Error);
     });
 
@@ -66,7 +78,7 @@ describe('Engine', () => {
     });
 
     it('name can be set', () => {
-      const engine = Bpmn.Engine();
+      const engine = new Bpmn.Engine();
       engine.name = 'still no source';
       expect(engine.name).to.equal('still no source');
     });
@@ -166,7 +178,7 @@ describe('Engine', () => {
     });
 
     it('returns empty if without definition sources', async () => {
-      const engine = Bpmn.Engine();
+      const engine = new Bpmn.Engine();
       expect(await engine.getDefinitions()).to.have.length(0);
     });
   });
@@ -240,7 +252,7 @@ describe('Engine', () => {
       expect(engineDefs[0] === api.definitions[0], 'same instance');
     });
 
-    it('exposes execution when running', async () => {
+    it('exposes execution while running', async () => {
       const source = Buffer.from(factory.valid());
       const engine = Bpmn.Engine({
         name: 'execution prop',
@@ -253,6 +265,7 @@ describe('Engine', () => {
 
     it('with options runs definitions with options', (done) => {
       const engine = Bpmn.Engine({
+        name: 'with options',
         source: factory.valid(),
       });
 
@@ -337,6 +350,7 @@ describe('Engine', () => {
       </definitions>`;
 
       const engine = Bpmn.Engine({
+        name: 'no executable processes',
         source
       });
       engine.execute((err) => {
@@ -880,7 +894,7 @@ describe('Engine', () => {
         activityApi.signal();
       });
 
-      const engine = Bpmn.Engine();
+      const engine = new Bpmn.Engine();
       engine.recover(JSON.parse(JSON.stringify(engineState)));
       engine.once('end', done.bind(null, null));
 
@@ -888,7 +902,7 @@ describe('Engine', () => {
     });
 
     it('is not stopped', async () => {
-      const engine = Bpmn.Engine();
+      const engine = new Bpmn.Engine();
       engine.recover(JSON.parse(JSON.stringify(engineState)));
 
       await engine.resume();
@@ -899,7 +913,7 @@ describe('Engine', () => {
 
     it('resume with new listener replaces listener', async () => {
       const listener = new EventEmitter();
-      const engine = Bpmn.Engine();
+      const engine = new Bpmn.Engine();
       engine.recover(engineState);
       engine.resume({listener});
 
@@ -945,7 +959,7 @@ describe('Engine', () => {
     });
 
     it('resume without recovered definitions throws', (done) => {
-      const engine = Bpmn.Engine();
+      const engine = new Bpmn.Engine();
       engine.resume().catch((err) => {
         expect(err).to.match(/nothing to resume/i);
         done();
@@ -953,7 +967,7 @@ describe('Engine', () => {
     });
 
     it('resume without recovered definitions returns error in callback', (done) => {
-      const engine = Bpmn.Engine();
+      const engine = new Bpmn.Engine();
       engine.resume((err) => {
         expect(err).to.match(/nothing to resume/i);
         done();

@@ -81,6 +81,9 @@ Feature('Api', () => {
           newPrice: 110
         }
       });
+
+      console.log(execution.definitions[0].environment.variables)
+      console.log(execution.definitions[1].environment.variables)
     });
 
     Then('trade task is discarded', async () => {
@@ -238,9 +241,12 @@ Feature('Api', () => {
     And('trade is paused', async () => {
       execution.stop();
       state = execution.getState();
+
+      console.log(state.definitions[0].environment.variables)
+      console.log(state.definitions[1].environment.variables)
     });
 
-    When('execution is resumed', async () => {
+    When('execution is recovered and resumed', async () => {
       engine = getExtendedEngine();
       engine.recover(state);
       end = engine.waitFor('end');
@@ -427,6 +433,9 @@ function getExtendedEngine(...sourceContexts) {
                 break;
             }
           }
+        }
+        if (activity.behaviour.dataOutputAssociations) {
+          console.log(activity.behaviour.dataOutputAssociations)
         }
         if (activity.behaviour.expression) {
           activity.behaviour.Service = ServiceExpression;

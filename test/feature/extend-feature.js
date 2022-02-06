@@ -352,7 +352,7 @@ Feature('extending behaviour', () => {
     let MyExclusiveGateway;
     And('a ExclusiveGateway behaviour that published decision message', () => {
       MyExclusiveGateway = function ExclusiveGateway(activityDef, context) {
-        return Activity(ExclusiveGatewayBehaviour, activityDef, context);
+        return new Activity(ExclusiveGatewayBehaviour, activityDef, context);
       };
 
       function ExclusiveGatewayBehaviour(activity) {
@@ -642,7 +642,7 @@ Feature('extending behaviour', () => {
     let MyCallActivity;
     And('a CallActivity behaviour', () => {
       MyCallActivity = function CallActivity(activityDef, context) {
-        return Activity(CallActivityBehaviour, activityDef, context);
+        return new Activity(CallActivityBehaviour, activityDef, context);
       };
 
       function CallActivityBehaviour(activity) {
