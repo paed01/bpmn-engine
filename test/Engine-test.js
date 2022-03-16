@@ -70,6 +70,43 @@ describe('Engine', () => {
       engine.name = 'still no source';
       expect(engine.name).to.equal('still no source');
     });
+
+    it('the "Logger" option is a factory function that accepts a scope and returns a Logger', (done) => {
+      const Logger = scope => ({
+        debug: (...args) => Logger.logs.push({scope, level: 'debug', args}),
+        warn: (...args) => Logger.logs.push({scope, level: 'warn', args}),
+        error: (...args) => Logger.logs.push({scope, level: 'error', args}),
+      });
+
+      Logger.logs = [];
+
+      const engine = Bpmn.Engine({
+        source: factory.valid(),
+        Logger
+      });
+
+      engine.execute();
+
+      engine.on('end', () => {
+        expect(Logger.logs).to.have.length.gte(1);
+        done();
+      });
+    });
+
+    it('throw an error when the "Logger" option is not a valid factory', () => {
+      const Logger = {
+        debug: (...args) => Logger.logs.push({level: 'debug', args}),
+        warn: (...args) => Logger.logs.push({level: 'warn', args}),
+        error: (...args) => Logger.logs.push({level: 'error', args}),
+      };
+
+      Logger.logs = [];
+
+      expect(() => Bpmn.Engine({
+        source: factory.valid(),
+        Logger
+      })).to.throw(TypeError, 'Logger is not a function');
+    });
   });
 
   describe('async getDefinitions()', () => {
