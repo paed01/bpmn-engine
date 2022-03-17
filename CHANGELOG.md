@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 13.0.1
+
+## Type definition
+- fix: set the correct `Logger` type in `BpmnEngineOptions` by @leon19
+
 # 13.0.0
 
 - Slimmer state from [`bpmn-elements@6`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md). In most cases it should be safe to update, unless you inspect the broker states for some reason
