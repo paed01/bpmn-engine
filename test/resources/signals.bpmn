@@ -61,7 +61,7 @@
     <bpmn:userTask id="approveSpotPrice" name="Approve">
       <bpmn:extensionElements>
         <camunda:inputOutput>
-          <camunda:outputParameter name="spotPrice">${content.output.form.newPrice}</camunda:outputParameter>
+          <camunda:outputParameter name="price">${content.output.form.newPrice}</camunda:outputParameter>
         </camunda:inputOutput>
         <camunda:formData>
           <camunda:formField id="newPrice" label="Set new spot price" type="long" defaultValue="${environment.variables.message.price}" />
@@ -74,11 +74,6 @@
       </bpmn:dataOutputAssociation>
     </bpmn:userTask>
     <bpmn:intermediateThrowEvent id="throwNewSpotPrice" name="Change spot price">
-      <bpmn:extensionElements>
-        <camunda:inputOutput>
-          <camunda:outputParameter name="price">${environment.output.spotPrice}</camunda:outputParameter>
-        </camunda:inputOutput>
-      </bpmn:extensionElements>
       <bpmn:incoming>toThrow</bpmn:incoming>
       <bpmn:outgoing>toEnd</bpmn:outgoing>
       <bpmn:signalEventDefinition signalRef="spotPriceUpdated" />

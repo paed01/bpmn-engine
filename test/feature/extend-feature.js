@@ -441,12 +441,12 @@ Feature('extending behaviour', () => {
     });
 
     And('decided flow was taken', () => {
-      const flow = execution.definitions[0].context.getSequenceFlowById('flow2');
+      const flow = execution.definitions[0].getProcesses()[0].context.getSequenceFlowById('flow2');
       expect(flow.counters).to.have.property('take', 1);
     });
 
     And('second flow was discarded', () => {
-      const flow = execution.definitions[0].context.getSequenceFlowById('flow3');
+      const flow = execution.definitions[0].getProcesses()[0].context.getSequenceFlowById('flow3');
       expect(flow.counters).to.have.property('discard', 1);
     });
 
@@ -481,12 +481,12 @@ Feature('extending behaviour', () => {
     });
 
     And('decided flow was taken', () => {
-      const flow = execution.definitions[0].context.getSequenceFlowById('flow2');
+      const flow = execution.definitions[0].getProcesses()[0].context.getSequenceFlowById('flow2');
       expect(flow.counters).to.have.property('take', 1);
     });
 
     And('second flow was discarded', () => {
-      const flow = execution.definitions[0].context.getSequenceFlowById('flow3');
+      const flow = execution.definitions[0].getProcesses()[0].context.getSequenceFlowById('flow3');
       expect(flow.counters).to.have.property('discard', 1);
     });
   });

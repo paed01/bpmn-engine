@@ -205,6 +205,23 @@ Engine.prototype.getState = async function getState() {
   return new Execution(this, definitions, this.options).getState();
 };
 
+Engine.prototype.waitFor = function waitFor(eventName) {
+  const self = this;
+  return new Promise((resolve, reject) => {
+    self.once(eventName, onEvent);
+    self.once('error', onError);
+
+    function onEvent(api) {
+      self.removeListener('error', onError);
+      resolve(api);
+    }
+    function onError(err) {
+      self.removeListener(eventName, onEvent);
+      reject(err);
+    }
+  });
+};
+
 Engine.prototype._loadDefinitions = async function loadDefinitions(executeOptions) {
   const runSources = await Promise.all(this[kPendingSources]);
   const loadedDefinitions = this[kLoadedDefinitions] = runSources.map((source) => this._loadDefinition(source, executeOptions));
@@ -246,23 +263,6 @@ Engine.prototype._serializeModdleContext = function serializeModdleContext(moddl
 Engine.prototype._getModdleContext = function getModdleContext(source) {
   const bpmnModdle = new BpmnModdle(this.options.moddleOptions);
   return bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim());
-};
-
-Engine.prototype.waitFor = function waitFor(eventName) {
-  const self = this;
-  return new Promise((resolve, reject) => {
-    self.once(eventName, onEvent);
-    self.once('error', onError);
-
-    function onEvent(api) {
-      self.removeListener('error', onError);
-      resolve(api);
-    }
-    function onError(err) {
-      self.removeListener(eventName, onEvent);
-      reject(err);
-    }
-  });
 };
 
 function Execution(engine, definitions, options, isRecovered = false) {

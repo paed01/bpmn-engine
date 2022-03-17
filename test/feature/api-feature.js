@@ -14,7 +14,9 @@ Feature('Api', () => {
       signalContext = await testHelpers.context(signalsSource, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       });
-      engine = getExtendedEngine(signalContext);
+      engine = getExtendedEngine({
+        sourceContext: signalContext,
+      });
 
       expect(await engine.getDefinitions()).to.have.length(1);
     });
@@ -34,11 +36,7 @@ Feature('Api', () => {
     let end, execution;
     When('engine is executed', async () => {
       end = engine.waitFor('end');
-      execution = await engine.execute({
-        variables: {
-          spotPrice: 100
-        },
-      });
+      execution = await engine.execute();
     });
 
     let tradeTask, spotPriceChanged;
@@ -52,7 +50,7 @@ Feature('Api', () => {
       expect(spotPriceChanged).to.be.ok;
     });
 
-    When('spot price is updated', async () => {
+    When('spot price is updated by second definition', async () => {
       const [, updateDefinition] = execution.definitions;
       const [updateProcess] = updateDefinition.getProcesses();
 
@@ -81,13 +79,12 @@ Feature('Api', () => {
           newPrice: 110
         }
       });
-
-      console.log(execution.definitions[0].environment.variables)
-      console.log(execution.definitions[1].environment.variables)
     });
 
     Then('trade task is discarded', async () => {
       [tradeTask, spotPriceChanged] = execution.getPostponed();
+      expect(tradeTask.id).to.equal('tradeTask');
+      expect(spotPriceChanged.id).to.equal('catchSpotUpdate');
       expect(tradeTask.owner.counters).to.have.property('discarded', 1);
     });
 
@@ -141,11 +138,7 @@ Feature('Api', () => {
 
     Given('definition is ran again', async () => {
       end = engine.waitFor('end');
-      execution = await engine.execute({
-        variables: {
-          spotPrice: 110,
-        },
-      });
+      execution = await engine.execute();
     });
 
     When('trader trades again', async () => {
@@ -241,9 +234,6 @@ Feature('Api', () => {
     And('trade is paused', async () => {
       execution.stop();
       state = execution.getState();
-
-      console.log(state.definitions[0].environment.variables)
-      console.log(state.definitions[1].environment.variables)
     });
 
     When('execution is recovered and resumed', async () => {
@@ -410,16 +400,21 @@ Feature('Api', () => {
   });
 });
 
-function getExtendedEngine(...sourceContexts) {
+function getExtendedEngine(options) {
   const engine = Engine({
     name: 'Signal feature',
-    sourceContext: sourceContexts.shift(),
-    services: {
-      getSpotPrice(context, callback) {
-        const price = this.environment.variables.spotPrice;
-        return callback(null, price);
-      }
+    settings: {
+      strict: true,
+      dataStores: new DataStores({
+        SpotPriceDb: {price: 100},
+      }),
     },
+    services: {
+      getSpotPrice(msg, callback) {
+        return callback(null, this.environment.settings.dataStores.getDataStore(msg.content.db).price);
+      },
+    },
+    ...options,
     extensions: {
       camunda(activity, context) {
         if (activity.behaviour.extensionElements) {
@@ -433,9 +428,6 @@ function getExtendedEngine(...sourceContexts) {
                 break;
             }
           }
-        }
-        if (activity.behaviour.dataOutputAssociations) {
-          console.log(activity.behaviour.dataOutputAssociations)
         }
         if (activity.behaviour.expression) {
           activity.behaviour.Service = ServiceExpression;
@@ -451,14 +443,24 @@ function getExtendedEngine(...sourceContexts) {
           });
         }
       },
+      datastore(activity) {
+        if (activity.behaviour.dataInputAssociations) {
+          activity.on('enter', () => {
+            activity.broker.publish('format', 'run.enter.format', {
+              db: activity.behaviour.dataInputAssociations[0].behaviour.sourceRef.id,
+            });
+          });
+        }
+
+        if (activity.behaviour.dataOutputAssociations) {
+          activity.on('end', (api) => {
+            const db = activity.behaviour.dataOutputAssociations[0].behaviour.targetRef.id;
+            activity.environment.settings.dataStores.setDataStore(db, {...api.content.output});
+          });
+        }
+      },
     },
   });
-
-  for (const sourceContext of sourceContexts) {
-    engine.addSource({
-      sourceContext
-    });
-  }
 
   engine.broker.subscribeTmp('event', 'activity.signal', (routingKey, msg) => {
     engine.execution.signal(msg.content.message, {ignoreSameDefinition: true});
@@ -500,22 +502,37 @@ function formFormatting(activity, context, formData) {
 
 function ioFormatting(activity, context, ioData) {
   const {broker, environment} = activity;
-
   if (ioData.inputParameters) {
     broker.subscribeTmp('event', 'activity.enter', (_, message) => {
       const input = ioData.inputParameters.reduce((result, data) => {
         result[data.name] = environment.resolveExpression(data.value, message);
         return result;
       }, {});
-
       broker.publish('format', 'run.input', { input });
     }, {noAck: true});
   }
   if (ioData.outputParameters) {
-    broker.subscribeTmp('event', 'activity.end', (_, message) => {
+    broker.subscribeTmp('event', 'activity.execution.completed', (_, message) => {
+      const output = {};
       ioData.outputParameters.forEach((data) => {
-        context.environment.variables[data.name] = environment.output[data.name] = environment.resolveExpression(data.value, message);
+        output[data.name] = environment.resolveExpression(data.value, message);
       });
-    }, {noAck: true});
+
+      Object.assign(environment.output, output);
+
+      broker.publish('format', 'run.output', { output });
+    }, {noAck: true, consumerTag: '_camunda_io'});
   }
 }
+
+function DataStores(data) {
+  this.data = data;
+}
+
+DataStores.prototype.getDataStore = function getDataStore(id) {
+  return this.data[id];
+};
+
+DataStores.prototype.setDataStore = function setDataStore(id, value) {
+  this.data[id] = value;
+};
