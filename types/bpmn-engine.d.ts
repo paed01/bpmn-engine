@@ -218,7 +218,7 @@ declare module 'bpmn-engine' {
     /**
      * optional Logger factory, defaults to debug logger
      */
-    Logger?: BpmnLogger;
+    Logger?: (scope: string) => BpmnLogger;
 
     /**
      * optional inline script handler, defaults to nodejs vm module handling, i.e. JavaScript
