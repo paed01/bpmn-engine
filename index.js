@@ -246,7 +246,7 @@ function Engine(options = {}) {
         resolve(api);
       }
       function onError(err) {
-        engine.removeListener(eventName, onError);
+        engine.removeListener(eventName, onEvent);
         reject(err);
       }
     });
