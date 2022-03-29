@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 13.0.2
+
+- fix for removing wrong listener on error by @allain
+
 # 13.0.1
 
 ## Type definition

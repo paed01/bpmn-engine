@@ -532,12 +532,17 @@ describe('Engine', () => {
       });
 
       const end = engine.waitFor('end');
+      expect(engine.listenerCount('end')).to.equal(1);
+      expect(engine.listenerCount('error')).to.equal(1);
 
       engine.execute();
 
       await end;
 
       expect(engine).to.have.property('state', 'idle');
+
+      expect(engine.listenerCount('end'), 'end listeners').to.equal(0);
+      expect(engine.listenerCount('error'), 'error listeners').to.equal(0);
     });
 
     it('end rejects if error occur', async () => {
@@ -549,12 +554,16 @@ describe('Engine', () => {
       const end = engine.waitFor('end').catch((err) => {
         error = err;
       });
+      expect(engine.listenerCount('end')).to.equal(1);
+      expect(engine.listenerCount('error')).to.equal(1);
 
       engine.execute();
 
       await end;
 
       expect(error).to.be.ok;
+      expect(engine.listenerCount('end'), 'end listeners').to.equal(0);
+      expect(engine.listenerCount('error'), 'error listeners').to.equal(0);
     });
   });
 
