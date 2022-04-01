@@ -579,6 +579,23 @@ describe('Engine', () => {
       expect(engine.listenerCount('end'), 'end listeners').to.equal(0);
       expect(engine.listenerCount('error'), 'error listeners').to.equal(0);
     });
+
+    it('mandatory non-error messages are ignored', async () => {
+      const engine = Bpmn.Engine({
+        source: factory.userTask()
+      });
+
+      engine.waitFor('end');
+      expect(engine.listenerCount('end')).to.equal(1);
+      expect(engine.listenerCount('error')).to.equal(1);
+
+      await engine.execute();
+
+      engine.broker.publish('event', 'engine.error', {}, {mandatory: true, type: 'fatal'});
+
+      expect(engine.listenerCount('end')).to.equal(1);
+      expect(engine.listenerCount('error')).to.equal(1);
+    });
   });
 
   describe('getState()', () => {
