@@ -42,7 +42,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   name: 'execution example',
   source,
   variables: {
@@ -82,7 +82,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   name: 'listen example',
   source
 });
@@ -148,7 +148,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   name: 'exclusive gateway example',
   source
 });
@@ -215,7 +215,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   name: 'script task example',
   source
 });
@@ -260,7 +260,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   name: 'user task example 1',
   source
 });
@@ -323,7 +323,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   name: 'service task example 1',
   source,
   moddleOptions: {
@@ -369,7 +369,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   name: 'service task example 3',
   source
 });
@@ -423,7 +423,7 @@ const source = `
 </definitions>
 `;
 
-const engine = Engine({
+const engine = new Engine({
   name: 'sequence flow example',
   source
 });
@@ -471,7 +471,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   name: 'loop collection',
   source,
   moddleOptions: {
@@ -538,7 +538,7 @@ const source = `
   </process>
 </definitions>`;
 
-const engine = Engine({
+const engine = new Engine({
   name: 'Pending game',
   source,
   moddleOptions: {
@@ -618,7 +618,7 @@ function ServiceExpression(activity) {
   }
 }
 
-const engine = Engine({
+const engine = new Engine({
   name: 'extend service task',
   source,
   moddleOptions: {
@@ -701,7 +701,7 @@ function humanInvolvement(activity) {
 
 const listener = new EventEmitter();
 
-const engine = Engine({
+const engine = new Engine({
   name: 'call humans',
   source,
   moddleOptions: {
@@ -770,7 +770,7 @@ const source = `
 
   const sourceContext = Serializer(moddleContext, TypeResolver(elements));
 
-  const engine = Engine({
+  const engine = new Engine({
     sourceContext,
   });
 

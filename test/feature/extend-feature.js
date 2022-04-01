@@ -352,7 +352,7 @@ Feature('extending behaviour', () => {
     let MyExclusiveGateway;
     And('a ExclusiveGateway behaviour that published decision message', () => {
       MyExclusiveGateway = function ExclusiveGateway(activityDef, context) {
-        return Activity(ExclusiveGatewayBehaviour, activityDef, context);
+        return new Activity(ExclusiveGatewayBehaviour, activityDef, context);
       };
 
       function ExclusiveGatewayBehaviour(activity) {
@@ -441,12 +441,12 @@ Feature('extending behaviour', () => {
     });
 
     And('decided flow was taken', () => {
-      const flow = execution.definitions[0].context.getSequenceFlowById('flow2');
+      const flow = execution.definitions[0].getProcesses()[0].context.getSequenceFlowById('flow2');
       expect(flow.counters).to.have.property('take', 1);
     });
 
     And('second flow was discarded', () => {
-      const flow = execution.definitions[0].context.getSequenceFlowById('flow3');
+      const flow = execution.definitions[0].getProcesses()[0].context.getSequenceFlowById('flow3');
       expect(flow.counters).to.have.property('discard', 1);
     });
 
@@ -481,12 +481,12 @@ Feature('extending behaviour', () => {
     });
 
     And('decided flow was taken', () => {
-      const flow = execution.definitions[0].context.getSequenceFlowById('flow2');
+      const flow = execution.definitions[0].getProcesses()[0].context.getSequenceFlowById('flow2');
       expect(flow.counters).to.have.property('take', 1);
     });
 
     And('second flow was discarded', () => {
-      const flow = execution.definitions[0].context.getSequenceFlowById('flow3');
+      const flow = execution.definitions[0].getProcesses()[0].context.getSequenceFlowById('flow3');
       expect(flow.counters).to.have.property('discard', 1);
     });
   });
@@ -642,7 +642,7 @@ Feature('extending behaviour', () => {
     let MyCallActivity;
     And('a CallActivity behaviour', () => {
       MyCallActivity = function CallActivity(activityDef, context) {
-        return Activity(CallActivityBehaviour, activityDef, context);
+        return new Activity(CallActivityBehaviour, activityDef, context);
       };
 
       function CallActivityBehaviour(activity) {

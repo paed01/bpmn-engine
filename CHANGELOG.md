@@ -1,6 +1,13 @@
 Changelog
 =========
 
+# 14.0.0
+
+## Breaking
+- Engine is prototyped, can still be invoked without new
+- Bump [`bpmn-elements@8.0.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) with support for bpmn:CallActivity (#97)
+- Bump [`smqp@6.0.0`](https://github.com/paed01/smqp/blob/default/CHANGELOG.md) with support for bpmn:CallActivity (#97)
+
 # 13.0.2
 
 - fix for removing wrong listener on error by @allain

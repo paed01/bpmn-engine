@@ -1076,7 +1076,7 @@ Feature('Issues', () => {
     let engine;
     Given('process with user task and a tripple looped user task', async () => {
       const listener = new EventEmitter();
-      engine = Engine({
+      engine = new Engine({
         name: 'Engine',
         source,
         listener,

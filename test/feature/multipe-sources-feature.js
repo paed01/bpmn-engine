@@ -7,14 +7,16 @@ const {Engine} = require('../..');
 const signalsSource = factory.resource('signals.bpmn');
 const sendSignalSource = factory.resource('send-signal.bpmn');
 
-Feature('Api', () => {
+Feature('Multiple sources', () => {
   Scenario('Two definitions that communicates with signals', () => {
     let engine, signalContext, updateContext;
     Given('a trade process waiting for spot price update signal and another admin processs that updates price', async () => {
       signalContext = await testHelpers.context(signalsSource, {
         camunda: require('camunda-bpmn-moddle/resources/camunda')
       });
-      engine = getExtendedEngine(signalContext);
+      engine = getExtendedEngine({
+        sourceContext: signalContext,
+      });
 
       expect(await engine.getDefinitions()).to.have.length(1);
     });
@@ -34,11 +36,7 @@ Feature('Api', () => {
     let end, execution;
     When('engine is executed', async () => {
       end = engine.waitFor('end');
-      execution = await engine.execute({
-        variables: {
-          spotPrice: 100
-        },
-      });
+      execution = await engine.execute();
     });
 
     let tradeTask, spotPriceChanged;
@@ -52,7 +50,7 @@ Feature('Api', () => {
       expect(spotPriceChanged).to.be.ok;
     });
 
-    When('spot price is updated', async () => {
+    When('spot price is updated by second definition', async () => {
       const [, updateDefinition] = execution.definitions;
       const [updateProcess] = updateDefinition.getProcesses();
 
@@ -74,6 +72,12 @@ Feature('Api', () => {
       expect(adminApprove.content).to.have.property('form').with.property('fields').with.property('newPrice').with.property('defaultValue', 110);
     });
 
+    And('the tasks can be retrieved by getActivityById', () => {
+      expect(execution.getActivityById('tradeTask').counters).to.have.property('discarded', 0);
+      expect(execution.getActivityById('approveSpotPrice').counters).to.have.property('taken', 0);
+      expect(execution.getActivityById('not-in-at-all')).to.not.be.ok;
+    });
+
     When('admin approves new spot price', () => {
       execution.signal({
         id: 'approveSpotPrice',
@@ -85,10 +89,12 @@ Feature('Api', () => {
 
     Then('trade task is discarded', async () => {
       [tradeTask, spotPriceChanged] = execution.getPostponed();
+      expect(tradeTask.id).to.equal('tradeTask');
+      expect(spotPriceChanged.id).to.equal('catchSpotUpdate');
       expect(tradeTask.owner.counters).to.have.property('discarded', 1);
     });
 
-    And('for coverage reasons the activity can be retrieved by getActivityById', () => {
+    And('trade task was discarded', () => {
       expect(execution.getActivityById(tradeTask.id).counters).to.have.property('discarded', 1);
     });
 
@@ -138,11 +144,7 @@ Feature('Api', () => {
 
     Given('definition is ran again', async () => {
       end = engine.waitFor('end');
-      execution = await engine.execute({
-        variables: {
-          spotPrice: 110,
-        },
-      });
+      execution = await engine.execute();
     });
 
     When('trader trades again', async () => {
@@ -240,7 +242,7 @@ Feature('Api', () => {
       state = execution.getState();
     });
 
-    When('execution is resumed', async () => {
+    When('execution is recovered and resumed', async () => {
       engine = getExtendedEngine();
       engine.recover(state);
       end = engine.waitFor('end');
@@ -367,53 +369,111 @@ Feature('Api', () => {
     });
   });
 
-  Scenario('Determine run sequences for an activity', () => {
-    let engine, source;
-    Given('a bpmn source with user tasks', () => {
-      source = `
-      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:camunda="http://camunda.org/schema/1.0/bpmn">
-        <process id="theProcess" isExecutable="true">
-          <userTask id="task1" camunda:formKey="taskForm" />
-          <sequenceFlow id="flow" sourceRef="task1" targetRef="task2" />
-          <userTask id="task2" />
-        </process>
-      </definitions>`;
-    });
-
-    let definition;
-    And('an engine loaded with extension for fetching form and saving output', async () => {
-      engine = Engine({
-        name: 'Shake feature',
-        sourceContext: await testHelpers.context(source),
+  Scenario('edge cases', () => {
+    let engine;
+    Given('two sources', async () => {
+      engine = new Engine({name: 'Edge case'});
+      engine.addSource({
+        sourceContext: await testHelpers.context(`
+        <definitions id="Def_0" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL">
+          <process id="Process_0" isExecutable="true">
+            <userTask id="task_0" />
+          </process>
+        </definitions>`),
       });
-
-      [definition] = await engine.getDefinitions();
+      engine.addSource({
+        sourceContext: await testHelpers.context(`
+        <definitions id="Def_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL">
+          <process id="Process_1" isExecutable="true">
+            <userTask id="task_1" />
+          </process>
+        </definitions>`),
+      });
     });
 
-    let result;
-    When('start task is shaken', () => {
-      result = definition.shake('task1');
+    When('executed', () => {
+      return engine.execute();
     });
 
-    Then('run sequences are determined', () => {
-      expect(result).to.have.property('task1').with.length(1);
-      expect(result.task1[0]).to.have.property('sequence').with.length(3);
+    Then('both definitions has started', () => {
+      expect(engine.execution.definitions.length).to.equal(2);
+    });
+
+    When('for some reason the first definition is stopped', () => {
+      engine.execution.definitions[0].stop();
+    });
+
+    Then('engine is still running', () => {
+      expect(engine.stopped).to.be.false;
+      expect(engine.execution.stopped).to.be.false;
+    });
+
+    When('the second definition is stopped', () => {
+      engine.execution.definitions[1].stop();
+    });
+
+    Then('execution is stopped', () => {
+      expect(engine.execution.stopped).to.be.true;
+    });
+
+    And('the engine is also flagged as stopped', () => {
+      expect(engine.stopped).to.be.true;
+    });
+
+    Given('engine is executed again', () => {
+      return engine.execute();
+    });
+
+    When('second definition hickups another start event', () => {
+      expect(engine.execution.definitions).to.have.length(2);
+      engine.execution.definitions[1].broker.publish('event', 'definition.enter', {});
+    });
+
+    Then('the engine ignores that one', () => {
+      expect(engine.execution.definitions).to.have.length(2);
+    });
+
+    Given('engine is executed again', () => {
+      return engine.execute();
+    });
+
+    When('first definition sends process output', () => {
+      engine.execution.definitions[0].broker.publish('event', 'process.end', {
+        output: {
+          foo: 'bar',
+          data: {col: 1},
+        },
+      });
+    });
+
+    And('second definition sends process undefined process output', () => {
+      engine.execution.definitions[0].broker.publish('event', 'process.end', {});
+    });
+
+    Then('the engine ignores the second process output', () => {
+      expect(engine.environment.output).to.deep.equal({
+        foo: 'bar',
+        data: {col: 1},
+      });
     });
   });
 });
 
-function getExtendedEngine(...sourceContexts) {
-  const engine = Engine({
+function getExtendedEngine(options) {
+  const engine = new Engine({
     name: 'Signal feature',
-    sourceContext: sourceContexts.shift(),
-    services: {
-      getSpotPrice(context, callback) {
-        const price = this.environment.variables.spotPrice;
-        return callback(null, price);
-      }
+    settings: {
+      strict: true,
+      dataStores: new DataStores({
+        SpotPriceDb: {price: 100},
+      }),
     },
+    services: {
+      getSpotPrice(msg, callback) {
+        return callback(null, this.environment.settings.dataStores.getDataStore(msg.content.db).price);
+      },
+    },
+    ...options,
     extensions: {
       camunda(activity, context) {
         if (activity.behaviour.extensionElements) {
@@ -442,14 +502,24 @@ function getExtendedEngine(...sourceContexts) {
           });
         }
       },
+      datastore(activity) {
+        if (activity.behaviour.dataInputAssociations) {
+          activity.on('enter', () => {
+            activity.broker.publish('format', 'run.enter.format', {
+              db: activity.behaviour.dataInputAssociations[0].behaviour.sourceRef.id,
+            });
+          });
+        }
+
+        if (activity.behaviour.dataOutputAssociations) {
+          activity.on('end', (api) => {
+            const db = activity.behaviour.dataOutputAssociations[0].behaviour.targetRef.id;
+            activity.environment.settings.dataStores.setDataStore(db, {...api.content.output});
+          });
+        }
+      },
     },
   });
-
-  for (const sourceContext of sourceContexts) {
-    engine.addSource({
-      sourceContext
-    });
-  }
 
   engine.broker.subscribeTmp('event', 'activity.signal', (routingKey, msg) => {
     engine.execution.signal(msg.content.message, {ignoreSameDefinition: true});
@@ -491,22 +561,37 @@ function formFormatting(activity, context, formData) {
 
 function ioFormatting(activity, context, ioData) {
   const {broker, environment} = activity;
-
   if (ioData.inputParameters) {
     broker.subscribeTmp('event', 'activity.enter', (_, message) => {
       const input = ioData.inputParameters.reduce((result, data) => {
         result[data.name] = environment.resolveExpression(data.value, message);
         return result;
       }, {});
-
       broker.publish('format', 'run.input', { input });
     }, {noAck: true});
   }
   if (ioData.outputParameters) {
-    broker.subscribeTmp('event', 'activity.end', (_, message) => {
+    broker.subscribeTmp('event', 'activity.execution.completed', (_, message) => {
+      const output = {};
       ioData.outputParameters.forEach((data) => {
-        context.environment.variables[data.name] = environment.output[data.name] = environment.resolveExpression(data.value, message);
+        output[data.name] = environment.resolveExpression(data.value, message);
       });
-    }, {noAck: true});
+
+      Object.assign(environment.output, output);
+
+      broker.publish('format', 'run.output', { output });
+    }, {noAck: true, consumerTag: '_camunda_io'});
   }
 }
+
+function DataStores(data) {
+  this.data = data;
+}
+
+DataStores.prototype.getDataStore = function getDataStore(id) {
+  return this.data[id];
+};
+
+DataStores.prototype.setDataStore = function setDataStore(id, value) {
+  this.data[id] = value;
+};
