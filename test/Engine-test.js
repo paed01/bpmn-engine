@@ -877,6 +877,60 @@ describe('Engine', () => {
 
       expect(definition.environment.services).to.have.property('get').that.is.a('function');
     });
+
+    it('add service after recover shares services', async () => {
+      const engine = Bpmn.Engine({
+        name: 'test recover',
+        source: factory.userTask(),
+        variables: {
+          execVersion: 1,
+        }
+      });
+
+      engine.execute();
+
+      await engine.stop();
+      const state = await engine.getState();
+
+      const recovered = Bpmn.Engine().recover(JSON.parse(JSON.stringify(state)), {
+        variables: {
+          execVersion: 2,
+          recovered: true,
+        },
+        services: {
+          get() {},
+        }
+      });
+
+      recovered.environment.addService('newGet', () => {});
+
+      expect(recovered.environment.variables).to.have.property('execVersion', 1);
+      expect(recovered.environment.variables).to.have.property('recovered', true);
+
+      const [definition] = await recovered.getDefinitions();
+
+      expect(definition.environment.variables).to.have.property('execVersion', 1);
+      expect(definition.environment.variables).to.have.property('recovered', true);
+
+      expect(definition.environment.services).to.have.property('get').that.is.a('function');
+      expect(definition.environment.services).to.have.property('newGet').that.is.a('function');
+
+      const [bp] = definition.getProcesses();
+
+      expect(bp.environment.services).to.have.property('get').that.is.a('function');
+      expect(bp.environment.services).to.have.property('newGet').that.is.a('function');
+
+      expect(bp.environment.variables).to.have.property('execVersion', 1);
+      expect(bp.environment.variables).to.have.property('recovered', true);
+
+      definition.resume();
+
+      expect(definition.environment.services).to.have.property('get').that.is.a('function');
+      expect(definition.environment.services).to.have.property('newGet').that.is.a('function');
+
+      expect(bp.environment.services).to.have.property('get').that.is.a('function');
+      expect(bp.environment.services).to.have.property('newGet').that.is.a('function');
+    });
   });
 
   describe('resume()', () => {
