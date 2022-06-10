@@ -12,6 +12,7 @@ BPMN 2.0 execution engine. Open source javascript workflow engine.
 - [API](/docs/API.md)
 - [Changelog](/CHANGELOG.md)
 - [Examples](/docs/Examples.md)
+- [Upgrade version](/docs/Upgrade.md)
 - [Supported elements](#supported-elements)
 - [Debug](#debug)
 - [Example process](#a-pretty-image-of-a-process)
