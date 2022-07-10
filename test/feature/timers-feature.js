@@ -61,8 +61,8 @@ Feature('Timers', () => {
       expect(timer.content).to.have.property('timeCycle', 'R3/PT10H');
     });
 
-    When('start event is canceled', () => {
-      execution.cancelActivity({id: 'start-cycle'});
+    When('start event times out', () => {
+      execution.environment.timers.executing[0].callback();
     });
 
     let task;
@@ -137,6 +137,8 @@ Feature('Timers', () => {
     });
 
     Given('the execution is recovered and resumed somewhere else', async () => {
+      engine.stop();
+
       engine = Engine();
       engine.recover(JSON.parse(JSON.stringify(state)));
       execution = await engine.resume();
@@ -152,8 +154,8 @@ Feature('Timers', () => {
       expect(timer.content).to.have.property('timeCycle', 'R3/PT10H');
     });
 
-    Given('start event is canceled', () => {
-      execution.cancelActivity({id: 'start-cycle'});
+    Given('start event times out', () => {
+      execution.environment.timers.executing[0].callback();
     });
 
     And('execution is stopped and state is saved', () => {

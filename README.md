@@ -26,7 +26,7 @@ The aim is to, at least, have BPMN 2.0 [core support](https://www.omg.org/bpmn/S
 
 # Debug
 
-The module uses [debug](https://github.com/visionmedia/debug) so run with environment variable `DEBUG=bpmn-engine:*` or provide your own logger.
+This package is shipped with [debug](https://github.com/visionmedia/debug) activated with environment variable `DEBUG=bpmn-engine:*`. You can also provide your own logger.
 
 # A pretty image of a process
 
@@ -36,4 +36,4 @@ The module uses [debug](https://github.com/visionmedia/debug) so run with enviro
 
 The **bpmn-engine** resides upon the excellent library [bpmn-io/bpmn-moddle](https://github.com/bpmn-io/bpmn-moddle) developed by [bpmn.io](https://bpmn.io/)
 
-One excellent modeller is the [Camunda modeler](https://camunda.com/download/modeler/).
+All diagrams are designed with [Camunda modeler](https://camunda.com/download/modeler/).
