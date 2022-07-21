@@ -62,6 +62,7 @@
     "nyc": "^15.1.0"
   },
   "dependencies": {
+    "@types/bpmn-moddle": "^5.1.6",
     "bpmn-elements": "^8.1.0",
     "bpmn-moddle": "^7.0.4",
     "debug": "^4.3.4",

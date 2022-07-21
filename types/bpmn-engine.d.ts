@@ -1,6 +1,7 @@
 // Author : Saeed Tabrizi
 
 import {EventEmitter} from 'events';
+import {Definitions} from 'bpmn-moddle';
 
 declare module 'bpmn-engine' {
 
@@ -236,6 +237,7 @@ declare module 'bpmn-engine' {
      * optional bpmn-moddle options to be passed to bpmn-moddle
      */
     moddleOptions?: any;
+    moddleContext?: Definitions;
 
     extensions?: BpmnEngineExtension;
     /**
