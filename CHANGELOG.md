@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 14.1.1
+
+- fix(types): add missing `moddleContext` option
+
 # 14.1.0
 
 - Bump [`bpmn-elements@8.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) with support for bound non-interrupting repeating timeCycle
