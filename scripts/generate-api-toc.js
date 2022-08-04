@@ -20,8 +20,7 @@ function generate(filename) {
   const api = Fs.readFileSync(filename, 'utf8');
   const tocOptions = {
     bullets: '-',
-    slugify: function(text) {
-
+    slugify(text) {
       return text.toLowerCase()
         .replace(/\s/g, '-')
         .replace(/[^\w-]/g, '');

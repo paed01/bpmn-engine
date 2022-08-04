@@ -766,14 +766,14 @@ describe('Engine', () => {
       expect(await engine.getDefinitions()).to.have.length(1);
     });
 
-    it('recover without state is simply ignored', async () => {
+    it('recover without state is simply ignored', () => {
       const engine = Bpmn.Engine().recover();
       const recovered = engine.recover();
 
       expect(engine === recovered).to.be.true;
     });
 
-    it('recover without state definitions is kind of ignored', async () => {
+    it('recover without state definitions is kind of ignored', () => {
       const engine = Bpmn.Engine().recover({
         name: 'recovered'
       });
@@ -1164,7 +1164,6 @@ describe('Engine', () => {
       return completed;
     });
   });
-
 
   describe('addSource({sourceContext})', () => {
     const source = `

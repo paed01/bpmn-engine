@@ -282,7 +282,7 @@ Feature('Engine', () => {
     });
 
     let callbackCalled, complete;
-    When('source is executed with a callback', async () => {
+    When('source is executed with a callback', () => {
       complete = engine.waitFor('end');
 
       callbackCalled = new Promise((resolve, reject) => {
@@ -327,7 +327,7 @@ Feature('Engine', () => {
     });
 
     let callbackCalled, stopped;
-    When('source is executed with a callback', async () => {
+    When('source is executed with a callback', () => {
       stopped = engine.waitFor('stop');
 
       callbackCalled = new Promise((resolve, reject) => {
@@ -355,7 +355,7 @@ Feature('Engine', () => {
     });
 
     let ended;
-    When('engine is resumed with a callback', async () => {
+    When('engine is resumed with a callback', () => {
       ended = engine.waitFor('end');
 
       callbackCalled = new Promise((resolve, reject) => {

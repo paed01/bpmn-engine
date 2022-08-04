@@ -46,4 +46,3 @@ function serializeModdleContext({rootElement, rootHandler, elementsById, referen
   };
   return clonedContext;
 }
-

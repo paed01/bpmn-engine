@@ -5,7 +5,8 @@
   "rules": {
     "no-unused-expressions": 0,
     "no-var": 1,
-    "prefer-arrow-callback": 1
+    "prefer-arrow-callback": 1,
+    "require-await": 2
   },
   "globals": {
     "expect": false,

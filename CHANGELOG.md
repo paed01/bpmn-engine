@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 15.0.0
+
+## Breaking
+- Drop node 12 support
+
 # 14.1.1
 
 - fix(types): add missing `moddleContext` option

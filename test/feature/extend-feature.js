@@ -170,7 +170,7 @@ Feature('extending behaviour', () => {
     });
 
     let completed;
-    When('source is executed', async () => {
+    When('source is executed', () => {
       completed = engine.waitFor('end');
       return engine.execute();
     });
@@ -602,7 +602,7 @@ Feature('extending behaviour', () => {
       }
     });
 
-    When('executing', async () => {
+    When('executing', () => {
       return engine.execute();
     });
 

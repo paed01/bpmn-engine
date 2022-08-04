@@ -78,7 +78,7 @@ Feature('Resume execution', () => {
       });
     });
 
-    Then('engine state is idle', async () => {
+    Then('engine state is idle', () => {
       expect(recovered).to.have.property('state', 'idle');
     });
 
@@ -148,7 +148,7 @@ Feature('Resume execution', () => {
       expect(recovered.state).to.equal('running');
     });
 
-    And('resumed setting is ignored since only listener is used', async () => {
+    And('resumed setting is ignored since only listener is used', () => {
       const definitions = execution.definitions;
 
       expect(execution.environment.settings).to.contain({
@@ -244,7 +244,7 @@ Feature('Resume execution', () => {
       });
     });
 
-    Then('engine can be resumed', async () => {
+    Then('engine can be resumed', () => {
       expect(() => {
         recovered.recover(slimmerState);
       }).to.throw(Error);

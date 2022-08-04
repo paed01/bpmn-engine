@@ -115,7 +115,7 @@ Feature('Issues', () => {
     describe('first source', () => {
       let engine, options;
       const states = [];
-      Given('one service, two exclusive gateways, one user task with save state extension, and one loopback flow', async () => {
+      Given('one service, two exclusive gateways, one user task with save state extension, and one loopback flow', () => {
         options = {
           name: 'issue 105',
           source: source1,
@@ -311,7 +311,7 @@ Feature('Issues', () => {
         expect(state.definitions[0].execution.processes[0].execution.children.find(({id}) => id === 'End').counters).to.deep.equal({taken: 0, discarded: 0});
       });
 
-      When('definition is recovered with state', async () => {
+      When('definition is recovered with state', () => {
         engine = Engine(options);
         engine.recover(state);
 
@@ -331,7 +331,7 @@ Feature('Issues', () => {
         expect(execution.getActivityById('End').counters).to.deep.equal({taken: 0, discarded: 1});
       });
 
-      When('user task is signaled', async () => {
+      When('user task is signaled', () => {
         execution.signal({id: 'UserTask'});
       });
 
@@ -347,7 +347,7 @@ Feature('Issues', () => {
     describe('second source', () => {
       let engine, options;
       const states = [];
-      Given('one service, two exclusive gateways, one user task with save state extension, and two loopback flows', async () => {
+      Given('one service, two exclusive gateways, one user task with save state extension, and two loopback flows', () => {
         options = {
           name: 'issue 105',
           source: source2,
@@ -543,7 +543,7 @@ Feature('Issues', () => {
         expect(state.definitions[0].execution.processes[0].execution.children.find(({id}) => id === 'End').counters).to.deep.equal({taken: 0, discarded: 0});
       });
 
-      When('definition is recovered with state', async () => {
+      When('definition is recovered with state', () => {
         engine = Engine(options);
         engine.recover(state);
 
@@ -563,7 +563,7 @@ Feature('Issues', () => {
         expect(execution.getActivityById('End').counters).to.deep.equal({taken: 0, discarded: 1});
       });
 
-      When('user task is signaled', async () => {
+      When('user task is signaled', () => {
         execution.signal({id: 'UserTask'});
       });
 
@@ -610,14 +610,14 @@ Feature('Issues', () => {
 
     let engine, options;
     const states = [];
-    Given('two succeeding user tasks and decision to take third or fourth user task', async () => {
+    Given('two succeeding user tasks and decision to take third or fourth user task', () => {
       options = {
         name: 'issue 106',
         source,
       };
     });
 
-    async function onWait(activityApi, execution) {
+    function onWait(activityApi, execution) {
       if (activityApi.content.isRecovered) return;
 
       execution.stop();
@@ -1074,7 +1074,7 @@ Feature('Issues', () => {
     </definitions>`;
 
     let engine;
-    Given('process with user task and a tripple looped user task', async () => {
+    Given('process with user task and a tripple looped user task', () => {
       const listener = new EventEmitter();
       engine = new Engine({
         name: 'Engine',
@@ -1176,7 +1176,7 @@ Feature('Issues', () => {
     </definitions>`;
 
     let engine, listener;
-    Given('process with task with bound named error', async () => {
+    Given('process with task with bound named error', () => {
       listener = new EventEmitter();
       engine = Engine({
         name: 'Engine',

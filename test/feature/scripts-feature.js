@@ -70,7 +70,7 @@ Feature('Scripts', () => {
     });
 
     let end;
-    When('source is executed', async () => {
+    When('source is executed', () => {
       engine = Engine({
         name: 'Script feature',
         source,
@@ -105,7 +105,7 @@ Feature('Scripts', () => {
       </definitions>`;
     });
 
-    When('source is executed', async () => {
+    When('source is executed', () => {
       engine = Engine({
         name: 'Script feature',
         source,

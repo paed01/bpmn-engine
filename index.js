@@ -189,7 +189,7 @@ Engine.prototype.addSource = function addSource({sourceContext: addContext} = {}
 
 Engine.prototype.getDefinitions = async function getDefinitions(executeOptions) {
   const loadedDefinitions = this[kLoadedDefinitions];
-  if (loadedDefinitions && loadedDefinitions.length) return loadedDefinitions;
+  if (loadedDefinitions?.length) return loadedDefinitions;
   return this._loadDefinitions(executeOptions);
 };
 
@@ -318,7 +318,6 @@ Execution.prototype._execute = function execute(executeOptions, callback) {
     return result;
   }, []);
 
-
   if (!definitionExecutions.length) {
     const error = new Error('No executable processes');
     if (!callback) return this[kEngine].emit('error', error);
@@ -409,7 +408,7 @@ Execution.prototype._setup = function setup(setupOptions = {}) {
 
 Execution.prototype._onChildMessage = function onChildMessage(routingKey, message, owner) {
   const {environment: ownerEnvironment} = owner;
-  const listener = ownerEnvironment.options && ownerEnvironment.options.listener;
+  const listener = ownerEnvironment.options?.listener;
   this[kState] = 'running';
 
   let newState;
@@ -540,7 +539,7 @@ Execution.prototype.getPostponed = function getPostponed() {
 
 Execution.prototype.signal = function signal(payload, {ignoreSameDefinition} = {}) {
   for (const definition of this[kExecuting]) {
-    if (ignoreSameDefinition && payload && payload.parent && payload.parent.id === definition.id) continue;
+    if (ignoreSameDefinition && payload?.parent?.id === definition.id) continue;
     definition.signal(payload);
   }
 };

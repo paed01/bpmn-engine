@@ -102,7 +102,7 @@ Feature('Backward compatability', () => {
     });
 
     let ended;
-    And('user task is signaled', async () => {
+    And('user task is signaled', () => {
       ended = recovered.waitFor('end');
 
       execution.signal({id: 'task'});

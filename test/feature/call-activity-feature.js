@@ -6,7 +6,7 @@ const {Engine} = require('../..');
 Feature('Call activity', () => {
   Scenario('call process in the same diagram', () => {
     let engine;
-    Given('a process with a call activity referencing a process', async () => {
+    Given('a process with a call activity referencing a process', () => {
       const source = factory.resource('call-activity.bpmn');
       engine = new Engine({
         name: 'Call activity feature',
@@ -27,7 +27,7 @@ Feature('Call activity', () => {
 
   Scenario('called process throws', () => {
     let engine;
-    Given('a process with a call activity referencing a process that throws', async () => {
+    Given('a process with a call activity referencing a process that throws', () => {
       const source = `
       <definitions id="Def_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="main-process" isExecutable="true">
@@ -63,7 +63,7 @@ Feature('Call activity', () => {
       return endInError;
     });
 
-    Given('a process with a call activity with bound error handling referencing a process that throws', async () => {
+    Given('a process with a call activity with bound error handling referencing a process that throws', () => {
       const source = `
       <definitions id="Def_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="main-process" isExecutable="true">
@@ -109,7 +109,7 @@ Feature('Call activity', () => {
 
   Scenario('call activity is canceled', () => {
     let engine;
-    Given('a process with a call activity referencing a process', async () => {
+    Given('a process with a call activity referencing a process', () => {
       const source = `
       <definitions id="Def_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="main-process" isExecutable="true">
@@ -166,7 +166,7 @@ Feature('Call activity', () => {
       return end;
     });
 
-    Given('a process with a call activity not referencing any process', async () => {
+    Given('a process with a call activity not referencing any process', () => {
       const source = `
       <definitions id="Def_2" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="main-process" isExecutable="true">
@@ -202,7 +202,7 @@ Feature('Call activity', () => {
 
   Scenario('call activity is discarded mid run', () => {
     let engine;
-    Given('a process with a call activity referencing a process', async () => {
+    Given('a process with a call activity referencing a process', () => {
       const source = `
       <definitions id="Def_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="main-process" isExecutable="true">
@@ -246,7 +246,7 @@ Feature('Call activity', () => {
   Scenario('a process with a parallel multi-instance call activity with cardinality of three', () => {
     let engine;
     const serviceCalls = [];
-    Given('two processes', async () => {
+    Given('two processes', () => {
       const source = `
       <definitions id="Def_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <process id="main-process" isExecutable="true">

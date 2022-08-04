@@ -40,17 +40,17 @@ Feature('Multiple sources', () => {
     });
 
     let tradeTask, spotPriceChanged;
-    Then('trader is considering to trade', async () => {
+    Then('trader is considering to trade', () => {
       [spotPriceChanged, tradeTask] = execution.getPostponed();
       expect(tradeTask).to.be.ok;
       expect(tradeTask.content.form.fields.price.defaultValue).to.equal(100);
     });
 
-    And('spot price is monitored by process', async () => {
+    And('spot price is monitored by process', () => {
       expect(spotPriceChanged).to.be.ok;
     });
 
-    When('spot price is updated by second definition', async () => {
+    When('spot price is updated by second definition', () => {
       const [, updateDefinition] = execution.definitions;
       const [updateProcess] = updateDefinition.getProcesses();
 
@@ -87,7 +87,7 @@ Feature('Multiple sources', () => {
       });
     });
 
-    Then('trade task is discarded', async () => {
+    Then('trade task is discarded', () => {
       [tradeTask, spotPriceChanged] = execution.getPostponed();
       expect(tradeTask.id).to.equal('tradeTask');
       expect(spotPriceChanged.id).to.equal('catchSpotUpdate');
@@ -98,7 +98,7 @@ Feature('Multiple sources', () => {
       expect(execution.getActivityById(tradeTask.id).counters).to.have.property('discarded', 1);
     });
 
-    And('update price is taken', async () => {
+    And('update price is taken', () => {
       expect(spotPriceChanged.owner.counters).to.have.property('taken', 1);
     });
 
@@ -120,7 +120,7 @@ Feature('Multiple sources', () => {
       expect(tradeTask.owner.counters).to.have.property('discarded', 1);
     });
 
-    And('run is completed', async () => {
+    And('run is completed', () => {
       const [tradeDef, updateDef] = execution.definitions;
 
       expect(tradeDef).to.have.property('id', 'Signals_0');
@@ -134,7 +134,7 @@ Feature('Multiple sources', () => {
       return end;
     });
 
-    And('execution output has amount and new spot price', async () => {
+    And('execution output has amount and new spot price', () => {
       expect(execution.environment.output).to.deep.equal({
         amount: 42,
         price: 110,
@@ -147,7 +147,7 @@ Feature('Multiple sources', () => {
       execution = await engine.execute();
     });
 
-    When('trader trades again', async () => {
+    When('trader trades again', () => {
       execution.signal({
         id: 'tradeTask',
         form: {
@@ -156,7 +156,7 @@ Feature('Multiple sources', () => {
       });
     });
 
-    Then('run completes', async () => {
+    Then('run completes', () => {
       const [tradeDef, updateDef] = execution.definitions;
 
       expect(tradeDef).to.have.property('id', 'Signals_0');
@@ -170,7 +170,7 @@ Feature('Multiple sources', () => {
       return end;
     });
 
-    And('execution output has amount and new spot price', async () => {
+    And('execution output has amount and new spot price', () => {
       expect(execution.environment.output).to.deep.equal({
         amount: 42,
         price: 110,
@@ -187,7 +187,7 @@ Feature('Multiple sources', () => {
       });
     });
 
-    And('spot price is on the verge to be updated', async () => {
+    And('spot price is on the verge to be updated', () => {
       const [, updateDefinition] = execution.definitions;
       const [updateProcess] = updateDefinition.getProcesses();
 
@@ -195,7 +195,7 @@ Feature('Multiple sources', () => {
     });
 
     let stopped, state;
-    And('trade is paused', async () => {
+    And('trade is paused', () => {
       stopped = engine.waitFor('stop');
       execution.stop();
       state = execution.getState();
@@ -237,7 +237,7 @@ Feature('Multiple sources', () => {
       });
     });
 
-    And('trade is paused', async () => {
+    And('trade is paused', () => {
       execution.stop();
       state = execution.getState();
     });
@@ -266,7 +266,7 @@ Feature('Multiple sources', () => {
       });
     });
 
-    When('trader resumes trade', async () => {
+    When('trader resumes trade', () => {
       execution.signal({
         id: 'tradeTask',
         form: {
@@ -275,7 +275,7 @@ Feature('Multiple sources', () => {
       });
     });
 
-    Then('run completes', async () => {
+    Then('run completes', () => {
       const [tradeDef, updateDef] = execution.definitions;
 
       expect(tradeDef).to.have.property('id', 'Signals_0');
@@ -289,7 +289,7 @@ Feature('Multiple sources', () => {
       return end;
     });
 
-    And('execution output has amount and new approved spot price', async () => {
+    And('execution output has amount and new approved spot price', () => {
       expect(execution.environment.output).to.deep.equal({
         amount: 52,
         price: 100,
@@ -301,7 +301,7 @@ Feature('Multiple sources', () => {
       execution = await engine.execute();
     });
 
-    And('state is saved when trader is trading', async () => {
+    And('state is saved when trader is trading', () => {
       state = execution.getState();
     });
 
@@ -311,7 +311,7 @@ Feature('Multiple sources', () => {
       execution = await engine.resume();
     });
 
-    And('spot price is updated', async () => {
+    And('spot price is updated', () => {
       const [, updateDefinition] = execution.definitions;
       const [updateProcess] = updateDefinition.getProcesses();
 
@@ -336,7 +336,7 @@ Feature('Multiple sources', () => {
       });
     });
 
-    When('trader resumes trade', async () => {
+    When('trader resumes trade', () => {
       end = engine.waitFor('end');
       execution.signal({
         id: 'tradeTask',
@@ -346,7 +346,7 @@ Feature('Multiple sources', () => {
       });
     });
 
-    Then('run completes', async () => {
+    Then('run completes', () => {
       const [tradeDef, updateDef] = execution.definitions;
 
       expect(tradeDef).to.have.property('id', 'Signals_0');
@@ -360,7 +360,7 @@ Feature('Multiple sources', () => {
       return end;
     });
 
-    And('execution output has amount and new approved spot price', async () => {
+    And('execution output has amount and new approved spot price', () => {
       expect(execution.environment.output).to.deep.equal({
         amount: 52,
         price: 200,
