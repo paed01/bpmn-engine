@@ -23,7 +23,7 @@
   "scripts": {
     "test": "mocha -R dot",
     "posttest": "eslint . --cache && npm run toc",
-    "wintest": "./node_modules/.bin/mocha",
+    "wintest": "node ./node_modules/.bin/mocha",
     "cov:html": "nyc mocha -R dot && nyc report --reporter=html",
     "test:lcov": "nyc mocha -R dot && nyc report --reporter lcov && npm run posttest",
     "toc": "node scripts/generate-api-toc ./docs/API.md,./docs/Examples.md",

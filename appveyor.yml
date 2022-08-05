@@ -1,7 +1,7 @@
 environment:
   matrix:
-    - nodejs_version: 14
-    - nodejs_version: 16
+    - nodejs_version: "14"
+    - nodejs_version: "16"
 
 platform:
   - x86
@@ -9,7 +9,8 @@ platform:
 
 install:
   # https://www.appveyor.com/docs/lang/nodejs-iojs/#installing-any-version-of-nodejs-or-iojs
-  - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version) $env:PLATFORM
+  # - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version) $env:PLATFORM
+  - ps: Install-Product node $env:nodejs_version $env:platform
   - npm install
 
 build: off
