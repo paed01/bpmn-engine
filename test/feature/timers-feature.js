@@ -20,7 +20,7 @@ Feature('Timers', () => {
     let engine;
     Given('a time cycle start event, bound time duration event, throw time date event, and a user task with due date', async () => {
       const sourceContext = await testHelpers.context(timersSource, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
+        camunda: require('camunda-bpmn-moddle/resources/camunda'),
       });
 
       engine = Engine({
@@ -28,7 +28,7 @@ Feature('Timers', () => {
         sourceContext,
         variables: {
           catchDate: '1993-06-26',
-          dueDate: '1993-06-27'
+          dueDate: '1993-06-27',
         },
         extensions: {
           timers(activity) {
@@ -39,8 +39,8 @@ Feature('Timers', () => {
                 dueDate: new Date(api.resolveExpression(activity.behaviour.dueDate)),
               });
             });
-          }
-        }
+          },
+        },
       });
     });
 

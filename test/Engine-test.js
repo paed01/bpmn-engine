@@ -27,7 +27,7 @@ describe('Engine', () => {
 
     it('takes source option', async () => {
       const engine = Bpmn.Engine({
-        source: factory.valid()
+        source: factory.valid(),
       });
 
       const definitions = await engine.getDefinitions();
@@ -38,7 +38,7 @@ describe('Engine', () => {
 
     it('throws if unsupported source is passed', (done) => {
       const engine = Bpmn.Engine({
-        source: {}
+        source: {},
       });
 
       engine.getDefinitions().catch((err) => {
@@ -51,7 +51,7 @@ describe('Engine', () => {
       const source = Buffer.from(factory.valid());
       const engine = Bpmn.Engine({
         name: 'source from buffer',
-        source
+        source,
       });
 
       const definitions = await engine.getDefinitions();
@@ -60,7 +60,7 @@ describe('Engine', () => {
 
     it('but not function', (done) => {
       const engine = Bpmn.Engine({
-        source() {}
+        source() {},
       });
 
       engine.getDefinitions().catch((err) => {
@@ -71,7 +71,7 @@ describe('Engine', () => {
 
     it('accepts name', () => {
       const engine = Bpmn.Engine({
-        name: 'no source'
+        name: 'no source',
       });
 
       expect(engine.name).to.equal('no source');
@@ -84,7 +84,7 @@ describe('Engine', () => {
     });
 
     it('the "Logger" option is a factory function that accepts a scope and returns a Logger', (done) => {
-      const Logger = scope => ({
+      const Logger = (scope) => ({
         debug: (...args) => Logger.logs.push({scope, level: 'debug', args}),
         warn: (...args) => Logger.logs.push({scope, level: 'warn', args}),
         error: (...args) => Logger.logs.push({scope, level: 'error', args}),
@@ -94,7 +94,7 @@ describe('Engine', () => {
 
       const engine = Bpmn.Engine({
         source: factory.valid(),
-        Logger
+        Logger,
       });
 
       engine.execute();
@@ -116,7 +116,7 @@ describe('Engine', () => {
 
       expect(() => Bpmn.Engine({
         source: factory.valid(),
-        Logger
+        Logger,
       })).to.throw(TypeError, 'Logger is not a function');
     });
   });
@@ -125,7 +125,7 @@ describe('Engine', () => {
     it('returns definitions', async () => {
       const engine = Bpmn.Engine({
         source: factory.valid(),
-        listener: new EventEmitter()
+        listener: new EventEmitter(),
       });
 
       const definitions = await engine.getDefinitions();
@@ -137,7 +137,7 @@ describe('Engine', () => {
     it('returns definitions with processes', async () => {
       const engine = Bpmn.Engine({
         source: factory.valid(),
-        listener: new EventEmitter()
+        listener: new EventEmitter(),
       });
 
       const [definition] = await engine.getDefinitions();
@@ -159,7 +159,7 @@ describe('Engine', () => {
     it('definition has listener as option', async () => {
       const engine = Bpmn.Engine({
         source: factory.valid(),
-        listener: new EventEmitter()
+        listener: new EventEmitter(),
       });
 
       const definitions = await engine.getDefinitions();
@@ -169,7 +169,7 @@ describe('Engine', () => {
 
     it('rejects if invalid definition source', (done) => {
       const engine = Bpmn.Engine({
-        source: 'not xml'
+        source: 'not xml',
       });
       engine.getDefinitions().catch((err) => {
         expect(err).to.be.ok;
@@ -188,7 +188,7 @@ describe('Engine', () => {
       const moddleContext = await testHelpers.moddleContext(factory.valid('contextTest'));
 
       const engine = Bpmn.Engine({
-        moddleContext
+        moddleContext,
       });
 
       const definition = await engine.getDefinitionById('contextTest');
@@ -201,7 +201,7 @@ describe('Engine', () => {
       const moddleContext = await testHelpers.moddleContext(factory.valid('contextTest'));
 
       const engine = Bpmn.Engine({
-        moddleContext: JSON.parse(JSON.stringify(testHelpers.serializeModdleContext(moddleContext)))
+        moddleContext: JSON.parse(JSON.stringify(testHelpers.serializeModdleContext(moddleContext))),
       });
 
       expect(await engine.getDefinitionById('contextTest')).to.be.ok;
@@ -211,7 +211,7 @@ describe('Engine', () => {
   describe('async execute([options, callback])', () => {
     it('runs definition and emits end when completed', (done) => {
       const engine = Bpmn.Engine({
-        source: factory.valid()
+        source: factory.valid(),
       });
 
       engine.once('end', () => {
@@ -224,7 +224,7 @@ describe('Engine', () => {
     it('returns api with name, running definitions, and function to get postponed activities', async () => {
       const engine = Bpmn.Engine({
         name: 'with api',
-        source: factory.userTask('userTask')
+        source: factory.userTask('userTask'),
       });
 
       const api = await engine.execute();
@@ -241,7 +241,7 @@ describe('Engine', () => {
     it('engine and execution api definitions are the same', async () => {
       const engine = Bpmn.Engine({
         name: 'with api',
-        source: factory.userTask('userTask')
+        source: factory.userTask('userTask'),
       });
 
       const engineDefs = await engine.getDefinitions();
@@ -256,7 +256,7 @@ describe('Engine', () => {
       const source = Buffer.from(factory.valid());
       const engine = Bpmn.Engine({
         name: 'execution prop',
-        source
+        source,
       });
 
       await engine.execute();
@@ -277,8 +277,8 @@ describe('Engine', () => {
 
       engine.execute({
         variables: {
-          input: 1
-        }
+          input: 1,
+        },
       });
     });
 
@@ -295,13 +295,13 @@ describe('Engine', () => {
         name: 'end test',
         source,
         variables: {
-          input: 0
+          input: 0,
         },
         services: {
           get(context, next) {
             next(new Error('Inner error'));
-          }
-        }
+          },
+        },
       });
 
       engine.once('end', () => {
@@ -310,20 +310,20 @@ describe('Engine', () => {
 
       engine.execute({
         variables: {
-          input: 1
+          input: 1,
         },
         services: {
           get(context, next) {
             if (context.environment.variables.input !== 1) return next(new Error('Get error'));
             next(null, context.environment.variables.input);
-          }
-        }
+          },
+        },
       });
     });
 
     it('rejects if source is not well formatted xml', (done) => {
       const engine = Bpmn.Engine({
-        source: 'jdalsk'
+        source: 'jdalsk',
       });
       engine.execute().catch((err) => {
         expect(err).to.be.ok;
@@ -333,7 +333,7 @@ describe('Engine', () => {
 
     it('returns error in callback if source is not well formatted xml', (done) => {
       const engine = Bpmn.Engine({
-        source: 'jdalsk'
+        source: 'jdalsk',
       });
 
       engine.execute((err) => {
@@ -351,7 +351,7 @@ describe('Engine', () => {
 
       const engine = Bpmn.Engine({
         name: 'no executable processes',
-        source
+        source,
       });
       engine.execute((err) => {
         expect(err).to.be.an('error').and.match(/executable process/);
@@ -367,7 +367,7 @@ describe('Engine', () => {
       </definitions>`;
 
       const engine = Bpmn.Engine({
-        source
+        source,
       });
       engine.execute().catch((err) => {
         expect(err).to.be.an('error').and.match(/executable process/);
@@ -383,7 +383,7 @@ describe('Engine', () => {
       </definitions>`;
 
       const engine = Bpmn.Engine({
-        source
+        source,
       });
 
       engine.once('error', (err) => {
@@ -397,7 +397,7 @@ describe('Engine', () => {
     it('emits end when all processes have completed', (done) => {
       const engine = Bpmn.Engine({
         name: 'end test',
-        source: factory.resource('lanes.bpmn')
+        source: factory.resource('lanes.bpmn'),
       });
       engine.once('end', () => {
         done();
@@ -421,8 +421,8 @@ describe('Engine', () => {
         services: {
           get: (context, next) => {
             next(new Error('Inner error'));
-          }
-        }
+          },
+        },
       });
       engine.once('error', (err) => {
         expect(err).to.be.an('error').and.match(/Inner error/i);
@@ -447,8 +447,8 @@ describe('Engine', () => {
         services: {
           get: (context, next) => {
             next(new Error('Inner error'));
-          }
-        }
+          },
+        },
       });
 
       engine.execute((err) => {
@@ -459,12 +459,12 @@ describe('Engine', () => {
 
     it('throws error if listener doesn´t have an emit function', async () => {
       const engine = Bpmn.Engine({
-        source: factory.resource('lanes.bpmn')
+        source: factory.resource('lanes.bpmn'),
       });
 
       try {
         await engine.execute({
-          listener: {}
+          listener: {},
         });
       } catch (e) {
         var err = e; // eslint-disable-line
@@ -479,10 +479,10 @@ describe('Engine', () => {
         services: {
           serviceFn(...args) {
             args.pop()();
-          }
+          },
         },
         variables: {
-          input: 0
+          input: 0,
         },
       });
 
@@ -490,7 +490,7 @@ describe('Engine', () => {
       listener.on('wait', (activityApi) => {
         if (activityApi.type === 'bpmn:UserTask') {
           activityApi.signal({
-            input: 1
+            input: 1,
           });
         }
       });
@@ -510,7 +510,7 @@ describe('Engine', () => {
         variables: {
           data: {
             input: 'von Rosén',
-          }
+          },
         },
       });
 
@@ -525,9 +525,9 @@ describe('Engine', () => {
           ioSpecification: {
             dataOutputs: [{
               id: 'userInput',
-              value: 'von Rosen'
-            }]
-          }
+              value: 'von Rosen',
+            }],
+          },
         });
       });
 
@@ -542,7 +542,7 @@ describe('Engine', () => {
   describe('waitFor(eventName)', () => {
     it('end resolves when execution completes', async () => {
       const engine = Bpmn.Engine({
-        source: factory.valid()
+        source: factory.valid(),
       });
 
       const end = engine.waitFor('end');
@@ -561,7 +561,7 @@ describe('Engine', () => {
 
     it('end rejects if error occur', async () => {
       const engine = Bpmn.Engine({
-        source: factory.invalid()
+        source: factory.invalid(),
       });
 
       let error;
@@ -582,7 +582,7 @@ describe('Engine', () => {
 
     it('mandatory non-error messages are ignored', async () => {
       const engine = Bpmn.Engine({
-        source: factory.userTask()
+        source: factory.userTask(),
       });
 
       engine.waitFor('end');
@@ -604,7 +604,7 @@ describe('Engine', () => {
     it('engine returns non-running state', async () => {
       const sourceEngine = Bpmn.Engine({
         name: 'test state',
-        source: factory.userTask()
+        source: factory.userTask(),
       });
       expect(await sourceEngine.getDefinitions()).to.have.length(1);
 
@@ -616,7 +616,7 @@ describe('Engine', () => {
 
     it('returns state "running" when running definitions', (done) => {
       const engine = Bpmn.Engine({
-        source
+        source,
       });
       const listener = new EventEmitter();
 
@@ -630,14 +630,14 @@ describe('Engine', () => {
       engine.execute({
         listener,
         variables: {
-          input: null
-        }
+          input: null,
+        },
       });
     });
 
     it('returns state "idle" when nothing is running', async () => {
       const engine = Bpmn.Engine({
-        source
+        source,
       });
 
       const state = await engine.getState();
@@ -649,7 +649,7 @@ describe('Engine', () => {
     it('returns state of running definitions', (done) => {
       const engine = Bpmn.Engine({
         name: 'running',
-        source
+        source,
       });
       const listener = new EventEmitter();
 
@@ -665,15 +665,15 @@ describe('Engine', () => {
       engine.execute({
         listener,
         variables: {
-          input: null
-        }
+          input: null,
+        },
       });
     });
 
     it('returns state of running definitions', (done) => {
       const engine = Bpmn.Engine({
         name: 'running',
-        source
+        source,
       });
       const listener = new EventEmitter();
 
@@ -689,14 +689,14 @@ describe('Engine', () => {
       engine.execute({
         listener,
         variables: {
-          input: null
-        }
+          input: null,
+        },
       });
     });
 
     it('returns engine package version', (done) => {
       const engine = Bpmn.Engine({
-        source
+        source,
       });
       const listener = new EventEmitter();
 
@@ -709,8 +709,8 @@ describe('Engine', () => {
       engine.execute({
         listener,
         variables: {
-          input: null
-        }
+          input: null,
+        },
       });
     });
   });
@@ -755,7 +755,7 @@ describe('Engine', () => {
     it('recovers engine from state', async () => {
       const sourceEngine = Bpmn.Engine({
         name: 'test recover',
-        source: factory.userTask()
+        source: factory.userTask(),
       });
       expect(await sourceEngine.getDefinitions()).to.have.length(1);
       expect(sourceEngine).to.have.property('state', 'idle');
@@ -775,7 +775,7 @@ describe('Engine', () => {
 
     it('recover without state definitions is kind of ignored', () => {
       const engine = Bpmn.Engine().recover({
-        name: 'recovered'
+        name: 'recovered',
       });
       const recovered = engine.recover();
 
@@ -786,7 +786,7 @@ describe('Engine', () => {
     it('recovers definition running state', async () => {
       const sourceEngine = Bpmn.Engine({
         name: 'test recover',
-        source: factory.userTask()
+        source: factory.userTask(),
       });
 
       const sourceApi = await sourceEngine.execute();
@@ -803,7 +803,7 @@ describe('Engine', () => {
     it('doesn´t overwrite name from state if instantiated with name', async () => {
       const sourceEngine = Bpmn.Engine({
         name: 'test recover',
-        source: factory.userTask()
+        source: factory.userTask(),
       });
 
       const engine = Bpmn.Engine({name: 'my new name'}).recover(await sourceEngine.getState());
@@ -816,7 +816,7 @@ describe('Engine', () => {
         source: factory.userTask(),
         variables: {
           execVersion: 1,
-        }
+        },
       });
 
       engine.execute();
@@ -834,7 +834,7 @@ describe('Engine', () => {
         source: factory.userTask(),
         variables: {
           execVersion: 1,
-        }
+        },
       });
 
       await engine.execute();
@@ -852,7 +852,7 @@ describe('Engine', () => {
         source: factory.userTask(),
         variables: {
           execVersion: 1,
-        }
+        },
       });
 
       engine.execute();
@@ -866,7 +866,7 @@ describe('Engine', () => {
         },
         services: {
           get() {},
-        }
+        },
       });
 
       expect(recovered.environment.variables).to.have.property('execVersion', 1);
@@ -884,7 +884,7 @@ describe('Engine', () => {
         source: factory.userTask(),
         variables: {
           execVersion: 1,
-        }
+        },
       });
 
       engine.execute();
@@ -899,7 +899,7 @@ describe('Engine', () => {
         },
         services: {
           get() {},
-        }
+        },
       });
 
       recovered.environment.addService('newGet', () => {});
@@ -938,7 +938,7 @@ describe('Engine', () => {
     before((done) => {
       const engine = Bpmn.Engine({
         name: 'test resume',
-        source: factory.userTask()
+        source: factory.userTask(),
       });
       const listener = new EventEmitter();
 
@@ -954,8 +954,8 @@ describe('Engine', () => {
       engine.execute({
         listener,
         variables: {
-          input: null
-        }
+          input: null,
+        },
       });
     });
 
@@ -1023,7 +1023,7 @@ describe('Engine', () => {
     it('resume with source does basically nothing', async () => {
       const engine = Bpmn.Engine({
         name: 'test resume with source',
-        source: factory.userTask()
+        source: factory.userTask(),
       });
 
       await engine.resume();
@@ -1123,7 +1123,7 @@ describe('Engine', () => {
     before('given an engine', () => {
       engine = Bpmn.Engine({
         name: 'get postponed',
-        source
+        source,
       });
     });
 
@@ -1135,7 +1135,7 @@ describe('Engine', () => {
       });
 
       await engine.execute({
-        listener
+        listener,
       });
 
       expect(engineApi.definitions).to.have.length(1);
@@ -1152,7 +1152,7 @@ describe('Engine', () => {
     it('on engine.execution returns activities in a postponed state', async () => {
       const listener = new EventEmitter();
       await engine.execute({
-        listener
+        listener,
       });
 
       const completed = engine.waitFor('end');
@@ -1208,7 +1208,7 @@ describe('Engine', () => {
         engineApi = api;
       });
       await engine.execute({
-        listener
+        listener,
       });
 
       expect(engineApi.definitions).to.have.length(1);
@@ -1296,8 +1296,8 @@ describe('Engine', () => {
         expressions: {
           resolveExpression(expression) {
             if (expression === 'myService') return myService;
-          }
-        }
+          },
+        },
       });
 
       const end = engine.waitFor('end');
@@ -1326,8 +1326,8 @@ describe('Engine', () => {
         expressions: {
           resolveExpression(expression) {
             if (expression === 'myService') return myService;
-          }
-        }
+          },
+        },
       });
 
       await end;
@@ -1370,9 +1370,9 @@ describe('Engine', () => {
           ioSpecification: {
             dataOutputs: [{
               id: 'userInput',
-              value: 'von Rosen'
-            }]
-          }
+              value: 'von Rosen',
+            }],
+          },
         });
       });
 

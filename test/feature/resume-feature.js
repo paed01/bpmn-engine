@@ -140,7 +140,7 @@ Feature('Resume execution', () => {
         listener,
         settings: {
           resumeSetting: true,
-        }
+        },
       });
     });
 

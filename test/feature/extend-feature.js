@@ -25,7 +25,7 @@ Feature('extending behaviour', () => {
         name: 'Engine feature',
         source,
         moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
+          camunda: require('camunda-bpmn-moddle/resources/camunda'),
         },
         extensions: {
           fetchForm(activity) {
@@ -45,8 +45,8 @@ Feature('extending behaviour', () => {
             activity.on('end', (api) => {
               environment.output[api.id] = api.content.output;
             });
-          }
-        }
+          },
+        },
       });
 
       function getForm(activity) {
@@ -54,7 +54,7 @@ Feature('extending behaviour', () => {
           return resolve({
             id: activity.behaviour.formKey,
             fields: {
-              surname: ''
+              surname: '',
             },
           });
         });
@@ -80,7 +80,7 @@ Feature('extending behaviour', () => {
 
     When('task is signaled', () => {
       task.signal({
-        surname: 'von Rosen'
+        surname: 'von Rosen',
       });
     });
 
@@ -147,12 +147,12 @@ Feature('extending behaviour', () => {
         name: 'extend service task',
         source,
         moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
+          camunda: require('camunda-bpmn-moddle/resources/camunda'),
         },
         services: {
           serviceFn(scope, callback) {
             callback(null, {data: 1});
-          }
+          },
         },
         extensions: {
           camundaServiceTask(activity) {
@@ -165,7 +165,7 @@ Feature('extending behaviour', () => {
               });
             }
           },
-        }
+        },
       });
     });
 
@@ -210,11 +210,11 @@ Feature('extending behaviour', () => {
                 execute(scope, next) {
                   scope.environment.output.myScript = 1;
                   next();
-                }
+                },
               };
             }
-          }
-        }
+          },
+        },
       });
     });
 
@@ -288,8 +288,8 @@ Feature('extending behaviour', () => {
               input: io.input.map(({name, value}) => ({
                 name,
                 value: elementApi.resolveExpression(value),
-              }))
-            }
+              })),
+            },
           });
         });
       };
@@ -300,11 +300,11 @@ Feature('extending behaviour', () => {
       engine = Engine({
         source,
         moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
+          camunda: require('camunda-bpmn-moddle/resources/camunda'),
         },
         extensions: {
-          ioExtension
-        }
+          ioExtension,
+        },
       });
     });
 
@@ -312,8 +312,8 @@ Feature('extending behaviour', () => {
       engine.execute({
         listener,
         variables: {
-          statusCode: 200
-        }
+          statusCode: 200,
+        },
       }, done);
     });
 
@@ -368,7 +368,7 @@ Feature('extending behaviour', () => {
             decisions: outboundFlows.map((f) => {
               const {id, name, type} = f;
               return {id, name, type};
-            })
+            }),
           });
 
           broker.subscribeTmp('api', 'activity.#', onApiMessage, {noAck: true, consumerTag: '_my-call-activity'});
@@ -414,8 +414,8 @@ Feature('extending behaviour', () => {
         source,
         listener,
         elements: {
-          ExclusiveGateway: MyExclusiveGateway
-        }
+          ExclusiveGateway: MyExclusiveGateway,
+        },
       });
       end = engine.waitFor('end');
     });
@@ -524,7 +524,7 @@ Feature('extending behaviour', () => {
     let extensions;
     And('an extension executing script on task start', () => {
       extensions = {
-        extension: Extension
+        extension: Extension,
       };
 
       function Extension(activity) {
@@ -562,7 +562,7 @@ Feature('extending behaviour', () => {
             },
             deactivate() {
               broker.cancel('_my-extension');
-            }
+            },
           };
         }
 
@@ -593,7 +593,7 @@ Feature('extending behaviour', () => {
             return {
               execute(message) {
                 executed = message;
-              }
+              },
             };
           }
         }
@@ -694,8 +694,8 @@ Feature('extending behaviour', () => {
         source,
         listener,
         elements: {
-          CallActivity: MyCallActivity
-        }
+          CallActivity: MyCallActivity,
+        },
       });
       end = engine.waitFor('end');
     });

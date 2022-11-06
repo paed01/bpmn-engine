@@ -24,7 +24,7 @@ function generate(filename) {
       return text.toLowerCase()
         .replace(/\s/g, '-')
         .replace(/[^\w-]/g, '');
-    }
+    },
   };
 
   const output = Toc.insert(api, tocOptions)

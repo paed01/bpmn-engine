@@ -40,7 +40,7 @@ function parseDoc(filePath) {
         block,
         line: blockLine,
         len: block.length,
-        script: parse(`${filePath}`, block, blockLine)
+        script: parse(`${filePath}`, block, blockLine),
       });
     });
 
@@ -54,17 +54,17 @@ function parseDoc(filePath) {
 
   function parse(filename, scriptBody, lineOffset) {
     return new vm.Script(scriptBody, {
-      filename: filename,
+      filename,
       displayErrors: true,
-      lineOffset: lineOffset
+      lineOffset,
     });
   }
 }
 
 function execute(script) {
   const context = {
-    require: require,
-    console: console,
+    require,
+    console,
     setTimeout,
     db: {
       getSavedState: (id, callback) => {
@@ -76,8 +76,8 @@ function execute(script) {
       },
       getState: (id, callback) => {
         callback(null, {definitions: []});
-      }
-    }
+      },
+    },
   };
   const vmContext = new vm.createContext(context);
   return script.runInContext(vmContext);

@@ -140,7 +140,7 @@ Feature('Issues', () => {
                 engine.emit('wait', api);
               });
             },
-          }
+          },
         };
 
         function sleep(msec) {
@@ -155,7 +155,7 @@ Feature('Issues', () => {
         engine = Engine({
           ...options,
           variables: {
-            passTask2: 1
+            passTask2: 1,
           },
         });
 
@@ -194,7 +194,7 @@ Feature('Issues', () => {
         engine = Engine({
           ...options,
           variables: {
-            passTask2: 1
+            passTask2: 1,
           },
         });
 
@@ -372,7 +372,7 @@ Feature('Issues', () => {
                 engine.emit('wait', api);
               });
             },
-          }
+          },
         };
 
         function sleep(msec) {
@@ -387,7 +387,7 @@ Feature('Issues', () => {
         engine = Engine({
           ...options,
           variables: {
-            passTask2: 1
+            passTask2: 1,
           },
         });
 
@@ -426,7 +426,7 @@ Feature('Issues', () => {
         engine = Engine({
           ...options,
           variables: {
-            passTask2: 1
+            passTask2: 1,
           },
         });
 
@@ -632,7 +632,7 @@ Feature('Issues', () => {
       engine = Engine({
         ...options,
         variables: {
-          takeTask3: 1
+          takeTask3: 1,
         },
       });
 
@@ -1106,8 +1106,8 @@ Feature('Issues', () => {
               if (!elementApi.content.output) return;
               context.environment.output[elementApi.id] = elementApi.content.output;
             });
-          }
-        }
+          },
+        },
       });
     });
 
@@ -1226,8 +1226,8 @@ Feature('Issues', () => {
       end = engine.waitFor('end');
       execution = await engine.execute({
         variables: {
-          errorId: 'Error_1'
-        }
+          errorId: 'Error_1',
+        },
       });
     });
 

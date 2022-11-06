@@ -12,7 +12,7 @@ Feature('Multiple sources', () => {
     let engine, signalContext, updateContext;
     Given('a trade process waiting for spot price update signal and another admin processs that updates price', async () => {
       signalContext = await testHelpers.context(signalsSource, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
+        camunda: require('camunda-bpmn-moddle/resources/camunda'),
       });
       engine = getExtendedEngine({
         sourceContext: signalContext,
@@ -23,7 +23,7 @@ Feature('Multiple sources', () => {
 
     And('a second definition that updates spot price', async () => {
       updateContext = await testHelpers.context(sendSignalSource, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda')
+        camunda: require('camunda-bpmn-moddle/resources/camunda'),
       });
 
       engine.addSource({
@@ -59,7 +59,7 @@ Feature('Multiple sources', () => {
           id: 'set-spot-price',
           form: {
             newPrice: 110,
-          }
+          },
         });
       });
 
@@ -82,8 +82,8 @@ Feature('Multiple sources', () => {
       execution.signal({
         id: 'approveSpotPrice',
         form: {
-          newPrice: 110
-        }
+          newPrice: 110,
+        },
       });
     });
 
@@ -152,7 +152,7 @@ Feature('Multiple sources', () => {
         id: 'tradeTask',
         form: {
           amount: 42,
-        }
+        },
       });
     });
 
@@ -233,7 +233,7 @@ Feature('Multiple sources', () => {
       setSpotPrice.signal({
         form: {
           newPrice: 100,
-        }
+        },
       });
     });
 
@@ -261,8 +261,8 @@ Feature('Multiple sources', () => {
 
       approveSpotPrice.signal({
         form: {
-          newPrice: 100
-        }
+          newPrice: 100,
+        },
       });
     });
 
@@ -271,7 +271,7 @@ Feature('Multiple sources', () => {
         id: 'tradeTask',
         form: {
           amount: 52,
-        }
+        },
       });
     });
 
@@ -320,7 +320,7 @@ Feature('Multiple sources', () => {
           id: 'set-spot-price',
           form: {
             newPrice: 200,
-          }
+          },
         });
       });
 
@@ -332,7 +332,7 @@ Feature('Multiple sources', () => {
         id: 'approveSpotPrice',
         form: {
           newPrice: 200,
-        }
+        },
       });
     });
 
@@ -342,7 +342,7 @@ Feature('Multiple sources', () => {
         id: 'tradeTask',
         form: {
           amount: 52,
-        }
+        },
       });
     });
 
@@ -549,7 +549,7 @@ function formFormatting(activity, context, formData) {
   const {broker, environment} = activity;
   broker.subscribeTmp('event', 'activity.enter', (_, message) => {
     const form = {
-      fields: {}
+      fields: {},
     };
     formData.fields.forEach((field) => {
       form.fields[field.id] = {...field};

@@ -42,7 +42,7 @@ function serializeModdleContext({rootElement, rootHandler, elementsById, referen
     rootElement: serializedRoot,
     elementsById: JSON.parse(JSON.stringify(elementsById)),
     references: JSON.parse(JSON.stringify(references)),
-    warnings: warnings.slice()
+    warnings: warnings.slice(),
   };
   return clonedContext;
 }

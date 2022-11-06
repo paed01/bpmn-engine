@@ -14,7 +14,7 @@ describe('issues', () => {
         },
         log: (message) => {
           messages.push(message);
-        }
+        },
       };
 
       const listener = new EventEmitter();
@@ -35,7 +35,7 @@ describe('issues', () => {
       await engine.execute({
         listener,
         variables: {
-          timeout: 100
+          timeout: 100,
         },
         services,
       });
@@ -175,7 +175,7 @@ describe('issues', () => {
       listener.on('activity.wait', (exec) => {
         expect(exec.environment.output.test).to.equal('set from script');
 
-        engine.getState().then(s => {
+        engine.getState().then((s) => {
           state = s;
           engine.stop();
         });

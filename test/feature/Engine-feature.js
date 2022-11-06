@@ -25,8 +25,8 @@ Feature('Engine', () => {
         services: {
           serviceFn(...args) {
             args.pop()();
-          }
-        }
+          },
+        },
       });
     });
 
@@ -123,7 +123,7 @@ Feature('Engine', () => {
     And('an engine', () => {
       engine = Engine({
         name: 'Engine lanes',
-        source
+        source,
       });
     });
 
@@ -175,7 +175,7 @@ Feature('Engine', () => {
         name: 'Engine feature',
         source,
         moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda')
+          camunda: require('camunda-bpmn-moddle/resources/camunda'),
         },
         extensions: {
           fetchForm(activity) {
@@ -195,8 +195,8 @@ Feature('Engine', () => {
             activity.on('end', (api) => {
               environment.output[api.id] = api.content.output;
             });
-          }
-        }
+          },
+        },
       });
 
       function getForm(activity) {
@@ -204,7 +204,7 @@ Feature('Engine', () => {
           return resolve({
             id: activity.behaviour.formKey,
             fields: {
-              surname: ''
+              surname: '',
             },
           });
         });
@@ -230,7 +230,7 @@ Feature('Engine', () => {
 
     When('task is signaled', () => {
       task.signal({
-        surname: 'von Rosen'
+        surname: 'von Rosen',
       });
     });
 
@@ -268,8 +268,8 @@ Feature('Engine', () => {
         services: {
           serviceFn(...args) {
             args.pop()();
-          }
-        }
+          },
+        },
       });
     });
 
@@ -313,8 +313,8 @@ Feature('Engine', () => {
         services: {
           serviceFn(...args) {
             args.pop()();
-          }
-        }
+          },
+        },
       });
     });
 
