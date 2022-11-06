@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 15.1.0
+
+- Bump [`bpmn-elements@8.2.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+- Bump [`smqp@6.1.0`](https://github.com/paed01/smqp/blob/default/CHANGELOG.md)
+
 # 15.0.0
 
 ## Breaking
