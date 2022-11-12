@@ -7,7 +7,6 @@ global.expect = require('chai').expect;
 const nock = require('nock');
 nock.enableNetConnect(/(localhost|127\.0\.0\.1):\d+/);
 
-
 module.exports = {
   recursive: true,
   reporter: 'spec',

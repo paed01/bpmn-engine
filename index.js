@@ -40,7 +40,7 @@ function Engine(options = {}) {
 
   this[kTypeResolver] = TypeResolver({
     ...Elements,
-    ...(opts.elements || {}),
+    ...opts.elements,
   }, opts.typeResolver || defaultTypeResolver);
 
   this[kEnvironment] = new Elements.Environment(opts);
