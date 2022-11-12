@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 15.1.1
+
+- Patch [`bpmn-elements@8.2.1`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
 # 15.1.0
 
 - Bump [`bpmn-elements@8.2.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
