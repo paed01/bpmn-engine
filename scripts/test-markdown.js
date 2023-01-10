@@ -1,7 +1,7 @@
 /* eslint no-console:0 */
 'use strict';
 
-const fs = require('fs');
+const {promises: fs} = require('fs');
 const vm = require('vm');
 const nock = require('nock');
 
@@ -24,32 +24,35 @@ let prevCharIdx = 0;
 const file = process.argv[2] || './docs/API.md';
 const blockIdx = Number(process.argv[3]);
 
-function parseDoc(filePath) {
-  fs.readFile(filePath, (err, fileContent) => {
-    if (err) throw err;
+async function parseDoc(filePath) {
+  const fileContent = await fs.readFile(filePath);
+  const blocks = [];
+  const content = fileContent.toString();
 
-    const blocks = [];
-    const content = fileContent.toString();
+  content.replace(exPattern, (match, block, idx) => {
+    block = block.replace(`require('${name}')`, `require('../${main}')`);
 
-    content.replace(exPattern, (match, block, idx) => {
-      block = block.replace(`require('${name}')`, `require('../${main}')`);
+    const blockLine = calculateLine(content, idx);
 
-      const blockLine = calculateLine(content, idx);
-
-      blocks.push({
-        block,
-        line: blockLine,
-        len: block.length,
-        script: parse(`${filePath}`, block, blockLine),
-      });
+    blocks.push({
+      block,
+      line: blockLine,
+      len: block.length,
+      script: parse(`${filePath}`, block, blockLine),
     });
+  });
 
-    blocks.forEach(({line, script}, idx) => {
-      if (isNaN(blockIdx) || idx === blockIdx) {
-        console.log(`${idx}: ${filePath}:${line}`);
-        execute(script);
-      }
-    });
+  for (let idx = 0; idx < blocks.lenght; idx++) {
+    const {line, script} = blocks[idx];
+    console.log(`${idx}: ${filePath}:${line}`);
+    await execute(script);
+  }
+
+  blocks.forEach(({line, script}, idx) => {
+    if (isNaN(blockIdx) || idx === blockIdx) {
+      console.log(`${idx}: ${filePath}:${line}`);
+      execute(script);
+    }
   });
 
   function parse(filename, scriptBody, lineOffset) {

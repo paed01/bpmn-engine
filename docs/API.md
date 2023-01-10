@@ -136,7 +136,7 @@ const engine = new Engine({
 });
 
 const listener = new EventEmitter();
-listener.on('wait', (elementApi) => {
+listener.on('activity.wait', (elementApi) => {
   elementApi.owner.logger.debug(`<${elementApi.executionId} (${elementApi.id})> signal with io`, elementApi.content.ioSpecification);
   elementApi.signal({
     ioSpecification: {
@@ -187,7 +187,7 @@ listener.on('activity.enter', (elementApi, engineApi) => {
   console.log(`${elementApi.type} <${elementApi.id}> of ${engineApi.name} is entered`);
 });
 
-listener.on('wait', (elemntApi, instance) => {
+listener.on('activity.wait', (elemntApi, instance) => {
   console.log(`${elemntApi.type} <${elemntApi.id}> of ${instance.name} is waiting for input`);
   elemntApi.signal('don´t wait for me');
 });
@@ -300,7 +300,7 @@ const engine = new Engine({
   });
 
   const listener = new EventEmitter();
-  listener.once('wait', (api) => {
+  listener.once('activity.wait', (api) => {
     console.log(api.name, 'is waiting');
     api.signal();
   });
@@ -377,7 +377,7 @@ engine.getDefinitions().then((definitions) => {
 
 ### `getState()`
 
-Get state of a running execution. Listener events `wait` and `start` are recommended when saving state.
+Asynchronous function to get state of a running execution.
 
 The saved state will include the following content:
 
@@ -395,17 +395,17 @@ The saved state will include the following content:
 ```javascript
 const {Engine} = require('bpmn-engine');
 const {EventEmitter} = require('events');
-const fs = require('fs');
+const {promises: fs} = require('fs');
 
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <process id="theProcess" isExecutable="true">
     <startEvent id="theStart" />
-    <userTask id="userTask" />
-    <endEvent id="theEnd" />
     <sequenceFlow id="flow1" sourceRef="theStart" targetRef="userTask" />
+    <userTask id="userTask" />
     <sequenceFlow id="flow2" sourceRef="userTask" targetRef="theEnd" />
+    <endEvent id="theEnd" />
   </process>
 </definitions>`;
 
@@ -416,21 +416,18 @@ const engine = new Engine({
 const listener = new EventEmitter();
 
 let state;
-listener.once('wait-userTask', () => {
-  state = engine.getState();
-  fs.writeFileSync('./tmp/some-random-id.json', JSON.stringify(state, null, 2));
-  console.log(JSON.stringify(state, null, 2));
+listener.once('activity.wait', async () => {
+  state = await engine.getState();
+  await fs.writeFile('./tmp/some-random-id.json', JSON.stringify(state, null, 2));
 });
 
-listener.once('start', () => {
-  state = engine.getState();
-  fs.writeFileSync('./tmp/some-random-id.json', JSON.stringify(state, null, 2));
+listener.once('activity.start', async () => {
+  state = await engine.getState();
+  await fs.writeFile('./tmp/some-random-id.json', JSON.stringify(state, null, 2));
 });
 
 engine.execute({
   listener
-}, (err) => {
-  if (err) throw err;
 });
 ```
 
@@ -460,9 +457,9 @@ const engine = new Engine({
 const listener = new EventEmitter();
 
 let state;
-listener.once('wait', () => {
+listener.once('activity.wait', async () => {
   engine.stop();
-  state = engine.getState();
+  state = await engine.getState();
 });
 
 engine.execute({
@@ -470,8 +467,6 @@ engine.execute({
     executionId: 'some-random-id'
   },
   listener
-}, (err) => {
-  if (err) throw err;
 });
 ```
 
