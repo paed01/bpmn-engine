@@ -44,6 +44,7 @@ declare module 'bpmn-engine' {
    */
   export type BpmnSequenceFlowEvent = 'flow.take' | 'flow.discard' | 'flow.looped';
   export type BpmnEngineVariable = Record<string, any>;
+  export type BpmnEngineSetting = Record<string, any>;
 
   export interface BpmnLogger {
     debug(...args: any[]): void;
@@ -216,6 +217,7 @@ declare module 'bpmn-engine' {
      */
     sourceContext?: any;
     variables?: BpmnEngineVariable;
+    settings?: BpmnEngineSetting;
     /**
      * optional Logger factory, defaults to debug logger
      */
@@ -498,7 +500,7 @@ declare module 'bpmn-engine' {
     readonly output: any;
     readonly variables: BpmnEngineVariable;
 
-    readonly settings: any;
+    readonly settings: BpmnEngineSetting;
 
     readonly Logger: BpmnLogger;
     readonly services: BpmnEngineService;

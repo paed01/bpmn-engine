@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 15.1.3
+
+- fix(types): add missing `settings` option
+
 # 15.1.2
 
 - Patch [`bpmn-elements@8.2.2`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
