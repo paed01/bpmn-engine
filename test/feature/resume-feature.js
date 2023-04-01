@@ -244,7 +244,7 @@ Feature('Resume execution', () => {
       });
     });
 
-    Then('engine can be resumed', () => {
+    Then('engine cannot be resumed', () => {
       expect(() => {
         recovered.recover(slimmerState);
       }).to.throw(Error);

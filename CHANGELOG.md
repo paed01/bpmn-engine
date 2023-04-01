@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 16.0.0
+
+- add activity status property
+- Bump [`bpmn-elements@9.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
 # 15.1.2
 
 - Patch [`bpmn-elements@8.2.2`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)

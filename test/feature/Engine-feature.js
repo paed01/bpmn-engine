@@ -30,6 +30,10 @@ Feature('Engine', () => {
       });
     });
 
+    And('activity status is idle', () => {
+      expect(engine.activityStatus).to.equal('idle');
+    });
+
     let api;
     When('source is executed with new settings and variables', async () => {
       api = await engine.execute({
@@ -62,6 +66,10 @@ Feature('Engine', () => {
       [task] = api.getPostponed();
       expect(task).to.have.property('id', 'userTask1');
       expect(task).to.have.property('type', 'bpmn:UserTask');
+    });
+
+    And('activity status is wait', () => {
+      expect(engine.activityStatus).to.equal('wait');
     });
 
     When('task is signaled', () => {
@@ -111,6 +119,10 @@ Feature('Engine', () => {
       expect(processes).to.have.length(2);
       expect(processes[0]).to.have.property('counters').with.property('completed', 1);
       expect(processes[1]).to.have.property('counters').with.property('completed', 1);
+    });
+
+    And('activity status is idle', () => {
+      expect(engine.activityStatus).to.equal('idle');
     });
   });
 
@@ -218,6 +230,10 @@ Feature('Engine', () => {
 
     Then('engine has postponed activities', () => {
       expect(api.getPostponed()).to.have.length(1);
+    });
+
+    And('activity status is wait', () => {
+      expect(engine.activityStatus).to.equal('wait');
     });
 
     let task;

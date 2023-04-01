@@ -61,6 +61,10 @@ Feature('Timers', () => {
       expect(timer.content).to.have.property('timeCycle', 'R3/PT10H');
     });
 
+    And('activity status is timer', () => {
+      expect(engine.activityStatus).to.equal('timer');
+    });
+
     When('start event times out', () => {
       execution.environment.timers.executing[0].callback();
     });

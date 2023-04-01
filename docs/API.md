@@ -58,6 +58,11 @@ Returns:
 - `name`: engine name
 - `broker`: engine [broker](https://github.com/paed01/smqp)
 - `state`: engine state
+- `activityStatus`: activity status
+  * `executing`: at least one activity is executing, e.g. a service task making a asynchronous request
+  * `timer`: at least one activity is waiting for a timer to complete, usually only TimerEventDefinition's
+  * `wait`: at least one activity is waiting for a signal of some sort, e.g. user tasks, intermediate catch events, etc
+  * `idle`: idle, no activities are running
 - `stopped`: boolean stopped
 - `execution`: current engine execution
 - `environment`: engine environment

@@ -367,6 +367,10 @@ Feature('Multiple sources', () => {
         spotPrice: 200,
       });
     });
+
+    And('activity status is idle', () => {
+      expect(engine.activityStatus).to.equal('idle');
+    });
   });
 
   Scenario('edge cases', () => {
@@ -406,6 +410,10 @@ Feature('Multiple sources', () => {
     Then('engine is still running', () => {
       expect(engine.stopped).to.be.false;
       expect(engine.execution.stopped).to.be.false;
+    });
+
+    And('activity status is wait', () => {
+      expect(engine.activityStatus).to.equal('wait');
     });
 
     When('the second definition is stopped', () => {
@@ -455,6 +463,30 @@ Feature('Multiple sources', () => {
         foo: 'bar',
         data: {col: 1},
       });
+    });
+
+    Given('engine is executed again', () => {
+      return engine.execute();
+    });
+
+    Then('activity status is wait', () => {
+      expect(engine.activityStatus).to.equal('wait');
+    });
+
+    When('second definition completes', () => {
+      engine.execution.signal({id: 'task_1'});
+    });
+
+    Then('activity status is wait for second definition', () => {
+      expect(engine.activityStatus).to.equal('wait');
+    });
+
+    When('the other definition completes', () => {
+      engine.execution.signal({id: 'task_0'});
+    });
+
+    Then('activity status is idle', () => {
+      expect(engine.activityStatus).to.equal('idle');
     });
   });
 });

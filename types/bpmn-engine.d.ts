@@ -2,6 +2,7 @@
 
 import {EventEmitter} from 'events';
 import {Definitions} from 'bpmn-moddle';
+import { ActivityStatus } from 'bpmn-elements';
 
 declare module 'bpmn-engine' {
 
@@ -289,6 +290,7 @@ declare module 'bpmn-engine' {
      *  engine logger
      */
     readonly logger: BpmnLogger;
+    readonly activityStatus: ActivityStatus;
 
     /**
      * execute definition
@@ -351,6 +353,8 @@ declare module 'bpmn-engine' {
     environment: BpmnEngineExecutionEnvironment;
 
     stopped: boolean;
+    readonly activityStatus: ActivityStatus;
+
     execute(executeOptions?: any): BpmnEngineExecutionApi;
     getState<R>(): R;
 
