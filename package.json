@@ -24,8 +24,8 @@
     "test": "mocha -R dot",
     "posttest": "eslint . --cache && npm run toc",
     "wintest": "mocha",
-    "cov:html": "nyc mocha -R dot && nyc report --reporter=html",
-    "test:lcov": "nyc mocha -R dot && nyc report --reporter lcov && npm run posttest",
+    "cov:html": "c8 -r html -r text mocha -R dot",
+    "test:lcov": "c8 -r lcov mocha && npm run lint",
     "toc": "node scripts/generate-api-toc ./docs/API.md,./docs/Examples.md",
     "test-md": "node scripts/test-markdown.js ./docs/API.md && node scripts/test-markdown.js ./docs/Examples.md"
   },
@@ -44,13 +44,9 @@
       "url": "https://github.com/paed01/bpmn-engine/master/LICENSE"
     }
   ],
-  "nyc": {
-    "exclude": [
-      "test"
-    ]
-  },
   "devDependencies": {
     "bent": "^7.3.12",
+    "c8": "^7.13.0",
     "camunda-bpmn-moddle": "^7.0.1",
     "chai": "^4.3.7",
     "chronokinesis": "^4.0.1",
@@ -58,8 +54,7 @@
     "markdown-toc": "^1.2.0",
     "mocha": "^10.2.0",
     "mocha-cakes-2": "^3.3.0",
-    "nock": "^13.3.0",
-    "nyc": "^15.1.0"
+    "nock": "^13.3.0"
   },
   "dependencies": {
     "@types/bpmn-moddle": "^5.1.6",

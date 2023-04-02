@@ -1,9 +1,0 @@
-language: node_js
-node_js:
-- '14'
-- '16'
-before_script:
-  - npm install coveralls
-script: npm run test:lcov
-after_success:
-- cat ./coverage/lcov.info | ./node_modules/.bin/coveralls --verbose
