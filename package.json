@@ -22,7 +22,8 @@
   ],
   "scripts": {
     "test": "mocha -R dot",
-    "posttest": "eslint . --cache && npm run toc",
+    "posttest": "npm run lint && npm run toc",
+    "lint": "eslint . --cache",
     "wintest": "mocha",
     "cov:html": "c8 -r html -r text mocha -R dot",
     "test:lcov": "c8 -r lcov mocha && npm run lint",
