@@ -107,6 +107,15 @@ Object.defineProperty(Engine.prototype, 'execution', {
   },
 });
 
+Object.defineProperty(Engine.prototype, 'activityStatus', {
+  enumerable: true,
+  get() {
+    const execution = this.execution;
+    if (execution) return execution.activityStatus;
+    return 'idle';
+  },
+});
+
 Engine.prototype.execute = async function execute(...args) {
   const [executeOptions, callback] = getOptionsAndCallback(...args);
   try {
@@ -303,6 +312,30 @@ Object.defineProperty(Execution.prototype, 'environment', {
   enumerable: true,
   get() {
     return this[kEnvironment];
+  },
+});
+
+Object.defineProperty(Execution.prototype, 'activityStatus', {
+  get() {
+    let status = 'idle';
+    const running = this[kExecuting];
+    if (!running.length) return status;
+
+    for (const def of running) {
+      const bpStatus = def.activityStatus;
+      switch (def.activityStatus) {
+        case 'executing':
+          return bpStatus;
+        case 'timer':
+          status = bpStatus;
+          break;
+        case 'wait':
+          if (status === 'idle') status = bpStatus;
+          break;
+      }
+    }
+
+    return status;
   },
 });
 

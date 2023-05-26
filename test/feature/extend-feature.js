@@ -182,6 +182,26 @@ Feature('extending behaviour', () => {
     Then('extension have saved output in environment', () => {
       expect(engine.environment.output).to.have.property('result').that.eql({data: 1});
     });
+
+    let serviceCall;
+    When('ran again with long running service function', () => {
+      completed = engine.waitFor('end');
+      engine.environment.addService('serviceFn', (...args) => (serviceCall = args));
+      return engine.execute();
+    });
+
+    Then('activity status is executing', () => {
+      expect(serviceCall).to.be.ok;
+      expect(engine.activityStatus).to.equal('executing');
+    });
+
+    When('service call is completed', () => {
+      serviceCall.pop()();
+    });
+
+    Then('run completes', () => {
+      return completed;
+    });
   });
 
   Scenario('Scripts', () => {
