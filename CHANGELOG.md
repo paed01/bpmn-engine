@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 16.0.1
+
+- Patch [`bpmn-elements@10.0.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
 # 16.0.0
 
 - Refactor type declarations using types from bpmn-elements, smqp, etc
