@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 16.1.0
+
+- Introduce lane behaviour by upgrading [`bpmn-elements@10.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+- stop apparently returns a promise, adjust type declaration to reflect that
+
 # 16.0.1
 
 - Patch [`bpmn-elements@10.0.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)

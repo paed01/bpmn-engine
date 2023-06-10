@@ -183,7 +183,7 @@ declare module 'bpmn-engine' {
     /**
      * Stop execution. The instance is terminated.
      */
-    stop(): void;
+    stop(): Promise<void>;
 
     waitFor<R>(eventName: BpmnEngineEvent): Promise<R>;
 
@@ -269,7 +269,7 @@ declare module 'bpmn-engine' {
      *
      *
      */
-    stop(): void;
+    stop(): Promise<void>;
 
     /**
      * get activities in a postponed state
