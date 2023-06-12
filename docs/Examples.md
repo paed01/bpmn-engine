@@ -801,7 +801,7 @@ const {Engine: BpmnEngine} = require('bpmn-engine');
 const {EventEmitter} = require('events');
 const {getSourceSync, getAllowedServices, getExtensions} = require('./utils');
 const {publish} = require('./dbbroker');
-const {v4: uuid} = require('uuid');
+const {randomUUID: uuid} = require('crypto');
 
 function ignite(executionId, options = {}) {
   const {name, settings} = options;

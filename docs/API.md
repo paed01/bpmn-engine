@@ -5,7 +5,7 @@
 <!-- toc -->
 
 - [Engine](#engine)
-  - [`Engine([options])`](#engineoptions)
+  - [`new Engine([options])`](#new-engineoptions)
     - [`execute([options[, callback]])`](#executeoptions-callback)
       - [Execution `listener`](#execution-listener)
       - [Execution `variables`](#execution-variables)
@@ -34,7 +34,7 @@
 
 The engine. Executes passed BPMN 2.0 definitions.
 
-## `Engine([options])`
+## `new Engine([options])`
 
 Creates a new Engine.
 
@@ -53,19 +53,20 @@ Arguments:
   - `sourceContext`: optional serialized context supplied by [moddle-context-serializer](https://github.com/paed01/moddle-context-serializer)
   - `timers`: [Timers instance](https://github.com/paed01/bpmn-elements/blob/master/docs/Timers.md)
   - `typeResolver`: optional type resolver function passed to moddle-context-serializer
+  - `extensions`: optional behavior [extensions](https://github.com/paed01/bpmn-elements/blob/master/docs/Extension.md)
 
 Returns:
 - `name`: engine name
 - `broker`: engine [broker](https://github.com/paed01/smqp)
 - `state`: engine state
-- `activityStatus`: activity status
+- `activityStatus`: string, activity status
   * `executing`: at least one activity is executing, e.g. a service task making a asynchronous request
   * `timer`: at least one activity is waiting for a timer to complete, usually only TimerEventDefinition's
   * `wait`: at least one activity is waiting for a signal of some sort, e.g. user tasks, intermediate catch events, etc
   * `idle`: idle, no activities are running
 - `stopped`: boolean stopped
 - `execution`: current engine execution
-- `environment`: engine environment
+- `environment`: engine [environment](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md)
 - `logger`: engine logger
 - `async execute()`: execute definition
 - `async getDefinitionById()`: get definition by id
@@ -73,7 +74,7 @@ Returns:
 - `async getState()`: get execution serialized state
 - `recover()`: recover from state
 - `async resume()`: resume execution
-- `stop()`: stop execution
+- `async stop()`: stop execution
 - `waitFor()`: wait for engine events, returns Promise
 
 ```javascript
@@ -524,9 +525,14 @@ engine.resume({listener}, () => {
 - `broker`: engine message broker
 - `environment`: execution environment
 - `definitions`: list of definitions
+- `activityStatus`: string, execution activity status
+  * `executing`: at least one activity is executing, e.g. a service task making a asynchronous request
+  * `timer`: at least one activity is waiting for a timer to complete, usually only TimerEventDefinition's
+  * `wait`: at least one activity is waiting for a signal of some sort, e.g. user tasks, intermediate catch events, etc
+  * `idle`: idle, no activities are running
 - `getActivityById(activityId)`(#getactivitybyid-activityid): get activity/element by id, returns first found among definitions
 - `getState()`: get execution state
-- `getPostponed()`: get postponed activities, i.e. activities waiting for some interaction or signal
+- `getPostponed()`: get postponed activities, i.e. activities waiting for some interaction, signal, or timer
 - [`signal(message)`](#signalmessage): send signal to execution, distributed to all definitions
 - [`cancelActivity(message)`](#cancelactivitymessage): send cancel activity to execution, distributed to all definitions
 - `stop()`: stop execution
