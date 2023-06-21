@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 17.0.0
+
+- Even slimmer state from [`bpmn-elements@11`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md). In most cases it should be safe to update, unless you inspect element states for some reason
+- Remove node v14 build because it fails with `node:stream/promises` reasons. Still developing and running tests with node v14 since it works on my machine
+
 # 16.1.0
 
 - Introduce lane behaviour by upgrading [`bpmn-elements@10.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
