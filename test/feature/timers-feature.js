@@ -234,4 +234,117 @@ Feature('Timers', () => {
       expect(timeoutMessage.content).to.have.property('timeDate').to.equal('1993-06-26');
     });
   });
+
+  Scenario('engine with added arbitrary timers', () => {
+    let engine, source;
+    Given('a source with user task and a bound timer event', () => {
+      source = `<?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="bp2" isExecutable="true">
+          <userTask id="task" />
+          <boundaryEvent id="bound-timer-2" attachedToRef="task">
+            <timerEventDefinition>
+              <timeDuration xsi:type="tFormalExpression">PT30S</timeDuration>
+            </timerEventDefinition>
+          </boundaryEvent>
+        </process>
+      </definitions>
+      `;
+
+      engine = Engine({
+        name: 'extra-timers',
+        source,
+      });
+    });
+
+    let execution;
+    When('engine is ran', async () => {
+      execution = await engine.execute();
+    });
+
+    let arbitraryTimers;
+    And('an arbitrary timer is registered for some reason', () => {
+      arbitraryTimers = engine.environment.timers.register({extra: true});
+      arbitraryTimers.setTimeout(() => {}, 1000 * 60 * 10);
+    });
+
+    Then('two timers are executing', () => {
+      expect(engine.environment.timers.executing).to.have.length(2);
+    });
+
+    When('executing is stopped', () => {
+      execution.stop();
+    });
+
+    Then('both timers are cleared', () => {
+      expect(engine.environment.timers.executing).to.have.length(0);
+    });
+
+    When('run is resumed', () => {
+      engine.resume();
+    });
+
+    Then('one timers is resumed', () => {
+      expect(engine.environment.timers.executing).to.have.length(1);
+    });
+
+    And('an arbitrary timer is registered again', () => {
+      arbitraryTimers.setTimeout(() => {}, 1000 * 60 * 10);
+    });
+
+    Then('two timers are executing', () => {
+      expect(engine.environment.timers.executing).to.have.length(2);
+    });
+
+    let end;
+    When('user task is signalled', () => {
+      end = engine.waitFor('end');
+      engine.execution.signal({id: 'task'});
+    });
+
+    Then('run completes', () => {
+      return end;
+    });
+
+    And('arbitrary timer is cleared', () => {
+      expect(engine.environment.timers.executing).to.have.length(0);
+    });
+
+    When('engine is ran again', async () => {
+      engine = Engine({
+        name: 'extra-timers',
+        source,
+      });
+
+      execution = await engine.execute();
+    });
+
+    And('an arbitrary timer is added', () => {
+      arbitraryTimers = engine.environment.timers.register({extra: true});
+      arbitraryTimers.setTimeout(() => {}, 1000 * 60 * 10);
+    });
+
+    Then('two timers are executing', () => {
+      expect(engine.environment.timers.executing).to.have.length(2);
+    });
+
+    let errored;
+    When('user task is errored', () => {
+      const [, userTask] = execution.getPostponed();
+      expect(userTask.id).to.equal('task');
+
+      errored = engine.waitFor('error');
+
+      userTask.fail(new Error('Bad request'));
+    });
+
+    Then('run fails', async () => {
+      const err = await errored;
+      expect(err.type).to.equal('ActivityError');
+    });
+
+    And('arbitrary timer is cleared', () => {
+      expect(engine.environment.timers.executing).to.have.length(0);
+    });
+  });
 });

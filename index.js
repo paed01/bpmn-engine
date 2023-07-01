@@ -432,10 +432,10 @@ Execution.prototype._setup = function setup(setupOptions = {}) {
   for (const definition of this.definitions) {
     if (listener) definition.environment.options.listener = listener;
 
-    definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, {noAck: true, consumerTag: '_engine_definition'});
-    definition.broker.subscribeTmp('event', 'process.#', onChildMessage, {noAck: true, consumerTag: '_engine_process'});
-    definition.broker.subscribeTmp('event', 'activity.#', onChildMessage, {noAck: true, consumerTag: '_engine_activity'});
-    definition.broker.subscribeTmp('event', 'flow.#', onChildMessage, {noAck: true, consumerTag: '_engine_flow'});
+    const {queueName} = definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, {noAck: true, consumerTag: '_engine_definition'});
+    definition.broker.bindQueue(queueName, 'event', 'process.#');
+    definition.broker.bindQueue(queueName, 'event', 'activity.#');
+    definition.broker.bindQueue(queueName, 'event', 'flow.#');
   }
 };
 
@@ -513,16 +513,21 @@ Execution.prototype._onChildMessage = function onChildMessage(routingKey, messag
   switch (newState) {
     case 'stopped':
       this._debug('stopped');
-      broker.publish('event', 'engine.stop', {}, {type: 'stop'});
-      return this[kEngine].emit('stop', this);
+      return this._complete('stop', {}, {type: 'stop'});
     case 'idle':
       this._debug('completed');
-      broker.publish('event', 'engine.end', {}, {type: 'end'});
-      return this[kEngine].emit('end', this);
+      return this._complete('end', {}, {type: 'end'});
     case 'error':
       this._debug('error');
-      return broker.publish('event', 'engine.error', message.content.error, {type: 'error', mandatory: true});
+      return this._complete('error', message.content.error, {type: 'error', mandatory: true});
   }
+};
+
+Execution.prototype._complete = function complete(eventType, content, messageProperties) {
+  const timers = this.environment.timers;
+  timers.executing.slice().forEach((ref) => timers.clearTimeout(ref));
+  this.broker.publish('event', 'engine.' + eventType, content, messageProperties);
+  return eventType !== 'error' && this[kEngine].emit(eventType, this);
 };
 
 Execution.prototype._teardownDefinition = function teardownDefinition(definition) {
@@ -531,9 +536,6 @@ Execution.prototype._teardownDefinition = function teardownDefinition(definition
   if (idx > -1) executing.splice(idx, 1);
 
   definition.broker.cancel('_engine_definition');
-  definition.broker.cancel('_engine_process');
-  definition.broker.cancel('_engine_activity');
-  definition.broker.cancel('_engine_flow');
 };
 
 Execution.prototype.getState = function getState() {

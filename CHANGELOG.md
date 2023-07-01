@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 17.1.0
+
+- Clear arbitrary engine timers on end and error, not just on stop as it was before
+- Bump [`smqp@8`](https://github.com/paed01/smqp/blob/default/CHANGELOG.md)
+
 # 17.0.0
 
 - Even slimmer state from [`bpmn-elements@11`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md). In most cases it should be safe to update, unless you inspect element states for some reason
