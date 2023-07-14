@@ -128,7 +128,7 @@ declare module 'bpmn-engine' {
     /**
      * current engine execution
      */
-    readonly  execution: Execution;
+    readonly execution: Execution;
     /**
      * engine environment
      */
@@ -147,7 +147,7 @@ declare module 'bpmn-engine' {
      */
     execute(): Promise<Execution>;
     execute(options: BpmnEngineExecuteOptions): Promise<Execution>;
-    execute(options: BpmnEngineExecuteOptions, cb: (err: Error) => void): Promise<Execution>;
+    execute(options: BpmnEngineExecuteOptions, cb: (err: Error, execution?: Execution) => void): Promise<Execution>;
     execute(cb: (err: Error) => void): Promise<Execution>;
 
     /**
@@ -178,7 +178,7 @@ declare module 'bpmn-engine' {
      * @param options
      * @param callback
      */
-    resume(options?: BpmnEngineExecuteOptions, callback?: () => void): Promise<Execution>;
+    resume(options?: BpmnEngineExecuteOptions, callback?: (err: Error, execution?: Execution) => void): Promise<Execution>;
 
     /**
      * Stop execution. The instance is terminated.
@@ -191,7 +191,7 @@ declare module 'bpmn-engine' {
      * Add definition source by source context.
      * @param options
      */
-    addSource(options?: {sourceContext: any}): void;
+    addSource(options?: { sourceContext: any }): void;
   }
 
   interface BpmnEngineDefinitionState extends DefinitionState {
@@ -284,7 +284,7 @@ declare module 'bpmn-engine' {
      * @param message {BpmnMessage}
      * @param options
      */
-    signal(message?: BpmnMessage, options?: {ignoreSameDefinition?: boolean}): void;
+    signal(message?: BpmnMessage, options?: { ignoreSameDefinition?: boolean }): void;
 
     /**
      * send cancel activity to execution, distributed to all definitions
