@@ -95,7 +95,7 @@ Feature('Timers', () => {
       expect(timer.content).to.have.property('timeDate').to.equal('1993-06-26');
     });
 
-    When('throw event is canceled', () => {
+    When('throw event is cancelled', () => {
       execution.cancelActivity({id: activity.id});
     });
 

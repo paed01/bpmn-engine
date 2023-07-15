@@ -1,6 +1,11 @@
 Changelog
 =========
 
+# 17.1.1
+
+- Finetuning Engine.execute and Engine.resume callback arg typization by @bestmazzo
+- Patch [`bpmn-elements`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
 # 17.1.0
 
 - Clear arbitrary engine timers on end and error, not just on stop as it was before
