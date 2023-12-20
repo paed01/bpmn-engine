@@ -1,6 +1,12 @@
 Changelog
 =========
 
+# 18.0.0
+
+Only breaking if multi-instance sub-process executions are inspected after sub-process run is completed. Picture a multi-instance sequential sub-process with a cardinality of 100. One hundred items in a list occupies some memory. That will not stand. Consequently, they are now removed when iteration completes and eventually collected by gc.
+
+- Major bump [`bpmn-elements@12`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
 # 17.1.1
 
 - Finetuning Engine.execute and Engine.resume callback arg typization by @bestmazzo
