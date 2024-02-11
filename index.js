@@ -1,15 +1,15 @@
 'use strict';
 
 const BpmnModdle = require('bpmn-moddle');
-const DebugLogger = require('./lib/Logger');
 const Elements = require('bpmn-elements');
-const getOptionsAndCallback = require('./lib/getOptionsAndCallback');
-const JavaScripts = require('./lib/JavaScripts');
-const ProcessOutputDataObject = require('./lib/extensions/ProcessOutputDataObject');
 const {Broker} = require('smqp');
 const {default: serializer, deserialize, TypeResolver} = require('moddle-context-serializer');
 const {EventEmitter} = require('events');
 const {version: engineVersion} = require('./package.json');
+const DebugLogger = require('./lib/Logger.js');
+const JavaScripts = require('./lib/JavaScripts.js');
+const getOptionsAndCallback = require('./lib/getOptionsAndCallback.js');
+const ProcessOutputDataObject = require('./lib/extensions/ProcessOutputDataObject.js');
 
 const kEngine = Symbol.for('engine');
 const kEnvironment = Symbol.for('environment');
@@ -65,54 +65,46 @@ function defaultTypeResolver(elementTypes) {
 
 Engine.prototype = Object.create(EventEmitter.prototype);
 
-Object.defineProperty(Engine.prototype, 'name', {
-  enumerable: true,
-  get() {
-    return this.options.name;
+Object.defineProperties(Engine.prototype, {
+  name: {
+    get() {
+      return this.options.name;
+    },
+    set(value) {
+      this.options.name = value;
+    },
   },
-  set(value) {
-    this.options.name = value;
+  environment: {
+    get() {
+      return this[kEnvironment];
+    },
   },
-});
-
-Object.defineProperty(Engine.prototype, 'environment', {
-  enumerable: true,
-  get() {
-    return this[kEnvironment];
+  state: {
+    get() {
+      const execution = this.execution;
+      if (execution) return execution.state;
+      return 'idle';
+    },
   },
-});
-
-Object.defineProperty(Engine.prototype, 'state', {
-  enumerable: true,
-  get() {
-    const execution = this.execution;
-    if (execution) return execution.state;
-    return 'idle';
+  stopped: {
+    get() {
+      const execution = this.execution;
+      if (execution) return execution.stopped;
+      return false;
+    },
   },
-});
-
-Object.defineProperty(Engine.prototype, 'stopped', {
-  enumerable: true,
-  get() {
-    const execution = this.execution;
-    if (execution) return execution.stopped;
-    return false;
+  execution: {
+    enumerable: true,
+    get() {
+      return this[kExecution];
+    },
   },
-});
-
-Object.defineProperty(Engine.prototype, 'execution', {
-  enumerable: true,
-  get() {
-    return this[kExecution];
-  },
-});
-
-Object.defineProperty(Engine.prototype, 'activityStatus', {
-  enumerable: true,
-  get() {
-    const execution = this.execution;
-    if (execution) return execution.activityStatus;
-    return 'idle';
+  activityStatus: {
+    get() {
+      const execution = this.execution;
+      if (execution) return execution.activityStatus;
+      return 'idle';
+    },
   },
 });
 
@@ -287,31 +279,26 @@ function Execution(engine, definitions, options, isRecovered = false) {
   engine.broker.on('return', onBrokerReturn);
 }
 
-Object.defineProperty(Execution.prototype, 'state', {
-  enumerable: true,
-  get() {
-    return this[kState];
+Object.defineProperties(Execution.prototype, {
+  state: {
+    get() {
+      return this[kState];
+    },
   },
-});
-
-Object.defineProperty(Execution.prototype, 'stopped', {
-  enumerable: true,
-  get() {
-    return this[kStopped];
+  stopped: {
+    get() {
+      return this[kStopped];
+    },
   },
-});
-
-Object.defineProperty(Execution.prototype, 'broker', {
-  enumerable: true,
-  get() {
-    return this[kEngine].broker;
+  broker: {
+    get() {
+      return this[kEngine].broker;
+    },
   },
-});
-
-Object.defineProperty(Execution.prototype, 'environment', {
-  enumerable: true,
-  get() {
-    return this[kEnvironment];
+  environment: {
+    get() {
+      return this[kEnvironment];
+    },
   },
 });
 

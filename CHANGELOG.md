@@ -1,6 +1,13 @@
 Changelog
 =========
 
+# 19.0.0
+
+Upgrade is recommended since nasty evergroving state size is fixed.
+
+- Major bump [`bpmn-elements@13`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+- remove enumerable flag on prototype properties
+
 # 18.0.0
 
 Only breaking if multi-instance sub-process executions are inspected after sub-process run is completed. Picture a multi-instance sequential sub-process with a cardinality of 100. One hundred items in a list occupies some memory. That will not stand. Consequently, they are now removed when iteration completes and eventually collected by gc.
