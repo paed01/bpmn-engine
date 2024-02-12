@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 19.0.1
+
+- Patch [`bpmn-elements`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
 # 19.0.0
 
 Upgrade is recommended since nasty evergroving state size is fixed.

@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "19.0.0",
+  "version": "19.0.1",
   "main": "index.js",
   "types": "types/bpmn-engine.d.ts",
   "repository": {
@@ -59,7 +59,7 @@
   },
   "dependencies": {
     "@types/bpmn-moddle": "^5.1.6",
-    "bpmn-elements": "^13.1.1",
+    "bpmn-elements": "^13.1.2",
     "bpmn-moddle": "^8.0.1",
     "debug": "^4.3.4",
     "moddle-context-serializer": "^4.0.0",
