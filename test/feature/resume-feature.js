@@ -1,8 +1,8 @@
 'use strict';
 
-const testHelpers = require('../helpers/testHelpers');
-const {Engine} = require('../..');
 const {EventEmitter} = require('events');
+const testHelpers = require('../helpers/testHelpers.js');
+const {Engine} = require('../../index.js');
 
 Feature('Resume execution', () => {
   Scenario('Execution is stopped and resumed', () => {

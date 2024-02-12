@@ -2,7 +2,7 @@
 
 const BpmnModdle = require('bpmn-moddle');
 const elements = require('bpmn-elements');
-const Logger = require('../../lib/Logger');
+const Logger = require('../../lib/Logger.js');
 const {default: serializer, TypeResolver} = require('moddle-context-serializer');
 
 module.exports = {

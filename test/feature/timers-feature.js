@@ -1,9 +1,9 @@
 'use strict';
 
 const ck = require('chronokinesis');
-const testHelpers = require('../helpers/testHelpers');
-const factory = require('../helpers/factory');
-const {Engine} = require('../../index');
+const testHelpers = require('../helpers/testHelpers.js');
+const factory = require('../helpers/factory.js');
+const {Engine} = require('../../index.js');
 
 const timersSource = factory.resource('timers.bpmn');
 

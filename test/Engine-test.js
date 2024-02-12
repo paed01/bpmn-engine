@@ -1,9 +1,9 @@
 'use strict';
 
-const Bpmn = require('..');
-const factory = require('./helpers/factory');
-const testHelpers = require('./helpers/testHelpers');
 const {EventEmitter} = require('events');
+const Bpmn = require('../index.js');
+const factory = require('./helpers/factory.js');
+const testHelpers = require('./helpers/testHelpers.js');
 
 describe('Engine', () => {
   describe('constructor', () => {

@@ -1,8 +1,8 @@
 'use strict';
 
-const factory = require('../helpers/factory');
-const {Engine} = require('../..');
 const {EventEmitter} = require('events');
+const factory = require('../helpers/factory.js');
+const {Engine} = require('../../index.js');
 
 Feature('Engine', () => {
   Scenario('Mother of all', () => {

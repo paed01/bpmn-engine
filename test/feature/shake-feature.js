@@ -1,7 +1,7 @@
 'use strict';
 
-const testHelpers = require('../helpers/testHelpers');
-const {Engine} = require('../..');
+const testHelpers = require('../helpers/testHelpers.js');
+const {Engine} = require('../../index.js');
 
 Feature('Shake', () => {
   Scenario('Determine run sequences for an activity', () => {

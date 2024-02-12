@@ -1,8 +1,8 @@
 'use strict';
 
-const {Activity} = require('bpmn-elements');
-const {Engine} = require('../..');
 const {EventEmitter} = require('events');
+const {Activity} = require('bpmn-elements');
+const {Engine} = require('../../index.js');
 
 Feature('extending behaviour', () => {
   Scenario('Activity form', () => {

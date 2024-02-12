@@ -1,8 +1,8 @@
 'use strict';
 
-const factory = require('../helpers/factory');
-const testHelpers = require('../helpers/testHelpers');
-const {Engine} = require('../..');
+const factory = require('../helpers/factory.js');
+const testHelpers = require('../helpers/testHelpers.js');
+const {Engine} = require('../../index.js');
 
 const signalsSource = factory.resource('signals.bpmn');
 const sendSignalSource = factory.resource('send-signal.bpmn');
