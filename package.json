@@ -2,8 +2,8 @@
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
   "version": "19.0.1",
-  "main": "index.js",
-  "types": "types/bpmn-engine.d.ts",
+  "main": "./src/index.js",
+  "types": "./types/bpmn-engine.d.ts",
   "repository": {
     "type": "git",
     "url": "git://github.com/paed01/bpmn-engine"
@@ -17,8 +17,8 @@
   },
   "files": [
     "lib/",
-    "types/",
-    "index.js"
+    "src/",
+    "types/"
   ],
   "scripts": {
     "test": "mocha -R dot",

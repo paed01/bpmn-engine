@@ -5,11 +5,11 @@ const Elements = require('bpmn-elements');
 const {Broker} = require('smqp');
 const {default: serializer, deserialize, TypeResolver} = require('moddle-context-serializer');
 const {EventEmitter} = require('events');
-const {version: engineVersion} = require('./package.json');
-const DebugLogger = require('./lib/Logger.js');
-const JavaScripts = require('./lib/JavaScripts.js');
-const getOptionsAndCallback = require('./lib/getOptionsAndCallback.js');
-const ProcessOutputDataObject = require('./lib/extensions/ProcessOutputDataObject.js');
+const {version: engineVersion} = require('../package.json');
+const DebugLogger = require('./Logger.js');
+const JavaScripts = require('./JavaScripts.js');
+const getOptionsAndCallback = require('./getOptionsAndCallback.js');
+const ProcessOutputDataObject = require('./extensions/ProcessOutputDataObject.js');
 
 const kEngine = Symbol.for('engine');
 const kEnvironment = Symbol.for('environment');

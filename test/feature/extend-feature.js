@@ -2,7 +2,7 @@
 
 const {EventEmitter} = require('events');
 const {Activity} = require('bpmn-elements');
-const {Engine} = require('../../index.js');
+const {Engine} = require('../../src/index.js');
 
 Feature('extending behaviour', () => {
   Scenario('Activity form', () => {

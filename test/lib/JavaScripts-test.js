@@ -1,6 +1,6 @@
 'use strict';
 
-const JavaScripts = require('../../lib/JavaScripts.js');
+const JavaScripts = require('../../src/JavaScripts.js');
 
 describe('JavaScripts', () => {
   it('can be invoked without new', () => {

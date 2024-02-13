@@ -1,7 +1,7 @@
 'use strict';
 
 const {EventEmitter} = require('events');
-const Bpmn = require('../index.js');
+const Bpmn = require('../src/index.js');
 const factory = require('./helpers/factory.js');
 const testHelpers = require('./helpers/testHelpers.js');
 

@@ -2,7 +2,7 @@
 
 const {EventEmitter} = require('events');
 const factory = require('../helpers/factory.js');
-const {Engine} = require('../../index.js');
+const {Engine} = require('../../src/index.js');
 
 Feature('Engine', () => {
   Scenario('Mother of all', () => {

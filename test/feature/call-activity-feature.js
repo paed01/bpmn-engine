@@ -1,7 +1,7 @@
 'use strict';
 
 const factory = require('../helpers/factory.js');
-const {Engine} = require('../../index.js');
+const {Engine} = require('../../src/index.js');
 
 Feature('Call activity', () => {
   Scenario('call process in the same diagram', () => {
