@@ -26,7 +26,25 @@ The aim is to, at least, have BPMN 2.0 [core support](https://www.omg.org/bpmn/S
 
 # Debug
 
-This package is shipped with [debug](https://github.com/visionmedia/debug) activated with environment variable `DEBUG=bpmn-engine:*`. You can also provide your own logger.
+This package is shipped with [debug](https://github.com/debug-js/debug) activated with environment variable `DEBUG=bpmn-engine:*`. You can also provide your own logger.
+
+More granular debugging can be achieved by filtering on element type:
+
+```sh
+DEBUG=*scripttask*,*:error:*
+```
+
+or on Windows PowerShell:
+
+```ps
+$env:DEBUG='bpmn-engine:*'
+```
+
+and to turn it off you need to:
+
+```ps
+$env:DEBUG=''
+```
 
 # A pretty image of a process
 

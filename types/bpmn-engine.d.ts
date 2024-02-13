@@ -4,7 +4,7 @@
 import { EventEmitter } from 'events';
 import { Definitions as BpmnModdleDefinitions } from 'bpmn-moddle';
 import { extendFn, SerializableContext } from 'moddle-context-serializer';
-import { ActivityStatus, ElementBroker, EnvironmentOptions, Definition, DefinitionState, Environment, Api, ElementBase, ILogger, EnvironmentState } from 'bpmn-elements';
+import { ActivityStatus, ElementBroker, EnvironmentOptions, Definition, DefinitionState, Environment, Api, ElementBase, ILogger, EnvironmentState, IScripts } from 'bpmn-elements';
 
 declare module 'bpmn-engine' {
 
@@ -298,5 +298,14 @@ declare module 'bpmn-engine' {
      * @param event
      */
     waitFor<T>(event: BpmnEngineEvent): Promise<T>;
+  }
+
+  export class JavaScripts implements IScripts {
+    /**
+     * @param disableDummy Disable dummy scripts if script is not found. Dummy script will immediately call next function without error or return value
+     */
+    constructor(disableDummy?: boolean);
+    register(activity: any): Script | undefined;
+    getScript(language: string, identifier: {id: string, [x: string]: any}): Script;
   }
 }

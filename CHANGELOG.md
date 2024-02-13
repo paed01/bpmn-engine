@@ -1,6 +1,10 @@
 Changelog
 =========
 
+# 20.0.0
+
+- turn into esm with exports for node
+
 # 19.0.1
 
 - Patch [`bpmn-elements`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)

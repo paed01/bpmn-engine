@@ -1,13 +1,10 @@
-'use strict';
-// From https://github.com/hapijs/joi/blob/master/generate-readme-toc.js
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import Toc from 'markdown-toc';
 
-// Load modules
-
-const Toc = require('markdown-toc');
-const Fs = require('fs');
-const {version} = require('../package.json');
-
-// Declare internals
+const nodeRequire = createRequire(fileURLToPath(import.meta.url));
+const { version } = nodeRequire('../package.json');
 
 const filenames = getFileNames();
 
@@ -17,7 +14,7 @@ function getFileNames() {
 }
 
 function generate(filename) {
-  const api = Fs.readFileSync(filename, 'utf8');
+  const api = fs.readFileSync(filename, 'utf8');
   const tocOptions = {
     bullets: '-',
     slugify(text) {
@@ -30,7 +27,7 @@ function generate(filename) {
   const output = Toc.insert(api, tocOptions)
     .replace(/<!-- version -->(.|\n)*<!-- versionstop -->/, '<!-- version -->\n# ' + version + ' API Reference\n<!-- versionstop -->');
 
-  Fs.writeFileSync(filename, output);
+  fs.writeFileSync(filename, output);
 }
 
 filenames.forEach(generate);

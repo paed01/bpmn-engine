@@ -1,8 +1,7 @@
-'use strict';
-
-const {EventEmitter} = require('events');
-const {Activity} = require('bpmn-elements');
-const {Engine} = require('../../src/index.js');
+import {EventEmitter} from 'events';
+import {Activity} from 'bpmn-elements';
+import {Engine} from '../../src/index.js';
+import { camundaBpmnModdle as camunda } from '../helpers/testHelpers.js';
 
 Feature('extending behaviour', () => {
   Scenario('Activity form', () => {
@@ -25,7 +24,7 @@ Feature('extending behaviour', () => {
         name: 'Engine feature',
         source,
         moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda'),
+          camunda,
         },
         extensions: {
           fetchForm(activity) {
@@ -147,7 +146,7 @@ Feature('extending behaviour', () => {
         name: 'extend service task',
         source,
         moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda'),
+          camunda,
         },
         services: {
           serviceFn(scope, callback) {
@@ -320,7 +319,7 @@ Feature('extending behaviour', () => {
       engine = Engine({
         source,
         moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda'),
+          camunda,
         },
         extensions: {
           ioExtension,
@@ -593,7 +592,7 @@ Feature('extending behaviour', () => {
     And('an engine with extensions and special script handling', () => {
       engine = Engine({
         moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda'),
+          camunda,
         },
         source,
         extensions,

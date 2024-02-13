@@ -1,11 +1,9 @@
-'use strict';
+import Debug from 'debug';
 
-const Debug = require('debug');
-
-module.exports = function Logger(scope) {
+export default function Logger(scope) {
   return {
     debug: Debug('bpmn-engine:' + scope),
     error: Debug('bpmn-engine:error:' + scope),
     warn: Debug('bpmn-engine:warn:' + scope),
   };
-};
+}

@@ -1,8 +1,7 @@
-'use strict';
-
-const {EventEmitter} = require('events');
-const factory = require('../helpers/factory.js');
-const {Engine} = require('../../src/index.js');
+import { EventEmitter } from 'events';
+import { Engine } from '../../src/index.js';
+import * as factory from '../helpers/factory.js';
+import { camundaBpmnModdle as camunda } from '../helpers/testHelpers.js';
 
 Feature('Engine', () => {
   Scenario('Mother of all', () => {
@@ -187,7 +186,7 @@ Feature('Engine', () => {
         name: 'Engine feature',
         source,
         moddleOptions: {
-          camunda: require('camunda-bpmn-moddle/resources/camunda'),
+          camunda,
         },
         extensions: {
           fetchForm(activity) {

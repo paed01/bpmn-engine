@@ -1,8 +1,10 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "19.0.1",
-  "main": "./src/index.js",
+  "version": "20.0.0",
+  "type": "module",
+  "module": "./src/index.js",
+  "main": "./lib/index.cjs",
   "types": "./types/bpmn-engine.d.ts",
   "repository": {
     "type": "git",
@@ -21,14 +23,16 @@
     "types/"
   ],
   "scripts": {
-    "test": "mocha -R dot",
+    "test": "mocha -p -R @bonniernews/hot-bev",
     "posttest": "npm run lint && npm run toc",
     "lint": "eslint . --cache",
     "wintest": "mocha",
-    "cov:html": "c8 -r html -r text mocha -R dot",
+    "cov:html": "c8 -r html -r text mocha -p -R @bonniernews/hot-bev",
     "test:lcov": "c8 -r lcov mocha && npm run lint",
     "toc": "node scripts/generate-api-toc ./docs/API.md,./docs/Examples.md",
-    "test-md": "node scripts/test-markdown.js ./docs/API.md && node scripts/test-markdown.js ./docs/Examples.md"
+    "test-md": "node scripts/test-markdown.js ./docs/API.md && node scripts/test-markdown.js ./docs/Examples.md",
+    "dist": "rollup -c",
+    "prepack": "npm run dist"
   },
   "keywords": [
     "workflow",
@@ -46,16 +50,20 @@
     }
   ],
   "devDependencies": {
+    "@bonniernews/hot-bev": "^0.4.0",
+    "@rollup/plugin-commonjs": "^25.0.7",
     "bent": "^7.3.12",
     "c8": "^9.1.0",
     "camunda-bpmn-moddle": "^7.0.1",
-    "chai": "^4.3.7",
+    "chai": "^5.1.0",
     "chronokinesis": "^6.0.0",
     "eslint": "^8.45.0",
+    "eslint-plugin-import": "^2.29.1",
     "markdown-toc": "^1.2.0",
     "mocha": "^10.2.0",
     "mocha-cakes-2": "^3.3.0",
-    "nock": "^13.3.2"
+    "nock": "^13.3.2",
+    "rollup": "^4.10.0"
   },
   "dependencies": {
     "@types/bpmn-moddle": "^5.1.6",

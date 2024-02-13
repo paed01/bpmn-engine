@@ -1,8 +1,7 @@
-'use strict';
-
-const factory = require('../helpers/factory.js');
-const testHelpers = require('../helpers/testHelpers.js');
-const {Engine} = require('../../src/index.js');
+import * as factory from '../helpers/factory.js';
+import * as testHelpers from '../helpers/testHelpers.js';
+import { Engine } from '../../src/index.js';
+import { camundaBpmnModdle as camunda } from '../helpers/testHelpers.js';
 
 const signalsSource = factory.resource('signals.bpmn');
 const sendSignalSource = factory.resource('send-signal.bpmn');
@@ -12,7 +11,7 @@ Feature('Multiple sources', () => {
     let engine, signalContext, updateContext;
     Given('a trade process waiting for spot price update signal and another admin processs that updates price', async () => {
       signalContext = await testHelpers.context(signalsSource, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda'),
+        camunda,
       });
       engine = getExtendedEngine({
         sourceContext: signalContext,
@@ -23,7 +22,7 @@ Feature('Multiple sources', () => {
 
     And('a second definition that updates spot price', async () => {
       updateContext = await testHelpers.context(sendSignalSource, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda'),
+        camunda,
       });
 
       engine.addSource({
@@ -373,6 +372,126 @@ Feature('Multiple sources', () => {
     });
   });
 
+  Scenario('one source with timer, another with user task, and a third with long running service task', () => {
+    let engine;
+    after(() => {
+      engine.stop();
+    });
+
+    const sources = [
+      `<definitions id="Def_0" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="Process_0" isExecutable="true">
+          <userTask id="task" />
+        </process>
+      </definitions>`,
+      `
+      <definitions id="Def_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="Process_1" isExecutable="true">
+          <intermediateCatchEvent id="timer">
+            <timerEventDefinition>
+              <timeDuration xsi:type="tFormalExpression">PT30S</timeDuration>
+            </timerEventDefinition>
+          </intermediateCatchEvent>
+        </process>
+      </definitions>`,
+      `
+      <definitions id="Def_2" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="Process_2" isExecutable="true">
+          <serviceTask id="service" implementation="\${environment.services.fn}" />
+        </process>
+      </definitions>`,
+    ];
+
+    const fnArgs = [];
+    Given('an engine with three sources', async () => {
+      engine = new Engine({
+        name: 'Three Amigos',
+        services: {
+          fn(...args) {
+            fnArgs.push(args);
+          },
+        },
+      });
+
+      for (const src of sources) {
+        engine.addSource({
+          sourceContext: await testHelpers.context(src),
+        });
+      }
+    });
+
+    When('executed', () => {
+      return engine.execute();
+    });
+
+    Then('activity status is executing long running service', () => {
+      expect(engine.activityStatus).to.equal('executing');
+    });
+
+    When('long running service task completes', () => {
+      fnArgs.pop().pop()();
+    });
+
+    Then('activity status is waiting for timer', () => {
+      expect(engine.activityStatus).to.equal('timer');
+    });
+
+    When('timer times out', () => {
+      engine.environment.timers.executing[0].callback();
+    });
+
+    Then('activity status is waiting for user task', () => {
+      expect(engine.activityStatus).to.equal('wait');
+    });
+
+    When('user task is signalled', () => {
+      engine.execution.signal({id: 'task'});
+    });
+
+    Then('engine is idle', () => {
+      expect(engine.activityStatus).to.equal('idle');
+    });
+
+    When('running the three sources in reverse', async () => {
+      engine = new Engine({
+        name: 'Three Amigos',
+        services: {
+          fn(...args) {
+            fnArgs.push(args);
+          },
+        },
+      });
+
+      for (const src of sources.reverse()) {
+        engine.addSource({
+          sourceContext: await testHelpers.context(src),
+        });
+      }
+
+      return engine.execute();
+    });
+
+    Then('activity status is executing long running service', () => {
+      expect(engine.activityStatus).to.equal('executing');
+    });
+
+    When('user task is signalled', () => {
+      engine.execution.signal({id: 'task'});
+    });
+
+    Then('activity status is still waiting for long running service', () => {
+      expect(engine.activityStatus).to.equal('executing');
+    });
+
+    When('long running service task completes', () => {
+      fnArgs.pop().pop()();
+    });
+
+    Then('activity status is waiting for timer', () => {
+      expect(engine.activityStatus).to.equal('timer');
+    });
+  });
+
   Scenario('edge cases', () => {
     let engine;
     Given('two sources', async () => {
@@ -399,7 +518,7 @@ Feature('Multiple sources', () => {
       return engine.execute();
     });
 
-    Then('both definitions has started', () => {
+    Then('both definitions have started', () => {
       expect(engine.execution.definitions.length).to.equal(2);
     });
 

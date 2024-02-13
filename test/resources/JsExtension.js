@@ -1,15 +1,12 @@
-'use strict';
-
-const moddleOptions = require('./js-bpmn-moddle.json');
+import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
 
 const safePattern = /[./\\#*:\s]/g;
 
-module.exports = {
-  extension: Js,
-  moddleOptions,
-};
+const nodeRequire = createRequire(fileURLToPath(import.meta.url));
+export const moddleOptions = nodeRequire('./js-bpmn-moddle.json');
 
-function Js(activity, context) {
+export function extension(activity, context) {
   const resultVariable = ResultVariableIo(activity, context);
   const formKey = FormKey(activity, context);
 
