@@ -1,5 +1,5 @@
 <!-- version -->
-# 19.0.1 API Reference
+# 20.0.0 API Reference
 <!-- versionstop -->
 
 <!-- toc -->
@@ -78,14 +78,18 @@ Returns:
 - `waitFor()`: wait for engine events, returns Promise
 
 ```javascript
-const {Engine} = require('bpmn-engine');
-const fs = require('fs');
+import { Engine } from 'bpmn-engine';
+import fs from 'fs';
+import { createRequire } from 'module';
+import { fileURLToPath } = from 'url';
+
+const camunda = createRequire(fileURLToPath)('camunda-bpmn-moddle/resources/camunda.json')
 
 const engine = new Engine({
   name: 'mother of all',
   source: fs.readFileSync('./test/resources/mother-of-all.bpmn'),
   moddleOptions: {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
+    camunda,
   }
 });
 ```
@@ -109,8 +113,8 @@ Execute options overrides the initial options passed to the engine before execut
 Returns [Execution API](#execution-api)
 
 ```javascript
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
+import { Engine } from 'bpmn-engine';
+import { EventEmitter } from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -172,8 +176,8 @@ engine.execute({
 An `EventEmitter` object with listeners. Listen for [activity events](#activity-events).
 
 ```javascript
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
+import {Engine} from 'bpmn-engine';
+import {EventEmitter} from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -208,8 +212,8 @@ engine.execute({
 Execution variables are passed as the first argument to `#execute`.
 
 ```javascript
-const {Engine} = require('bpmn-engine');
-const fs = require('fs');
+import {Engine} from 'bpmn-engine';
+import fs from 'fs';
 
 const engine = new Engine({
   name: 'using variables',
@@ -233,8 +237,8 @@ engine.execute({
 A service is a function exposed on `environment.services`.
 
 ```javascript
-const {Engine} = require('bpmn-engine');
-const bent = require('bent');
+import {Engine} from 'bpmn-engine';
+import bent from 'bent';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -289,11 +293,11 @@ Arguments:
   - `sourceContext`: serializable source
 
 ```javascript
-const BpmnModdle = require('bpmn-moddle');
-const elements = require('bpmn-elements');
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
-const {default: serializer, TypeResolver} = require('moddle-context-serializer');
+import BpmnModdle from 'bpmn-moddle';
+import elements from 'bpmn-elements';
+import {Engine} from 'bpmn-engine';
+import {EventEmitter} from 'events';
+import {default: serializer, TypeResolver} from 'moddle-context-serializer';
 
 const engine = new Engine({
   name: 'add source',
@@ -357,7 +361,7 @@ function getModdleContext(source, options) {
 Get all definitions
 
 ```javascript
-const {Engine} = require('bpmn-engine');
+import {Engine} from 'bpmn-engine';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -399,9 +403,9 @@ The saved state will include the following content:
       - `entered`: Boolean indicating if the child is currently executing
 
 ```javascript
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
-const {promises: fs} = require('fs');
+import {Engine} from 'bpmn-engine';
+import {EventEmitter} from 'events';
+import {promises: fs} from 'fs';
 
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -442,8 +446,8 @@ engine.execute({
 Stop execution. The instance is terminated.
 
 ```javascript
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
+import {Engine} from 'bpmn-engine';
+import {EventEmitter} from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -485,7 +489,7 @@ Arguments:
 - `recoverOptions`: optional object with options that will override options passed to the engine at init, but not options recovered from state
 
 ```js
-const {Engine} = require('bpmn-engine');
+import {Engine} from 'bpmn-engine';
 
 const state = fetchSomeState();
 const engine = new Engine().recover(state);
@@ -504,8 +508,8 @@ Arguments:
 
 
 ```js
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
+import {Engine} from 'bpmn-engine';
+import {EventEmitter} from 'events';
 
 const state = fetchSomeState();
 const engine = new Engine().recover(state);

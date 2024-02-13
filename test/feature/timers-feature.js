@@ -1,9 +1,8 @@
-'use strict';
-
-const ck = require('chronokinesis');
-const testHelpers = require('../helpers/testHelpers.js');
-const factory = require('../helpers/factory.js');
-const {Engine} = require('../../src/index.js');
+import ck from 'chronokinesis';
+import * as testHelpers from '../helpers/testHelpers.js';
+import * as factory from '../helpers/factory.js';
+import { Engine } from '../../src/index.js';
+import { camundaBpmnModdle as camunda } from '../helpers/testHelpers.js';
 
 const timersSource = factory.resource('timers.bpmn');
 
@@ -20,7 +19,7 @@ Feature('Timers', () => {
     let engine;
     Given('a time cycle start event, bound time duration event, throw time date event, and a user task with due date', async () => {
       const sourceContext = await testHelpers.context(timersSource, {
-        camunda: require('camunda-bpmn-moddle/resources/camunda'),
+        camunda,
       });
 
       engine = Engine({

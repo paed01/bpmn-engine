@@ -1,17 +1,7 @@
-'use strict';
+import fs from 'fs';
+import path from 'path';
 
-const fs = require('fs');
-const path = require('path');
-
-module.exports = {
-  valid,
-  invalid,
-  userTask,
-  multipleInbound,
-  resource,
-};
-
-function valid(definitionId) {
+export function valid(definitionId) {
   if (!definitionId) definitionId = 'valid';
   return `
   <?xml version="1.0" encoding="UTF-8"?>
@@ -30,7 +20,7 @@ function valid(definitionId) {
   </definitions>`;
 }
 
-function invalid() {
+export function invalid() {
   return `
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -47,7 +37,7 @@ function invalid() {
 </definitions>`;
 }
 
-function userTask(userTaskId = 'userTask', definitionId = 'Def_1') {
+export function userTask(userTaskId = 'userTask', definitionId = 'Def_1') {
   return `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions id="${definitionId}" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -75,7 +65,7 @@ function userTask(userTaskId = 'userTask', definitionId = 'Def_1') {
   </definitions>`;
 }
 
-function multipleInbound() {
+export function multipleInbound() {
   return `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -93,6 +83,6 @@ function multipleInbound() {
   </definitions>`;
 }
 
-function resource(name) {
-  return fs.readFileSync(path.join(__dirname, '..', 'resources', name));
+export function resource(name) {
+  return fs.readFileSync(path.join('./test/resources', name));
 }

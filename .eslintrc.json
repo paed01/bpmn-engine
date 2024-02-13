@@ -1,5 +1,6 @@
 {
   "parserOptions": {
+    "sourceType": "module",
     "ecmaVersion": 2020
   },
   "env": {
@@ -7,6 +8,7 @@
     "es6": true
   },
   "extends": "eslint:recommended",
+  "plugins": ["import"],
   "rules": {
     "arrow-parens": "error",
     "arrow-spacing": "error",

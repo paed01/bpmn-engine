@@ -1,6 +1,4 @@
-'use strict';
-
-module.exports = function getOptionsAndCallback(optionsOrCallback, callback) {
+export default function getOptionsAndCallback(optionsOrCallback, callback) {
   let options;
   if (typeof optionsOrCallback === 'function') {
     callback = optionsOrCallback;
@@ -9,4 +7,4 @@ module.exports = function getOptionsAndCallback(optionsOrCallback, callback) {
   }
 
   return [options, callback];
-};
+}

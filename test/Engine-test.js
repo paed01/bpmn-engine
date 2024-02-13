@@ -1,9 +1,7 @@
-'use strict';
-
-const {EventEmitter} = require('events');
-const Bpmn = require('../src/index.js');
-const factory = require('./helpers/factory.js');
-const testHelpers = require('./helpers/testHelpers.js');
+import {EventEmitter} from 'events';
+import * as Bpmn from '../src/index.js';
+import * as factory from './helpers/factory.js';
+import * as testHelpers from './helpers/testHelpers.js';
 
 describe('Engine', () => {
   describe('constructor', () => {

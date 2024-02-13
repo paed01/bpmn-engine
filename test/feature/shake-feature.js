@@ -1,7 +1,5 @@
-'use strict';
-
-const testHelpers = require('../helpers/testHelpers.js');
-const {Engine} = require('../../src/index.js');
+import * as testHelpers from '../helpers/testHelpers.js';
+import {Engine} from '../../src/index.js';
 
 Feature('Shake', () => {
   Scenario('Determine run sequences for an activity', () => {

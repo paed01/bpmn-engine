@@ -1,6 +1,4 @@
-'use strict';
-
-const {Engine} = require('../../../src/index.js');
+import { Engine } from '../../../src/index.js';
 
 Feature('issue 172', () => {
   Scenario('Postpone intermediate throw event by formatting', () => {

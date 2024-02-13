@@ -1,12 +1,13 @@
 /* eslint no-console:0 */
-'use strict';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import nock from 'nock';
 
-const {promises: fs} = require('fs');
-const vm = require('vm');
-const path = require('path');
-const nock = require('nock');
-
-const {name, main} = require('../package.json');
+const nodeRequire = createRequire(fileURLToPath(import.meta.url));
+const { name, main } = nodeRequire('../package.json');
 
 process.on('unhandledRejection', (error) => {
   console.log('unhandledRejection', error);
@@ -74,7 +75,7 @@ function execute(script) {
     db: {
       getSavedState: (id, callback) => {
         if (fs.existsSync('./tmp/some-random-id.json')) {
-          const state = require('../tmp/some-random-id.json');
+          const state = nodeRequire('../tmp/some-random-id.json');
           return callback(null, state);
         }
         callback(new Error('No state'));

@@ -1,17 +1,15 @@
-'use strict';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
-const BpmnModdle = require('bpmn-moddle');
-const elements = require('bpmn-elements');
-const Logger = require('../../src/Logger.js');
-const {default: serializer, TypeResolver} = require('moddle-context-serializer');
+import BpmnModdle from 'bpmn-moddle';
+import * as Elements from 'bpmn-elements';
+import Logger from '../../src/Logger.js';
+import serializer, { TypeResolver } from 'moddle-context-serializer';
 
-module.exports = {
-  context,
-  moddleContext,
-  serializeModdleContext,
-};
+const nodeRequire = createRequire(fileURLToPath(import.meta.url));
+export const camundaBpmnModdle = nodeRequire('camunda-bpmn-moddle/resources/camunda.json');
 
-async function context(source, options = {}) {
+export async function context(source, options = {}) {
   const logger = Logger('test-helpers:context');
   const moddleCtx = await moddleContext(source, options);
 
@@ -23,19 +21,19 @@ async function context(source, options = {}) {
   }
 
   const types = TypeResolver({
-    ...elements,
+    ...Elements,
     ...options.elements,
   });
 
   return serializer(moddleCtx, types, options.extendFn);
 }
 
-function moddleContext(source, options) {
+export function moddleContext(source, options) {
   const bpmnModdle = new BpmnModdle(options);
   return bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source);
 }
 
-function serializeModdleContext({rootElement, rootHandler, elementsById, references, warnings}) {
+export function serializeModdleContext({rootElement, rootHandler, elementsById, references, warnings}) {
   const serializedRoot = JSON.parse(JSON.stringify(rootElement || rootHandler.element));
 
   const clonedContext = {

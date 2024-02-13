@@ -1,10 +1,6 @@
-'use strict';
+import { Script } from 'vm';
 
-const {Script} = require('vm');
-
-module.exports = Scripts;
-
-function Scripts(disableDummy) {
+export default function Scripts(disableDummy) {
   if (!(this instanceof Scripts)) return new Scripts(disableDummy);
   this.scripts = {};
   this.disableDummy = disableDummy;

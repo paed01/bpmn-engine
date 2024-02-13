@@ -1,6 +1,4 @@
-'use strict';
-
-module.exports = function ProcessOutputDataObject(dataObjectDef, {environment}) {
+export default function ProcessOutputDataObject(dataObjectDef, {environment}) {
   const {id, type, name, behaviour, parent} = dataObjectDef;
 
   const source = {
@@ -24,4 +22,4 @@ module.exports = function ProcessOutputDataObject(dataObjectDef, {environment}) 
   };
 
   return source;
-};
+}

@@ -1,8 +1,6 @@
-'use strict';
-
-const {EventEmitter} = require('events');
-const factory = require('../helpers/factory.js');
-const {Engine} = require('../../src/index.js');
+import { Engine } from '../../src/index.js';
+import { EventEmitter } from 'events';
+import * as factory from '../helpers/factory.js';
 
 Feature('Issues', () => {
   Scenario('Save state on wait - issue #105', () => {

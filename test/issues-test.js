@@ -1,8 +1,6 @@
-'use strict';
-
-const factory = require('./helpers/factory.js');
-const {Engine} = require('../src/index.js');
-const {EventEmitter} = require('events');
+import { Engine } from '../src/index.js';
+import { EventEmitter } from 'events';
+import * as factory from './helpers/factory.js';
 
 describe('issues', () => {
   describe('issue 19 - save state', () => {

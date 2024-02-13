@@ -22,7 +22,7 @@ Examples
 # Execute
 
 ```javascript
-const {Engine} = require('bpmn-engine');
+import {Engine} from 'bpmn-engine';
 
 const id = Math.floor(Math.random() * 10000);
 
@@ -58,10 +58,8 @@ engine.execute((err, execution) => {
 # Listen for events
 
 ```javascript
-'use strict';
-
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
+import {Engine} from 'bpmn-engine';
+import {EventEmitter} from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -121,10 +119,8 @@ engine.execute({
 An exclusive gateway will receive the available process variables as `this.environment.variables`.
 
 ```javascript
-'use strict';
-
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
+import {Engine} from 'bpmn-engine';
+import {EventEmitter} from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -181,10 +177,10 @@ The `next` callback takes the following arguments:
 - `result`: optional result of the script
 
 ```javascript
-'use strict';
 
-const {Engine} = require('bpmn-engine');
-const bent = require('bent');
+
+import {Engine} from 'bpmn-engine';
+import bent from 'bent';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -243,10 +239,10 @@ function set(activity, name, value) {
 User tasks waits for signal to complete.
 
 ```javascript
-'use strict';
 
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
+
+import {Engine} from 'bpmn-engine';
+import {EventEmitter} from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -295,11 +291,13 @@ A service task will receive the data available on the process instance. The sign
   - `result`: service call result
 
 ```javascript
-'use strict';
+import { Engine } from 'bpmn-engine';
+import { createRequire } from 'module';
+import { fileURLToPath } = from 'url';
+import bent from 'bent';
 
-const {Engine} = require('bpmn-engine');
-
-const getJson = require('bent')('json');
+const getJson = bent('json');
+const camunda = createRequire(fileURLToPath)('camunda-bpmn-moddle/resources/camunda.json')
 
 async function getRequest(scope, callback) {
   try {
@@ -327,7 +325,7 @@ const engine = new Engine({
   name: 'service task example 1',
   source,
   moddleOptions: {
-    camunda: require('camunda-bpmn-moddle/resources/camunda')
+    camunda,
   },
   extensions: {
     saveToResultVariable(activity) {
@@ -357,9 +355,9 @@ engine.execute({
 or as a expression function call:
 
 ```javascript
-'use strict';
 
-const {Engine} = require('bpmn-engine');
+
+import {Engine} from 'bpmn-engine';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -403,8 +401,8 @@ engine.once('end', (execution) => {
 # Sequence flow with condition expression
 
 ```javascript
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
+import {Engine} from 'bpmn-engine';
+import {EventEmitter} from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -453,8 +451,8 @@ engine.once('end', () => {
 # Task loop over collection
 
 ```javascript
-const {Engine} = require('bpmn-engine');
-const JsExtension = require('../test/resources/JsExtension');
+import {Engine} from 'bpmn-engine';
+import JsExtension from '../test/resources/JsExtension';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -506,8 +504,12 @@ engine.once('end', () => {
 Pass an extend function with options.
 
 ```javascript
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
+import { Engine } from 'bpmn-engine';
+import { EventEmitter } from 'events';
+import { createRequire } from 'module';
+import { fileURLToPath } = from 'url';
+
+const camunda = createRequire(fileURLToPath)('camunda-bpmn-moddle/resources/camunda.json')
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -542,7 +544,7 @@ const engine = new Engine({
   name: 'Pending game',
   source,
   moddleOptions: {
-    camunda: require('camunda-bpmn-moddle/resources/camunda.json'),
+    camunda,
   },
   extensions: {
     camunda: camundaExt
@@ -590,7 +592,11 @@ function camundaExt(activity) {
 Add your own extension function that act on service task attributes.
 
 ```javascript
-const {Engine} = require('bpmn-engine');
+import { Engine } from 'bpmn-engine';
+import { createRequire } from 'module';
+import { fileURLToPath } = from 'url';
+
+const camunda = createRequire(fileURLToPath)('camunda-bpmn-moddle/resources/camunda.json')
 
 const source = `
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -622,7 +628,7 @@ const engine = new Engine({
   name: 'extend service task',
   source,
   moddleOptions: {
-    camunda: require('camunda-bpmn-moddle/resources/camunda.json'),
+    camunda,
   },
   services: {
     serviceFn(scope, callback) {
@@ -654,8 +660,12 @@ engine.execute((err, instance) => {
 Publish event when human involvement is required.
 
 ```javascript
-const {Engine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
+import { Engine } from 'bpmn-engine';
+import { EventEmitter } from 'events';
+import { createRequire } from 'module';
+import { fileURLToPath } = from 'url';
+
+const camunda = createRequire(fileURLToPath)('camunda-bpmn-moddle/resources/camunda.json')
 
 const source = `
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -705,7 +715,7 @@ const engine = new Engine({
   name: 'call humans',
   source,
   moddleOptions: {
-    camunda: require('camunda-bpmn-moddle/resources/camunda.json'),
+    camunda,
   },
   services: {
     getUser() {
@@ -734,10 +744,14 @@ engine.execute({listener}, (err, instance) => {
 Shake down the possible sequences an activity can have.
 
 ```javascript
-const {Engine} = require('bpmn-engine');
-const BpmnModdle = require('bpmn-moddle');
-const elements = require('bpmn-elements');
-const {default: Serializer, TypeResolver} = require('moddle-context-serializer');
+import { Engine } from 'bpmn-engine';
+import BpmnModdle from 'bpmn-moddle';
+import elements from 'bpmn-elements';
+import Serializer, { TypeResolver } from 'moddle-context-serializer';
+import { createRequire } from 'module';
+import { fileURLToPath } = from 'url';
+
+const camunda = createRequire(fileURLToPath)('camunda-bpmn-moddle/resources/camunda.json')
 
 const source = `
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -765,7 +779,7 @@ const source = `
 
 (async function IIFE() {
   const moddleContext = await (new BpmnModdle({
-    camunda: require('camunda-bpmn-moddle/resources/camunda.json'),
+    camunda,
   })).fromXML(source);
 
   const sourceContext = Serializer(moddleContext, TypeResolver(elements));
@@ -796,15 +810,18 @@ One way to persist state is to subscribe to activity and engine events through a
 In this example the state of the execution is published on a message broker. Subscribers to the broker will hopefylly know how to persist the state.
 
 ```js
-const camundaModdle = require('camunda-bpmn-moddle/resources/camunda');
-const {Engine: BpmnEngine} = require('bpmn-engine');
-const {EventEmitter} = require('events');
-const {getSourceSync, getAllowedServices, getExtensions} = require('./utils');
-const {publish} = require('./dbbroker');
-const {randomUUID: uuid} = require('crypto');
+import { Engine } from 'bpmn-engine';
+import { EventEmitter } from 'ndoe:events';
+import { publish } from './dbbroker';
+import { randomUUID } from 'ndoe:crypto';
+import { createRequire } from 'node:module';
+import { fileURLToPath } = from 'node:url';
+import { getSourceSync, getAllowedServices, getExtensions } from './utils.js';
+
+const camundaModdle = createRequire(fileURLToPath)('camunda-bpmn-moddle/resources/camunda.json')
 
 function ignite(executionId, options = {}) {
-  const {name, settings} = options;
+  const { name, settings } = options;
   const listener = new EventEmitter();
   listener.on('activity.wait', (_, execution) => {
     return publishEvent('bpmn.state.update', {state: execution.getState()});
@@ -827,7 +844,7 @@ function ignite(executionId, options = {}) {
 
   const engine = BpmnEngine({
     moddleOptions: {
-      camunda: camundaModdle
+      camunda,
     },
     ...options,
     settings: {
@@ -843,7 +860,7 @@ function ignite(executionId, options = {}) {
     publishEvent('bpmn.error', {message: err.message, error: err});
   });
 
-  return {engine, listener};
+  return { engine, listener };
 
   function publishEvent(routingKey, message) {
     publish('events', routingKey, {
@@ -854,7 +871,7 @@ function ignite(executionId, options = {}) {
   }
 }
 
-const {engine} = ignite(uuid(), {
+const {engine} = ignite(randomUUID(), {
   name: 'persisted engine #1',
   source: getSourceSync('./mother-of-all.bpmn'),
   services: getAllowedServices(),

@@ -1,7 +1,5 @@
-'use strict';
-
-const {EventEmitter} = require('events');
-const {Engine} = require('../../src/index.js');
+import { EventEmitter } from 'events';
+import { Engine } from '../../src/index.js';
 
 Feature('Backward compatability', () => {
   Scenario('Version 13 state without process environment', () => {
