@@ -3,7 +3,7 @@
 const ck = require('chronokinesis');
 const testHelpers = require('../helpers/testHelpers.js');
 const factory = require('../helpers/factory.js');
-const {Engine} = require('../../index.js');
+const {Engine} = require('../../src/index.js');
 
 const timersSource = factory.resource('timers.bpmn');
 

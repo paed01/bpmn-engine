@@ -3,6 +3,7 @@
 
 const {promises: fs} = require('fs');
 const vm = require('vm');
+const path = require('path');
 const nock = require('nock');
 
 const {name, main} = require('../package.json');
@@ -28,9 +29,10 @@ async function parseDoc(filePath) {
   const fileContent = await fs.readFile(filePath);
   const blocks = [];
   const content = fileContent.toString();
+  const mainFile = path.join('..', main);
 
   content.replace(exPattern, (match, block, idx) => {
-    block = block.replace(`require('${name}')`, `require('../${main}')`);
+    block = block.replace(`require('${name}')`, `require('${mainFile}')`);
 
     const blockLine = calculateLine(content, idx);
 

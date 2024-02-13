@@ -1,6 +1,6 @@
 'use strict';
 
-const {Engine} = require('../../index.js');
+const {Engine} = require('../../src/index.js');
 
 Feature('Scripts', () => {
   Scenario('Process with scripts', () => {
