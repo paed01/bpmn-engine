@@ -1,5 +1,5 @@
 import * as testHelpers from '../helpers/testHelpers.js';
-import {Engine} from '../../src/index.js';
+import { Engine } from '../../src/index.js';
 
 Feature('Shake', () => {
   Scenario('Determine run sequences for an activity', () => {

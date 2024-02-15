@@ -51,7 +51,7 @@ describe('issues', () => {
 
         const children = state.definitions[0].execution.processes[0].execution.children;
 
-        expect(children.map(({id}) => id)).to.eql(['Start', 'Parallel1', 'Task_A', 'Task_B', 'Parallel2', 'Task_C', 'End']);
+        expect(children.map(({ id }) => id)).to.eql(['Start', 'Parallel1', 'Task_A', 'Task_B', 'Parallel2', 'Task_C', 'End']);
       }
 
       let [Start, Parallel1, Task_A, Task_B, Parallel2, Task_C, End] = states[0].definitions[0].execution.processes[0].execution.children;

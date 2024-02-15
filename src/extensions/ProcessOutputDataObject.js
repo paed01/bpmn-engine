@@ -1,5 +1,5 @@
-export default function ProcessOutputDataObject(dataObjectDef, {environment}) {
-  const {id, type, name, behaviour, parent} = dataObjectDef;
+export default function ProcessOutputDataObject(dataObjectDef, { environment }) {
+  const { id, type, name, behaviour, parent } = dataObjectDef;
 
   const source = {
     id,
@@ -9,7 +9,7 @@ export default function ProcessOutputDataObject(dataObjectDef, {environment}) {
     parent,
     read(broker, exchange, routingKeyPrefix, messageProperties) {
       const value = environment.variables.data && environment.variables.data[id];
-      return broker.publish(exchange, `${routingKeyPrefix}response`, {id, name, type, value}, messageProperties);
+      return broker.publish(exchange, `${routingKeyPrefix}response`, { id, name, type, value }, messageProperties);
     },
     write(broker, exchange, routingKeyPrefix, value, messageProperties) {
       environment.variables.data = environment.variables.data || {};
@@ -17,7 +17,7 @@ export default function ProcessOutputDataObject(dataObjectDef, {environment}) {
 
       environment.output.data = environment.output.data || {};
       environment.output.data[id] = value;
-      return broker.publish(exchange, `${routingKeyPrefix}response`, {id, name, type, value}, messageProperties);
+      return broker.publish(exchange, `${routingKeyPrefix}response`, { id, name, type, value }, messageProperties);
     },
   };
 

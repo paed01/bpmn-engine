@@ -1,5 +1,4 @@
-Examples
-========
+# Examples
 
 <!-- toc -->
 
@@ -22,7 +21,7 @@ Examples
 # Execute
 
 ```javascript
-import {Engine} from 'bpmn-engine';
+import { Engine } from 'bpmn-engine';
 
 const id = Math.floor(Math.random() * 10000);
 
@@ -46,8 +45,8 @@ const engine = new Engine({
   name: 'execution example',
   source,
   variables: {
-    id
-  }
+    id,
+  },
 });
 
 engine.execute((err, execution) => {
@@ -58,8 +57,8 @@ engine.execute((err, execution) => {
 # Listen for events
 
 ```javascript
-import {Engine} from 'bpmn-engine';
-import {EventEmitter} from 'events';
+import { Engine } from 'bpmn-engine';
+import { EventEmitter } from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -82,7 +81,7 @@ const source = `
 
 const engine = new Engine({
   name: 'listen example',
-  source
+  source,
 });
 
 const listener = new EventEmitter();
@@ -90,11 +89,13 @@ const listener = new EventEmitter();
 listener.once('wait', (task) => {
   task.signal({
     ioSpecification: {
-      dataOutputs: [{
-        id: 'userInput',
-        value: 'von Rosen',
-      }]
-    }
+      dataOutputs: [
+        {
+          id: 'userInput',
+          value: 'von Rosen',
+        },
+      ],
+    },
   });
 });
 
@@ -107,11 +108,14 @@ engine.once('end', (execution) => {
   console.log(`User sirname is ${execution.environment.output.data.inputFromUser}`);
 });
 
-engine.execute({
-  listener
-}, (err) => {
-  if (err) throw err;
-});
+engine.execute(
+  {
+    listener,
+  },
+  (err) => {
+    if (err) throw err;
+  }
+);
 ```
 
 # Exclusive gateway
@@ -119,8 +123,8 @@ engine.execute({
 An exclusive gateway will receive the available process variables as `this.environment.variables`.
 
 ```javascript
-import {Engine} from 'bpmn-engine';
-import {EventEmitter} from 'events';
+import { Engine } from 'bpmn-engine';
+import { EventEmitter } from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -146,7 +150,7 @@ const source = `
 
 const engine = new Engine({
   name: 'exclusive gateway example',
-  source
+  source,
 });
 
 const listener = new EventEmitter();
@@ -159,8 +163,8 @@ listener.on('activity.start', (api) => {
 engine.execute({
   listener,
   variables: {
-    input: 51
-  }
+    input: 51,
+  },
 });
 
 engine.on('end', () => {
@@ -173,13 +177,12 @@ engine.on('end', () => {
 A script task will receive the data available on the process instance. So if `bent` or another module is needed it has to be passed when starting the process. The script task also has a callback called `next` that has to be called for the task to complete.
 
 The `next` callback takes the following arguments:
+
 - `err`: occasional error
 - `result`: optional result of the script
 
 ```javascript
-
-
-import {Engine} from 'bpmn-engine';
+import { Engine } from 'bpmn-engine';
 import bent from 'bent';
 
 const source = `
@@ -213,17 +216,17 @@ const source = `
 
 const engine = new Engine({
   name: 'script task example',
-  source
+  source,
 });
 
 engine.execute({
   variables: {
-    scriptTaskCompleted: false
+    scriptTaskCompleted: false,
   },
   services: {
     get: bent('json'),
     set,
-  }
+  },
 });
 engine.on('end', (execution) => {
   console.log('Output:', execution.environment.output);
@@ -239,10 +242,8 @@ function set(activity, name, value) {
 User tasks waits for signal to complete.
 
 ```javascript
-
-
-import {Engine} from 'bpmn-engine';
-import {EventEmitter} from 'events';
+import { Engine } from 'bpmn-engine';
+import { EventEmitter } from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -258,14 +259,14 @@ const source = `
 
 const engine = new Engine({
   name: 'user task example 1',
-  source
+  source,
 });
 
 const listener = new EventEmitter();
 
 listener.once('wait', (elementApi) => {
   elementApi.signal({
-    sirname: 'von Rosen'
+    sirname: 'von Rosen',
   });
 });
 
@@ -273,12 +274,15 @@ listener.on('activity.end', (elementApi, engineApi) => {
   if (elementApi.content.output) engineApi.environment.output[elementApi.id] = elementApi.content.output;
 });
 
-engine.execute({
-  listener
-}, (err, execution) => {
-  if (err) throw err;
-  console.log(`User sirname is ${execution.environment.output.task.sirname}`);
-});
+engine.execute(
+  {
+    listener,
+  },
+  (err, execution) => {
+    if (err) throw err;
+    console.log(`User sirname is ${execution.environment.output.task.sirname}`);
+  }
+);
 ```
 
 # Service task
@@ -355,9 +359,7 @@ engine.execute({
 or as a expression function call:
 
 ```javascript
-
-
-import {Engine} from 'bpmn-engine';
+import { Engine } from 'bpmn-engine';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -369,7 +371,7 @@ const source = `
 
 const engine = new Engine({
   name: 'service task example 3',
-  source
+  source,
 });
 
 engine.execute({
@@ -379,18 +381,18 @@ engine.execute({
       return (executionContext, callback) => {
         callback(null, executionContext.environment.variables.input);
       };
-    }
+    },
   },
   variables: {
-    input: 1
+    input: 1,
   },
   extensions: {
-    saveToEnvironmentOutput(activity, {environment}) {
+    saveToEnvironmentOutput(activity, { environment }) {
       activity.on('end', (api) => {
         environment.output[api.id] = api.content.output;
       });
-    }
-  }
+    },
+  },
 });
 
 engine.once('end', (execution) => {
@@ -401,8 +403,8 @@ engine.once('end', (execution) => {
 # Sequence flow with condition expression
 
 ```javascript
-import {Engine} from 'bpmn-engine';
-import {EventEmitter} from 'events';
+import { Engine } from 'bpmn-engine';
+import { EventEmitter } from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -423,7 +425,7 @@ const source = `
 
 const engine = new Engine({
   name: 'sequence flow example',
-  source
+  source,
 });
 
 const listener = new EventEmitter();
@@ -436,11 +438,11 @@ engine.execute({
   services: {
     isBelow: (input, test) => {
       return input < test;
-    }
+    },
   },
   variables: {
-    input: 2
-  }
+    input: 2,
+  },
 });
 
 engine.once('end', () => {
@@ -451,7 +453,7 @@ engine.once('end', () => {
 # Task loop over collection
 
 ```javascript
-import {Engine} from 'bpmn-engine';
+import { Engine } from 'bpmn-engine';
 import JsExtension from '../test/resources/JsExtension';
 
 const source = `
@@ -473,10 +475,10 @@ const engine = new Engine({
   name: 'loop collection',
   source,
   moddleOptions: {
-    js: JsExtension.moddleOptions
+    js: JsExtension.moddleOptions,
   },
   extensions: {
-    js: JsExtension.extension
+    js: JsExtension.extension,
   },
 });
 
@@ -487,11 +489,11 @@ engine.execute({
     loop: (executionContext, callback) => {
       sum += executionContext.content.item;
       callback(null, sum);
-    }
+    },
   },
   variables: {
-    input: [1, 2, 3, 7]
-  }
+    input: [1, 2, 3, 7],
+  },
 });
 
 engine.once('end', () => {

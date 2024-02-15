@@ -80,7 +80,7 @@ Feature('Timers', () => {
     });
 
     When('bound task is signaled', () => {
-      execution.signal({id: task.id});
+      execution.signal({ id: task.id });
     });
 
     Then('throw time date event is waiting', () => {
@@ -95,7 +95,7 @@ Feature('Timers', () => {
     });
 
     When('throw event is cancelled', () => {
-      execution.cancelActivity({id: activity.id});
+      execution.cancelActivity({ id: activity.id });
     });
 
     Then('user task with due date is waiting', () => {
@@ -108,7 +108,7 @@ Feature('Timers', () => {
     });
 
     When('user task is signaled', () => {
-      execution.signal({id: activity.id});
+      execution.signal({ id: activity.id });
     });
 
     Then('execution completes', () => {
@@ -204,7 +204,7 @@ Feature('Timers', () => {
     });
 
     Given('bound task is signaled', () => {
-      execution.signal({id: task.id});
+      execution.signal({ id: task.id });
     });
 
     And('execution is stopped and state is saved', () => {
@@ -221,9 +221,14 @@ Feature('Timers', () => {
       engine = Engine();
       engine.recover(JSON.parse(JSON.stringify(state)));
 
-      engine.broker.subscribeTmp('event', 'activity.timer', (_, msg) => {
-        timeoutMessage = msg;
-      }, {noAck: true});
+      engine.broker.subscribeTmp(
+        'event',
+        'activity.timer',
+        (_, msg) => {
+          timeoutMessage = msg;
+        },
+        { noAck: true }
+      );
 
       execution = await engine.resume();
     });
@@ -263,7 +268,7 @@ Feature('Timers', () => {
 
     let arbitraryTimers;
     And('an arbitrary timer is registered for some reason', () => {
-      arbitraryTimers = engine.environment.timers.register({extra: true});
+      arbitraryTimers = engine.environment.timers.register({ extra: true });
       arbitraryTimers.setTimeout(() => {}, 1000 * 60 * 10);
     });
 
@@ -298,7 +303,7 @@ Feature('Timers', () => {
     let end;
     When('user task is signalled', () => {
       end = engine.waitFor('end');
-      engine.execution.signal({id: 'task'});
+      engine.execution.signal({ id: 'task' });
     });
 
     Then('run completes', () => {
@@ -319,7 +324,7 @@ Feature('Timers', () => {
     });
 
     And('an arbitrary timer is added', () => {
-      arbitraryTimers = engine.environment.timers.register({extra: true});
+      arbitraryTimers = engine.environment.timers.register({ extra: true });
       arbitraryTimers.setTimeout(() => {}, 1000 * 60 * 10);
     });
 

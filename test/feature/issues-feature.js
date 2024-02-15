@@ -251,13 +251,18 @@ Feature('Issues', () => {
         wait = engine.waitFor('wait');
 
         let count = 0;
-        engine.broker.subscribeTmp('event', 'activity.discard', (_, msg) => {
-          if (msg.content.id === 'UserTask') {
-            if (count++ > 3) {
-              throw new Error('Into infinity');
+        engine.broker.subscribeTmp(
+          'event',
+          'activity.discard',
+          (_, msg) => {
+            if (msg.content.id === 'UserTask') {
+              if (count++ > 3) {
+                throw new Error('Into infinity');
+              }
             }
-          }
-        }, {noAck: true});
+          },
+          { noAck: true }
+        );
 
         execution = await engine.resume();
       });
@@ -288,9 +293,12 @@ Feature('Issues', () => {
 
       Given('ran again', async () => {
         states.splice(0);
-        engine = Engine({...options, variables: {
-          passTask2: 1,
-        }});
+        engine = Engine({
+          ...options,
+          variables: {
+            passTask2: 1,
+          },
+        });
         wait = engine.waitFor('wait');
         execution = await engine.execute();
       });
@@ -306,7 +314,10 @@ Feature('Issues', () => {
       });
 
       And('end event was not discarded yet', () => {
-        expect(state.definitions[0].execution.processes[0].execution.children.find(({id}) => id === 'End').counters).to.deep.equal({taken: 0, discarded: 0});
+        expect(state.definitions[0].execution.processes[0].execution.children.find(({ id }) => id === 'End').counters).to.deep.equal({
+          taken: 0,
+          discarded: 0,
+        });
       });
 
       When('definition is recovered with state', () => {
@@ -318,7 +329,7 @@ Feature('Issues', () => {
 
       Then('end event is still not discarded', async () => {
         const [definition] = await engine.getDefinitions();
-        expect(definition.getActivityById('End').counters).to.deep.equal({taken: 0, discarded: 0});
+        expect(definition.getActivityById('End').counters).to.deep.equal({ taken: 0, discarded: 0 });
       });
 
       When('definition is resumed', async () => {
@@ -326,11 +337,11 @@ Feature('Issues', () => {
       });
 
       Then('end event is discarded once', () => {
-        expect(execution.getActivityById('End').counters).to.deep.equal({taken: 0, discarded: 1});
+        expect(execution.getActivityById('End').counters).to.deep.equal({ taken: 0, discarded: 1 });
       });
 
       When('user task is signaled', () => {
-        execution.signal({id: 'UserTask'});
+        execution.signal({ id: 'UserTask' });
       });
 
       Then('recovered engine execution completes', () => {
@@ -338,7 +349,7 @@ Feature('Issues', () => {
       });
 
       Then('end event is taken once and discarded thrice', () => {
-        expect(execution.getActivityById('End').counters).to.deep.equal({taken: 1, discarded: 3});
+        expect(execution.getActivityById('End').counters).to.deep.equal({ taken: 1, discarded: 3 });
       });
     });
 
@@ -483,13 +494,18 @@ Feature('Issues', () => {
         wait = engine.waitFor('wait');
 
         let count = 0;
-        engine.broker.subscribeTmp('event', 'activity.discard', (_, msg) => {
-          if (msg.content.id === 'UserTask') {
-            if (count++ > 3) {
-              throw new Error('Into infinity');
+        engine.broker.subscribeTmp(
+          'event',
+          'activity.discard',
+          (_, msg) => {
+            if (msg.content.id === 'UserTask') {
+              if (count++ > 3) {
+                throw new Error('Into infinity');
+              }
             }
-          }
-        }, {noAck: true});
+          },
+          { noAck: true }
+        );
 
         execution = await engine.resume();
       });
@@ -520,9 +536,12 @@ Feature('Issues', () => {
 
       Given('ran again', async () => {
         states.splice(0);
-        engine = Engine({...options, variables: {
-          passTask2: 1,
-        }});
+        engine = Engine({
+          ...options,
+          variables: {
+            passTask2: 1,
+          },
+        });
         wait = engine.waitFor('wait');
         execution = await engine.execute();
       });
@@ -538,7 +557,10 @@ Feature('Issues', () => {
       });
 
       And('end event was not discarded yet', () => {
-        expect(state.definitions[0].execution.processes[0].execution.children.find(({id}) => id === 'End').counters).to.deep.equal({taken: 0, discarded: 0});
+        expect(state.definitions[0].execution.processes[0].execution.children.find(({ id }) => id === 'End').counters).to.deep.equal({
+          taken: 0,
+          discarded: 0,
+        });
       });
 
       When('definition is recovered with state', () => {
@@ -550,7 +572,7 @@ Feature('Issues', () => {
 
       Then('end event is still not discarded', async () => {
         const [definition] = await engine.getDefinitions();
-        expect(definition.getActivityById('End').counters).to.deep.equal({taken: 0, discarded: 0});
+        expect(definition.getActivityById('End').counters).to.deep.equal({ taken: 0, discarded: 0 });
       });
 
       When('definition is resumed', async () => {
@@ -558,11 +580,11 @@ Feature('Issues', () => {
       });
 
       Then('end event is discarded once', () => {
-        expect(execution.getActivityById('End').counters).to.deep.equal({taken: 0, discarded: 1});
+        expect(execution.getActivityById('End').counters).to.deep.equal({ taken: 0, discarded: 1 });
       });
 
       When('user task is signaled', () => {
-        execution.signal({id: 'UserTask'});
+        execution.signal({ id: 'UserTask' });
       });
 
       Then('recovered engine execution completes', () => {
@@ -634,7 +656,7 @@ Feature('Issues', () => {
         },
       });
 
-      execution = await engine.execute({listener});
+      execution = await engine.execute({ listener });
     });
 
     Then('execution is stopped and state is saved', () => {
@@ -652,19 +674,19 @@ Feature('Issues', () => {
     });
 
     When('execution is resumed with listener', async () => {
-      execution = await engine.resume({listener});
+      execution = await engine.resume({ listener });
     });
 
     And('first user task is signaled', () => {
-      execution.signal({id: 'task1'});
+      execution.signal({ id: 'task1' });
     });
 
     Then('first user task was taken', () => {
-      expect(execution.getActivityById('task1').counters).to.deep.equal({taken: 1, discarded: 0});
+      expect(execution.getActivityById('task1').counters).to.deep.equal({ taken: 1, discarded: 0 });
     });
 
     And('second user task is waiting', () => {
-      expect(execution.getActivityById('task2').counters).to.deep.equal({taken: 0, discarded: 0});
+      expect(execution.getActivityById('task2').counters).to.deep.equal({ taken: 0, discarded: 0 });
     });
 
     When('execution is recovered', () => {
@@ -677,27 +699,27 @@ Feature('Issues', () => {
     });
 
     When('execution is resumed with listener', async () => {
-      execution = await engine.resume({listener});
+      execution = await engine.resume({ listener });
     });
 
     And('second user task is signaled', () => {
-      execution.signal({id: 'task2'});
+      execution.signal({ id: 'task2' });
     });
 
     Then('first user task was taken', () => {
-      expect(execution.getActivityById('task1').counters).to.deep.equal({taken: 1, discarded: 0});
+      expect(execution.getActivityById('task1').counters).to.deep.equal({ taken: 1, discarded: 0 });
     });
 
     And('second user task was taken', () => {
-      expect(execution.getActivityById('task2').counters).to.deep.equal({taken: 1, discarded: 0});
+      expect(execution.getActivityById('task2').counters).to.deep.equal({ taken: 1, discarded: 0 });
     });
 
     And('third user task is waiting', () => {
-      expect(execution.getActivityById('task3').counters).to.deep.equal({taken: 0, discarded: 0});
+      expect(execution.getActivityById('task3').counters).to.deep.equal({ taken: 0, discarded: 0 });
     });
 
     And('fourth user task was discarded', () => {
-      expect(execution.getActivityById('task4').counters).to.deep.equal({taken: 0, discarded: 1});
+      expect(execution.getActivityById('task4').counters).to.deep.equal({ taken: 0, discarded: 1 });
     });
 
     let end;
@@ -712,27 +734,27 @@ Feature('Issues', () => {
     });
 
     When('execution is resumed with listener', async () => {
-      execution = await engine.resume({listener});
+      execution = await engine.resume({ listener });
     });
 
     And('third user task is signaled', () => {
-      execution.signal({id: 'task3'});
+      execution.signal({ id: 'task3' });
     });
 
     Then('first user task was taken', () => {
-      expect(execution.getActivityById('task1').counters).to.deep.equal({taken: 1, discarded: 0});
+      expect(execution.getActivityById('task1').counters).to.deep.equal({ taken: 1, discarded: 0 });
     });
 
     And('second user task was taken', () => {
-      expect(execution.getActivityById('task2').counters).to.deep.equal({taken: 1, discarded: 0});
+      expect(execution.getActivityById('task2').counters).to.deep.equal({ taken: 1, discarded: 0 });
     });
 
     And('third user task was taken', () => {
-      expect(execution.getActivityById('task3').counters).to.deep.equal({taken: 1, discarded: 0});
+      expect(execution.getActivityById('task3').counters).to.deep.equal({ taken: 1, discarded: 0 });
     });
 
     And('fourth user task was discarded', () => {
-      expect(execution.getActivityById('task4').counters).to.deep.equal({taken: 0, discarded: 1});
+      expect(execution.getActivityById('task4').counters).to.deep.equal({ taken: 0, discarded: 1 });
     });
 
     And('execution completed', () => {
@@ -756,7 +778,7 @@ Feature('Issues', () => {
       const status = await complete;
 
       const startState = execution.getState();
-      return {engine, waiting, state: startState, status};
+      return { engine, waiting, state: startState, status };
     }
 
     async function Tick(state) {
@@ -773,7 +795,7 @@ Feature('Issues', () => {
       const status = await complete;
 
       const tickState = execution.getState();
-      return {engine, waiting, state: tickState, status};
+      return { engine, waiting, state: tickState, status };
     }
 
     async function Input(state, signalId) {
@@ -795,7 +817,7 @@ Feature('Issues', () => {
 
       const status = await complete;
 
-      return {engine, waiting, state: inputState, status};
+      return { engine, waiting, state: inputState, status };
     }
 
     function stopOrEnd(engine) {
@@ -866,7 +888,7 @@ Feature('Issues', () => {
 
     Then('second user task is still waiting', () => {
       expect(result.status).to.equal('stop');
-      expect(result.waiting.find(({id}) => id === 'B')).to.be.ok;
+      expect(result.waiting.find(({ id }) => id === 'B')).to.be.ok;
     });
 
     When('ticked', async () => {
@@ -875,7 +897,7 @@ Feature('Issues', () => {
 
     Then('second user task is still waiting', () => {
       expect(result.status).to.equal('stop');
-      expect(result.waiting.find(({id}) => id === 'B')).to.be.ok;
+      expect(result.waiting.find(({ id }) => id === 'B')).to.be.ok;
     });
 
     When('second user task is signaled', async () => {
@@ -883,7 +905,7 @@ Feature('Issues', () => {
     });
 
     Then('no user task is waiting', () => {
-      expect(result.waiting.some(({type}) => type === 'bpmn:UserTask')).to.not.be.ok;
+      expect(result.waiting.some(({ type }) => type === 'bpmn:UserTask')).to.not.be.ok;
     });
 
     And('run has completed', () => {
@@ -905,14 +927,14 @@ Feature('Issues', () => {
 
     Then('execution waits for both tasks', () => {
       const postponed = execution.getPostponed();
-      expect(postponed.find(({id}) => id === 'task1')).to.be.ok;
-      expect(postponed.find(({id}) => id === 'task2')).to.be.ok;
+      expect(postponed.find(({ id }) => id === 'task1')).to.be.ok;
+      expect(postponed.find(({ id }) => id === 'task2')).to.be.ok;
     });
 
     let ended;
     When('first task is signaled', () => {
       ended = engine.waitFor('end');
-      execution.signal({id: 'task1'});
+      execution.signal({ id: 'task1' });
     });
 
     Then('execution completes', () => {
@@ -932,7 +954,7 @@ Feature('Issues', () => {
 
     When('second task is signaled', () => {
       ended = engine.waitFor('end');
-      execution.signal({id: 'task2'});
+      execution.signal({ id: 'task2' });
     });
 
     Then('execution completes', () => {
@@ -994,13 +1016,13 @@ Feature('Issues', () => {
 
     Then('user task is waiting to be signaled', () => {
       const postponed = execution.getPostponed();
-      expect(postponed.find(({id}) => id === 'userTask')).to.be.ok;
+      expect(postponed.find(({ id }) => id === 'userTask')).to.be.ok;
     });
 
     let ended;
     When('user task is signaled', () => {
       ended = engine.waitFor('end');
-      execution.signal({id: 'userTask'});
+      execution.signal({ id: 'userTask' });
     });
 
     Then('execution completes', () => {
@@ -1083,21 +1105,21 @@ Feature('Issues', () => {
             if (activity.type === 'bpmn:Process') return;
 
             const formatQ = activity.broker.getQueue('format-run-q');
-            activity.on('activity.execution.completed', ({content}) => {
+            activity.on('activity.execution.completed', ({ content }) => {
               const rawOutput = content.output;
               if (!rawOutput) return;
 
               let output;
               if (content.isMultiInstance) {
-                output = rawOutput.map(({id, executionId, ...rest}) => { // eslint-disable-line no-unused-vars
+                output = rawOutput.map(({ id, executionId /* eslint-disable-line no-unused-vars */, ...rest }) => {
                   return rest;
                 });
               } else {
-                const {id, executionId, ...rest} = rawOutput; // eslint-disable-line no-unused-vars
+                const { id, executionId, ...rest } = rawOutput; // eslint-disable-line no-unused-vars
                 output = rest;
               }
 
-              formatQ.queueMessage({routingKey: 'run.output.format'}, {output});
+              formatQ.queueMessage({ routingKey: 'run.output.format' }, { output });
             });
 
             activity.on('activity.end', (elementApi) => {
@@ -1119,7 +1141,7 @@ Feature('Issues', () => {
     });
 
     When('execution is signaled with user task id', () => {
-      execution.signal({id: 'task', myvar: 1});
+      execution.signal({ id: 'task', myvar: 1 });
     });
 
     let looped;
@@ -1133,9 +1155,9 @@ Feature('Issues', () => {
     let end;
     When('execution is signaled with looped iterations execution id', () => {
       end = execution.waitFor('end');
-      execution.signal({executionId: looped.pop().content.executionId, myvar: 1});
-      execution.signal({executionId: looped.pop().content.executionId, myvar: 1});
-      execution.signal({executionId: looped.pop().content.executionId, myvar: 1});
+      execution.signal({ executionId: looped.pop().content.executionId, myvar: 1 });
+      execution.signal({ executionId: looped.pop().content.executionId, myvar: 1 });
+      execution.signal({ executionId: looped.pop().content.executionId, myvar: 1 });
     });
 
     let result;
@@ -1145,8 +1167,8 @@ Feature('Issues', () => {
 
     And('id and execution id was stripped from output', () => {
       expect(result.environment.output).to.deep.equal({
-        task: {myvar: 1},
-        loop: [{myvar: 1}, {myvar: 1}, {myvar: 1}],
+        task: { myvar: 1 },
+        loop: [{ myvar: 1 }, { myvar: 1 }, { myvar: 1 }],
       });
     });
   });
@@ -1186,9 +1208,9 @@ Feature('Issues', () => {
     And('listener for task that will throw error under certain conditions', () => {
       listener.on('activity.wait', (elementApi, execution) => {
         if (elementApi.id !== 'task-a') return;
-        const {errorId} = execution.definitions[0].environment.variables;
+        const { errorId } = execution.definitions[0].environment.variables;
         if (errorId) {
-          return elementApi.owner.emitFatal({id: errorId}, {id: elementApi.id});
+          return elementApi.owner.emitFatal({ id: errorId }, { id: elementApi.id });
         }
         return elementApi.signal();
       });
@@ -1251,7 +1273,7 @@ Feature('Issues', () => {
 
     When('executed with condition to throw', async () => {
       end = engine.waitFor('end');
-      execution = await engine.execute({variables: {errorId: 'Error_1'}});
+      execution = await engine.execute({ variables: { errorId: 'Error_1' } });
     });
 
     Then('execution completed', () => {
@@ -1311,7 +1333,7 @@ function TimersWithoutScope(options) {
   }
 
   function wrappedSetTimeout(callback, delay, ...args) {
-    const ref = {timerId: `timer_${count++}`, callback, delay, args, owner: this};
+    const ref = { timerId: `timer_${count++}`, callback, delay, args, owner: this };
     executing.push(ref);
     ref.timerRef = options.setTimeout.call(null, onTimeout, delay, ...args);
     return ref;

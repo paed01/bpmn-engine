@@ -285,16 +285,21 @@ Feature('Call activity', () => {
     });
 
     And('executable process is running', () => {
-      expect(engine.execution.definitions[0].getProcesses().filter(({id}) => id === 'main-process')).to.have.length(1);
+      expect(engine.execution.definitions[0].getProcesses().filter(({ id }) => id === 'main-process')).to.have.length(1);
     });
 
     And('three instances of called process are running with unique execution ids', () => {
-      const called = engine.execution.definitions[0].getProcesses().filter(({id}) => id === 'called-process');
+      const called = engine.execution.definitions[0].getProcesses().filter(({ id }) => id === 'called-process');
       expect(called).to.have.length(3);
 
-      called.map(({executionId}) => executionId).forEach((bpExecId) => {
-        expect(called.filter(({executionId}) => executionId === bpExecId), bpExecId + ' reused').to.have.length(1);
-      });
+      called
+        .map(({ executionId }) => executionId)
+        .forEach((bpExecId) => {
+          expect(
+            called.filter(({ executionId }) => executionId === bpExecId),
+            bpExecId + ' reused'
+          ).to.have.length(1);
+        });
     });
 
     When('multi-instance completes', () => {
