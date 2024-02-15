@@ -1,4 +1,4 @@
-import {EventEmitter} from 'events';
+import { EventEmitter } from 'events';
 import * as Bpmn from '../src/index.js';
 import * as factory from './helpers/factory.js';
 import * as testHelpers from './helpers/testHelpers.js';
@@ -83,9 +83,9 @@ describe('Engine', () => {
 
     it('the "Logger" option is a factory function that accepts a scope and returns a Logger', (done) => {
       const Logger = (scope) => ({
-        debug: (...args) => Logger.logs.push({scope, level: 'debug', args}),
-        warn: (...args) => Logger.logs.push({scope, level: 'warn', args}),
-        error: (...args) => Logger.logs.push({scope, level: 'error', args}),
+        debug: (...args) => Logger.logs.push({ scope, level: 'debug', args }),
+        warn: (...args) => Logger.logs.push({ scope, level: 'warn', args }),
+        error: (...args) => Logger.logs.push({ scope, level: 'error', args }),
       });
 
       Logger.logs = [];
@@ -105,17 +105,19 @@ describe('Engine', () => {
 
     it('throw an error when the "Logger" option is not a valid factory', () => {
       const Logger = {
-        debug: (...args) => Logger.logs.push({level: 'debug', args}),
-        warn: (...args) => Logger.logs.push({level: 'warn', args}),
-        error: (...args) => Logger.logs.push({level: 'error', args}),
+        debug: (...args) => Logger.logs.push({ level: 'debug', args }),
+        warn: (...args) => Logger.logs.push({ level: 'warn', args }),
+        error: (...args) => Logger.logs.push({ level: 'error', args }),
       };
 
       Logger.logs = [];
 
-      expect(() => Bpmn.Engine({
-        source: factory.valid(),
-        Logger,
-      })).to.throw(TypeError, 'Logger is not a function');
+      expect(() =>
+        Bpmn.Engine({
+          source: factory.valid(),
+          Logger,
+        })
+      ).to.throw(TypeError, 'Logger is not a function');
     });
   });
 
@@ -352,7 +354,9 @@ describe('Engine', () => {
         source,
       });
       engine.execute((err) => {
-        expect(err).to.be.an('error').and.match(/executable process/);
+        expect(err)
+          .to.be.an('error')
+          .and.match(/executable process/);
         done();
       });
     });
@@ -368,7 +372,9 @@ describe('Engine', () => {
         source,
       });
       engine.execute().catch((err) => {
-        expect(err).to.be.an('error').and.match(/executable process/);
+        expect(err)
+          .to.be.an('error')
+          .and.match(/executable process/);
         done();
       });
     });
@@ -385,7 +391,9 @@ describe('Engine', () => {
       });
 
       engine.once('error', (err) => {
-        expect(err).to.be.an('error').and.match(/ executable process/);
+        expect(err)
+          .to.be.an('error')
+          .and.match(/ executable process/);
         done();
       });
 
@@ -423,7 +431,9 @@ describe('Engine', () => {
         },
       });
       engine.once('error', (err) => {
-        expect(err).to.be.an('error').and.match(/Inner error/i);
+        expect(err)
+          .to.be.an('error')
+          .and.match(/Inner error/i);
         done();
       });
 
@@ -450,7 +460,9 @@ describe('Engine', () => {
       });
 
       engine.execute((err) => {
-        expect(err).to.be.an('error').and.match(/Inner error/i);
+        expect(err)
+          .to.be.an('error')
+          .and.match(/Inner error/i);
         done();
       });
     });
@@ -497,9 +509,11 @@ describe('Engine', () => {
         done();
       });
 
-      engine.execute({
-        listener,
-      }).catch(done);
+      engine
+        .execute({
+          listener,
+        })
+        .catch(done);
     });
 
     it('writes to environment output on end', async () => {
@@ -521,10 +535,12 @@ describe('Engine', () => {
 
         activityApi.signal({
           ioSpecification: {
-            dataOutputs: [{
-              id: 'userInput',
-              value: 'von Rosen',
-            }],
+            dataOutputs: [
+              {
+                id: 'userInput',
+                value: 'von Rosen',
+              },
+            ],
           },
         });
       });
@@ -589,7 +605,7 @@ describe('Engine', () => {
 
       await engine.execute();
 
-      engine.broker.publish('event', 'engine.error', {}, {mandatory: true, type: 'fatal'});
+      engine.broker.publish('event', 'engine.error', {}, { mandatory: true, type: 'fatal' });
 
       expect(engine.listenerCount('end')).to.equal(1);
       expect(engine.listenerCount('error')).to.equal(1);
@@ -804,7 +820,7 @@ describe('Engine', () => {
         source: factory.userTask(),
       });
 
-      const engine = Bpmn.Engine({name: 'my new name'}).recover(await sourceEngine.getState());
+      const engine = Bpmn.Engine({ name: 'my new name' }).recover(await sourceEngine.getState());
       expect(engine).to.have.property('name', 'my new name');
     });
 
@@ -967,7 +983,7 @@ describe('Engine', () => {
       engine.recover(JSON.parse(JSON.stringify(engineState)));
       engine.once('end', done.bind(null, null));
 
-      engine.resume({listener});
+      engine.resume({ listener });
     });
 
     it('is not stopped', async () => {
@@ -984,7 +1000,7 @@ describe('Engine', () => {
       const listener = new EventEmitter();
       const engine = new Bpmn.Engine();
       engine.recover(engineState);
-      engine.resume({listener});
+      engine.resume({ listener });
 
       const definitions = await engine.getDefinitions();
       expect(definitions).to.have.length(1);
@@ -1011,7 +1027,7 @@ describe('Engine', () => {
 
       const completed = engine.waitFor('end');
 
-      api = await engine.resume({listener});
+      api = await engine.resume({ listener });
 
       expect(api.definitions[0]).to.have.property('stopped', false);
 
@@ -1061,9 +1077,14 @@ describe('Engine', () => {
         source,
       });
       const messages = [];
-      engine.broker.subscribeTmp('event', '#', (routingKey) => {
-        messages.push(routingKey);
-      }, {noAck: true});
+      engine.broker.subscribeTmp(
+        'event',
+        '#',
+        (routingKey) => {
+          messages.push(routingKey);
+        },
+        { noAck: true }
+      );
 
       await engine.execute();
 
@@ -1242,7 +1263,7 @@ describe('Engine', () => {
         </process>
       </definitions>`;
 
-      const engine = Bpmn.Engine({source});
+      const engine = Bpmn.Engine({ source });
 
       try {
         await engine.execute();
@@ -1263,7 +1284,7 @@ describe('Engine', () => {
         </process>
       </definitions>`;
 
-      const engine = Bpmn.Engine({source});
+      const engine = Bpmn.Engine({ source });
       const completed = engine.waitFor('end');
       try {
         await engine.execute();
@@ -1360,21 +1381,23 @@ describe('Engine', () => {
         </process>
       </definitions>`;
 
-      const engine = Bpmn.Engine({source});
+      const engine = Bpmn.Engine({ source });
       const listener = new EventEmitter();
       listener.on('wait', (userTask) => {
         expect(userTask.content).to.have.property('ioSpecification').with.property('dataOutputs').with.length(1);
         userTask.signal({
           ioSpecification: {
-            dataOutputs: [{
-              id: 'userInput',
-              value: 'von Rosen',
-            }],
+            dataOutputs: [
+              {
+                id: 'userInput',
+                value: 'von Rosen',
+              },
+            ],
           },
         });
       });
 
-      engine.execute({listener}, (err, api) => {
+      engine.execute({ listener }, (err, api) => {
         if (err) return done(err);
         expect(api.environment.output).to.have.property('data').with.property('inputFromUser', 'von Rosen');
         done();

@@ -18,14 +18,17 @@ function generate(filename) {
   const tocOptions = {
     bullets: '-',
     slugify(text) {
-      return text.toLowerCase()
+      return text
+        .toLowerCase()
         .replace(/\s/g, '-')
         .replace(/[^\w-]/g, '');
     },
   };
 
-  const output = Toc.insert(api, tocOptions)
-    .replace(/<!-- version -->(.|\n)*<!-- versionstop -->/, '<!-- version -->\n# ' + version + ' API Reference\n<!-- versionstop -->');
+  const output = Toc.insert(api, tocOptions).replace(
+    /<!-- version -->(.|\n)*<!-- versionstop -->/,
+    '<!-- version -->\n\n# ' + version + ' API Reference\n\n<!-- versionstop -->'
+  );
 
   fs.writeFileSync(filename, output);
 }

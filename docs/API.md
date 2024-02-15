@@ -1,5 +1,7 @@
 <!-- version -->
+
 # 20.0.0 API Reference
+
 <!-- versionstop -->
 
 <!-- toc -->
@@ -39,6 +41,7 @@ The engine. Executes passed BPMN 2.0 definitions.
 Creates a new Engine.
 
 Arguments:
+
 - `options`: Optional options, passed to [environment](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md):
   - `disableDummyScript`: optional boolean to disable dummy script supplied to empty ScriptTask
   - `elements`: optional object with element type mapping override
@@ -56,14 +59,15 @@ Arguments:
   - `extensions`: optional behavior [extensions](https://github.com/paed01/bpmn-elements/blob/master/docs/Extension.md)
 
 Returns:
+
 - `name`: engine name
 - `broker`: engine [broker](https://github.com/paed01/smqp)
 - `state`: engine state
 - `activityStatus`: string, activity status
-  * `executing`: at least one activity is executing, e.g. a service task making a asynchronous request
-  * `timer`: at least one activity is waiting for a timer to complete, usually only TimerEventDefinition's
-  * `wait`: at least one activity is waiting for a signal of some sort, e.g. user tasks, intermediate catch events, etc
-  * `idle`: idle, no activities are running
+  - `executing`: at least one activity is executing, e.g. a service task making a asynchronous request
+  - `timer`: at least one activity is waiting for a timer to complete, usually only TimerEventDefinition's
+  - `wait`: at least one activity is waiting for a signal of some sort, e.g. user tasks, intermediate catch events, etc
+  - `idle`: idle, no activities are running
 - `stopped`: boolean stopped
 - `execution`: current engine execution
 - `environment`: engine [environment](https://github.com/paed01/bpmn-elements/blob/master/docs/Environment.md)
@@ -99,6 +103,7 @@ const engine = new Engine({
 Execute definition.
 
 Arguments:
+
 - `options`: Optional object with options to override the initial engine options
   - [`listener`](#execution-listener): Listen for [activity events](#activity-events), an `EventEmitter` object
   - [`variables`](#execution-variables): Optional object with instance variables
@@ -141,8 +146,8 @@ const engine = new Engine({
   variables: {
     data: {
       inputFromUser: 0,
-    }
-  }
+    },
+  },
 });
 
 const listener = new EventEmitter();
@@ -150,25 +155,30 @@ listener.on('activity.wait', (elementApi) => {
   elementApi.owner.logger.debug(`<${elementApi.executionId} (${elementApi.id})> signal with io`, elementApi.content.ioSpecification);
   elementApi.signal({
     ioSpecification: {
-      dataOutputs: [{
-        id: 'userInput',
-        value: 2
-      }]
-    }
+      dataOutputs: [
+        {
+          id: 'userInput',
+          value: 2,
+        },
+      ],
+    },
   });
 });
 
-engine.execute({
-  listener,
-  variables: {
-    data: {
-      inputFromUser: 1,
-    }
+engine.execute(
+  {
+    listener,
+    variables: {
+      data: {
+        inputFromUser: 1,
+      },
+    },
+  },
+  (err, execution) => {
+    if (err) throw err;
+    console.log('completed with overridden listener', execution.environment.output);
   }
-}, (err, execution) => {
-  if (err) throw err;
-  console.log('completed with overridden listener', execution.environment.output);
-});
+);
 ```
 
 #### Execution `listener`
@@ -176,8 +186,8 @@ engine.execute({
 An `EventEmitter` object with listeners. Listen for [activity events](#activity-events).
 
 ```javascript
-import {Engine} from 'bpmn-engine';
-import {EventEmitter} from 'events';
+import { Engine } from 'bpmn-engine';
+import { EventEmitter } from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -189,7 +199,7 @@ const source = `
 
 const engine = new Engine({
   name: 'first listener',
-  source
+  source,
 });
 
 const listener = new EventEmitter();
@@ -203,7 +213,7 @@ listener.on('activity.wait', (elemntApi, instance) => {
 });
 
 engine.execute({
-  listener
+  listener,
 });
 ```
 
@@ -212,24 +222,27 @@ engine.execute({
 Execution variables are passed as the first argument to `#execute`.
 
 ```javascript
-import {Engine} from 'bpmn-engine';
+import { Engine } from 'bpmn-engine';
 import fs from 'fs';
 
 const engine = new Engine({
   name: 'using variables',
-  source: fs.readFileSync('./test/resources/simple-task.bpmn')
+  source: fs.readFileSync('./test/resources/simple-task.bpmn'),
 });
 
 const variables = {
-  input: 1
+  input: 1,
 };
 
-engine.execute({
-  variables
-}, (err, engineApi) => {
-  if (err) throw err;
-  console.log('completed');
-});
+engine.execute(
+  {
+    variables,
+  },
+  (err, engineApi) => {
+    if (err) throw err;
+    console.log('completed');
+  }
+);
 ```
 
 #### Execution `services`
@@ -237,7 +250,7 @@ engine.execute({
 A service is a function exposed on `environment.services`.
 
 ```javascript
-import {Engine} from 'bpmn-engine';
+import { Engine } from 'bpmn-engine';
 import bent from 'bent';
 
 const source = `
@@ -267,17 +280,20 @@ const source = `
 
 const engine = new Engine({
   name: 'services doc',
-  source
+  source,
 });
 
-engine.execute({
-  services: {
-    get: bent('json')
+engine.execute(
+  {
+    services: {
+      get: bent('json'),
+    },
+  },
+  (err, engineApi) => {
+    if (err) throw err;
+    console.log('completed', engineApi.name, engineApi.environment.variables);
   }
-}, (err, engineApi) => {
-  if (err) throw err;
-  console.log('completed', engineApi.name, engineApi.environment.variables);
-});
+);
 ```
 
 ### `async getDefinitionById(id)`
@@ -289,6 +305,7 @@ Get definition by id, returns Promise
 Add definition source by source context.
 
 Arguments:
+
 - `source`: object
   - `sourceContext`: serializable source
 
@@ -361,7 +378,7 @@ function getModdleContext(source, options) {
 Get all definitions
 
 ```javascript
-import {Engine} from 'bpmn-engine';
+import { Engine } from 'bpmn-engine';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -376,7 +393,7 @@ const source = `
 </definitions>`;
 
 const engine = new Engine({
-  source
+  source,
 });
 
 engine.getDefinitions().then((definitions) => {
@@ -446,8 +463,8 @@ engine.execute({
 Stop execution. The instance is terminated.
 
 ```javascript
-import {Engine} from 'bpmn-engine';
-import {EventEmitter} from 'events';
+import { Engine } from 'bpmn-engine';
+import { EventEmitter } from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -462,7 +479,7 @@ const source = `
 </definitions>`;
 
 const engine = new Engine({
-  source
+  source,
 });
 const listener = new EventEmitter();
 
@@ -474,9 +491,9 @@ listener.once('activity.wait', async () => {
 
 engine.execute({
   variables: {
-    executionId: 'some-random-id'
+    executionId: 'some-random-id',
   },
-  listener
+  listener,
 });
 ```
 
@@ -485,11 +502,12 @@ engine.execute({
 Recover engine from state.
 
 Arguments:
+
 - `state`: engine state
 - `recoverOptions`: optional object with options that will override options passed to the engine at init, but not options recovered from state
 
 ```js
-import {Engine} from 'bpmn-engine';
+import { Engine } from 'bpmn-engine';
 
 const state = fetchSomeState();
 const engine = new Engine().recover(state);
@@ -500,23 +518,23 @@ const engine = new Engine().recover(state);
 Resume execution function with previously saved engine state.
 
 Arguments:
+
 - `options`: optional resume options object
   - [`listener`](#execution-listener): execution listener
 - `callback`: optional callback
   - `err`: Error if any
   - `execution`: Resumed engine execution
 
-
 ```js
-import {Engine} from 'bpmn-engine';
-import {EventEmitter} from 'events';
+import { Engine } from 'bpmn-engine';
+import { EventEmitter } from 'events';
 
 const state = fetchSomeState();
 const engine = new Engine().recover(state);
 
 const listener = new EventEmitter();
 
-engine.resume({listener}, () => {
+engine.resume({ listener }, () => {
   console.log('completed');
 });
 ```
@@ -530,10 +548,10 @@ engine.resume({listener}, () => {
 - `environment`: execution environment
 - `definitions`: list of definitions
 - `activityStatus`: string, execution activity status
-  * `executing`: at least one activity is executing, e.g. a service task making a asynchronous request
-  * `timer`: at least one activity is waiting for a timer to complete, usually only TimerEventDefinition's
-  * `wait`: at least one activity is waiting for a signal of some sort, e.g. user tasks, intermediate catch events, etc
-  * `idle`: idle, no activities are running
+  - `executing`: at least one activity is executing, e.g. a service task making a asynchronous request
+  - `timer`: at least one activity is waiting for a timer to complete, usually only TimerEventDefinition's
+  - `wait`: at least one activity is waiting for a signal of some sort, e.g. user tasks, intermediate catch events, etc
+  - `idle`: idle, no activities are running
 - `getActivityById(activityId)`(#getactivitybyid-activityid): get activity/element by id, returns first found among definitions
 - `getState()`: get execution state
 - `getPostponed()`: get postponed activities, i.e. activities waiting for some interaction, signal, or timer
@@ -559,6 +577,7 @@ Get execution state.
 Delegate a signal message to all interested parties, usually MessageEventDefinition, SignalEventDefinition, SignalTask (user, manual), ReceiveTask, or a StartEvent that has a form.
 
 Arguments:
+
 - `message`: optional object
   - `id`: optional task/element id to signal, also matched with Message and Signal id. If not passed only anonymous Signal- and MessageEventDefinitions will pick up the signal.
   - `executionId`: optional execution id to signal, specially for looped tasks, also works for signal tasks that are not looped
@@ -567,10 +586,16 @@ Arguments:
   - `ignoreSameDefinition`: boolean, ignore same definition, used when a signal is forwarded from another definition execution, see example
 
 An example on how to setup signal forwarding between definitions:
+
 ```js
-engine.broker.subscribeTmp('event', 'activity.signal', (routingKey, msg) => {
-  engine.execution.signal(msg.content.message, {ignoreSameDefinition: true});
-}, {noAck: true});
+engine.broker.subscribeTmp(
+  'event',
+  'activity.signal',
+  (routingKey, msg) => {
+    engine.execution.signal(msg.content.message, { ignoreSameDefinition: true });
+  },
+  { noAck: true }
+);
 ```
 
 ## `cancelActivity(message)`
@@ -578,6 +603,7 @@ engine.broker.subscribeTmp('event', 'activity.signal', (routingKey, msg) => {
 Delegate a cancel message to all interested parties, perhaps a stalled TimerEventDefinition.
 
 Arguments:
+
 - `message`: optional object
   - `id`: optional activity id to cancel execution
   - `executionId`: optional execution id to signal, useful for an event with multiple event defintions

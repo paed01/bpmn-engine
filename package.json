@@ -6,6 +6,7 @@
   "module": "./src/index.js",
   "main": "./lib/index.cjs",
   "types": "./types/bpmn-engine.d.ts",
+  "sideEffects": false,
   "repository": {
     "type": "git",
     "url": "git://github.com/paed01/bpmn-engine"
@@ -25,7 +26,7 @@
   "scripts": {
     "test": "mocha -p -R @bonniernews/hot-bev",
     "posttest": "npm run lint && npm run toc",
-    "lint": "eslint . --cache",
+    "lint": "eslint . --cache && prettier . -c --cache",
     "wintest": "mocha",
     "cov:html": "c8 -r html -r text mocha -p -R @bonniernews/hot-bev",
     "test:lcov": "c8 -r lcov mocha && npm run lint",
@@ -52,6 +53,7 @@
   "devDependencies": {
     "@bonniernews/hot-bev": "^0.4.0",
     "@rollup/plugin-commonjs": "^25.0.7",
+    "@types/bpmn-moddle": "^5.1.6",
     "bent": "^7.3.12",
     "c8": "^9.1.0",
     "camunda-bpmn-moddle": "^7.0.1",
@@ -63,10 +65,10 @@
     "mocha": "^10.2.0",
     "mocha-cakes-2": "^3.3.0",
     "nock": "^13.3.2",
+    "prettier": "^3.2.5",
     "rollup": "^4.10.0"
   },
   "dependencies": {
-    "@types/bpmn-moddle": "^5.1.6",
     "bpmn-elements": "^13.1.2",
     "bpmn-moddle": "^8.0.1",
     "debug": "^4.3.4",

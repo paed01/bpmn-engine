@@ -1,5 +1,4 @@
-bpmn-engine
-===========
+# bpmn-engine
 
 [![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
@@ -36,13 +35,13 @@ DEBUG=*scripttask*,*:error:*
 
 or on Windows PowerShell:
 
-```ps
+```powershell
 $env:DEBUG='bpmn-engine:*'
 ```
 
 and to turn it off you need to:
 
-```ps
+```powershell
 $env:DEBUG=''
 ```
 

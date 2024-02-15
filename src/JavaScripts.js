@@ -6,7 +6,7 @@ export default function Scripts(disableDummy) {
   this.disableDummy = disableDummy;
 }
 
-Scripts.prototype.register = function register({id, type, behaviour, logger, environment}) {
+Scripts.prototype.register = function register({ id, type, behaviour, logger, environment }) {
   let scriptBody, language;
 
   switch (type) {
@@ -39,20 +39,20 @@ Scripts.prototype.register = function register({id, type, behaviour, logger, env
   return script;
 };
 
-Scripts.prototype.getScript = function getScript(language, {id}) {
+Scripts.prototype.getScript = function getScript(language, { id }) {
   return this.scripts[id];
 };
 
 function JavaScript(language, filename, scriptBody, environment) {
   this.id = filename;
-  this.script = new Script(scriptBody, {filename});
+  this.script = new Script(scriptBody, { filename });
   this.language = language;
   this.environment = environment;
 }
 
 JavaScript.prototype.execute = function execute(executionContext, callback) {
   const timers = this.environment.timers.register(executionContext);
-  return this.script.runInNewContext({...executionContext, ...timers, next: callback});
+  return this.script.runInNewContext({ ...executionContext, ...timers, next: callback });
 };
 
 function DummyScript(language, filename, logger) {
@@ -63,7 +63,7 @@ function DummyScript(language, filename, logger) {
 }
 
 DummyScript.prototype.execute = function execute(executionContext, callback) {
-  const {id, executionId} = executionContext.content;
+  const { id, executionId } = executionContext.content;
   this.logger.debug(`<${executionId} (${id})> passthrough dummy script ${this.language || 'esperanto'}`);
   callback();
 };

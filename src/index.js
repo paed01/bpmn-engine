@@ -13,7 +13,7 @@ import getOptionsAndCallback from './getOptionsAndCallback.js';
 import ProcessOutputDataObject from './extensions/ProcessOutputDataObject.js';
 
 const nodeRequire = createRequire(fileURLToPath(import.meta.url));
-const {version: engineVersion} = nodeRequire('../package.json');
+const { version: engineVersion } = nodeRequire('../package.json');
 
 const kEngine = Symbol.for('engine');
 const kEnvironment = Symbol.for('environment');
@@ -35,29 +35,32 @@ export function Engine(options = {}) {
 
   EventEmitter.call(this);
 
-  const opts = this.options = {
+  const opts = (this.options = {
     Logger: DebugLogger,
     scripts: new JavaScripts(options.disableDummyScript),
     ...options,
-  };
+  });
 
   this.logger = opts.Logger('engine');
 
-  this[kTypeResolver] = TypeResolver({
-    ...Elements,
-    ...opts.elements,
-  }, opts.typeResolver || defaultTypeResolver);
+  this[kTypeResolver] = TypeResolver(
+    {
+      ...Elements,
+      ...opts.elements,
+    },
+    opts.typeResolver || defaultTypeResolver
+  );
 
   this[kEnvironment] = new Elements.Environment(opts);
 
-  const broker = this.broker = new Broker(this);
-  broker.assertExchange('event', 'topic', {autoDelete: false});
+  const broker = (this.broker = new Broker(this));
+  broker.assertExchange('event', 'topic', { autoDelete: false });
 
   this[kExecution] = null;
   this[kLoadedDefinitions] = null;
   this[kSources] = [];
 
-  const pendingSources = this[kPendingSources] = [];
+  const pendingSources = (this[kPendingSources] = []);
   if (opts.source) pendingSources.push(this._serializeSource(opts.source));
   if (opts.moddleContext) pendingSources.push(this._serializeModdleContext(opts.moddleContext));
   if (opts.sourceContext) pendingSources.push(opts.sourceContext);
@@ -122,7 +125,7 @@ Engine.prototype.execute = async function execute(...args) {
     throw err;
   }
 
-  const execution = this[kExecution] = new Execution(this, definitions, this.options);
+  const execution = (this[kExecution] = new Execution(this, definitions, this.options));
   return execution._execute(executeOptions, callback);
 };
 
@@ -149,7 +152,7 @@ Engine.prototype.recover = function recover(savedState, recoverOptions) {
   const preSources = pendingSources.splice(0);
 
   const typeResolver = this[kTypeResolver];
-  const loadedDefinitions = this[kLoadedDefinitions] = savedState.definitions.map((dState) => {
+  const loadedDefinitions = (this[kLoadedDefinitions] = savedState.definitions.map((dState) => {
     let source;
     if (dState.source) source = deserialize(JSON.parse(dState.source), typeResolver);
     else source = preSources.find((s) => s.id === dState.id);
@@ -162,7 +165,7 @@ Engine.prototype.recover = function recover(savedState, recoverOptions) {
     definition.recover(dState);
 
     return definition;
-  });
+  }));
 
   this[kExecution] = new Execution(this, loadedDefinitions, {}, true);
 
@@ -186,16 +189,16 @@ Engine.prototype.resume = async function resume(...args) {
   return execution._resume(resumeOptions, callback);
 };
 
-Engine.prototype.addSource = function addSource({sourceContext: addContext} = {}) {
+Engine.prototype.addSource = function addSource({ sourceContext: addContext } = {}) {
   if (!addContext) return;
   const loadedDefinitions = this[kLoadedDefinitions];
   if (loadedDefinitions) loadedDefinitions.splice(0);
   this[kPendingSources].push(addContext);
 };
 
-Engine.prototype.getDefinitions = async function getDefinitions(executeOptions) {
+Engine.prototype.getDefinitions = function getDefinitions(executeOptions) {
   const loadedDefinitions = this[kLoadedDefinitions];
-  if (loadedDefinitions?.length) return loadedDefinitions;
+  if (loadedDefinitions?.length) return Promise.resolve(loadedDefinitions);
   return this._loadDefinitions(executeOptions);
 };
 
@@ -230,27 +233,30 @@ Engine.prototype.waitFor = function waitFor(eventName) {
 
 Engine.prototype._loadDefinitions = async function loadDefinitions(executeOptions) {
   const runSources = await Promise.all(this[kPendingSources]);
-  const loadedDefinitions = this[kLoadedDefinitions] = runSources.map((source) => this._loadDefinition(source, executeOptions));
+  const loadedDefinitions = (this[kLoadedDefinitions] = runSources.map((source) => this._loadDefinition(source, executeOptions)));
   return loadedDefinitions;
 };
 
 Engine.prototype._loadDefinition = function loadDefinition(serializedContext, executeOptions = {}) {
-  const {settings, variables} = executeOptions;
+  const { settings, variables } = executeOptions;
 
   const environment = this.environment;
-  const context = new Elements.Context(serializedContext, environment.clone({
-    listener: environment.options.listener,
-    ...executeOptions,
-    settings: {
-      ...environment.settings,
-      ...settings,
-    },
-    variables: {
-      ...environment.variables,
-      ...variables,
-    },
-    source: serializedContext,
-  }));
+  const context = new Elements.Context(
+    serializedContext,
+    environment.clone({
+      listener: environment.options.listener,
+      ...executeOptions,
+      settings: {
+        ...environment.settings,
+        ...settings,
+      },
+      variables: {
+        ...environment.variables,
+        ...variables,
+      },
+      source: serializedContext,
+    })
+  );
 
   return new Elements.Definition(context);
 };
@@ -280,7 +286,7 @@ export function Execution(engine, definitions, options, isRecovered = false) {
   this[kEnvironment] = engine.environment;
   this[kEngine] = engine;
   this[kExecuting] = [];
-  const onBrokerReturn = this[kOnBrokerReturn] = this._onBrokerReturn.bind(this);
+  const onBrokerReturn = (this[kOnBrokerReturn] = this._onBrokerReturn.bind(this));
   engine.broker.on('return', onBrokerReturn);
 }
 
@@ -356,20 +362,35 @@ Execution.prototype._addConsumerCallbacks = function addConsumerCallbacks(callba
 
   clearConsumers();
 
-  broker.subscribeOnce('event', 'engine.stop', () => {
-    clearConsumers();
-    return callback(null, this);
-  }, {consumerTag: 'ctag-cb-stop'});
+  broker.subscribeOnce(
+    'event',
+    'engine.stop',
+    () => {
+      clearConsumers();
+      return callback(null, this);
+    },
+    { consumerTag: 'ctag-cb-stop' }
+  );
 
-  broker.subscribeOnce('event', 'engine.end', () => {
-    clearConsumers();
-    return callback(null, this);
-  }, {consumerTag: 'ctag-cb-end'});
+  broker.subscribeOnce(
+    'event',
+    'engine.end',
+    () => {
+      clearConsumers();
+      return callback(null, this);
+    },
+    { consumerTag: 'ctag-cb-end' }
+  );
 
-  broker.subscribeOnce('event', 'engine.error', (_, message) => {
-    clearConsumers();
-    return callback(message.content);
-  }, {consumerTag: 'ctag-cb-error'});
+  broker.subscribeOnce(
+    'event',
+    'engine.error',
+    (_, message) => {
+      clearConsumers();
+      return callback(message.content);
+    },
+    { consumerTag: 'ctag-cb-error' }
+  );
 
   return callback;
 
@@ -405,7 +426,7 @@ Execution.prototype._setup = function setup(setupOptions = {}) {
   for (const definition of this.definitions) {
     if (listener) definition.environment.options.listener = listener;
 
-    const {queueName} = definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, {noAck: true, consumerTag: '_engine_definition'});
+    const { queueName } = definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, { noAck: true, consumerTag: '_engine_definition' });
     definition.broker.bindQueue(queueName, 'event', 'process.#');
     definition.broker.bindQueue(queueName, 'event', 'activity.#');
     definition.broker.bindQueue(queueName, 'event', 'flow.#');
@@ -413,7 +434,7 @@ Execution.prototype._setup = function setup(setupOptions = {}) {
 };
 
 Execution.prototype._onChildMessage = function onChildMessage(routingKey, message, owner) {
-  const {environment: ownerEnvironment} = owner;
+  const { environment: ownerEnvironment } = owner;
   const listener = ownerEnvironment.options?.listener;
   this[kState] = 'running';
 
@@ -462,7 +483,7 @@ Execution.prototype._onChildMessage = function onChildMessage(routingKey, messag
         switch (key) {
           case 'data': {
             environment.output.data = environment.output.data || {};
-            environment.output.data = {...environment.output.data, ...message.content.output.data};
+            environment.output.data = { ...environment.output.data, ...message.content.output.data };
             break;
           }
           default: {
@@ -477,7 +498,7 @@ Execution.prototype._onChildMessage = function onChildMessage(routingKey, messag
   if (listener) listener.emit(routingKey, elementApi, this);
 
   const broker = this.broker;
-  broker.publish('event', routingKey, {...message.content}, {...message.properties, mandatory: false});
+  broker.publish('event', routingKey, { ...message.content }, { ...message.properties, mandatory: false });
 
   if (!newState) return;
 
@@ -486,13 +507,13 @@ Execution.prototype._onChildMessage = function onChildMessage(routingKey, messag
   switch (newState) {
     case 'stopped':
       this._debug('stopped');
-      return this._complete('stop', {}, {type: 'stop'});
+      return this._complete('stop', {}, { type: 'stop' });
     case 'idle':
       this._debug('completed');
-      return this._complete('end', {}, {type: 'end'});
+      return this._complete('end', {}, { type: 'end' });
     case 'error':
       this._debug('error');
-      return this._complete('error', message.content.error, {type: 'error', mandatory: true});
+      return this._complete('error', message.content.error, { type: 'error', mandatory: true });
   }
 };
 
@@ -545,7 +566,7 @@ Execution.prototype.getPostponed = function getPostponed() {
   }, []);
 };
 
-Execution.prototype.signal = function signal(payload, {ignoreSameDefinition} = {}) {
+Execution.prototype.signal = function signal(payload, { ignoreSameDefinition } = {}) {
   for (const definition of this[kExecuting]) {
     if (ignoreSameDefinition && payload?.parent?.id === definition.id) continue;
     definition.signal(payload);

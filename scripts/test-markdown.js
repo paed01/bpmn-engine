@@ -14,12 +14,9 @@ process.on('unhandledRejection', (error) => {
 });
 
 nock.enableNetConnect(/(localhost|127\.0\.0\.1):\d+/);
-nock('https://example.com')
-  .get(/.*/)
-  .reply(200, {data: 1})
-  .persist();
+nock('https://example.com').get(/.*/).reply(200, { data: 1 }).persist();
 
-const exPattern = /```javascript\n([\s\S]*?)```/ig;
+const exPattern = /```javascript\n([\s\S]*?)```/gi;
 let lines = 0;
 let prevCharIdx = 0;
 
@@ -46,12 +43,12 @@ async function parseDoc(filePath) {
   });
 
   for (let idx = 0; idx < blocks.lenght; idx++) {
-    const {line, script} = blocks[idx];
+    const { line, script } = blocks[idx];
     console.log(`${idx}: ${filePath}:${line}`);
     await execute(script);
   }
 
-  blocks.forEach(({line, script}, idx) => {
+  blocks.forEach(({ line, script }, idx) => {
     if (isNaN(blockIdx) || idx === blockIdx) {
       console.log(`${idx}: ${filePath}:${line}`);
       execute(script);
@@ -81,7 +78,7 @@ function execute(script) {
         callback(new Error('No state'));
       },
       getState: (id, callback) => {
-        callback(null, {definitions: []});
+        callback(null, { definitions: [] });
       },
     },
   };

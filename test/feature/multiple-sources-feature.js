@@ -62,7 +62,7 @@ Feature('Multiple sources', () => {
         });
       });
 
-      updateDefinition.run({processId: updateProcess.id});
+      updateDefinition.run({ processId: updateProcess.id });
     });
 
     Then('admin is notified that spot price has been updated', () => {
@@ -190,7 +190,7 @@ Feature('Multiple sources', () => {
       const [, updateDefinition] = execution.definitions;
       const [updateProcess] = updateDefinition.getProcesses();
 
-      updateDefinition.run({processId: updateProcess.id});
+      updateDefinition.run({ processId: updateProcess.id });
     });
 
     let stopped, state;
@@ -323,7 +323,7 @@ Feature('Multiple sources', () => {
         });
       });
 
-      updateDefinition.run({processId: updateProcess.id});
+      updateDefinition.run({ processId: updateProcess.id });
     });
 
     Then('admin approves new spot price', () => {
@@ -445,7 +445,7 @@ Feature('Multiple sources', () => {
     });
 
     When('user task is signalled', () => {
-      engine.execution.signal({id: 'task'});
+      engine.execution.signal({ id: 'task' });
     });
 
     Then('engine is idle', () => {
@@ -476,7 +476,7 @@ Feature('Multiple sources', () => {
     });
 
     When('user task is signalled', () => {
-      engine.execution.signal({id: 'task'});
+      engine.execution.signal({ id: 'task' });
     });
 
     Then('activity status is still waiting for long running service', () => {
@@ -495,7 +495,7 @@ Feature('Multiple sources', () => {
   Scenario('edge cases', () => {
     let engine;
     Given('two sources', async () => {
-      engine = new Engine({name: 'Edge case'});
+      engine = new Engine({ name: 'Edge case' });
       engine.addSource({
         sourceContext: await testHelpers.context(`
         <definitions id="Def_0" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL">
@@ -568,7 +568,7 @@ Feature('Multiple sources', () => {
       engine.execution.definitions[0].broker.publish('event', 'process.end', {
         output: {
           foo: 'bar',
-          data: {col: 1},
+          data: { col: 1 },
         },
       });
     });
@@ -580,7 +580,7 @@ Feature('Multiple sources', () => {
     Then('the engine ignores the second process output', () => {
       expect(engine.environment.output).to.deep.equal({
         foo: 'bar',
-        data: {col: 1},
+        data: { col: 1 },
       });
     });
 
@@ -593,7 +593,7 @@ Feature('Multiple sources', () => {
     });
 
     When('second definition completes', () => {
-      engine.execution.signal({id: 'task_1'});
+      engine.execution.signal({ id: 'task_1' });
     });
 
     Then('activity status is wait for second definition', () => {
@@ -601,7 +601,7 @@ Feature('Multiple sources', () => {
     });
 
     When('the other definition completes', () => {
-      engine.execution.signal({id: 'task_0'});
+      engine.execution.signal({ id: 'task_0' });
     });
 
     Then('activity status is idle', () => {
@@ -616,7 +616,7 @@ function getExtendedEngine(options) {
     settings: {
       strict: true,
       dataStores: new DataStores({
-        SpotPriceDb: {price: 100},
+        SpotPriceDb: { price: 100 },
       }),
     },
     services: {
@@ -642,7 +642,7 @@ function getExtendedEngine(options) {
         if (activity.behaviour.expression) {
           activity.behaviour.Service = ServiceExpression;
         }
-        if (activity.isStart && activity.eventDefinitions && activity.eventDefinitions.find(({type}) => type === 'bpmn:SignalEventDefinition')) {
+        if (activity.isStart && activity.eventDefinitions && activity.eventDefinitions.find(({ type }) => type === 'bpmn:SignalEventDefinition')) {
           activity.on('end', (api) => {
             activity.environment.variables.message = api.content.output;
           });
@@ -665,22 +665,27 @@ function getExtendedEngine(options) {
         if (activity.behaviour.dataOutputAssociations) {
           activity.on('end', (api) => {
             const db = activity.behaviour.dataOutputAssociations[0].behaviour.targetRef.id;
-            activity.environment.settings.dataStores.setDataStore(db, {...api.content.output});
+            activity.environment.settings.dataStores.setDataStore(db, { ...api.content.output });
           });
         }
       },
     },
   });
 
-  engine.broker.subscribeTmp('event', 'activity.signal', (routingKey, msg) => {
-    engine.execution.signal(msg.content.message, {ignoreSameDefinition: true});
-  }, {noAck: true});
+  engine.broker.subscribeTmp(
+    'event',
+    'activity.signal',
+    (routingKey, msg) => {
+      engine.execution.signal(msg.content.message, { ignoreSameDefinition: true });
+    },
+    { noAck: true }
+  );
 
   return engine;
 }
 
 function ServiceExpression(activity) {
-  const {type: atype, behaviour, environment} = activity;
+  const { type: atype, behaviour, environment } = activity;
   const expression = behaviour.expression;
   const type = `${atype}:expression`;
   return {
@@ -697,41 +702,56 @@ function ServiceExpression(activity) {
 }
 
 function formFormatting(activity, context, formData) {
-  const {broker, environment} = activity;
-  broker.subscribeTmp('event', 'activity.enter', (_, message) => {
-    const form = {
-      fields: {},
-    };
-    formData.fields.forEach((field) => {
-      form.fields[field.id] = {...field};
-      form.fields[field.id].defaultValue = environment.resolveExpression(form.fields[field.id].defaultValue, message);
-    });
-    broker.publish('format', 'run.form', { form });
-  }, {noAck: true});
+  const { broker, environment } = activity;
+  broker.subscribeTmp(
+    'event',
+    'activity.enter',
+    (_, message) => {
+      const form = {
+        fields: {},
+      };
+      formData.fields.forEach((field) => {
+        form.fields[field.id] = { ...field };
+        form.fields[field.id].defaultValue = environment.resolveExpression(form.fields[field.id].defaultValue, message);
+      });
+      broker.publish('format', 'run.form', { form });
+    },
+    { noAck: true }
+  );
 }
 
 function ioFormatting(activity, context, ioData) {
-  const {broker, environment} = activity;
+  const { broker, environment } = activity;
   if (ioData.inputParameters) {
-    broker.subscribeTmp('event', 'activity.enter', (_, message) => {
-      const input = ioData.inputParameters.reduce((result, data) => {
-        result[data.name] = environment.resolveExpression(data.value, message);
-        return result;
-      }, {});
-      broker.publish('format', 'run.input', { input });
-    }, {noAck: true});
+    broker.subscribeTmp(
+      'event',
+      'activity.enter',
+      (_, message) => {
+        const input = ioData.inputParameters.reduce((result, data) => {
+          result[data.name] = environment.resolveExpression(data.value, message);
+          return result;
+        }, {});
+        broker.publish('format', 'run.input', { input });
+      },
+      { noAck: true }
+    );
   }
   if (ioData.outputParameters) {
-    broker.subscribeTmp('event', 'activity.execution.completed', (_, message) => {
-      const output = {};
-      ioData.outputParameters.forEach((data) => {
-        output[data.name] = environment.resolveExpression(data.value, message);
-      });
+    broker.subscribeTmp(
+      'event',
+      'activity.execution.completed',
+      (_, message) => {
+        const output = {};
+        ioData.outputParameters.forEach((data) => {
+          output[data.name] = environment.resolveExpression(data.value, message);
+        });
 
-      Object.assign(environment.output, output);
+        Object.assign(environment.output, output);
 
-      broker.publish('format', 'run.output', { output });
-    }, {noAck: true, consumerTag: '_camunda_io'});
+        broker.publish('format', 'run.output', { output });
+      },
+      { noAck: true, consumerTag: '_camunda_io' }
+    );
   }
 }
 

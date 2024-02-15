@@ -1,9 +1,10 @@
-Changelog
-=========
+# Changelog
 
 # 20.0.0
 
 - turn into esm with exports for node
+- build with node > 18
+- remove eslint formatting rules in favor of prettier, touched basically all files but now it is "pretty"
 
 # 19.0.1
 
@@ -72,6 +73,7 @@ Only breaking if multi-instance sub-process executions are inspected after sub-p
 # 15.0.0
 
 ## Breaking
+
 - Drop node 12 support
 
 # 14.1.1
@@ -85,6 +87,7 @@ Only breaking if multi-instance sub-process executions are inspected after sub-p
 # 14.0.0
 
 ## Breaking
+
 - Engine is prototyped, can still be invoked without new
 - Bump [`bpmn-elements@8.0.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) with support for bpmn:CallActivity (#97)
 - Bump [`smqp@6.0.0`](https://github.com/paed01/smqp/blob/default/CHANGELOG.md)
@@ -96,6 +99,7 @@ Only breaking if multi-instance sub-process executions are inspected after sub-p
 # 13.0.1
 
 ## Type definition
+
 - fix: set the correct `Logger` type in `BpmnEngineOptions` by @leon19
 
 # 13.0.0
@@ -152,9 +156,11 @@ Update package.json to reflect what was stated in v12.0.3.
 # 11.3.1
 
 ## Type definition
+
 - Engine.resume returns Promise that resolves BpmnEngineExecutionApi by @mdwheele
 
 ## Misc
+
 - Pick recovered definition source from passed sources if not present on definition state
 
 # 11.3.0
@@ -181,9 +187,11 @@ Update package.json to reflect what was stated in v12.0.3.
 All conditional flows from `bpmn-elements@3`.
 
 ## Breaking
+
 - Outbound sequence flow with script condition requires `next(err, result)` to be called where result decides if it should be taken or discarded
 
 ## Addititions
+
 - Outbound sequence flow conditions are evaluated for all activities, as well as default flow
 - Process now also have `cancelActivity` function for facilitation
 
@@ -208,6 +216,7 @@ Untangle issue #105 which resulted in refactoring outbound sequence flow handlin
 - Bump bpmn-elements from 1.6 to 2, see [change log](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 
 ## Breaking
+
 - No more `flow.pre-flight` events from sequence flows, not sure that anyone used them, but still
 - Activities now publish (or emit) `activity.leave` when all outbound flows have been taken/discarded
 
@@ -226,14 +235,17 @@ Untangle issue #105 which resulted in refactoring outbound sequence flow handlin
 - Bump moddle-context-serializer@0.16 with scripts and timers
 
 ## Additions
+
 - Add engine option `sourceContext` to hold pre-serialized context
 
 # 9.0.0
 
 ## Additions
+
 - Add signal function to engine execution api
 
 ## Breaking changes
+
 - Bump bpmn-elements to v1.0.0 with some [breaking changes](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) regarding MessageEventDefinition and SignalEventDefinition
 
 # 8.7.0
@@ -271,9 +283,11 @@ Untangle issue #105 which resulted in refactoring outbound sequence flow handlin
 # 8.0.0
 
 ## Breaking changes
+
 - Bump bpmn-elements to v0.6.0 with refactored MessageEventDefinition, ReceiveTask, and some bug fixes from @TallaInc
 
 ## Additions
+
 - Recover takes optional options that completely overrides environment and passes it along to the recovered definitions
 
 # 7.1.0
@@ -285,20 +299,24 @@ Untangle issue #105 which resulted in refactoring outbound sequence flow handlin
 Bump bpmn-elements and bpmn-moddle (which now has a node dist :).
 
 ## Breaking changes
+
 - Implementation of ErrorEventDefinition is now closer to the BPMN 2.0 spec
 
 ## Additions
+
 - Start sub-process' sub-process if sub-process throws an error
 - Expose the name of the element that emitted event
 
 # 6.2.0
 
 ## Additions
+
 - Bump bpmn-elements and serializer and thereby add support for ConditionalEventDefinition
 
 # 6.1.0
 
 ## Additions
+
 - Expose humanPerformer and potentialOwner
 
 # 6.0.0
@@ -308,17 +326,20 @@ Use [bpmn-elements](https://github.com/paed01/bpmn-elements) to execute elements
 Behind the scenes the entire definition execution is replaced with [bpmn-elements](https://github.com/paed01/bpmn-elements)
 
 ## Breaking changes
+
 - Node version >= 10 is required
 - Events are not emitted with name of the activity, i.e. no more `enter-task_a8dje7` emits
 - Most events are emitted with the type of element as prefix, e.g. `activity.start`, one exception is `wait` wich is still emitted as `wait`
 - `getPendingActivities()` is renamed to `getPostponed()`
 
 ## Changes
+
 - Change license to MIT
 
 # 5.0.0
 
 ## Breaking changes
+
 - Engine `execute` callback is called when execution completes
 - Node version >= 8.9 is supported
 - `SendTask` message requires output
@@ -326,14 +347,17 @@ Behind the scenes the entire definition execution is replaced with [bpmn-element
 - Extensions have been moved to separate project [bpmn-engine-extensions](https://github.com/paed01/bpmn-engine-extensions)
 
 ## Additions
+
 - Support for parallell task loop
 
 # 4.0.0
 
 ## Breaking changes
+
 - Parallel gateway `getState()` returns pending inbound and/or pending outbound, so old states are not supported
 
 ## Changes
+
 - Add support for Manual task
 - Support camunda input/output for Exclusive Gateways, input is passed to conditional flows
 - Support camunda errorCodeVariable and errorMessageVariable for Error Events
@@ -345,11 +369,13 @@ Behind the scenes the entire definition execution is replaced with [bpmn-element
 # 3.1.0
 
 ## Changes
+
 - A start event with form key will also emit wait
 
 # 3.0.0
 
 ## Breaking changes
+
 - The `Engine` now handles definitions instead of processes, hence:
   - `execute(callback)` returns executed definition in callback instead of process
   - `getState()` returns executing definition instead of processes
@@ -358,6 +384,7 @@ Behind the scenes the entire definition execution is replaced with [bpmn-element
 - Engine instance `resume()` is now a "static" function on engine, i.e. `Engine.resume`
 
 ## Changes
+
 - `Definition` is exposed and can be executed with moddle context and options, see [documentation](/docs/Definition.md)
 - `validation` is exposed and harbours functions for validating moddle context and execute options
 - Support camunda input forms for user task and start event
@@ -367,5 +394,6 @@ Behind the scenes the entire definition execution is replaced with [bpmn-element
 - Output from tasks with defined `camunda:inputOutput` now updates context variables. The previous behavior was to save result to `variables.taskInput`. That will still happen if no output is defined.
 
 ## Changes
+
 - Support service connector (#4)
 - Support map and list input/output types from modeller (#5)

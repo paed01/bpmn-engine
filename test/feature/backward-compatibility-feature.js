@@ -58,7 +58,7 @@ Feature('Backward compatability', () => {
     });
 
     When('source is executed', () => {
-      engine.execute({listener});
+      engine.execute({ listener });
     });
 
     And('user task is in a waiting state', async () => {
@@ -103,7 +103,7 @@ Feature('Backward compatability', () => {
     And('user task is signaled', () => {
       ended = recovered.waitFor('end');
 
-      execution.signal({id: 'task'});
+      execution.signal({ id: 'task' });
     });
 
     Then('run completes', async () => {

@@ -14,7 +14,7 @@ export async function context(source, options = {}) {
   const moddleCtx = await moddleContext(source, options);
 
   if (moddleCtx.warnings) {
-    moddleCtx.warnings.forEach(({error, message, element, property}) => {
+    moddleCtx.warnings.forEach(({ error, message, element, property }) => {
       if (error) return logger.error(message);
       logger.error(`<${element.id}> ${property}:`, message);
     });
@@ -33,7 +33,7 @@ export function moddleContext(source, options) {
   return bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source);
 }
 
-export function serializeModdleContext({rootElement, rootHandler, elementsById, references, warnings}) {
+export function serializeModdleContext({ rootElement, rootHandler, elementsById, references, warnings }) {
   const serializedRoot = JSON.parse(JSON.stringify(rootElement || rootHandler.element));
 
   const clonedContext = {

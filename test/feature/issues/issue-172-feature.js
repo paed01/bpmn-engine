@@ -21,10 +21,12 @@ Feature('issue 172', () => {
         source,
         services: {
           agi(...args) {
-            return new Promise((resolve) => process.nextTick(() => {
-              agiCalls.push(args);
-              resolve({called: true});
-            }));
+            return new Promise((resolve) =>
+              process.nextTick(() => {
+                agiCalls.push(args);
+                resolve({ called: true });
+              })
+            );
           },
         },
         extensions: {
@@ -32,11 +34,15 @@ Feature('issue 172', () => {
             if (activity.type === 'bpmn:Process') return;
             return {
               activate() {
-                activity.on('enter', async (elementApi) => {
-                  activity.broker.publish('format', 'run.format.start', {endRoutingKey: 'run.format.complete'});
-                  const formatting = await elementApi.environment.services.agi(elementApi.content);
-                  activity.broker.publish('format', 'run.format.complete', formatting);
-                }, {consumerTag: 'format-on-enter'});
+                activity.on(
+                  'enter',
+                  async (elementApi) => {
+                    activity.broker.publish('format', 'run.format.start', { endRoutingKey: 'run.format.complete' });
+                    const formatting = await elementApi.environment.services.agi(elementApi.content);
+                    activity.broker.publish('format', 'run.format.complete', formatting);
+                  },
+                  { consumerTag: 'format-on-enter' }
+                );
               },
               deactivate() {
                 activity.broker.cancel('format-on-enter');
@@ -51,7 +57,7 @@ Feature('issue 172', () => {
     const activityEnded = [];
     When('executed', () => {
       end = engine.waitFor('end');
-      engine.broker.subscribeTmp('event', 'activity.end', (_, message) => activityEnded.push(message.content), {noAck: true});
+      engine.broker.subscribeTmp('event', 'activity.end', (_, message) => activityEnded.push(message.content), { noAck: true });
       return engine.execute();
     });
 

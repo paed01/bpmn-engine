@@ -4,10 +4,21 @@
 import { EventEmitter } from 'events';
 import { Definitions as BpmnModdleDefinitions } from 'bpmn-moddle';
 import { extendFn, SerializableContext } from 'moddle-context-serializer';
-import { ActivityStatus, ElementBroker, EnvironmentOptions, Definition, DefinitionState, Environment, Api, ElementBase, ILogger, EnvironmentState, IScripts } from 'bpmn-elements';
+import {
+  ActivityStatus,
+  ElementBroker,
+  EnvironmentOptions,
+  Definition,
+  DefinitionState,
+  Environment,
+  Api,
+  ElementBase,
+  ILogger,
+  EnvironmentState,
+  IScripts,
+} from 'bpmn-elements';
 
 declare module 'bpmn-engine' {
-
   /**
    * Engine emits the following events:
 
@@ -30,7 +41,7 @@ declare module 'bpmn-engine' {
       activity.error: An non-recoverable error has occurred
    */
   export type BpmnActivityEvent =
-    'activity.enter'
+    | 'activity.enter'
     | 'activity.start'
     | 'activity.wait'
     | 'wait'
@@ -45,14 +56,15 @@ declare module 'bpmn-engine' {
         flow.discard: The sequence flow was discarded
         flow.looped: The sequence is looped
    */
-  export type BpmnSequenceFlowEvent = 'flow.take' | 'flow.discard' | 'flow.looped';
-  // export type BpmnEngineVariable = Record<string, any>;
-  // export type BpmnEngineSetting = Record<string, any>;
+  export type BpmnSequenceFlowEvent =
+    | 'flow.take'
+    | 'flow.discard'
+    | 'flow.looped';
 
   export interface BpmnMessage {
-    id?: string,
-    executionId?: string,
-    [name: string]: any
+    id?: string;
+    executionId?: string;
+    [name: string]: any;
   }
 
   export interface BpmnEngineExecuteOptions extends EnvironmentOptions {
@@ -147,7 +159,10 @@ declare module 'bpmn-engine' {
      */
     execute(): Promise<Execution>;
     execute(options: BpmnEngineExecuteOptions): Promise<Execution>;
-    execute(options: BpmnEngineExecuteOptions, cb: (err: Error, execution?: Execution) => void): Promise<Execution>;
+    execute(
+      options: BpmnEngineExecuteOptions,
+      cb: (err: Error, execution?: Execution) => void
+    ): Promise<Execution>;
     execute(cb: (err: Error) => void): Promise<Execution>;
 
     /**
@@ -178,7 +193,10 @@ declare module 'bpmn-engine' {
      * @param options
      * @param callback
      */
-    resume(options?: BpmnEngineExecuteOptions, callback?: (err: Error, execution?: Execution) => void): Promise<Execution>;
+    resume(
+      options?: BpmnEngineExecuteOptions,
+      callback?: (err: Error, execution?: Execution) => void
+    ): Promise<Execution>;
 
     /**
      * Stop execution. The instance is terminated.
@@ -284,7 +302,10 @@ declare module 'bpmn-engine' {
      * @param message {BpmnMessage}
      * @param options
      */
-    signal(message?: BpmnMessage, options?: { ignoreSameDefinition?: boolean }): void;
+    signal(
+      message?: BpmnMessage,
+      options?: { ignoreSameDefinition?: boolean }
+    ): void;
 
     /**
      * send cancel activity to execution, distributed to all definitions
@@ -302,10 +323,13 @@ declare module 'bpmn-engine' {
 
   export class JavaScripts implements IScripts {
     /**
-     * @param disableDummy Disable dummy scripts if script is not found. Dummy script will immediately call next function without error or return value
+     * @param disableDummy Disable returning dummy scripts if script is not found. Dummy script will immediately call next function without error or return value
      */
     constructor(disableDummy?: boolean);
     register(activity: any): Script | undefined;
-    getScript(language: string, identifier: {id: string, [x: string]: any}): Script;
+    getScript(
+      language: string,
+      identifier: { id: string; [x: string]: any }
+    ): Script;
   }
 }
