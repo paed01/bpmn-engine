@@ -3,7 +3,7 @@
 # 20.0.0
 
 - turn into esm with exports for node
-- build with node > 18
+- build with node > 18, should still work with earlier versions but preceed with caution and make tests
 - remove eslint formatting rules in favor of prettier, touched basically all files but now it is "pretty"
 
 # 19.0.1

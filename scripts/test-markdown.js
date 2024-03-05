@@ -1,96 +1,176 @@
-/* eslint no-console:0 */
 import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, extname, resolve as resolvePath, sep } from 'node:path';
+import fs from 'node:fs/promises';
 import vm from 'node:vm';
 import nock from 'nock';
 
-const nodeRequire = createRequire(fileURLToPath(import.meta.url));
-const { name, main } = nodeRequire('../package.json');
+if (!('SourceTextModule' in vm)) throw new Error('No SourceTextModule in vm, try using node --experimental-vm-modules flag');
 
-process.on('unhandledRejection', (error) => {
-  console.log('unhandledRejection', error);
-});
+const CWD = process.cwd();
+
+const nodeRequire = createRequire(fileURLToPath(import.meta.url));
+const { name, version, module: myModule } = nodeRequire(resolvePath(CWD, 'package.json'));
+
+const exPattern = /```javascript\n([\s\S]*?)```/gi;
+const packageName = `${name} v${version}`;
 
 nock.enableNetConnect(/(localhost|127\.0\.0\.1):\d+/);
 nock('https://example.com').get(/.*/).reply(200, { data: 1 }).persist();
 
-const exPattern = /```javascript\n([\s\S]*?)```/gi;
-let lines = 0;
-let prevCharIdx = 0;
-
-const file = process.argv[2] || './docs/API.md';
+const markdownFiles = process.argv[2] || './docs/API.md';
 const blockIdx = Number(process.argv[3]);
 
-async function parseDoc(filePath) {
-  const fileContent = await fs.readFile(filePath);
-  const blocks = [];
-  const content = fileContent.toString();
-  const mainFile = path.join('..', main);
-
-  content.replace(exPattern, (match, block, idx) => {
-    block = block.replace(`require('${name}')`, `require('${mainFile}')`);
-
-    const blockLine = calculateLine(content, idx);
-
-    blocks.push({
-      block,
-      line: blockLine,
-      len: block.length,
-      script: parse(`${filePath}`, block, blockLine),
-    });
-  });
-
-  for (let idx = 0; idx < blocks.lenght; idx++) {
-    const { line, script } = blocks[idx];
-    console.log(`${idx}: ${filePath}:${line}`);
-    await execute(script);
+class ExampleEvaluator {
+  constructor(filePath, sandbox) {
+    const exampleFile = (this.exampleFile = resolvePath(CWD, filePath));
+    this.line = 0;
+    this.prevCharIdx = 0;
+    this.identifier = pathToFileURL(exampleFile).toString();
+    this.sandbox = sandbox;
   }
+  async evaluate() {
+    const fileContent = await fs.readFile(this.exampleFile);
+    const blocks = [];
+    const content = fileContent.toString();
 
-  blocks.forEach(({ line, script }, idx) => {
-    if (isNaN(blockIdx) || idx === blockIdx) {
-      console.log(`${idx}: ${filePath}:${line}`);
-      execute(script);
+    content.replace(exPattern, (_, scriptBody, idx) => {
+      const lineOffset = this.calculateLineOffset(content, idx);
+      blocks.push({
+        scriptSource: scriptBody,
+        lineOffset,
+        script: this.parse(scriptBody, lineOffset),
+      });
+    });
+
+    for (let idx = 0; idx < blocks.length; idx++) {
+      const { script, lineOffset } = blocks[idx];
+
+      if (!isNaN(blockIdx) && idx !== blockIdx) continue;
+
+      this.sandbox.console?.log(`${idx}: ${this.identifier}:${lineOffset}`);
+
+      const loader = new ScriptLoader();
+      await script.link(loader.link);
+      await script.evaluate();
     }
-  });
-
-  function parse(filename, scriptBody, lineOffset) {
-    return new vm.Script(scriptBody, {
-      filename,
-      displayErrors: true,
+  }
+  parse(scriptBody, lineOffset) {
+    const identifier = this.identifier;
+    return new vm.SourceTextModule(scriptBody, {
+      identifier,
+      context: vm.createContext(this.sandbox, {
+        name: packageName,
+      }),
       lineOffset,
+      displayErrors: true,
+      initializeImportMeta(meta) {
+        meta.url = identifier;
+      },
     });
+  }
+  execute(script) {
+    const vmContext = new vm.createContext(this.sandbox);
+    return script.run(vmContext);
+  }
+  calculateLineOffset(content, charIdx) {
+    const blockLines = content.substring(this.prevCharIdx, charIdx).split(/\n/g).length;
+    this.line = blockLines + (this.line > 0 ? this.line - 1 : 0);
+    this.prevCharIdx = charIdx;
+    return this.line;
   }
 }
 
-function execute(script) {
-  const context = {
-    require,
-    console,
-    setTimeout,
-    db: {
-      getSavedState: (id, callback) => {
-        if (fs.existsSync('./tmp/some-random-id.json')) {
-          const state = nodeRequire('../tmp/some-random-id.json');
-          return callback(null, state);
-        }
-        callback(new Error('No state'));
+(async () => {
+  for (const file of markdownFiles.split(',')) {
+    await new ExampleEvaluator(file, {
+      Buffer,
+      console,
+      setTimeout,
+      clearTimeout,
+      db: {
+        getSavedState: (_, callback) => {
+          if (fs.existsSync('./tmp/some-random-id.json')) {
+            const state = nodeRequire('../tmp/some-random-id.json');
+            return callback(null, state);
+          }
+          callback(new Error('No state'));
+        },
+        getState: (id, callback) => {
+          callback(null, { definitions: [] });
+        },
       },
-      getState: (id, callback) => {
-        callback(null, { definitions: [] });
-      },
+    }).evaluate();
+  }
+})();
+
+export function ScriptLoader(fileCache) {
+  this.fileCache = fileCache ?? new Map();
+  this.cache = new Map();
+  this.link = this.link.bind(this);
+}
+
+ScriptLoader.prototype.link = function link(specifier, reference) {
+  let modulePath;
+  if (specifier === name) {
+    modulePath = resolvePath(CWD, myModule);
+    return this.linkScriptSource(modulePath, reference.context);
+  } else if (isRelative(specifier)) {
+    modulePath = resolvePath(dirname(fileURLToPath(reference.identifier)), specifier.split(sep).join(sep));
+    return this.linkScriptSource(modulePath, reference.context);
+  } else {
+    return this.linkNodeModule(specifier, reference);
+  }
+};
+
+ScriptLoader.prototype.linkScriptSource = async function linkScriptSource(scriptPath, context) {
+  const source = await this.getInternalScriptSource(scriptPath);
+  return this.linkInternalScript(scriptPath, source, context);
+};
+
+ScriptLoader.prototype.linkNodeModule = async function linkNodeModule(identifier, reference) {
+  const imported = await import(identifier);
+  const exported = Object.keys(imported);
+
+  return new vm.SyntheticModule(
+    exported,
+    function evaluateCallback() {
+      exported.forEach((key) => this.setExport(key, imported[key]));
     },
-  };
-  const vmContext = new vm.createContext(context);
-  return script.runInContext(vmContext);
-}
+    { identifier, context: reference.context }
+  );
+};
 
-function calculateLine(content, charIdx) {
-  const blockLine = content.substring(prevCharIdx, charIdx).split(/\n/).length;
-  prevCharIdx = charIdx;
-  lines = blockLine + (lines > 0 ? lines - 1 : 0);
-  return lines;
-}
+ScriptLoader.prototype.linkInternalScript = async function linkInternalScript(scriptPath, source, context) {
+  const identifier = pathToFileURL(scriptPath).toString();
+  const module = new vm.SourceTextModule(source, {
+    identifier,
+    context,
+    initializeImportMeta(meta) {
+      meta.url = identifier;
+    },
+  });
+  await module.link(this.link).catch((e) => {
+    throw e;
+  });
+  return module;
+};
 
-parseDoc(file);
+ScriptLoader.prototype.getInternalScriptSource = async function getInternalScriptSource(scriptPath) {
+  const fileCache = this.fileCache;
+  let content = fileCache?.get(scriptPath);
+  if (content) return content;
+
+  content = (await fs.readFile(scriptPath)).toString();
+  if (extname(scriptPath) === '.json') {
+    content = `export default ${content};`;
+  }
+
+  fileCache?.set(scriptPath, content);
+  return content;
+};
+
+function isRelative(p) {
+  const p0 = p.split(sep).shift();
+  return p0 === '.' || p0 === '..';
+}

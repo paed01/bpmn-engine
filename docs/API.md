@@ -82,19 +82,20 @@ Returns:
 - `waitFor()`: wait for engine events, returns Promise
 
 ```javascript
-import { Engine } from 'bpmn-engine';
-import fs from 'fs';
-import { createRequire } from 'module';
-import { fileURLToPath } = from 'url';
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
-const camunda = createRequire(fileURLToPath)('camunda-bpmn-moddle/resources/camunda.json')
+import { Engine } from 'bpmn-engine';
+
+const camunda = createRequire(fileURLToPath(import.meta.url))('camunda-bpmn-moddle/resources/camunda.json');
 
 const engine = new Engine({
   name: 'mother of all',
   source: fs.readFileSync('./test/resources/mother-of-all.bpmn'),
   moddleOptions: {
     camunda,
-  }
+  },
 });
 ```
 
@@ -118,8 +119,9 @@ Execute options overrides the initial options passed to the engine before execut
 Returns [Execution API](#execution-api)
 
 ```javascript
+import { EventEmitter } from 'node:events';
+
 import { Engine } from 'bpmn-engine';
-import { EventEmitter } from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -186,8 +188,9 @@ engine.execute(
 An `EventEmitter` object with listeners. Listen for [activity events](#activity-events).
 
 ```javascript
+import { EventEmitter } from 'node:events';
+
 import { Engine } from 'bpmn-engine';
-import { EventEmitter } from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -222,8 +225,9 @@ engine.execute({
 Execution variables are passed as the first argument to `#execute`.
 
 ```javascript
+import fs from 'node:fs';
+
 import { Engine } from 'bpmn-engine';
-import fs from 'fs';
 
 const engine = new Engine({
   name: 'using variables',
@@ -310,11 +314,12 @@ Arguments:
   - `sourceContext`: serializable source
 
 ```javascript
+import { EventEmitter } from 'node:events';
+
 import BpmnModdle from 'bpmn-moddle';
-import elements from 'bpmn-elements';
-import {Engine} from 'bpmn-engine';
-import {EventEmitter} from 'events';
-import {default: serializer, TypeResolver} from 'moddle-context-serializer';
+import * as elements from 'bpmn-elements';
+import { Engine } from 'bpmn-engine';
+import Serializer, { TypeResolver } from 'moddle-context-serializer';
 
 const engine = new Engine({
   name: 'add source',
@@ -333,7 +338,7 @@ const engine = new Engine({
   });
 
   await engine.execute({
-    listener
+    listener,
   });
 
   await engine.waitFor('end');
@@ -353,7 +358,7 @@ async function getContext(source, options = {}) {
   const moddleContext = await getModdleContext(source, options);
 
   if (moddleContext.warnings) {
-    moddleContext.warnings.forEach(({error, message, element, property}) => {
+    moddleContext.warnings.forEach(({ error, message, element, property }) => {
       if (error) return console.error(message);
       console.error(`<${element.id}> ${property}:`, message);
     });
@@ -364,7 +369,7 @@ async function getContext(source, options = {}) {
     ...options.elements,
   });
 
-  return serializer(moddleContext, types, options.extendFn);
+  return Serializer(moddleContext, types, options.extendFn);
 }
 
 function getModdleContext(source, options) {
@@ -420,9 +425,10 @@ The saved state will include the following content:
       - `entered`: Boolean indicating if the child is currently executing
 
 ```javascript
-import {Engine} from 'bpmn-engine';
-import {EventEmitter} from 'events';
-import {promises: fs} from 'fs';
+import fs from 'node:fs/promises';
+import { EventEmitter } from 'node:events';
+
+import { Engine } from 'bpmn-engine';
 
 const processXml = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -437,7 +443,7 @@ const processXml = `
 </definitions>`;
 
 const engine = new Engine({
-  source: processXml
+  source: processXml,
 });
 
 const listener = new EventEmitter();
@@ -454,7 +460,7 @@ listener.once('activity.start', async () => {
 });
 
 engine.execute({
-  listener
+  listener,
 });
 ```
 
@@ -463,8 +469,9 @@ engine.execute({
 Stop execution. The instance is terminated.
 
 ```javascript
+import { EventEmitter } from 'node:events';
+
 import { Engine } from 'bpmn-engine';
-import { EventEmitter } from 'events';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -526,8 +533,9 @@ Arguments:
   - `execution`: Resumed engine execution
 
 ```js
+import { EventEmitter } from 'node:events';
+
 import { Engine } from 'bpmn-engine';
-import { EventEmitter } from 'events';
 
 const state = fetchSomeState();
 const engine = new Engine().recover(state);

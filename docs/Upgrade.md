@@ -4,7 +4,7 @@
 
 Since v14 of the engine output is no longer shared between definition and processes. To upgrade a saved state before version 14 you can run the following script that adds process environment to state.
 
-```js
+```javascript
 export function upgradeStateToVersion14(state) {
   const stateVersion = getSemverVersion(state.engineVersion);
   if (!stateVersion || stateVersion.major >= 14) return state;
