@@ -31,7 +31,7 @@
     "cov:html": "c8 -r html -r text mocha -p -R @bonniernews/hot-bev",
     "test:lcov": "c8 -r lcov mocha && npm run lint",
     "toc": "node scripts/generate-api-toc ./docs/API.md,./docs/Examples.md",
-    "test-md": "node scripts/test-markdown.js ./docs/API.md && node scripts/test-markdown.js ./docs/Examples.md",
+    "test-md": "node --experimental-vm-modules --no-warnings scripts/test-markdown.js ./docs/API.md,./docs/Examples.md,./docs/Upgrade.md",
     "dist": "rollup -c",
     "prepack": "npm run dist"
   },
