@@ -1,9 +1,15 @@
 # Changelog
 
+# 20.0.1
+
+- Major bump `bpmn-moddle@9`
+- Minor bump [`moddle-context-serializer@4.2`](https://github.com/paed01/moddle-context-serializer/blob/master/CHANGELOG.md)
+- Minor bump [`bpmn-elements@13.2.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
 # 20.0.0
 
 - turn into esm with exports for node
-- build with node > 18, should still work with earlier versions but preceed with caution and make tests
+- build with node >= 18, should still work with earlier versions but proceed with caution and make tests
 - remove eslint formatting rules in favor of prettier, touched basically all files but now it is "pretty"
 - prototype `ProcessOutputDataObject` and make properties id and type readonly
 
