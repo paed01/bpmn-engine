@@ -2,6 +2,7 @@
 
 # 20.0.1
 
+- hoist current definition environment output to engine environment output if run fails
 - Major bump `bpmn-moddle@9`
 - Minor bump [`moddle-context-serializer@4.2`](https://github.com/paed01/moddle-context-serializer/blob/master/CHANGELOG.md)
 - Minor bump [`bpmn-elements@13.2.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)

@@ -467,30 +467,19 @@ Execution.prototype._onChildMessage = function onChildMessage(routingKey, messag
 
       newState = 'idle';
       break;
-    case 'definition.error':
+    case 'definition.error': {
+      this._saveOutput(owner.environment.output);
       this._teardownDefinition(owner);
       newState = 'error';
       break;
+    }
     case 'activity.wait': {
       if (listener) listener.emit('wait', owner.getApi(message), this);
       break;
     }
     case 'process.end': {
-      if (!message.content.output) break;
-      const environment = this.environment;
-
-      for (const key in message.content.output) {
-        switch (key) {
-          case 'data': {
-            environment.output.data = environment.output.data || {};
-            environment.output.data = { ...environment.output.data, ...message.content.output.data };
-            break;
-          }
-          default: {
-            environment.output[key] = message.content.output[key];
-          }
-        }
-      }
+      if (message.content.inbound) break;
+      this._saveOutput(message.content.output);
       break;
     }
   }
@@ -530,6 +519,21 @@ Execution.prototype._teardownDefinition = function teardownDefinition(definition
   if (idx > -1) executing.splice(idx, 1);
 
   definition.broker.cancel('_engine_definition');
+};
+
+Execution.prototype._saveOutput = function saveOutput(output) {
+  if (!output || typeof output !== 'object') return;
+
+  const environmentOutput = this.environment.output;
+
+  for (const key in output) {
+    if (key === 'data') {
+      const data = (environmentOutput.data = environmentOutput.data || {});
+      environmentOutput.data = { ...data, ...output.data };
+    } else {
+      environmentOutput[key] = output[key];
+    }
+  }
 };
 
 Execution.prototype.getState = function getState() {

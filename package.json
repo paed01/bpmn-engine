@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "20.0.0",
+  "version": "20.0.1",
   "type": "module",
   "module": "./src/index.js",
   "main": "./lib/index.cjs",
@@ -54,6 +54,7 @@
     "@bonniernews/hot-bev": "^0.4.0",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@types/bpmn-moddle": "^5.1.6",
+    "@types/node": "^18.19.31",
     "bent": "^7.3.12",
     "c8": "^9.1.0",
     "camunda-bpmn-moddle": "^7.0.1",

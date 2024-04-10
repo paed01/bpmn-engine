@@ -1,0 +1,29 @@
+{
+  "include": ["src/**/*", "types"],
+  "compilerOptions": {
+    "emitDeclarationOnly": true,
+    "sourceMap": false,
+    "rootDir": "src",
+    "lib": ["es2017"],
+    "target": "es2017",
+    "outDir": "./tmp/ignore",
+    "declaration": true,
+    "noEmitOnError": true,
+    "noErrorTruncation": true,
+    "allowJs": true,
+    "checkJs": false,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": false,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "stripInternal": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "typeRoots": ["./node_modules/@types"],
+    "paths": {
+      "types": ["./types/bpmn-engine.js"]
+    }
+  }
+}

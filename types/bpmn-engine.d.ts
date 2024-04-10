@@ -16,6 +16,7 @@ import {
   ILogger,
   EnvironmentState,
   IScripts,
+  Script,
 } from 'bpmn-elements';
 
 declare module 'bpmn-engine' {
