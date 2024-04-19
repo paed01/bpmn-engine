@@ -1,5 +1,9 @@
 # Changelog
 
+# 20.0.2
+
+- patch away package prettier from smqp
+
 # 20.0.1
 
 - hoist current definition environment output to engine environment output if run fails
