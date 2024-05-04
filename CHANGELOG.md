@@ -1,5 +1,13 @@
 # Changelog
 
+# 21.0.0
+
+Stop execution if invalid time duration, cycle, or date is encountered.
+
+## Breaking
+
+- invalid `TimerEventDefinition` timer type value stops execution according to [`bpmn-elements@14`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md). Old behaviour can be achieved by using bpmn-elements@13
+
 # 20.0.2
 
 - patch away package prettier from smqp

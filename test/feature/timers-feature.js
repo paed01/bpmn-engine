@@ -90,7 +90,9 @@ Feature('Timers', () => {
 
     And('time date is executing', () => {
       const [timer] = activity.getExecuting();
-      expect(timer.content).to.have.property('expireAt').to.deep.equal(new Date('1993-06-26'));
+      expect(timer.content)
+        .to.have.property('expireAt')
+        .to.deep.equal(new Date(1993, 5, 26));
       expect(timer.content).to.have.property('timeDate').to.equal('1993-06-26');
     });
 
@@ -234,7 +236,9 @@ Feature('Timers', () => {
     });
 
     Then('throw time date has timed out', () => {
-      expect(timeoutMessage.content).to.have.property('expireAt').to.deep.equal(new Date('1993-06-26'));
+      expect(timeoutMessage.content)
+        .to.have.property('expireAt')
+        .to.deep.equal(new Date(1993, 5, 26));
       expect(timeoutMessage.content).to.have.property('timeDate').to.equal('1993-06-26');
     });
   });
@@ -349,6 +353,71 @@ Feature('Timers', () => {
 
     And('arbitrary timer is cleared', () => {
       expect(engine.environment.timers.executing).to.have.length(0);
+    });
+  });
+
+  Scenario('engine with invalid timers', () => {
+    let engine, source;
+    Given('a source with user task and a bound timer event with invalid date', () => {
+      source = `<?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="bp2" isExecutable="true">
+          <userTask id="task" />
+          <boundaryEvent id="bound-timer-2" attachedToRef="task">
+            <timerEventDefinition>
+              <timeDate xsi:type="tFormalExpression">2023-01-32</timeDate>
+            </timerEventDefinition>
+          </boundaryEvent>
+        </process>
+      </definitions>
+      `;
+
+      engine = Engine({
+        name: 'invalid-timers',
+        source,
+      });
+    });
+
+    let fail;
+    When('source is executed', async () => {
+      fail = engine.waitFor('error');
+      await engine.execute();
+    });
+
+    Then('run fails', async () => {
+      const err = await fail;
+      console.log({ err });
+      expect(err).to.match(/Invalid ISO 8601 date/i);
+    });
+
+    Given('a source with a start event timer with invalid cycle', () => {
+      source = `<?xml version="1.0" encoding="UTF-8"?>
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="bp2" isExecutable="true">
+          <startEvent id="bound-timer-2" attachedToRef="task">
+            <timerEventDefinition>
+              <timeCycle xsi:type="tFormalExpression">R-3/2023-01-32</timeCycle>
+            </timerEventDefinition>
+          </startEvent>
+        </process>
+      </definitions>
+      `;
+
+      engine = Engine({
+        name: 'invalid-timers',
+        source,
+      });
+    });
+
+    When('source is executed', async () => {
+      fail = engine.waitFor('error');
+      await engine.execute();
+    });
+
+    Then('run fails', async () => {
+      const err = await fail;
+      console.log({ err });
+      expect(err).to.match(/Unexpected/i);
     });
   });
 });
