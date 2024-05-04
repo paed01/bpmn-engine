@@ -386,7 +386,6 @@ Feature('Timers', () => {
 
     Then('run fails', async () => {
       const err = await fail;
-      console.log({ err });
       expect(err).to.match(/Invalid ISO 8601 date/i);
     });
 
@@ -416,7 +415,6 @@ Feature('Timers', () => {
 
     Then('run fails', async () => {
       const err = await fail;
-      console.log({ err });
       expect(err).to.match(/Unexpected/i);
     });
   });
