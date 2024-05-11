@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="sample-diagram" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.22.0" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd">
+  <bpmn2:process id="ProcessApprove" name="立项审批流程" isExecutable="true" camunda:versionTag="1.0">
+    <bpmn2:startEvent id="event_start">
+      <bpmn2:outgoing>Flow_15zn1tu</bpmn2:outgoing>
+    </bpmn2:startEvent>
+    <bpmn2:userTask id="task_request" name="申请立项" camunda:assignee="owner">
+      <bpmn2:extensionElements>
+        <camunda:formData />
+        <camunda:inputOutput>
+          <camunda:inputParameter name="show_in_my_tasks">${true}</camunda:inputParameter>
+          <camunda:inputParameter name="process_type">${1}</camunda:inputParameter>
+          <camunda:inputParameter name="target_type">project_detail</camunda:inputParameter>
+          <camunda:inputParameter name="prj_id">${environment.variables.prj_id}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn2:extensionElements>
+      <bpmn2:incoming>Flow_1t45qnv</bpmn2:incoming>
+      <bpmn2:incoming>Flow_0gyvyyo</bpmn2:incoming>
+      <bpmn2:outgoing>Flow_1rg4oob</bpmn2:outgoing>
+      <bpmn2:outgoing>Flow_0bhibn0</bpmn2:outgoing>
+    </bpmn2:userTask>
+    <bpmn2:sequenceFlow id="Flow_15zn1tu" sourceRef="event_start" targetRef="task_create" />
+    <bpmn2:sequenceFlow id="Flow_1rg4oob" sourceRef="task_request" targetRef="task_approve" />
+    <bpmn2:userTask id="task_approve" name="审核立项" camunda:assignee="top" camunda:candidateUsers="18631114969, 18173126975">
+      <bpmn2:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="pass" label="是否通过" type="boolean">
+            <camunda:properties />
+            <camunda:validation />
+          </camunda:formField>
+          <camunda:formField id="detail" label="说明" type="string" />
+        </camunda:formData>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="show_in_my_tasks">${true}</camunda:inputParameter>
+          <camunda:inputParameter name="process_type">${1}</camunda:inputParameter>
+          <camunda:inputParameter name="target_type">project-detail</camunda:inputParameter>
+          <camunda:inputParameter name="prj_id">${environment.variables.prj_id}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn2:extensionElements>
+      <bpmn2:incoming>Flow_1rg4oob</bpmn2:incoming>
+      <bpmn2:outgoing>Flow_193tusd</bpmn2:outgoing>
+      <bpmn2:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="${environment.variables.handlers}" camunda:elementVariable="handler">
+        <bpmn2:loopCardinality xsi:type="bpmn2:tFormalExpression">${environment.variables.handlers.length}</bpmn2:loopCardinality>
+        <bpmn2:completionCondition xsi:type="bpmn2:tFormalExpression">${content.output.break}</bpmn2:completionCondition>
+      </bpmn2:multiInstanceLoopCharacteristics>
+    </bpmn2:userTask>
+    <bpmn2:exclusiveGateway id="gateway_approved" default="Flow_0nwaga3">
+      <bpmn2:incoming>Flow_1fodcvc</bpmn2:incoming>
+      <bpmn2:outgoing>Flow_0zubkyw</bpmn2:outgoing>
+      <bpmn2:outgoing>Flow_0nwaga3</bpmn2:outgoing>
+    </bpmn2:exclusiveGateway>
+    <bpmn2:sequenceFlow id="Flow_193tusd" sourceRef="task_approve" targetRef="task_check" />
+    <bpmn2:endEvent id="event_end">
+      <bpmn2:incoming>Flow_02taytj</bpmn2:incoming>
+      <bpmn2:incoming>Flow_1ucg773</bpmn2:incoming>
+    </bpmn2:endEvent>
+    <bpmn2:sequenceFlow id="Flow_0zubkyw" name="通过" sourceRef="gateway_approved" targetRef="event_throw_approved">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression" language="JavaScript">next(null, this.environment.services.get_value('passed')=== true);</bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:sequenceFlow id="Flow_0nwaga3" name="驳回" sourceRef="gateway_approved" targetRef="event_throw_approved_back" />
+    <bpmn2:sequenceFlow id="Flow_0bhibn0" sourceRef="task_request" targetRef="task_with_draw" />
+    <bpmn2:userTask id="task_with_draw" name="撤回立项" camunda:assignee="owner">
+      <bpmn2:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="process_type">${1}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn2:extensionElements>
+      <bpmn2:incoming>Flow_0bhibn0</bpmn2:incoming>
+      <bpmn2:outgoing>Flow_0tj9nd6</bpmn2:outgoing>
+    </bpmn2:userTask>
+    <bpmn2:sequenceFlow id="Flow_0tj9nd6" sourceRef="task_with_draw" targetRef="Event_throw_withdraw" />
+    <bpmn2:boundaryEvent id="Event_catch_withdraw" name="撤回" attachedToRef="task_approve">
+      <bpmn2:outgoing>Flow_0nzbvpg</bpmn2:outgoing>
+      <bpmn2:signalEventDefinition id="SignalEventDefinition_111s194" signalRef="Signal_0hhmd7l" />
+    </bpmn2:boundaryEvent>
+    <bpmn2:intermediateThrowEvent id="Event_throw_withdraw" name="撤回事件">
+      <bpmn2:incoming>Flow_0tj9nd6</bpmn2:incoming>
+      <bpmn2:signalEventDefinition id="SignalEventDefinition_1tt7p06" signalRef="Signal_0hhmd7l" />
+    </bpmn2:intermediateThrowEvent>
+    <bpmn2:sequenceFlow id="Flow_02taytj" sourceRef="event_throw_approved" targetRef="event_end" />
+    <bpmn2:intermediateThrowEvent id="event_throw_approved" name="已审核事件">
+      <bpmn2:incoming>Flow_0zubkyw</bpmn2:incoming>
+      <bpmn2:outgoing>Flow_02taytj</bpmn2:outgoing>
+      <bpmn2:signalEventDefinition id="SignalEventDefinition_07jfo4t" signalRef="Signal_0828f9d" />
+    </bpmn2:intermediateThrowEvent>
+    <bpmn2:sequenceFlow id="Flow_1ucg773" sourceRef="event_catch_approved" targetRef="event_end" />
+    <bpmn2:boundaryEvent id="event_catch_approved" name="已审核" attachedToRef="task_with_draw">
+      <bpmn2:outgoing>Flow_1ucg773</bpmn2:outgoing>
+      <bpmn2:signalEventDefinition id="SignalEventDefinition_02ri5rf" signalRef="Signal_0828f9d" />
+    </bpmn2:boundaryEvent>
+    <bpmn2:intermediateThrowEvent id="event_throw_approved_back" name="已审核事件">
+      <bpmn2:incoming>Flow_0nwaga3</bpmn2:incoming>
+      <bpmn2:outgoing>Flow_06cxzjx</bpmn2:outgoing>
+      <bpmn2:signalEventDefinition id="SignalEventDefinition_0y27jk5" signalRef="Signal_0828f9d" />
+    </bpmn2:intermediateThrowEvent>
+    <bpmn2:sequenceFlow id="Flow_1t45qnv" sourceRef="task_modify" targetRef="task_request" />
+    <bpmn2:sequenceFlow id="Flow_0nzbvpg" sourceRef="Event_catch_withdraw" targetRef="task_modify" />
+    <bpmn2:sequenceFlow id="Flow_06cxzjx" sourceRef="event_throw_approved_back" targetRef="Activity_1dcslsv" />
+    <bpmn2:manualTask id="task_create" name="创建项目">
+      <bpmn2:incoming>Flow_15zn1tu</bpmn2:incoming>
+      <bpmn2:outgoing>Flow_0gyvyyo</bpmn2:outgoing>
+    </bpmn2:manualTask>
+    <bpmn2:sequenceFlow id="Flow_0gyvyyo" sourceRef="task_create" targetRef="task_request" />
+    <bpmn2:sequenceFlow id="Flow_1fodcvc" sourceRef="task_check" targetRef="gateway_approved" />
+    <bpmn2:scriptTask id="task_check" name="检查是否通过" scriptFormat="Javascript" camunda:resultVariable="passed">
+      <bpmn2:extensionElements />
+      <bpmn2:incoming>Flow_193tusd</bpmn2:incoming>
+      <bpmn2:outgoing>Flow_1fodcvc</bpmn2:outgoing>
+      <bpmn2:script>var passed = true;
+      for (var i = 0; i &lt; this.environment.output.task_approve.length; i++) {
+        var value = this.environment.output.task_approve[i];
+        if (value &amp;&amp; value.pass) {
+          passed &amp;= true;
+        }
+      }
+      this.environment.services.set_value('passed', passed);
+      next();</bpmn2:script>
+    </bpmn2:scriptTask>
+    <bpmn2:manualTask id="task_modify" name="修改项目信息">
+      <bpmn2:incoming>Flow_0nzbvpg</bpmn2:incoming>
+      <bpmn2:incoming>Flow_06kumr8</bpmn2:incoming>
+      <bpmn2:outgoing>Flow_1t45qnv</bpmn2:outgoing>
+    </bpmn2:manualTask>
+    <bpmn2:sequenceFlow id="Flow_06kumr8" sourceRef="Activity_1dcslsv" targetRef="task_modify" />
+    <bpmn2:scriptTask id="Activity_1dcslsv" name="提醒审核被驳回" scriptFormat="Javascript">
+      <bpmn2:incoming>Flow_06cxzjx</bpmn2:incoming>
+      <bpmn2:outgoing>Flow_06kumr8</bpmn2:outgoing>
+      <bpmn2:script>this.environment.services.get_handlers('owner').then((handlers) =&gt; {
+for (var i = 0; i &lt; handlers.length; i++) {
+  this.environment.services.gen_remind_task(handlers[i].id, '立项申请被驳回', '立项申请已被驳回');
+}
+next();
+});</bpmn2:script>
+    </bpmn2:scriptTask>
+  </bpmn2:process>
+  <bpmn2:signal id="Signal_0hhmd7l" name="cancel_sign" />
+  <bpmn2:message id="Message_0fh9t3e" name="msg_cancel" />
+  <bpmn2:message id="Message_1qtzp8g" name="Message_0q7qbc4" />
+  <bpmn2:signal id="Signal_0828f9d" name="Signal_2sf6vik" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="ProcessApprove">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="event_start">
+        <dc:Bounds x="142" y="132" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_09wmdbt_di" bpmnElement="task_request">
+        <dc:Bounds x="330" y="110" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ds6ym0_di" bpmnElement="task_approve">
+        <dc:Bounds x="490" y="110" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_06baw71_di" bpmnElement="gateway_approved" isMarkerVisible="true">
+        <dc:Bounds x="795" y="125" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_15877ow_di" bpmnElement="event_end">
+        <dc:Bounds x="992" y="132" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0fonc56_di" bpmnElement="task_with_draw">
+        <dc:Bounds x="400" y="410" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0mceau4_di" bpmnElement="Event_throw_withdraw">
+        <dc:Bounds x="542" y="432" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="538" y="475" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0tntlum_di" bpmnElement="event_throw_approved">
+        <dc:Bounds x="922" y="132" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="913" y="175" width="55" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1gjhb1n_di" bpmnElement="event_throw_approved_back">
+        <dc:Bounds x="802" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="842" y="233" width="55" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0isolrc_di" bpmnElement="task_create">
+        <dc:Bounds x="200" y="110" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ehf5li_di" bpmnElement="task_check">
+        <dc:Bounds x="650" y="110" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1k7kq2t_di" bpmnElement="task_modify">
+        <dc:Bounds x="410" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1fktaxz_di" bpmnElement="Activity_1dcslsv">
+        <dc:Bounds x="650" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_06bs6js_di" bpmnElement="event_catch_approved">
+        <dc:Bounds x="432" y="392" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="463" y="386" width="33" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0s1xb2l_di" bpmnElement="Event_catch_withdraw">
+        <dc:Bounds x="552" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="579" y="208" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_15zn1tu_di" bpmnElement="Flow_15zn1tu">
+        <di:waypoint x="178" y="150" />
+        <di:waypoint x="200" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1rg4oob_di" bpmnElement="Flow_1rg4oob">
+        <di:waypoint x="430" y="150" />
+        <di:waypoint x="490" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_193tusd_di" bpmnElement="Flow_193tusd">
+        <di:waypoint x="590" y="150" />
+        <di:waypoint x="650" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0zubkyw_di" bpmnElement="Flow_0zubkyw">
+        <di:waypoint x="845" y="150" />
+        <di:waypoint x="922" y="150" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="873" y="132" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0nwaga3_di" bpmnElement="Flow_0nwaga3">
+        <di:waypoint x="820" y="175" />
+        <di:waypoint x="820" y="222" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="824" y="183" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0bhibn0_di" bpmnElement="Flow_0bhibn0">
+        <di:waypoint x="380" y="190" />
+        <di:waypoint x="380" y="450" />
+        <di:waypoint x="400" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0tj9nd6_di" bpmnElement="Flow_0tj9nd6">
+        <di:waypoint x="500" y="450" />
+        <di:waypoint x="542" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_02taytj_di" bpmnElement="Flow_02taytj">
+        <di:waypoint x="958" y="150" />
+        <di:waypoint x="992" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ucg773_di" bpmnElement="Flow_1ucg773">
+        <di:waypoint x="450" y="392" />
+        <di:waypoint x="450" y="340" />
+        <di:waypoint x="1010" y="340" />
+        <di:waypoint x="1010" y="168" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1t45qnv_di" bpmnElement="Flow_1t45qnv">
+        <di:waypoint x="460" y="240" />
+        <di:waypoint x="460" y="215" />
+        <di:waypoint x="400" y="215" />
+        <di:waypoint x="400" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0nzbvpg_di" bpmnElement="Flow_0nzbvpg">
+        <di:waypoint x="570" y="208" />
+        <di:waypoint x="570" y="280" />
+        <di:waypoint x="510" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_06cxzjx_di" bpmnElement="Flow_06cxzjx">
+        <di:waypoint x="820" y="258" />
+        <di:waypoint x="820" y="280" />
+        <di:waypoint x="750" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0gyvyyo_di" bpmnElement="Flow_0gyvyyo">
+        <di:waypoint x="300" y="150" />
+        <di:waypoint x="330" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1fodcvc_di" bpmnElement="Flow_1fodcvc">
+        <di:waypoint x="750" y="150" />
+        <di:waypoint x="795" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_06kumr8_di" bpmnElement="Flow_06kumr8">
+        <di:waypoint x="650" y="280" />
+        <di:waypoint x="510" y="280" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn2:definitions>
