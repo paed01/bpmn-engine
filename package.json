@@ -31,7 +31,7 @@
     "cov:html": "c8 -r html -r text mocha -p -R @bonniernews/hot-bev",
     "test:lcov": "c8 -r lcov mocha && npm run lint",
     "toc": "node scripts/generate-api-toc ./docs/API.md,./docs/Examples.md",
-    "test-md": "node --experimental-vm-modules --no-warnings scripts/test-markdown.js ./docs/API.md,./docs/Examples.md,./docs/Upgrade.md",
+    "test-md": "texample ./docs/API.md,./docs/Examples.md,./docs/Upgrade.md",
     "dist": "rollup -c",
     "prepack": "npm run dist"
   },
@@ -66,7 +66,8 @@
     "mocha-cakes-2": "^3.3.0",
     "nock": "^13.3.2",
     "prettier": "^3.2.5",
-    "rollup": "^4.10.0"
+    "rollup": "^4.10.0",
+    "texample": "^0.0.2"
   },
   "dependencies": {
     "bpmn-elements": "^14.0.1",
