@@ -1,5 +1,9 @@
 # Changelog
 
+# 21.1.0
+
+- minor bump [`bpmn-elements@14.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md), addresses issue #180
+
 # 21.0.0
 
 Stop execution if invalid time duration, cycle, or date is encountered.
