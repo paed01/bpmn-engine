@@ -1,7 +1,7 @@
 // Author : Saeed Tabrizi
 // Refactored by : Pål Edman
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import { Definitions as BpmnModdleDefinitions } from 'bpmn-moddle';
 import { extendFn, SerializableContext } from 'moddle-context-serializer';
 import {

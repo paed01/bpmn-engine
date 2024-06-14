@@ -16,7 +16,7 @@
     "url": "https://github.com/paed01"
   },
   "engines": {
-    "node": ">=14"
+    "node": ">=18"
   },
   "files": [
     "lib/",

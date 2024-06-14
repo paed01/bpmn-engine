@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import { Activity } from 'bpmn-elements';
 import { Engine } from '../../src/index.js';
 import { camundaBpmnModdle as camunda } from '../helpers/testHelpers.js';

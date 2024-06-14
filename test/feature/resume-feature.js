@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import * as testHelpers from '../helpers/testHelpers.js';
 import { Engine } from '../../src/index.js';
 

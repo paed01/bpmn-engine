@@ -21,5 +21,5 @@ export default {
       footer: 'module.exports = Object.assign(exports.default, exports);',
     },
   ],
-  external: ['module', 'url', 'vm', 'events', ...Object.keys(dependencies)],
+  external: ['node:module', 'node:url', 'node:vm', 'node:events', ...Object.keys(dependencies)],
 };

@@ -1,6 +1,6 @@
-import { createRequire } from 'module';
-import { EventEmitter } from 'events';
-import { fileURLToPath } from 'url';
+import { createRequire } from 'node:module';
+import { EventEmitter } from 'node:events';
+import { fileURLToPath } from 'node:url';
 
 import BpmnModdle from 'bpmn-moddle';
 import * as Elements from 'bpmn-elements';

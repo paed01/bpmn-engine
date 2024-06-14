@@ -1,5 +1,5 @@
+import { EventEmitter } from 'node:events';
 import { Engine } from '../src/index.js';
-import { EventEmitter } from 'events';
 import * as factory from './helpers/factory.js';
 
 describe('issues', () => {

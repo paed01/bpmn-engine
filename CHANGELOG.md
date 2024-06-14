@@ -5,10 +5,11 @@
 Performance tweaks.
 
 - major bump [`bpmn-elements@15`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
-- including major bump of [`smqp@9`](https://github.com/paed01/smqp/blob/default/CHANGELOG.md)
+- major bump of [`smqp@9`](https://github.com/paed01/smqp/blob/default/CHANGELOG.md)
 
 ## Breaking
 
+- drop support for node 14 and 16
 - JavaScripts.Script property scripts is now a Map
 
 # 21.1.0

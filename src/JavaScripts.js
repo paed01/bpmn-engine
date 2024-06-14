@@ -1,4 +1,4 @@
-import { Script } from 'vm';
+import { Script } from 'node:vm';
 
 export default function Scripts(disableDummy) {
   if (!(this instanceof Scripts)) return new Scripts(disableDummy);

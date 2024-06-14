@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import * as Bpmn from '../src/index.js';
 import * as factory from './helpers/factory.js';
 import * as testHelpers from './helpers/testHelpers.js';
