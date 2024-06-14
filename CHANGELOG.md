@@ -1,5 +1,16 @@
 # Changelog
 
+# 22.0.0
+
+Performance tweaks.
+
+- major bump [`bpmn-elements@15`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+- including major bump of [`smqp@9`](https://github.com/paed01/smqp/blob/default/CHANGELOG.md)
+
+## Breaking
+
+- JavaScripts.Script property scripts is now a Map
+
 # 21.1.0
 
 - minor bump [`bpmn-elements@14.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md), addresses issue #180

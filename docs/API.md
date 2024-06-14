@@ -1,6 +1,6 @@
 <!-- version -->
 
-# 21.0.0 API Reference
+# 22.0.0 API Reference
 
 <!-- versionstop -->
 
@@ -560,6 +560,7 @@ engine.resume({ listener }, () => {
   - `timer`: at least one activity is waiting for a timer to complete, usually only TimerEventDefinition's
   - `wait`: at least one activity is waiting for a signal of some sort, e.g. user tasks, intermediate catch events, etc
   - `idle`: idle, no activities are running
+- `isRunning`: are any definition running?
 - `getActivityById(activityId)`(#getactivitybyid-activityid): get activity/element by id, returns first found among definitions
 - `getState()`: get execution state
 - `getPostponed()`: get postponed activities, i.e. activities waiting for some interaction, signal, or timer

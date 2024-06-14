@@ -2,7 +2,7 @@ import { Script } from 'vm';
 
 export default function Scripts(disableDummy) {
   if (!(this instanceof Scripts)) return new Scripts(disableDummy);
-  this.scripts = {};
+  this.scripts = new Map();
   this.disableDummy = disableDummy;
 }
 
@@ -27,20 +27,20 @@ Scripts.prototype.register = function register({ id, type, behaviour, logger, en
   if (!language || !scriptBody) {
     if (this.disableDummy) return;
     const script = new DummyScript(language, filename, logger);
-    this.scripts[id] = script;
+    this.scripts.set(id, script);
     return script;
   }
 
-  if (!/^javascript$/i.test(language)) return;
+  if (!/^(javascript|js)$/i.test(language)) return;
 
   const script = new JavaScript(language, filename, scriptBody, environment);
-  this.scripts[id] = script;
+  this.scripts.set(id, script);
 
   return script;
 };
 
 Scripts.prototype.getScript = function getScript(language, { id }) {
-  return this.scripts[id];
+  return this.scripts.get(id);
 };
 
 function JavaScript(language, filename, scriptBody, environment) {

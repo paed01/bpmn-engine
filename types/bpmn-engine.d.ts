@@ -267,6 +267,10 @@ declare module 'bpmn-engine' {
      */
     readonly definitions: Definition[];
     get activityStatus(): ActivityStatus;
+    /**
+     * Are any definition running
+     */
+    get isRunning(): boolean;
 
     /**
      * Get activity/element by id. Loops the definitions and returns the first found activity with id.

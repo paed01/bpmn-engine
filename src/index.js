@@ -22,7 +22,6 @@ const kExecution = Symbol.for('execution');
 const kLoadedDefinitions = Symbol.for('loaded definitions');
 const kOnBrokerReturn = Symbol.for('onBrokerReturn');
 const kPendingSources = Symbol.for('pending sources');
-const kSources = Symbol.for('sources');
 const kState = Symbol.for('state');
 const kStopped = Symbol.for('stopped');
 const kTypeResolver = Symbol.for('type resolver');
@@ -58,7 +57,6 @@ export function Engine(options = {}) {
 
   this[kExecution] = null;
   this[kLoadedDefinitions] = null;
-  this[kSources] = [];
 
   const pendingSources = (this[kPendingSources] = []);
   if (opts.source) pendingSources.push(this._serializeSource(opts.source));
@@ -267,9 +265,7 @@ Engine.prototype._serializeSource = async function serializeSource(source) {
 };
 
 Engine.prototype._serializeModdleContext = function serializeModdleContext(moddleContext) {
-  const serialized = serializer(moddleContext, this[kTypeResolver]);
-  this[kSources].push(serialized);
-  return serialized;
+  return serializer(moddleContext, this[kTypeResolver]);
 };
 
 Engine.prototype._getModdleContext = function getModdleContext(source) {
@@ -285,7 +281,7 @@ export function Execution(engine, definitions, options, isRecovered = false) {
   this[kStopped] = isRecovered;
   this[kEnvironment] = engine.environment;
   this[kEngine] = engine;
-  this[kExecuting] = [];
+  this[kExecuting] = new Set();
   const onBrokerReturn = (this[kOnBrokerReturn] = this._onBrokerReturn.bind(this));
   engine.broker.on('return', onBrokerReturn);
 }
@@ -314,6 +310,14 @@ Object.defineProperties(Execution.prototype, {
   activityStatus: {
     get() {
       return this._getActivityStatus();
+    },
+  },
+  isRunning: {
+    get() {
+      for (const definition of this[kExecuting]) {
+        if (definition.isRunning) return true;
+      }
+      return false;
     },
   },
 });
@@ -346,7 +350,7 @@ Execution.prototype._resume = function resume(resumeOptions, callback) {
   this._debug('resume');
   this._addConsumerCallbacks(callback);
 
-  this[kExecuting].splice(0);
+  this[kExecuting].clear();
   this.definitions.forEach((definition) => definition.resume());
 
   return this;
@@ -408,9 +412,11 @@ Execution.prototype.stop = async function stop() {
   this[kStopped] = true;
   const timers = engine.environment.timers;
 
-  timers.executing.slice().forEach((ref) => timers.clearTimeout(ref));
+  timers.executing.forEach((ref) => timers.clearTimeout(ref));
 
-  this[kExecuting].splice(0).forEach((d) => d.stop());
+  const executing = new Set(this[kExecuting]);
+  this[kExecuting].clear();
+  for (const definition of executing) definition.stop();
 
   const result = await prom;
   this[kState] = 'stopped';
@@ -444,17 +450,13 @@ Execution.prototype._onChildMessage = function onChildMessage(routingKey, messag
   switch (routingKey) {
     case 'definition.resume':
     case 'definition.enter': {
-      const executing = this[kExecuting];
-      const idx = executing.indexOf(owner);
-      if (idx > -1) break;
-      executing.push(owner);
+      this[kExecuting].add(owner);
       break;
     }
     case 'definition.stop': {
       this._teardownDefinition(owner);
 
-      const executing = this[kExecuting];
-      if (executing.some((d) => d.isRunning)) break;
+      if (this.isRunning) break;
 
       newState = 'stopped';
       this[kStopped] = true;
@@ -463,7 +465,7 @@ Execution.prototype._onChildMessage = function onChildMessage(routingKey, messag
     case 'definition.leave':
       this._teardownDefinition(owner);
 
-      if (this[kExecuting].some((d) => d.isRunning)) break;
+      if (this.isRunning) break;
 
       newState = 'idle';
       break;
@@ -514,10 +516,7 @@ Execution.prototype._complete = function complete(eventType, content, messagePro
 };
 
 Execution.prototype._teardownDefinition = function teardownDefinition(definition) {
-  const executing = this[kExecuting];
-  const idx = executing.indexOf(definition);
-  if (idx > -1) executing.splice(idx, 1);
-
+  this[kExecuting].delete(definition);
   definition.broker.cancel('_engine_definition');
 };
 
@@ -563,11 +562,12 @@ Execution.prototype.getActivityById = function getActivityById(activityId) {
 };
 
 Execution.prototype.getPostponed = function getPostponed() {
-  const defs = this.stopped ? this.definitions : this[kExecuting];
-  return defs.reduce((result, definition) => {
+  const definitions = this.stopped ? this.definitions : this[kExecuting];
+  let result = [];
+  for (const definition of definitions) {
     result = result.concat(definition.getPostponed());
-    return result;
-  }, []);
+  }
+  return result;
 };
 
 Execution.prototype.signal = function signal(payload, { ignoreSameDefinition } = {}) {
@@ -599,13 +599,12 @@ Execution.prototype._debug = function debug(msg) {
 
 Execution.prototype._getActivityStatus = function getActivityStatus() {
   let status = 'idle';
-  const running = this[kExecuting];
-  if (!running.length) return status;
-  else if (running.length === 1) return running[0].activityStatus;
+  const executing = this[kExecuting];
+  if (!executing.size) return status;
 
-  for (const def of running) {
-    const bpStatus = def.activityStatus;
-    switch (def.activityStatus) {
+  for (const definition of executing) {
+    const bpStatus = definition.activityStatus;
+    switch (definition.activityStatus) {
       case 'executing':
         return bpStatus;
       case 'timer':
