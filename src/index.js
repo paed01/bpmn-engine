@@ -58,10 +58,10 @@ export function Engine(options = {}) {
   this[kExecution] = null;
   this[kLoadedDefinitions] = null;
 
-  const pendingSources = (this[kPendingSources] = []);
-  if (opts.source) pendingSources.push(this._serializeSource(opts.source));
-  if (opts.moddleContext) pendingSources.push(this._serializeModdleContext(opts.moddleContext));
-  if (opts.sourceContext) pendingSources.push(opts.sourceContext);
+  const pendingSources = (this[kPendingSources] = new Set());
+  if (opts.source) pendingSources.add(this._serializeSource(opts.source));
+  if (opts.moddleContext) pendingSources.add(this._serializeModdleContext(opts.moddleContext));
+  if (opts.sourceContext) pendingSources.add(opts.sourceContext);
 }
 
 function defaultTypeResolver(elementTypes) {
@@ -147,7 +147,8 @@ Engine.prototype.recover = function recover(savedState, recoverOptions) {
   if (!savedState.definitions) return this;
 
   const pendingSources = this[kPendingSources];
-  const preSources = pendingSources.splice(0);
+  const preSources = [...pendingSources];
+  pendingSources.clear();
 
   const typeResolver = this[kTypeResolver];
   const loadedDefinitions = (this[kLoadedDefinitions] = savedState.definitions.map((dState) => {
@@ -155,7 +156,7 @@ Engine.prototype.recover = function recover(savedState, recoverOptions) {
     if (dState.source) source = deserialize(JSON.parse(dState.source), typeResolver);
     else source = preSources.find((s) => s.id === dState.id);
 
-    pendingSources.push(source);
+    pendingSources.add(source);
 
     this.logger.debug(`<${name}> recover ${dState.type} <${dState.id}>`);
 
@@ -191,7 +192,7 @@ Engine.prototype.addSource = function addSource({ sourceContext: addContext } = 
   if (!addContext) return;
   const loadedDefinitions = this[kLoadedDefinitions];
   if (loadedDefinitions) loadedDefinitions.splice(0);
-  this[kPendingSources].push(addContext);
+  this[kPendingSources].add(addContext);
 };
 
 Engine.prototype.getDefinitions = function getDefinitions(executeOptions) {
