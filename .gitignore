@@ -34,3 +34,5 @@ config/_revision
 .eslintcache
 
 package-lock.json
+
+*.log
