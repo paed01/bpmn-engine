@@ -266,7 +266,7 @@ Engine.prototype._serializeSource = async function serializeSource(source) {
 };
 
 Engine.prototype._serializeModdleContext = function serializeModdleContext(moddleContext) {
-  return serializer(moddleContext, this[kTypeResolver]);
+  return serializer(moddleContext, this[kTypeResolver], this.options.extendFn);
 };
 
 Engine.prototype._getModdleContext = function getModdleContext(source) {

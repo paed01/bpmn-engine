@@ -1,5 +1,11 @@
 # Changelog
 
+# 22.0.1
+
+- for a number of years the `extendFn` option has been accepted, but never passed to moddle-context-serializer. Now it is
+- fix type declaration for options `extendFn` and `TypeResolver`
+- type declare that a generic listener instance with an emit function works just as well as a full blown new EventEmitter
+
 # 22.0.0
 
 Performance tweaks.

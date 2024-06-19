@@ -251,6 +251,45 @@ Feature('extending behaviour', () => {
     });
   });
 
+  Scenario('Extend function option', () => {
+    let engine, source;
+    Given('a bpmn source', () => {
+      source = `
+      <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <scriptTask id="task1">
+            <script>Placeholder</script>
+          </scriptTask>
+        </process>
+      </definitions>`;
+    });
+
+    const fnCalls = [];
+    And('an engine loaded with extendFn', () => {
+      engine = Engine({
+        name: 'Scripts feature',
+        source,
+        extendFn(...args) {
+          fnCalls.push(args);
+        },
+      });
+    });
+
+    let api;
+    When('source is executed', async () => {
+      api = await engine.execute();
+    });
+
+    Then('engine comletes run', () => {
+      expect(api.state).to.equal('idle');
+    });
+
+    And('extendFn has been called', () => {
+      expect(fnCalls.length).to.be.above(0);
+    });
+  });
+
   Scenario('End event with extension (issue #25)', () => {
     let source;
     Given('a source with extension elements on end event', () => {

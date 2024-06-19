@@ -3,7 +3,11 @@
 
 import { EventEmitter } from 'node:events';
 import { Definitions as BpmnModdleDefinitions } from 'bpmn-moddle';
-import { extendFn, SerializableContext } from 'moddle-context-serializer';
+import {
+  extendFn,
+  SerializableContext,
+  TypeResolver,
+} from 'moddle-context-serializer';
 import {
   ActivityStatus,
   ElementBroker,
@@ -68,8 +72,12 @@ declare module 'bpmn-engine' {
     [name: string]: any;
   }
 
+  export interface IListenerEmitter {
+    emit(eventName: string, ...args: any[]): void;
+  }
+
   export interface BpmnEngineExecuteOptions extends EnvironmentOptions {
-    listener?: EventEmitter;
+    listener?: EventEmitter | IListenerEmitter;
   }
 
   export interface BpmnEngineOptions extends BpmnEngineExecuteOptions {
@@ -90,14 +98,19 @@ declare module 'bpmn-engine' {
      */
     elements?: Record<string, any>;
     /**
+     * Passed to moddle-context-serializer as TypeResolver
+     */
+    typeResolver?: typeof TypeResolver;
+    /**
      * Passed to moddle-context-serializer as extendFn
      */
-    typeResolver?: extendFn;
+    extendFn?: extendFn;
     /**
      * optional bpmn-moddle options to be passed to bpmn-moddle
      */
     moddleOptions?: any;
     moddleContext?: BpmnModdleDefinitions;
+    [x: string]: any;
   }
 
   const enum BpmnEngineRunningStatus {
