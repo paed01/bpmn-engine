@@ -1,4 +1,4 @@
-import {JavaScripts} from '../../src/index.js';
+import { JavaScripts } from '../../src/index.js';
 
 describe('JavaScripts', () => {
   it('can be invoked without new', () => {

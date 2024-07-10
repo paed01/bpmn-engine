@@ -1,2 +1,2 @@
-lib/
+lib/**/*.cjs
 node_modules/

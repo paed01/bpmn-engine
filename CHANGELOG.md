@@ -1,5 +1,9 @@
 # Changelog
 
+# 22.0.2
+
+- patch [`bpmn-elements@15.0.3`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+
 # 22.0.1
 
 - for a number of years the `extendFn` option has been accepted, but never passed to moddle-context-serializer. Now it is
