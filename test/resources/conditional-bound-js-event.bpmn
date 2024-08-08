@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_02lbhot" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.25.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.21.0">
+  <bpmn:process id="Process_0" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>to-task</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="to-task" sourceRef="start" targetRef="task" />
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>to-end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="to-end" sourceRef="task" targetRef="end" />
+    <bpmn:manualTask id="task">
+      <bpmn:incoming>to-task</bpmn:incoming>
+      <bpmn:outgoing>to-end</bpmn:outgoing>
+    </bpmn:manualTask>
+    <bpmn:endEvent id="end-cond">
+      <bpmn:incoming>to-end-cond</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="to-end-cond" sourceRef="cond" targetRef="end-cond" />
+    <bpmn:boundaryEvent id="cond" attachedToRef="task">
+      <bpmn:outgoing>to-end-cond</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_15ubynw" camunda:variableName="input" camunda:variableEvents="create,update">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression" language="js">next(null, properties.type === 'signal');</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_0">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="start">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1wwzevd_di" bpmnElement="end">
+        <dc:Bounds x="432" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0otnllc_di" bpmnElement="task">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1yswv12_di" bpmnElement="end-cond">
+        <dc:Bounds x="392" y="222" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0o39n2z_di" bpmnElement="cond">
+        <dc:Bounds x="302" y="139" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0rwccay_di" bpmnElement="to-task">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_03s7da8_di" bpmnElement="to-end">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="432" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_093hikk_di" bpmnElement="to-end-cond">
+        <di:waypoint x="320" y="175" />
+        <di:waypoint x="320" y="240" />
+        <di:waypoint x="392" y="240" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
