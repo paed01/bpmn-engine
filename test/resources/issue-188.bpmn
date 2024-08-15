@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1"
+  xmlns:condition="url://ignore"
+  xmlns:voice="url://ignore"
+  xmlns:usrInput="url://ignore"
+  xmlns:usrOpt="url://ignore"
+  xmlns:dynamicOpt="url://ignore"
+  xmlns:serviceImpl="url://ignore"
+  xmlns:keyValueOpt="url://ignore"
+  xmlns:editableListOpt="url://ignore"
+  xmlns:loopTask="url://ignore"
+  xmlns:sayData="url://ignore"
+  targetNamespace="http://bpmn.io/schema/bpmn">
+  <process id="mainProcess" isExecutable="true">
+    <startEvent id="start" />
+    <sequenceFlow id="Flow_1as36by" sourceRef="start" targetRef="Activity_1ltrgey"></sequenceFlow>
+    <subProcess id="Activity_1ltrgey" name="Enter Payment Amount">
+      <incoming>Flow_1as36by</incoming>
+      <outgoing>Flow_1kl6jed</outgoing>
+      <exclusiveGateway id="Gateway_02slper" name="EPA1 aa"
+        condition:condition="[{&#34;variable&#34;:&#34;amount&#34;,&#34;operator&#34;:&#34;&#62;&#34;,&#34;value&#34;:&#34;0&#34;,&#34;logicalOperators&#34;:[],&#34;elementId&#34;:&#34;Event_0liidar&#34;,&#34;connectionId&#34;:&#34;Flow_0rapvtc&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;},{&#34;variable&#34;:&#34;amount&#34;,&#34;value&#34;:&#34;0&#34;,&#34;operator&#34;:&#34;&#60;=&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;,&#34;elementId&#34;:&#34;Gateway_0nn1jgj&#34;,&#34;connectionId&#34;:&#34;Flow_1kjlwh1&#34;}]">
+        <incoming>Flow_0ldjnxq</incoming>
+        <outgoing>Flow_0rapvtc</outgoing>
+        <outgoing>Flow_1kjlwh1</outgoing>
+      </exclusiveGateway>
+      <intermediateThrowEvent id="Event_0liidar" name="EPA_Intermediate_1">
+        <incoming>Flow_0rapvtc</incoming>
+      </intermediateThrowEvent>
+      <exclusiveGateway id="Gateway_0nn1jgj" name="EPA2"
+        condition:condition="[{&#34;variable&#34;:&#34;clientCfg.options[\&#34;supported\&#34;]&#34;,&#34;operator&#34;:&#34;===&#34;,&#34;value&#34;:&#34;true&#34;,&#34;logicalOperators&#34;:[],&#34;elementId&#34;:&#34;Gateway_1vbietr&#34;,&#34;connectionId&#34;:&#34;Flow_13e35xm&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;STRING&#34;},{&#34;variable&#34;:&#34;clientCfg.options[\&#34;supported\&#34;]&#34;,&#34;value&#34;:&#34;true&#34;,&#34;operator&#34;:&#34;!==&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;STRING&#34;,&#34;elementId&#34;:&#34;Activity_112wghq&#34;,&#34;connectionId&#34;:&#34;Flow_143n4sj&#34;}]">
+        <incoming>Flow_1kjlwh1</incoming>
+        <outgoing>Flow_13e35xm</outgoing>
+        <outgoing>Flow_143n4sj</outgoing>
+      </exclusiveGateway>
+      <sequenceFlow id="Flow_0rapvtc" sourceRef="Gateway_02slper" targetRef="Event_0liidar">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">console.log(this.environment.variables);
+          next(null,this.environment.variables.amount
+          &gt; 0);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_1kjlwh1" sourceRef="Gateway_02slper" targetRef="Gateway_0nn1jgj">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">console.log(this.environment);
+          next(null,this.environment.variables.amount
+          &lt;= 0);</conditionExpression>
+      </sequenceFlow>
+      <userTask id="Activity_112wghq" name="Enter Amount" voice:taskType="promptUserInput"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;pls-ent-pay-amount&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/pls-ent-pay-amount&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}"
+        usrInput:isUserInput="true" usrInput:maxDigits="" usrInput:readbackInputDataType="amount"
+        usrInput:inputVar="paymentAmount" usrInput:userInputRetryCount="3"
+        usrInput:userInputTimeout="5000" usrInput:userInputPrecision="2"
+        usrInput:userInputReadBack="true"
+        usrInput:userInputInvalidInputVoiceFile="{&#34;en&#34;:{&#34;filePath&#34;:&#34;sorry-we-did-not-get-valid-inp&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/sorry-we-did-not-get-valid-inp&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;}}"
+        usrInput:requirePatternsUserInput="false" usrInput:userInputPattern="">
+        <incoming>Flow_1eaf1ta</incoming>
+        <incoming>Flow_1h64jcn</incoming>
+        <incoming>Flow_1xz1dsh</incoming>
+        <incoming>Flow_143n4sj</incoming>
+        <incoming>Flow_0vjuewl</incoming>
+        <outgoing>Flow_00k8zxc</outgoing>
+      </userTask>
+      <exclusiveGateway id="Gateway_1vbietr" name="EPA3 default amt to lia. enabled?"
+        condition:condition="[{&#34;variable&#34;:&#34;wizardCfg.ivrDefaultAmountToLiability&#34;,&#34;operator&#34;:&#34;===&#34;,&#34;value&#34;:&#34;true&#34;,&#34;logicalOperators&#34;:[],&#34;elementId&#34;:&#34;Gateway_1gtkasl&#34;,&#34;connectionId&#34;:&#34;Flow_0fy848r&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;BOOLEAN&#34;},{&#34;variable&#34;:&#34;wizardCfg.ivrDefaultAmountToLiability&#34;,&#34;value&#34;:&#34;true&#34;,&#34;operator&#34;:&#34;!==&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;BOOLEAN&#34;,&#34;elementId&#34;:&#34;Gateway_1csie1b&#34;,&#34;connectionId&#34;:&#34;Flow_1aiolkd&#34;}]">
+        <incoming>Flow_13e35xm</incoming>
+        <outgoing>Flow_0fy848r</outgoing>
+        <outgoing>Flow_1aiolkd</outgoing>
+      </exclusiveGateway>
+      <exclusiveGateway id="Gateway_1csie1b" name="EPA4 get liability amount?"
+        condition:condition="[{&#34;variable&#34;:&#34;wizardCfg.ivrLiabilityAmountSelect&#34;,&#34;operator&#34;:&#34;===&#34;,&#34;value&#34;:&#34;true&#34;,&#34;logicalOperators&#34;:[],&#34;elementId&#34;:&#34;Activity_07k2677&#34;,&#34;connectionId&#34;:&#34;Flow_1ti0gc7&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;BOOLEAN&#34;},{&#34;variable&#34;:&#34;wizardCfg.ivrLiabilityAmountSelect&#34;,&#34;value&#34;:&#34;true&#34;,&#34;operator&#34;:&#34;!==&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;BOOLEAN&#34;,&#34;elementId&#34;:&#34;Activity_112wghq&#34;,&#34;connectionId&#34;:&#34;Flow_1xz1dsh&#34;}]">
+        <incoming>Flow_1aiolkd</incoming>
+        <outgoing>Flow_1ti0gc7</outgoing>
+        <outgoing>Flow_1xz1dsh</outgoing>
+      </exclusiveGateway>
+      <exclusiveGateway id="Gateway_1gtkasl" name="EPA7 amount&#60;=0?"
+        condition:condition="[{&#34;variable&#34;:&#34;accountInfo[&#39;amount-due&#39;]&#34;,&#34;operator&#34;:&#34;&#60;=&#34;,&#34;value&#34;:&#34;0&#34;,&#34;logicalOperators&#34;:[],&#34;elementId&#34;:&#34;Activity_0vh4mlv&#34;,&#34;connectionId&#34;:&#34;Flow_13tghag&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;},{&#34;variable&#34;:&#34;accountInfo[&#39;amount-due&#39;]&#34;,&#34;value&#34;:&#34;0&#34;,&#34;operator&#34;:&#34;&#62;&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;,&#34;elementId&#34;:&#34;Activity_175w7n6&#34;,&#34;connectionId&#34;:&#34;Flow_0q34w2n&#34;}]">
+        <incoming>Flow_0fy848r</incoming>
+        <outgoing>Flow_13tghag</outgoing>
+        <outgoing>Flow_0q34w2n</outgoing>
+      </exclusiveGateway>
+      <task id="Activity_0vh4mlv" name="No Amount Due Message" voice:taskType="playVoiceFile"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;utility/no-amount-due&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;utility/es/no-amount-due&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}">
+        <incoming>Flow_13tghag</incoming>
+        <outgoing>Flow_1kwb077</outgoing>
+      </task>
+      <serviceTask id="Activity_175w7n6" name="Set Amount" voice:taskType="service"
+        implementation="${environment.services.setPaymentHeaderAmt}"
+        serviceImpl:isServiceImpl="true"
+        serviceImpl:responseVariables="amount">
+        <incoming>Flow_17ay9a7</incoming>
+        <incoming>Flow_0q34w2n</incoming>
+        <incoming>Flow_1f8c5fj</incoming>
+        <incoming>Flow_1tjkxom</incoming>
+        <outgoing>Flow_0ghfjza</outgoing>
+      </serviceTask>
+      <sequenceFlow id="Flow_13tghag" sourceRef="Gateway_1gtkasl" targetRef="Activity_0vh4mlv">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.accountInfo['amount-due']
+          &lt;= 0);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_0q34w2n" sourceRef="Gateway_1gtkasl" targetRef="Activity_175w7n6">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.accountInfo['amount-due']
+          &gt; 0);</conditionExpression>
+      </sequenceFlow>
+      <serviceTask id="Activity_07k2677" name="Build Amount Prompts" voice:taskType="service"
+        implementation="${environment.services.buildAmountPrompts}" serviceImpl:isServiceImpl="true"
+        serviceImpl:responseVariables="amountPrompts">
+        <incoming>Flow_1ti0gc7</incoming>
+        <outgoing>Flow_0dbnlgo</outgoing>
+      </serviceTask>
+      <task id="Activity_12gnuoz" name="Hang Up" voice:taskType="playVoiceFile"
+        voice:taskName="HangUp"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;goodbye&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/goodbye&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}">
+        <incoming>Flow_1kwb077</incoming>
+        <incoming>Flow_1orfjzy</incoming>
+        <incoming>Flow_0u3341g</incoming>
+      </task>
+      <sequenceFlow id="Flow_1kwb077" sourceRef="Activity_0vh4mlv" targetRef="Activity_12gnuoz" />
+      <exclusiveGateway id="Gateway_18zmozj" name="EPA5"
+        condition:condition="[{&#34;variable&#34;:&#34;amountPrompts.length&#34;,&#34;operator&#34;:&#34;&#62;&#34;,&#34;value&#34;:&#34;0&#34;,&#34;logicalOperators&#34;:[],&#34;elementId&#34;:&#34;Activity_1bycs7c&#34;,&#34;connectionId&#34;:&#34;Flow_1cr3jr9&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;},{&#34;variable&#34;:&#34;amountPrompts.length&#34;,&#34;value&#34;:&#34;0&#34;,&#34;operator&#34;:&#34;===&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;,&#34;elementId&#34;:&#34;Activity_112wghq&#34;,&#34;connectionId&#34;:&#34;Flow_1eaf1ta&#34;}]">
+        <incoming>Flow_0dbnlgo</incoming>
+        <outgoing>Flow_1cr3jr9</outgoing>
+        <outgoing>Flow_1eaf1ta</outgoing>
+      </exclusiveGateway>
+      <sequenceFlow id="Flow_0dbnlgo" sourceRef="Activity_07k2677" targetRef="Gateway_18zmozj" />
+      <userTask id="Activity_1bycs7c" name="select Amount type" voice:taskType="dynamicUserOption"
+        usrOpt:isOptionInput="false" dynamicOpt:isDynamicOption="true"
+        dynamicOpt:dynamicOptionVar="amountPromptIndex" dynamicOpt:dynamicOptionRetryCount="3"
+        dynamicOpt:optionCollection="amountPrompts" keyValueOpt:isKeyValueOption="false"
+        editableListOpt:isEditableListOption="false">
+        <incoming>Flow_1cr3jr9</incoming>
+        <outgoing>Flow_16912u1</outgoing>
+      </userTask>
+      <sequenceFlow id="Flow_1cr3jr9" sourceRef="Gateway_18zmozj" targetRef="Activity_1bycs7c">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.amountPrompts.length
+          &gt; 0);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_1eaf1ta" sourceRef="Gateway_18zmozj" targetRef="Activity_112wghq">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.amountPrompts.length
+          === 0);</conditionExpression>
+      </sequenceFlow>
+      <serviceTask id="Activity_0jxf1k0" name="Process Amount Type" voice:taskType="service"
+        implementation="${environment.services.processAmountType}" serviceImpl:isServiceImpl="true"
+        serviceImpl:responseVariables="amountType">
+        <incoming>Flow_16912u1</incoming>
+        <outgoing>Flow_17ay9a7</outgoing>
+      </serviceTask>
+      <sequenceFlow id="Flow_16912u1" sourceRef="Activity_1bycs7c" targetRef="Activity_0jxf1k0" />
+      <exclusiveGateway id="Gateway_1349tbv" name="EPA6"
+        condition:condition="[{&#34;variable&#34;:&#34;amountType&#34;,&#34;operator&#34;:&#34;===&#34;,&#34;value&#34;:&#34;select-alt-amount&#34;,&#34;logicalOperators&#34;:[],&#34;elementId&#34;:&#34;Activity_112wghq&#34;,&#34;connectionId&#34;:&#34;Flow_1h64jcn&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;STRING&#34;},{&#34;variable&#34;:&#34;amountType&#34;,&#34;value&#34;:&#34;amountType&#34;,&#34;operator&#34;:&#34;!==&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;STRING&#34;,&#34;elementId&#34;:&#34;Activity_0mkwdlo&#34;,&#34;connectionId&#34;:&#34;Flow_18x0mla&#34;}]">
+        <incoming>Flow_0ghfjza</incoming>
+        <outgoing>Flow_1h64jcn</outgoing>
+        <outgoing>Flow_18x0mla</outgoing>
+      </exclusiveGateway>
+      <sequenceFlow id="Flow_0ghfjza" sourceRef="Activity_175w7n6" targetRef="Gateway_1349tbv" />
+      <serviceTask id="Activity_0mkwdlo" name="init convenience fee" voice:taskType="service"
+        implementation="${environment.services.initConvenienceFee}" serviceImpl:isServiceImpl="true"
+        serviceImpl:responseVariables="payment.paymentHeader.convenienceFee">
+        <incoming>Flow_18x0mla</incoming>
+        <outgoing>Flow_0oevb0t</outgoing>
+      </serviceTask>
+      <sequenceFlow id="Flow_1h64jcn" sourceRef="Gateway_1349tbv" targetRef="Activity_112wghq">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.amountType
+          === "select-alt-amount");</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_18x0mla" sourceRef="Gateway_1349tbv" targetRef="Activity_0mkwdlo">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.amountType
+          !== "amountType");</conditionExpression>
+      </sequenceFlow>
+      <exclusiveGateway id="Gateway_0ojeg4w" name="EPA8 pmnt amt &#60; min amt?"
+        condition:condition="[{&#34;variable&#34;:&#34;accountInfo[&#39;min-amount&#39;]&#34;,&#34;value&#34;:&#34;&#34;,&#34;operator&#34;:&#34;IS_DEFINED&#34;,&#34;logicalOperators&#34;:[{&#34;variable&#34;:&#34;accountInfo[&#39;min-amount&#39;]&#34;,&#34;operator&#34;:&#34;&#62;&#34;,&#34;value&#34;:&#34;amount&#34;,&#34;logicalOperator&#34;:&#34;&#38;&#38;&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;VARIABLE&#34;}],&#34;elementId&#34;:&#34;Activity_1l9nngb&#34;,&#34;connectionId&#34;:&#34;Flow_1hnlu7c&#34;},{&#34;variable&#34;:&#34;accountInfo[&#39;min-amount&#39;]&#34;,&#34;value&#34;:&#34;&#34;,&#34;operator&#34;:&#34;IS_DEFINED&#34;,&#34;logicalOperators&#34;:[{&#34;variable&#34;:&#34;accountInfo[&#39;min-amount&#39;]&#34;,&#34;operator&#34;:&#34;&#60;=&#34;,&#34;value&#34;:&#34;amount&#34;,&#34;logicalOperator&#34;:&#34;&#38;&#38;&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;VARIABLE&#34;}],&#34;elementId&#34;:&#34;Gateway_197upzd&#34;,&#34;connectionId&#34;:&#34;Flow_1aiob8l&#34;},{&#34;variable&#34;:&#34;accountInfo[&#39;min-amount&#39;]&#34;,&#34;value&#34;:&#34;&#34;,&#34;operator&#34;:&#34;NOT_DEFINED&#34;,&#34;elementId&#34;:&#34;Gateway_197upzd&#34;,&#34;connectionId&#34;:&#34;Flow_0t7t8qf&#34;}]">
+        <incoming>Flow_0oevb0t</incoming>
+        <outgoing>Flow_1hnlu7c</outgoing>
+        <outgoing>Flow_1aiob8l</outgoing>
+        <outgoing>Flow_0t7t8qf</outgoing>
+      </exclusiveGateway>
+      <sequenceFlow id="Flow_0oevb0t" sourceRef="Activity_0mkwdlo" targetRef="Gateway_0ojeg4w" />
+      <exclusiveGateway id="Gateway_197upzd" name="EPA9 pmnt amt &#62; max amt?"
+        condition:condition="[{&#34;variable&#34;:&#34;accountInfo[&#39;max-amount&#39;]&#34;,&#34;value&#34;:&#34;&#34;,&#34;operator&#34;:&#34;IS_DEFINED&#34;,&#34;logicalOperators&#34;:[{&#34;variable&#34;:&#34;accountInfo[&#39;max-amount&#39;]&#34;,&#34;operator&#34;:&#34;&#60;&#34;,&#34;value&#34;:&#34;amount&#34;,&#34;logicalOperator&#34;:&#34;&#38;&#38;&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;VARIABLE&#34;}],&#34;elementId&#34;:&#34;Activity_15sjq2u&#34;,&#34;connectionId&#34;:&#34;Flow_0eg2sox&#34;},{&#34;variable&#34;:&#34;accountInfo[&#39;max-amount&#39;]&#34;,&#34;value&#34;:&#34;&#34;,&#34;operator&#34;:&#34;IS_DEFINED&#34;,&#34;logicalOperators&#34;:[{&#34;variable&#34;:&#34;accountInfo[&#39;max-amount&#39;]&#34;,&#34;operator&#34;:&#34;&#62;=&#34;,&#34;value&#34;:&#34;amount&#34;,&#34;logicalOperator&#34;:&#34;&#38;&#38;&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;VARIABLE&#34;}],&#34;elementId&#34;:&#34;Gateway_0y1zsw5&#34;,&#34;connectionId&#34;:&#34;Flow_1ck1kna&#34;},{&#34;variable&#34;:&#34;accountInfo[&#39;max-amount&#39;]&#34;,&#34;value&#34;:&#34;&#34;,&#34;operator&#34;:&#34;NOT_DEFINED&#34;,&#34;elementId&#34;:&#34;Gateway_0y1zsw5&#34;,&#34;connectionId&#34;:&#34;Flow_03qt04c&#34;}]">
+        <incoming>Flow_1aiob8l</incoming>
+        <incoming>Flow_0t7t8qf</incoming>
+        <outgoing>Flow_0eg2sox</outgoing>
+        <outgoing>Flow_1ck1kna</outgoing>
+        <outgoing>Flow_03qt04c</outgoing>
+      </exclusiveGateway>
+      <task id="Activity_1l9nngb" name="Min amount error message" voice:taskType="playVoiceFile"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;sorry-we-did-not-get-valid-inp&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/sorry-we-did-not-get-valid-inp&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}">
+        <incoming>Flow_1hnlu7c</incoming>
+        <outgoing>Flow_1orfjzy</outgoing>
+      </task>
+      <task id="Activity_15sjq2u" name="Max amount error message" voice:taskType="playVoiceFile"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;sorry-we-did-not-get-valid-inp&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/sorry-we-did-not-get-valid-inp&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}">
+        <incoming>Flow_0eg2sox</incoming>
+        <outgoing>Flow_0u3341g</outgoing>
+      </task>
+      <exclusiveGateway id="Gateway_0y1zsw5" name="EPA10 is ivr total amt playback enabled?"
+        condition:condition="[{&#34;variable&#34;:&#34;wizardCfg.ivrTotalAmountPlayback&#34;,&#34;operator&#34;:&#34;===&#34;,&#34;value&#34;:&#34;true&#34;,&#34;logicalOperators&#34;:[],&#34;elementId&#34;:&#34;Gateway_056e9dy&#34;,&#34;connectionId&#34;:&#34;Flow_0os2ksh&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;BOOLEAN&#34;},{&#34;variable&#34;:&#34;wizardCfg.ivrTotalAmountPlayback&#34;,&#34;value&#34;:&#34;true&#34;,&#34;operator&#34;:&#34;!==&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;BOOLEAN&#34;,&#34;elementId&#34;:&#34;Activity_0erfzrw&#34;,&#34;connectionId&#34;:&#34;Flow_04cvbjv&#34;}]">
+        <incoming>Flow_1ck1kna</incoming>
+        <incoming>Flow_03qt04c</incoming>
+        <outgoing>Flow_0os2ksh</outgoing>
+        <outgoing>Flow_04cvbjv</outgoing>
+      </exclusiveGateway>
+      <exclusiveGateway id="Gateway_056e9dy" name="EPA11 conv fee and addition pymt amt !=0 ?"
+        condition:condition="[{&#34;variable&#34;:&#34;additionalPaymentAmount&#34;,&#34;value&#34;:&#34;0&#34;,&#34;operator&#34;:&#34;!==&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;,&#34;logicalOperators&#34;:[{&#34;variable&#34;:&#34;payment.paymentHeader.convenienceFee&#34;,&#34;operator&#34;:&#34;!==&#34;,&#34;value&#34;:&#34;0&#34;,&#34;logicalOperator&#34;:&#34;&#38;&#38;&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;}],&#34;elementId&#34;:&#34;Activity_0oqc9ap&#34;,&#34;connectionId&#34;:&#34;Flow_0i1mrtu&#34;},{&#34;variable&#34;:&#34;payment.paymentHeader.convenienceFee&#34;,&#34;value&#34;:&#34;0&#34;,&#34;operator&#34;:&#34;===&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;,&#34;logicalOperators&#34;:[{&#34;variable&#34;:&#34;additionalPaymentAmount&#34;,&#34;operator&#34;:&#34;===&#34;,&#34;value&#34;:&#34;0&#34;,&#34;logicalOperator&#34;:&#34;||&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;}],&#34;elementId&#34;:&#34;Gateway_1gn7hra&#34;,&#34;connectionId&#34;:&#34;Flow_10z2n0t&#34;}]">
+        <incoming>Flow_0os2ksh</incoming>
+        <outgoing>Flow_0i1mrtu</outgoing>
+        <outgoing>Flow_10z2n0t</outgoing>
+      </exclusiveGateway>
+      <task id="Activity_0oqc9ap" name="amount With AddAmt msg" voice:taskType="playVoiceFile"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;your-total-amount-with-add-amount&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/es-aws/your-total-amount-with-add-amount&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}">
+        <incoming>Flow_0i1mrtu</incoming>
+        <outgoing>Flow_1g0mhh3</outgoing>
+      </task>
+      <task id="Activity_08hqpg0" name="addition payment amount prompt" voice:taskType="sayData"
+        loopTask:isLoop="false" sayData:isSayData="true" sayData:data="additionalPaymentAmount"
+        sayData:dataType="amount">
+        <incoming>Flow_1g0mhh3</incoming>
+        <outgoing>Flow_1noj587</outgoing>
+      </task>
+      <sequenceFlow id="Flow_1g0mhh3" sourceRef="Activity_0oqc9ap" targetRef="Activity_08hqpg0" />
+      <userTask id="Activity_0erfzrw" name="confirm Payment from user"
+        voice:taskType="promptUserOption"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;pls-press-1-to-confirm-payment&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/pls-press-1-to-confirm-payment&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;}}"
+        usrOpt:isOptionInput="true" usrOpt:allowInputDuringPrompt="true"
+        usrOpt:skipSingleOptionConfigured="false" usrOpt:options="1"
+        usrOpt:optionVar="paymentConfirm"
+        usrOpt:optionRetryCount="3"
+        usrOpt:optionValuesMap="{&#34;1&#34;:&#34;paymentConfirmed&#34;}"
+        usrOpt:voiceFileUploadMethod="filePath">
+        <incoming>Flow_1iqfou3</incoming>
+        <incoming>Flow_04cvbjv</incoming>
+        <outgoing>Flow_1o3xwcr</outgoing>
+      </userTask>
+      <exclusiveGateway id="Gateway_1gn7hra" name="EPA12 conv fee !=0?"
+        condition:condition="[{&#34;variable&#34;:&#34;payment.paymentHeader.convenienceFee&#34;,&#34;operator&#34;:&#34;!==&#34;,&#34;value&#34;:&#34;0&#34;,&#34;logicalOperators&#34;:[],&#34;elementId&#34;:&#34;Activity_1vv87v3&#34;,&#34;connectionId&#34;:&#34;Flow_06pbu34&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;},{&#34;variable&#34;:&#34;payment.paymentHeader.convenienceFee&#34;,&#34;value&#34;:&#34;0&#34;,&#34;operator&#34;:&#34;===&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;,&#34;elementId&#34;:&#34;Gateway_1smwqp3&#34;,&#34;connectionId&#34;:&#34;Flow_1xx2fay&#34;}]">
+        <incoming>Flow_10z2n0t</incoming>
+        <outgoing>Flow_06pbu34</outgoing>
+        <outgoing>Flow_1xx2fay</outgoing>
+      </exclusiveGateway>
+      <exclusiveGateway id="Gateway_1smwqp3" name="EPA13 additionalPaymentAmt!=0 ?"
+        condition:condition="[{&#34;variable&#34;:&#34;additionalPaymentAmount&#34;,&#34;operator&#34;:&#34;!==&#34;,&#34;value&#34;:&#34;0&#34;,&#34;logicalOperators&#34;:[],&#34;elementId&#34;:&#34;Activity_0v59ijs&#34;,&#34;connectionId&#34;:&#34;Flow_01jchvh&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;},{&#34;variable&#34;:&#34;additionalPaymentAmount&#34;,&#34;value&#34;:&#34;0&#34;,&#34;operator&#34;:&#34;===&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;,&#34;elementId&#34;:&#34;Activity_1o4r1ls&#34;,&#34;connectionId&#34;:&#34;Flow_0h6o5o1&#34;}]">
+        <incoming>Flow_1xx2fay</incoming>
+        <outgoing>Flow_01jchvh</outgoing>
+        <outgoing>Flow_0h6o5o1</outgoing>
+      </exclusiveGateway>
+      <task id="Activity_1vv87v3" name="amt with conv fee" voice:taskType="playVoiceFile"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;your-total-amount&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/your-total-amount&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}">
+        <incoming>Flow_06pbu34</incoming>
+        <outgoing>Flow_1l5wtmt</outgoing>
+      </task>
+      <sequenceFlow id="Flow_06pbu34" sourceRef="Gateway_1gn7hra" targetRef="Activity_1vv87v3">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.payment.paymentHeader.convenienceFee
+          !== 0);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_1xx2fay" sourceRef="Gateway_1gn7hra" targetRef="Gateway_1smwqp3">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.payment.paymentHeader.convenienceFee
+          === 0);</conditionExpression>
+      </sequenceFlow>
+      <task id="Activity_0v59ijs" name="amount With AddAmt" voice:taskType="playVoiceFile"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;your-total-amount-with-add-amount&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/es-aws/your-total-amount-with-add-amount&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}">
+        <incoming>Flow_01jchvh</incoming>
+        <outgoing>Flow_1w3vkir</outgoing>
+      </task>
+      <task id="Activity_1o4r1ls" name="amount No Cnv. Fee msg" voice:taskType="playVoiceFile"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;your-total-amount-no-fee&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/your-total-amount-no-fee&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}">
+        <incoming>Flow_0h6o5o1</incoming>
+        <outgoing>Flow_112c7au</outgoing>
+      </task>
+      <sequenceFlow id="Flow_01jchvh" sourceRef="Gateway_1smwqp3" targetRef="Activity_0v59ijs">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.additionalPaymentAmount
+          !== 0);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_0h6o5o1" sourceRef="Gateway_1smwqp3" targetRef="Activity_1o4r1ls">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.additionalPaymentAmount
+          === 0);</conditionExpression>
+      </sequenceFlow>
+      <task id="Activity_0xaw68r" name="and conv Fee Msg" voice:taskType="playVoiceFile"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;and-service-fee&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/es-aws/and-service-fee&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}">
+        <incoming>Flow_1noj587</incoming>
+        <outgoing>Flow_0gamebd</outgoing>
+      </task>
+      <sequenceFlow id="Flow_1noj587" sourceRef="Activity_08hqpg0" targetRef="Activity_0xaw68r" />
+      <task id="Activity_0oyl7ax" name="Conv. FeePrompt" voice:taskType="sayData"
+        loopTask:isLoop="false" sayData:isSayData="true"
+        sayData:data="payment.paymentHeader.convenienceFee" sayData:dataType="amount">
+        <incoming>Flow_0gamebd</incoming>
+        <outgoing>Flow_16qzp7c</outgoing>
+      </task>
+      <sequenceFlow id="Flow_0gamebd" sourceRef="Activity_0xaw68r" targetRef="Activity_0oyl7ax" />
+      <task id="Activity_1sv122o" name="Conv FeePrompt" voice:taskType="sayData"
+        loopTask:isLoop="false"
+        sayData:isSayData="true" sayData:data="payment.paymentHeader.convenienceFee"
+        sayData:dataType="amount">
+        <incoming>Flow_1l5wtmt</incoming>
+        <outgoing>Flow_0lcnwax</outgoing>
+      </task>
+      <sequenceFlow id="Flow_1l5wtmt" sourceRef="Activity_1vv87v3" targetRef="Activity_1sv122o" />
+      <task id="Activity_1c25wkj" name="will be" voice:taskType="playVoiceFile"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;will-be&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/will-be&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}">
+        <incoming>Flow_0lcnwax</incoming>
+        <incoming>Flow_16qzp7c</incoming>
+        <incoming>Flow_112c7au</incoming>
+        <incoming>Flow_0rpa496</incoming>
+        <outgoing>Flow_1ct112e</outgoing>
+      </task>
+      <sequenceFlow id="Flow_0lcnwax" sourceRef="Activity_1sv122o" targetRef="Activity_1c25wkj" />
+      <task id="Activity_000eslm" name="Total Amount" voice:taskType="sayData"
+        loopTask:isLoop="false"
+        sayData:isSayData="true" sayData:data="totalAmount" sayData:dataType="amount">
+        <incoming>Flow_1ct112e</incoming>
+        <outgoing>Flow_1iqfou3</outgoing>
+      </task>
+      <sequenceFlow id="Flow_1ct112e" sourceRef="Activity_1c25wkj" targetRef="Activity_000eslm" />
+      <sequenceFlow id="Flow_16qzp7c" sourceRef="Activity_0oyl7ax" targetRef="Activity_1c25wkj" />
+      <task id="Activity_00ctwoc" name="Add payment amout Prompt" voice:taskType="sayData"
+        loopTask:isLoop="false" sayData:isSayData="true" sayData:data="additionalPaymentAmount"
+        sayData:dataType="amount">
+        <incoming>Flow_1w3vkir</incoming>
+        <outgoing>Flow_0rpa496</outgoing>
+      </task>
+      <sequenceFlow id="Flow_1w3vkir" sourceRef="Activity_0v59ijs" targetRef="Activity_00ctwoc" />
+      <sequenceFlow id="Flow_0rpa496" sourceRef="Activity_00ctwoc" targetRef="Activity_1c25wkj" />
+      <sequenceFlow id="Flow_112c7au" sourceRef="Activity_1o4r1ls" targetRef="Activity_1c25wkj" />
+      <sequenceFlow id="Flow_1iqfou3" sourceRef="Activity_000eslm" targetRef="Activity_0erfzrw" />
+      <intermediateThrowEvent id="Event_1h21kcq" name="EPA_Intermediate_2">
+        <incoming>Flow_1o3xwcr</incoming>
+      </intermediateThrowEvent>
+      <sequenceFlow id="Flow_1o3xwcr" sourceRef="Activity_0erfzrw" targetRef="Event_1h21kcq" />
+      <sequenceFlow id="Flow_17ay9a7" sourceRef="Activity_0jxf1k0" targetRef="Activity_175w7n6" />
+      <sequenceFlow id="Flow_0ldjnxq" sourceRef="Event_1o1qh6c" targetRef="Gateway_02slper" />
+      <startEvent id="Event_1o1qh6c" name="EPA_Start_1">
+        <outgoing>Flow_0ldjnxq</outgoing>
+      </startEvent>
+      <sequenceFlow id="Flow_1hnlu7c" sourceRef="Gateway_0ojeg4w" targetRef="Activity_1l9nngb">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.minAmount
+          &amp;&amp; this.environment.variables.minAmount &gt; this.environment.variables.amount);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_1aiob8l" sourceRef="Gateway_0ojeg4w" targetRef="Gateway_197upzd">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.minAmount
+          &amp;&amp; this.environment.variables.minAmount &lt;= this.environment.variables.amount);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_0t7t8qf" sourceRef="Gateway_0ojeg4w" targetRef="Gateway_197upzd">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">
+          next(null,!this.environment.variables.minAmount);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_0eg2sox" sourceRef="Gateway_197upzd" targetRef="Activity_15sjq2u">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.maxAmount
+          &amp;&amp; this.environment.variables.maxAmount &lt; this.environment.variables.amount);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_1ck1kna" sourceRef="Gateway_197upzd" targetRef="Gateway_0y1zsw5">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.maxAmount
+          &amp;&amp; this.environment.variables.maxAmount &gt;= this.environment.variables.amount);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_03qt04c" sourceRef="Gateway_197upzd" targetRef="Gateway_0y1zsw5">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">
+          next(null,!this.environment.variables.maxAmount);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_1orfjzy" sourceRef="Activity_1l9nngb" targetRef="Activity_12gnuoz" />
+      <sequenceFlow id="Flow_0u3341g" sourceRef="Activity_15sjq2u" targetRef="Activity_12gnuoz" />
+      <sequenceFlow id="Flow_0os2ksh" sourceRef="Gateway_0y1zsw5" targetRef="Gateway_056e9dy">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.wizardCfg.ivrTotalAmountPlayback
+          === true);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_04cvbjv" sourceRef="Gateway_0y1zsw5" targetRef="Activity_0erfzrw">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.wizardCfg.ivrTotalAmountPlayback
+          !== true);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_0fy848r" sourceRef="Gateway_1vbietr" targetRef="Gateway_1gtkasl">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.wizardCfg.ivrDefaultAmountToLiability
+          === true);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_1aiolkd" sourceRef="Gateway_1vbietr" targetRef="Gateway_1csie1b">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.wizardCfg.ivrDefaultAmountToLiability
+          !== true);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_1ti0gc7" sourceRef="Gateway_1csie1b" targetRef="Activity_07k2677">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.wizardCfg.ivrLiabilityAmountSelect
+          === true);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_1xz1dsh" sourceRef="Gateway_1csie1b" targetRef="Activity_112wghq">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.wizardCfg.ivrLiabilityAmountSelect
+          !== true);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_13e35xm" sourceRef="Gateway_0nn1jgj" targetRef="Gateway_1vbietr">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.clientCfg.options["supported"]
+          === "true");</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_143n4sj" sourceRef="Gateway_0nn1jgj" targetRef="Activity_112wghq">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.clientCfg.options["supported"]
+          !== "true");</conditionExpression>
+      </sequenceFlow>
+      <serviceTask id="Activity_033huws" name="Process Amount" voice:taskType="service"
+        implementation="${environment.services.processAmount}" serviceImpl:isServiceImpl="true"
+        serviceImpl:type="METHOD_CALL" serviceImpl:responseVariables="amountStatus">
+        <incoming>Flow_00k8zxc</incoming>
+        <incoming>Flow_16uqbs2</incoming>
+        <outgoing>Flow_176i1zl</outgoing>
+      </serviceTask>
+      <sequenceFlow id="Flow_00k8zxc" sourceRef="Activity_112wghq" targetRef="Activity_033huws" />
+      <exclusiveGateway id="Gateway_0cteo5m" name="EPA14 AmountStatus"
+        condition:condition="[{&#34;variable&#34;:&#34;amountStatus&#34;,&#34;operator&#34;:&#34;===&#34;,&#34;value&#34;:&#34;INVALID_AMOUNT&#34;,&#34;logicalOperators&#34;:[],&#34;elementId&#34;:&#34;Activity_07muak8&#34;,&#34;connectionId&#34;:&#34;Flow_174ghsx&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;STRING&#34;,&#34;jsExpression&#34;:&#34;&#34;},{&#34;variable&#34;:&#34;amountStatus&#34;,&#34;value&#34;:&#34;CAPTURE_CENTS_AFTER_DOLLAR&#34;,&#34;operator&#34;:&#34;===&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;STRING&#34;,&#34;elementId&#34;:&#34;Activity_1653aqr&#34;,&#34;connectionId&#34;:&#34;Flow_0u6c0ik&#34;},{&#34;variable&#34;:&#34;amountStatus&#34;,&#34;value&#34;:&#34;VALID_AMOUNT&#34;,&#34;operator&#34;:&#34;===&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;STRING&#34;,&#34;elementId&#34;:&#34;Activity_175w7n6&#34;,&#34;connectionId&#34;:&#34;Flow_1tjkxom&#34;}]">
+        <incoming>Flow_176i1zl</incoming>
+        <outgoing>Flow_174ghsx</outgoing>
+        <outgoing>Flow_0u6c0ik</outgoing>
+        <outgoing>Flow_1tjkxom</outgoing>
+      </exclusiveGateway>
+      <sequenceFlow id="Flow_176i1zl" sourceRef="Activity_033huws" targetRef="Gateway_0cteo5m" />
+      <task id="Activity_07muak8" name="Invalid Amount Input" voice:taskType="playVoiceFile"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;sorry-we-did-not-get-valid-inp&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/sorry-we-did-not-get-valid-inp&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}">
+        <incoming>Flow_174ghsx</incoming>
+        <outgoing>Flow_18bm883</outgoing>
+      </task>
+      <userTask id="Activity_1653aqr" name="Capture Cents" voice:taskType="promptUserInput"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;pls-enter-cent-amount&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/pls-enter-cent-amount&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}"
+        usrInput:isUserInput="true" usrInput:maxDigits="2" usrInput:readbackInputDataType="number"
+        usrInput:endCallOnInvalidUserInputAfterRetries="true" usrInput:inputVar="paymentCentAmount"
+        usrInput:userInputRetryCount="3" usrInput:userInputTimeout="5000"
+        usrInput:userInputReadBack="true"
+        usrInput:userInputInvalidInputVoiceFile="{&#34;en&#34;:{&#34;filePath&#34;:&#34;sorry-we-did-not-get-valid-inp&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/sorry-we-did-not-get-valid-inp&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;}}">
+        <incoming>Flow_0u6c0ik</incoming>
+        <outgoing>Flow_16uqbs2</outgoing>
+        <outgoing>Flow_0ulur3w</outgoing>
+      </userTask>
+      <task id="Activity_0nm7g9x" name="Amount Prompt" voice:taskType="sayData"
+        loopTask:isLoop="false"
+        sayData:isSayData="true" sayData:data="paymentAmount" sayData:dataType="amount">
+        <incoming>Flow_0ulur3w</incoming>
+        <outgoing>Flow_1f8c5fj</outgoing>
+      </task>
+      <sequenceFlow id="Flow_1f8c5fj" sourceRef="Activity_0nm7g9x" targetRef="Activity_175w7n6" />
+      <exclusiveGateway id="Gateway_1iaopqc" name="EPA15 Validate Amount Counter"
+        condition:condition="[{&#34;variable&#34;:&#34;retryCounters[&#39;validateAmount&#39;]&#34;,&#34;operator&#34;:&#34;&#60;=&#34;,&#34;value&#34;:&#34;3&#34;,&#34;logicalOperators&#34;:[],&#34;elementId&#34;:&#34;Activity_112wghq&#34;,&#34;connectionId&#34;:&#34;Flow_0vjuewl&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;,&#34;jsExpression&#34;:&#34;&#34;},{&#34;variable&#34;:&#34;retryCounters[&#39;validateAmount&#39;]&#34;,&#34;value&#34;:&#34;3&#34;,&#34;operator&#34;:&#34;&#62;&#34;,&#34;isDateOfCodeExecution&#34;:false,&#34;selectedVariableType&#34;:&#34;NUMBER&#34;,&#34;elementId&#34;:&#34;Activity_1qzta0m&#34;,&#34;connectionId&#34;:&#34;Flow_0mh7210&#34;}]">
+        <incoming>Flow_18bm883</incoming>
+        <outgoing>Flow_0vjuewl</outgoing>
+        <outgoing>Flow_0mh7210</outgoing>
+      </exclusiveGateway>
+      <sequenceFlow id="Flow_18bm883" sourceRef="Activity_07muak8" targetRef="Gateway_1iaopqc" />
+      <task id="Activity_1qzta0m" name="Amount Input Hang Up" voice:taskType="playVoiceFile"
+        voice:taskName="HangUp"
+        voice:voiceFileInfo="{&#34;en&#34;:{&#34;filePath&#34;:&#34;goodbye&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;},&#34;es&#34;:{&#34;filePath&#34;:&#34;es/goodbye&#34;,&#34;ttsText&#34;:&#34;&#34;,&#34;gender&#34;:&#34;&#34;,&#34;playSpeed&#34;:&#34;&#34;,&#34;voiceFileType&#34;:&#34;libraryFile&#34;,&#34;fileUrl&#34;:&#34;&#34;,&#34;fileSize&#34;:&#34;&#34;,&#34;id&#34;:&#34;&#34;,&#34;option&#34;:&#34;&#34;}}">
+        <incoming>Flow_0mh7210</incoming>
+      </task>
+      <sequenceFlow id="Flow_0vjuewl" sourceRef="Gateway_1iaopqc" targetRef="Activity_112wghq">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.retryCounters['validateAmount']
+          &lt;= 3);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_0mh7210" sourceRef="Gateway_1iaopqc" targetRef="Activity_1qzta0m">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.retryCounters['validateAmount']
+          &gt; 3);</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_16uqbs2" sourceRef="Activity_1653aqr" targetRef="Activity_033huws" />
+      <sequenceFlow id="Flow_0i1mrtu" sourceRef="Gateway_056e9dy" targetRef="Activity_0oqc9ap">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">
+          next(null,this.environment.services.conditionListVariableCheck(this.environment.variables,"additionalPaymentAmount","!==",0)
+          &amp;&amp;
+          this.environment.services.conditionListVariableCheck(this.environment.variables,"payment.paymentHeader.convenienceFee","!==",0));</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_10z2n0t" sourceRef="Gateway_056e9dy" targetRef="Gateway_1gn7hra">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">
+          next(null,this.environment.services.conditionListVariableCheck(this.environment.variables,"payment.paymentHeader.convenienceFee","===",0)
+          ||
+          this.environment.services.conditionListVariableCheck(this.environment.variables,"additionalPaymentAmount","===",0));</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_174ghsx" sourceRef="Gateway_0cteo5m" targetRef="Activity_07muak8">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.amountStatus
+          === "INVALID_AMOUNT");</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_0u6c0ik" sourceRef="Gateway_0cteo5m" targetRef="Activity_1653aqr">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.amountStatus
+          === "CAPTURE_CENTS_AFTER_DOLLAR");</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_1tjkxom" sourceRef="Gateway_0cteo5m" targetRef="Activity_175w7n6">
+        <conditionExpression xsi:type="tFormalExpression" language="javascript">next(null,this.environment.variables.amountStatus
+          === "VALID_AMOUNT");</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_0ulur3w" sourceRef="Activity_1653aqr" targetRef="Activity_0nm7g9x" />
+    </subProcess>
+    <sequenceFlow id="Flow_1kl6jed" sourceRef="Activity_1ltrgey" targetRef="end"></sequenceFlow>
+    <endEvent id="end" />
+  </process>
+</definitions>

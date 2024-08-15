@@ -52,7 +52,7 @@ function JavaScript(language, filename, scriptBody, environment) {
 
 JavaScript.prototype.execute = function execute(executionContext, callback) {
   const timers = this.environment.timers.register(executionContext);
-  return this.script.runInNewContext({ ...executionContext, ...timers, next: callback });
+  return this.script.runInNewContext({ ...executionContext, ...timers, console, next: callback });
 };
 
 function DummyScript(language, filename, logger) {
