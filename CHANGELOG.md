@@ -1,5 +1,9 @@
 # Changelog
 
+## 23.0.1
+
+- Fix AppVeyor build badge
+
 ## 23.0.0
 
 ### Breaking
