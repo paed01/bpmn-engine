@@ -1,6 +1,10 @@
 # Changelog
 
-# 22.0.2
+# 22.0.3
+
+- remove circular dependency of self, same version, how was it even possible?
+
+# ~~22.0.2~~
 
 - patch [`bpmn-elements@15.0.3`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 
