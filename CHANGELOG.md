@@ -1,12 +1,9 @@
 # Changelog
 
-## 23.0.2
-
-- patch [`bpmn-elements@16.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
-
 ## 23.0.1
 
-- Fix AppVeyor build badge
+- patch [`bpmn-elements@16.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+- fix AppVeyor build badge
 
 ## 23.0.0
 
