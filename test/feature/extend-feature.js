@@ -401,11 +401,12 @@ Feature('extending behaviour', () => {
           <startEvent id="start" />
           <sequenceFlow id="flow1" sourceRef="start" targetRef="decision" />
           <exclusiveGateway id="decision" default="flow2" />
-          <sequenceFlow id="flow2" name="pick me" sourceRef="decision" targetRef="end" />
-          <sequenceFlow id="flow3" name="no, pick me" sourceRef="decision" targetRef="end">
+          <sequenceFlow id="flow2" name="pick me" sourceRef="decision" targetRef="end1" />
+          <sequenceFlow id="flow3" name="no, pick me" sourceRef="decision" targetRef="end2">
             <conditionExpression xsi:type="tFormalExpression">\${content.condition}</conditionExpression>
           </sequenceFlow>
-          <endEvent id="end" />
+          <endEvent id="end1" />
+          <endEvent id="end2" />
         </process>
       </definitions>`;
     });
