@@ -24,7 +24,7 @@ Object.defineProperties(ProcessOutputDataObject.prototype, {
 ProcessOutputDataObject.prototype.read = function readDataObject(broker, exchange, routingKeyPrefix, messageProperties) {
   const environment = this.environment;
   const { id, name, type } = this;
-  const value = environment.variables.data && environment.variables.data[this.id];
+  const value = environment.variables.data?.[this.id];
   return broker.publish(exchange, `${routingKeyPrefix}response`, { id, name, type, value }, messageProperties);
 };
 
@@ -32,10 +32,10 @@ ProcessOutputDataObject.prototype.write = function writeDataObject(broker, excha
   const environment = this.environment;
   const { id, name, type } = this;
 
-  environment.variables.data = environment.variables.data || {};
-  environment.variables.data[id] = value;
+  const data = (environment.variables.data = environment.variables.data || {});
+  data[id] = value;
 
-  environment.output.data = environment.output.data || {};
-  environment.output.data[id] = value;
+  const outputData = (environment.output.data = environment.output.data || {});
+  outputData[id] = value;
   return broker.publish(exchange, `${routingKeyPrefix}response`, { id, name, type, value }, messageProperties);
 };

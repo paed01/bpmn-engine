@@ -127,7 +127,7 @@ function upgradeStateToVersion14(state) {
 }
 
 function polyfillProcessEnvironment(state) {
-  if (!state.definitions && state.definitions.length) return state;
+  if (!state.definitions?.length) return state;
 
   const polyfilledState = JSON.parse(JSON.stringify(state));
   for (const definition of polyfilledState.definitions) {

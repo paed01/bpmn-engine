@@ -63,29 +63,27 @@ const rules = {
 export default [
   js.configs.recommended,
   {
-    rules,
-  },
-  {
-    files: ['src/**/*.js', 'scripts/**/*.js'],
     languageOptions: {
       parserOptions: {
         sourceType: 'module',
         ecmaVersion: 2020,
       },
+    },
+    rules,
+  },
+  {
+    files: ['src/**/*.js', 'scripts/**/*.js'],
+    languageOptions: {
       globals: {
-        ...globals.node,
-        ...globals.es6,
+        ...globals.nodeBuiltin,
       },
     },
   },
   {
     files: ['test/**/*.js'],
     languageOptions: {
-      parserOptions: {
-        ecmaVersion: 2022,
-      },
       globals: {
-        ...globals.node,
+        ...globals.nodeBuiltin,
         ...globals.mocha,
         expect: 'readonly',
         beforeEachScenario: 'readonly',

@@ -9,7 +9,7 @@ import serializer, { TypeResolver } from 'moddle-context-serializer';
 const nodeRequire = createRequire(fileURLToPath(import.meta.url));
 export const camundaBpmnModdle = nodeRequire('camunda-bpmn-moddle/resources/camunda.json');
 
-export async function context(source, options = {}) {
+export async function context(source, options) {
   const logger = Logger('test-helpers:context');
   const moddleCtx = await moddleContext(source, options);
 
@@ -22,10 +22,10 @@ export async function context(source, options = {}) {
 
   const types = TypeResolver({
     ...Elements,
-    ...options.elements,
+    ...options?.elements,
   });
 
-  return serializer(moddleCtx, types, options.extendFn);
+  return serializer(moddleCtx, types, options?.extendFn);
 }
 
 export function moddleContext(source, options) {

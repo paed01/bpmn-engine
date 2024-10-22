@@ -29,14 +29,14 @@ const kTypeResolver = Symbol.for('type resolver');
 export default Engine;
 export { JavaScripts };
 
-export function Engine(options = {}) {
+export function Engine(options) {
   if (!(this instanceof Engine)) return new Engine(options);
 
   EventEmitter.call(this);
 
   const opts = (this.options = {
     Logger: DebugLogger,
-    scripts: new JavaScripts(options.disableDummyScript),
+    scripts: new JavaScripts(options?.disableDummyScript),
     ...options,
   });
 
@@ -188,11 +188,11 @@ Engine.prototype.resume = async function resume(...args) {
   return execution._resume(resumeOptions, callback);
 };
 
-Engine.prototype.addSource = function addSource({ sourceContext: addContext } = {}) {
-  if (!addContext) return;
+Engine.prototype.addSource = function addSource(options) {
+  if (!options?.sourceContext) return;
   const loadedDefinitions = this[kLoadedDefinitions];
   if (loadedDefinitions) loadedDefinitions.splice(0);
-  this[kPendingSources].add(addContext);
+  this[kPendingSources].add(options.sourceContext);
 };
 
 Engine.prototype.getDefinitions = function getDefinitions(executeOptions) {
@@ -236,9 +236,7 @@ Engine.prototype._loadDefinitions = async function loadDefinitions(executeOption
   return loadedDefinitions;
 };
 
-Engine.prototype._loadDefinition = function loadDefinition(serializedContext, executeOptions = {}) {
-  const { settings, variables } = executeOptions;
-
+Engine.prototype._loadDefinition = function loadDefinition(serializedContext, executeOptions) {
   const environment = this.environment;
   const context = new Elements.Context(
     serializedContext,
@@ -247,11 +245,11 @@ Engine.prototype._loadDefinition = function loadDefinition(serializedContext, ex
       ...executeOptions,
       settings: {
         ...environment.settings,
-        ...settings,
+        ...executeOptions?.settings,
       },
       variables: {
         ...environment.variables,
-        ...variables,
+        ...executeOptions?.variables,
       },
       source: serializedContext,
     })
@@ -424,8 +422,8 @@ Execution.prototype.stop = async function stop() {
   return result;
 };
 
-Execution.prototype._setup = function setup(setupOptions = {}) {
-  const listener = setupOptions.listener || this.options.listener;
+Execution.prototype._setup = function setup(setupOptions) {
+  const listener = setupOptions?.listener || this.options.listener;
   if (listener && typeof listener.emit !== 'function') throw new Error('listener.emit is not a function');
 
   const onChildMessage = this._onChildMessage.bind(this);
@@ -571,9 +569,9 @@ Execution.prototype.getPostponed = function getPostponed() {
   return result;
 };
 
-Execution.prototype.signal = function signal(payload, { ignoreSameDefinition } = {}) {
+Execution.prototype.signal = function signal(payload, signalOptions) {
   for (const definition of this[kExecuting]) {
-    if (ignoreSameDefinition && payload?.parent?.id === definition.id) continue;
+    if (signalOptions?.ignoreSameDefinition && payload?.parent?.id === definition.id) continue;
     definition.signal(payload);
   }
 };

@@ -1,5 +1,11 @@
 # Changelog
 
+## 23.0.2
+
+- move `smqp` to peerDependencies since it's included in `bpmn-elements`
+- patch [`bpmn-elements@16.2.1`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
+- use optional chaining and remove futile object creations
+
 ## 23.0.1
 
 - patch [`bpmn-elements@16.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)

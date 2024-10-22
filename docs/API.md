@@ -1,6 +1,6 @@
 <!-- version -->
 
-# 23.0.1 API Reference
+# 23.0.2 API Reference
 
 <!-- versionstop -->
 
@@ -354,7 +354,7 @@ const engine = new Engine({
 </definitions>
 `);
 
-async function getContext(source, options = {}) {
+async function getContext(source, options) {
   const moddleContext = await getModdleContext(source, options);
 
   if (moddleContext.warnings) {
@@ -366,10 +366,10 @@ async function getContext(source, options = {}) {
 
   const types = TypeResolver({
     ...elements,
-    ...options.elements,
+    ...options?.elements,
   });
 
-  return Serializer(moddleContext, types, options.extendFn);
+  return Serializer(moddleContext, types, options?.extendFn);
 }
 
 function getModdleContext(source, options) {
