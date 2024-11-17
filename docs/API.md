@@ -555,11 +555,11 @@ engine.resume({ listener }, () => {
 - `broker`: engine message broker
 - `environment`: execution environment
 - `definitions`: list of definitions
-- `activityStatus`: string, execution activity status
+- `activityStatus`: string, execution activity status, e.g. if `wait` or `timer` **no** activities are `executing`, if `executing` there can be both running timers and waiting tasks, if `timer` there can be waiting activities but **no** `executing` activities, and so forth
   - `executing`: at least one activity is executing, e.g. a service task making a asynchronous request
   - `timer`: at least one activity is waiting for a timer to complete, usually only TimerEventDefinition's
   - `wait`: at least one activity is waiting for a signal of some sort, e.g. user tasks, intermediate catch events, etc
-  - `idle`: idle, no activities are running
+  - `idle`: idle, no activities are running, the engine is not running at all
 - `isRunning`: are any definition running?
 - `getActivityById(activityId)`(#getactivitybyid-activityid): get activity/element by id, returns first found among definitions
 - `getState()`: get execution state
