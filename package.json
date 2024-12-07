@@ -62,7 +62,7 @@
     "chronokinesis": "^6.0.0",
     "eslint": "^9.10.0",
     "markdown-toc": "^1.2.0",
-    "mocha": "^10.2.0",
+    "mocha": "^11.0.1",
     "mocha-cakes-2": "^3.3.0",
     "prettier": "^3.2.5",
     "rollup": "^4.10.0",
