@@ -3,14 +3,15 @@ name: Build
 on:
   pull_request:
   push:
-    branches: master
+    branches:
+      - master
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20, latest]
+        node-version: [18, 20, 22, latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

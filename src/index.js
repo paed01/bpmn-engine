@@ -431,7 +431,10 @@ Execution.prototype._setup = function setup(setupOptions) {
   for (const definition of this.definitions) {
     if (listener) definition.environment.options.listener = listener;
 
-    const { queueName } = definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, { noAck: true, consumerTag: '_engine_definition' });
+    const { queueName } = definition.broker.subscribeTmp('event', 'definition.#', onChildMessage, {
+      noAck: true,
+      consumerTag: '_engine_definition',
+    });
     definition.broker.bindQueue(queueName, 'event', 'process.#');
     definition.broker.bindQueue(queueName, 'event', 'activity.#');
     definition.broker.bindQueue(queueName, 'event', 'flow.#');

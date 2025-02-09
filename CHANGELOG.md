@@ -1,33 +1,37 @@
 # Changelog
 
-## 23.0.2
+## [24.0.0] - 2025-02-08
+
+- major update [`bpmn-elements@17`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md), something about mitigating weird formatting behaviour
+
+## [23.0.2] - 2024-10-22
 
 - move `smqp` to peerDependencies since it's included in `bpmn-elements`
 - patch [`bpmn-elements@16.2.1`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 - use optional chaining and remove futile object creations
 
-## 23.0.1
+## [23.0.1] - 2024-09-08
 
 - patch [`bpmn-elements@16.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 - fix AppVeyor build badge
 
-## 23.0.0
+## [23.0.0] - 2024-08-08
 
 ### Breaking
 
 - changed `ConditionalEventDefinition` behaviour in [`bpmn-elements@16`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 
-## 22.0.2
+## [22.0.2] - 2024-07-10
 
 - patch [`bpmn-elements@15.0.3`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 
-## 22.0.1
+## [22.0.1] - 2024-06-19
 
 - for a number of years the `extendFn` option has been accepted, but never passed to moddle-context-serializer. Now it is
 - fix type declaration for options `extendFn` and `TypeResolver`
 - type declare that a generic listener instance with an emit function works just as well as a full blown new EventEmitter
 
-## 22.0.0
+## [22.0.0] - 2024-06-14
 
 Performance tweaks.
 
@@ -39,11 +43,11 @@ Performance tweaks.
 - drop support for node 14 and 16
 - JavaScripts.Script property scripts is now a Map
 
-## 21.1.0
+## [21.1.0] - 2024-05-17
 
 - minor bump [`bpmn-elements@14.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md), addresses issue #180
 
-## 21.0.0
+## [21.0.0] - 2024-05-04
 
 Stop execution if invalid time duration, cycle, or date is encountered.
 

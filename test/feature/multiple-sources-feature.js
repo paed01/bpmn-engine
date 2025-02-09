@@ -68,7 +68,11 @@ Feature('Multiple sources', () => {
     Then('admin is notified that spot price has been updated', () => {
       const [, , adminApprove] = execution.getPostponed();
       expect(adminApprove).to.have.property('id', 'approveSpotPrice');
-      expect(adminApprove.content).to.have.property('form').with.property('fields').with.property('newPrice').with.property('defaultValue', 110);
+      expect(adminApprove.content)
+        .to.have.property('form')
+        .with.property('fields')
+        .with.property('newPrice')
+        .with.property('defaultValue', 110);
     });
 
     And('the tasks can be retrieved by getActivityById', () => {
@@ -256,7 +260,11 @@ Feature('Multiple sources', () => {
 
     When('admin approves new spot price', () => {
       expect(approveSpotPrice).to.have.property('id', 'approveSpotPrice');
-      expect(approveSpotPrice.content).to.have.property('form').with.property('fields').with.property('newPrice').with.property('defaultValue', 100);
+      expect(approveSpotPrice.content)
+        .to.have.property('form')
+        .with.property('fields')
+        .with.property('newPrice')
+        .with.property('defaultValue', 100);
 
       approveSpotPrice.signal({
         form: {
@@ -642,7 +650,11 @@ function getExtendedEngine(options) {
         if (activity.behaviour.expression) {
           activity.behaviour.Service = ServiceExpression;
         }
-        if (activity.isStart && activity.eventDefinitions && activity.eventDefinitions.find(({ type }) => type === 'bpmn:SignalEventDefinition')) {
+        if (
+          activity.isStart &&
+          activity.eventDefinitions &&
+          activity.eventDefinitions.find(({ type }) => type === 'bpmn:SignalEventDefinition')
+        ) {
           activity.on('end', (api) => {
             activity.environment.variables.message = api.content.output;
           });

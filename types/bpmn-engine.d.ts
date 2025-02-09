@@ -3,11 +3,7 @@
 
 import { EventEmitter } from 'node:events';
 import { Definitions as BpmnModdleDefinitions } from 'bpmn-moddle';
-import {
-  extendFn,
-  SerializableContext,
-  TypeResolver,
-} from 'moddle-context-serializer';
+import { extendFn, SerializableContext, TypeResolver } from 'moddle-context-serializer';
 import {
   ActivityStatus,
   ElementBroker,
@@ -61,10 +57,7 @@ declare module 'bpmn-engine' {
         flow.discard: The sequence flow was discarded
         flow.looped: The sequence is looped
    */
-  export type BpmnSequenceFlowEvent =
-    | 'flow.take'
-    | 'flow.discard'
-    | 'flow.looped';
+  export type BpmnSequenceFlowEvent = 'flow.take' | 'flow.discard' | 'flow.looped';
 
   export interface BpmnMessage {
     id?: string;
@@ -173,10 +166,7 @@ declare module 'bpmn-engine' {
      */
     execute(): Promise<Execution>;
     execute(options: BpmnEngineExecuteOptions): Promise<Execution>;
-    execute(
-      options: BpmnEngineExecuteOptions,
-      cb: (err: Error, execution?: Execution) => void
-    ): Promise<Execution>;
+    execute(options: BpmnEngineExecuteOptions, cb: (err: Error, execution?: Execution) => void): Promise<Execution>;
     execute(cb: (err: Error) => void): Promise<Execution>;
 
     /**
@@ -207,10 +197,7 @@ declare module 'bpmn-engine' {
      * @param options
      * @param callback
      */
-    resume(
-      options?: BpmnEngineExecuteOptions,
-      callback?: (err: Error, execution?: Execution) => void
-    ): Promise<Execution>;
+    resume(options?: BpmnEngineExecuteOptions, callback?: (err: Error, execution?: Execution) => void): Promise<Execution>;
 
     /**
      * Stop execution. The instance is terminated.
@@ -320,10 +307,7 @@ declare module 'bpmn-engine' {
      * @param message {BpmnMessage}
      * @param options
      */
-    signal(
-      message?: BpmnMessage,
-      options?: { ignoreSameDefinition?: boolean }
-    ): void;
+    signal(message?: BpmnMessage, options?: { ignoreSameDefinition?: boolean }): void;
 
     /**
      * send cancel activity to execution, distributed to all definitions
@@ -345,9 +329,6 @@ declare module 'bpmn-engine' {
      */
     constructor(disableDummy?: boolean);
     register(activity: any): Script | undefined;
-    getScript(
-      language: string,
-      identifier: { id: string; [x: string]: any }
-    ): Script;
+    getScript(language: string, identifier: { id: string; [x: string]: any }): Script;
   }
 }
