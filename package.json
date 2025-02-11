@@ -66,7 +66,7 @@
     "mocha-cakes-2": "^3.3.0",
     "prettier": "^3.2.5",
     "rollup": "^4.10.0",
-    "texample": "^0.0.6"
+    "texample": "^0.0.7"
   },
   "dependencies": {
     "bpmn-elements": "^17.0.0",
