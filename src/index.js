@@ -134,6 +134,12 @@ Engine.prototype.stop = function stop() {
 };
 
 Engine.prototype.recover = function recover(savedState, recoverOptions) {
+  if (this[kExecution]?.isRunning) {
+    this.logger.error('recover during running execution will be deprecated next major version');
+    this.logger.debug(`<${this.name}> stopping current running execution`);
+    this[kExecution].stop();
+  }
+
   if (!savedState) return this;
 
   let name = this.name;
@@ -141,7 +147,10 @@ Engine.prototype.recover = function recover(savedState, recoverOptions) {
 
   this.logger.debug(`<${name}> recover`);
 
-  if (recoverOptions) this[kEnvironment] = new Elements.Environment(recoverOptions);
+  if (recoverOptions) {
+    this[kEnvironment] = this[kEnvironment].clone(recoverOptions);
+  }
+
   if (savedState.environment) this[kEnvironment] = this[kEnvironment].recover(savedState.environment);
 
   if (!savedState.definitions) return this;

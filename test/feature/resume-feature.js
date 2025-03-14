@@ -17,7 +17,7 @@ Feature('Resume execution', () => {
     });
 
     Given('an engine with source', () => {
-      engine = Engine({
+      engine = new Engine({
         name: 'Engine feature',
         source,
         settings: {
@@ -63,7 +63,7 @@ Feature('Resume execution', () => {
 
     let recovered;
     When('engine is recovered with a new setting and one overridden setting', () => {
-      recovered = Engine({
+      recovered = new Engine({
         name: 'Recovered engine',
       }).recover(state, {
         settings: {
@@ -231,7 +231,7 @@ Feature('Resume execution', () => {
     });
 
     When('engine is recovered with a the slimmer state and sourceContext', async () => {
-      recovered = Engine({
+      recovered = new Engine({
         sourceContext: await testHelpers.context(source),
       }).recover(slimmerState);
     });
@@ -266,7 +266,7 @@ Feature('Resume execution', () => {
         </process>
       </definitions>`;
 
-      recovered = Engine({
+      recovered = new Engine({
         name: 'Recovered engine',
         sourceContext: await testHelpers.context(otherSource),
       });
@@ -276,6 +276,157 @@ Feature('Resume execution', () => {
       expect(() => {
         recovered.recover(slimmerState);
       }).to.throw(Error);
+    });
+  });
+
+  Scenario('recover with options', () => {
+    let engine, listener, source;
+    Given('a bpmn source with user task, timer and script', () => {
+      source = `
+      <definitions id="Def_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <process id="theProcess" isExecutable="true">
+          <task id="task" />
+          <sequenceFlow id="to-timer" sourceRef="task" targetRef="timer" />
+          <intermediateCatchEvent id="timer">
+            <timerEventDefinition>
+              <timeDuration xsi:type="tFormalExpression">PT1S</timeDuration>
+            </timerEventDefinition>
+          </intermediateCatchEvent>
+          <sequenceFlow id="to-script" sourceRef="timer" targetRef="script" />
+          <scriptTask id="script" scriptFormat="js">
+            <script>this.environment.services.serviceFn(next)</script>
+          </scriptTask>
+        </process>
+      </definitions>`;
+    });
+
+    const events = [];
+    Given('an engine with source', () => {
+      listener = new EventEmitter();
+
+      listener.on('activity.end', (api) => {
+        events.push(api.id);
+      });
+
+      engine = new Engine({
+        name: 'Resume feature',
+        source,
+        listener,
+        services: {
+          serviceFn(...args) {
+            args.pop()();
+          },
+        },
+      });
+    });
+
+    let execution1;
+    When('engine is executed', async () => {
+      execution1 = await engine.execute();
+    });
+
+    Then('timer is waiting', () => {
+      expect(execution1.activityStatus).to.equal('timer');
+    });
+
+    let execution2;
+    When('same instance is recovered options and resumed', async () => {
+      engine.recover(execution1.getState(), {
+        settings: {
+          mySetting: 1,
+        },
+      });
+
+      execution2 = await engine.resume();
+    });
+
+    Then('first execution is stopped', () => {
+      expect(execution1.state).to.equal('stopped');
+    });
+
+    And('only one timer is running', () => {
+      expect(engine.environment.timers.executing).to.have.length(1);
+    });
+
+    And('a new timer is waiting', () => {
+      expect(execution2.activityStatus).to.equal('timer');
+    });
+
+    let end;
+    When('resumed timer times out', () => {
+      end = engine.waitFor('end');
+      engine.environment.timers.executing.pop().callback();
+    });
+
+    Then('run completes', () => {
+      return end;
+    });
+
+    And('listener has captured events', () => {
+      expect(events).to.deep.equal(['task', 'timer', 'script']);
+    });
+
+    Given('a new engine instance with same source', () => {
+      events.splice(0);
+
+      engine = new Engine({
+        name: 'Proper resume',
+        source,
+        listener,
+        services: {
+          serviceFn(...args) {
+            args.pop()();
+          },
+        },
+      });
+    });
+
+    When('engine is executed', async () => {
+      execution1 = await engine.execute();
+    });
+
+    Then('timer is waiting', () => {
+      expect(execution1.activityStatus).to.equal('timer');
+    });
+
+    let state;
+    Given('run is stopped and state is saved', async () => {
+      await engine.stop();
+      state = execution1.getState();
+    });
+
+    When('a new instance is recovered with listener and service options and resumed', async () => {
+      engine = new Engine({
+        name: 'Proper recover',
+      });
+
+      engine.recover(state, {
+        listener,
+        services: {
+          serviceFn(...args) {
+            args.pop()();
+          },
+        },
+      });
+
+      execution2 = await engine.resume();
+    });
+
+    Then('a timer is running', () => {
+      expect(engine.environment.timers.executing).to.have.length(1);
+    });
+
+    When('recovered and resumed timer times out', () => {
+      end = engine.waitFor('end');
+      engine.environment.timers.executing.pop().callback();
+    });
+
+    Then('run completes', () => {
+      return end;
+    });
+
+    And('listener has captured events', () => {
+      expect(events).to.deep.equal(['task', 'timer', 'script']);
     });
   });
 });

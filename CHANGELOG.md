@@ -1,5 +1,11 @@
 # Changelog
 
+## [24.0.1] - 2025-03-14
+
+- fix recover engine with options not keeping scripts and logger from when initiated
+
+> NB! Next major versions will not accept recovering a running engine.
+
 ## [24.0.0] - 2025-02-08
 
 - major update [`bpmn-elements@17`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md), something about mitigating weird formatting behaviour
