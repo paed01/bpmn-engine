@@ -1,6 +1,6 @@
 <!-- version -->
 
-# 24.0.0 API Reference
+# 25.0.0 API Reference
 
 <!-- versionstop -->
 
@@ -508,6 +508,8 @@ engine.execute({
 
 Recover engine from state.
 
+> NB! Will throw an error if the engine is running.
+
 Arguments:
 
 - `state`: engine state
@@ -523,6 +525,8 @@ const engine = new Engine().recover(state);
 ### `resume([options, [callback]])`
 
 Resume execution function with previously saved engine state.
+
+> NB! Attempting to resume a running engine returns error in callback or throws if callback is not passed.
 
 Arguments:
 

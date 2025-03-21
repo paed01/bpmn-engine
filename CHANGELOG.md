@@ -1,5 +1,13 @@
 # Changelog
 
+## [25.0.0] - 2025-03-17
+
+It has been possible to recover a running engine. The execution was overwritten and all references to timers etc was lost. This stops with this version. Either stop the the execution or wait for it to end if the engine should be re-used. It is highly recommended to initiate a new Engine when recovering from state.
+
+### Breaking
+
+- Disallow a running engine to be recovered and resumed. Recommended is to recover and resume a new Engine instance with state or stop the instance before recovering.
+
 ## [24.0.1] - 2025-03-14
 
 - fix recover engine with options not keeping scripts and logger from when initiated

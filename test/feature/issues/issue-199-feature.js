@@ -86,6 +86,10 @@ Feature('issue 199 - Issue with Script Tasks After State Recovery in bpmn-engine
       expect(execution.state).to.equal('running');
     });
 
+    Given('execution is stopped', () => {
+      return execution.stop();
+    });
+
     When('same instance is recovered with options', () => {
       engine.recover(state, {
         services: {

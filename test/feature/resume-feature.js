@@ -329,8 +329,39 @@ Feature('Resume execution', () => {
       expect(execution1.activityStatus).to.equal('timer');
     });
 
+    And('attempting to recover a running engine instance throws', () => {
+      expect(() => {
+        engine.recover(execution1.getState(), {
+          settings: {
+            mySetting: 1,
+          },
+        });
+      }).to.throw(/running/);
+    });
+
+    And('attempting to resume a running engine instance throws', async () => {
+      try {
+        await engine.resume();
+      } catch (err) {
+        // eslint-disable-next-line no-var
+        var error = err;
+      }
+      expect(error).to.match(/running/);
+    });
+
+    And('attempting to resume a running engine instance with callback returns error in callback', (done) => {
+      engine.resume((err) => {
+        expect(err).to.match(/running/);
+        done();
+      });
+    });
+
+    Given('execution is stopped', () => {
+      return execution1.stop();
+    });
+
     let execution2;
-    When('same instance is recovered options and resumed', async () => {
+    When('same instance is recovered with options and resumed', async () => {
       engine.recover(execution1.getState(), {
         settings: {
           mySetting: 1,
