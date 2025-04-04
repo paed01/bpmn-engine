@@ -8,6 +8,10 @@ It has been possible to recover a running engine. The execution was overwritten 
 
 - Disallow a running engine to be recovered and resumed. Recommended is to recover and resume a new Engine instance with state or stop the instance before recovering.
 
+### Fixes
+
+- minor update of moddle-context-serializer brings some performance improvement
+
 ## [24.0.1] - 2025-03-14
 
 - fix recover engine with options not keeping scripts and logger from when initiated
