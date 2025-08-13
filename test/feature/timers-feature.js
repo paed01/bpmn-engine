@@ -1,4 +1,4 @@
-import ck from 'chronokinesis';
+import * as ck from 'chronokinesis';
 import * as testHelpers from '../helpers/testHelpers.js';
 import * as factory from '../helpers/factory.js';
 import { Engine } from '../../src/index.js';
