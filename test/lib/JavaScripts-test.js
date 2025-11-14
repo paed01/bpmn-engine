@@ -1,4 +1,4 @@
-import { JavaScripts } from '../../src/index.js';
+import { JavaScripts } from 'bpmn-engine';
 
 describe('JavaScripts', () => {
   it('can be invoked without new', () => {

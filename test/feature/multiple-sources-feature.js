@@ -1,6 +1,6 @@
 import * as factory from '../helpers/factory.js';
 import * as testHelpers from '../helpers/testHelpers.js';
-import { Engine } from '../../src/index.js';
+import { Engine } from 'bpmn-engine';
 import { camundaBpmnModdle as camunda } from '../helpers/testHelpers.js';
 
 const signalsSource = factory.resource('signals.bpmn');

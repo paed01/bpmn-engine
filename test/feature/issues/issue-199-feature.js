@@ -1,4 +1,4 @@
-import { Engine } from '../../../src/index.js';
+import { Engine } from 'bpmn-engine';
 
 const source = `
 <?xml version="1.0" encoding="UTF-8"?>

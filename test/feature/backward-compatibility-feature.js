@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { Engine } from '../../src/index.js';
+import { Engine } from 'bpmn-engine';
 
 Feature('Backward compatability', () => {
   Scenario('Version 13 state without process environment', () => {

@@ -1,4 +1,4 @@
-import { Engine } from '../../src/index.js';
+import { Engine } from 'bpmn-engine';
 
 Feature('Engine output', () => {
   Scenario('Process completes with output', () => {

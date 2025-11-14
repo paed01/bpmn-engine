@@ -1,5 +1,10 @@
 # Changelog
 
+## [25.0.1] - 2025-11-14
+
+- provenance release to get green badge next to npm package version
+- bump all provenance updated packages
+
 ## [25.0.0] - 2025-03-17
 
 It has been possible to recover a running engine. The execution was overwritten and all references to timers etc was lost. This stops with this version. Either stop the the execution or wait for it to end if the engine should be re-used. It is highly recommended to initiate a new Engine when recovering from state.

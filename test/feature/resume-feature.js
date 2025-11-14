@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import * as testHelpers from '../helpers/testHelpers.js';
-import { Engine } from '../../src/index.js';
+import { Engine } from 'bpmn-engine';
 
 Feature('Resume execution', () => {
   Scenario('Execution is stopped and resumed', () => {

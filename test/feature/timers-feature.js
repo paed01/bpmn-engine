@@ -1,7 +1,7 @@
 import * as ck from 'chronokinesis';
 import * as testHelpers from '../helpers/testHelpers.js';
 import * as factory from '../helpers/factory.js';
-import { Engine } from '../../src/index.js';
+import { Engine } from 'bpmn-engine';
 import { camundaBpmnModdle as camunda } from '../helpers/testHelpers.js';
 
 const timersSource = factory.resource('timers.bpmn');

@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { Activity } from 'bpmn-elements';
-import { Engine } from '../../src/index.js';
+import { Engine } from 'bpmn-engine';
 import { camundaBpmnModdle as camunda } from '../helpers/testHelpers.js';
 
 Feature('extending behaviour', () => {

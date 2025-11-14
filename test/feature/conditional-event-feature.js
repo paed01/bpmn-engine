@@ -1,4 +1,4 @@
-import { Engine } from '../../src/index.js';
+import { Engine } from 'bpmn-engine';
 import * as factory from '../helpers/factory.js';
 
 const boundJsEventSource = factory.resource('conditional-bound-js-event.bpmn');

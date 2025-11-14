@@ -1,4 +1,4 @@
-import { Engine } from '../../src/index.js';
+import { Engine } from 'bpmn-engine';
 
 Feature('Scripts', () => {
   Scenario('Process with scripts', () => {

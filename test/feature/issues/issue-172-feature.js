@@ -1,4 +1,4 @@
-import { Engine } from '../../../src/index.js';
+import { Engine } from 'bpmn-engine';
 
 Feature('issue 172', () => {
   Scenario('Postpone intermediate throw event by formatting', () => {

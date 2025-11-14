@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { Engine } from '../../src/index.js';
+import { Engine } from 'bpmn-engine';
 import * as factory from '../helpers/factory.js';
 import { camundaBpmnModdle as camunda } from '../helpers/testHelpers.js';
 

@@ -1,8 +1,9 @@
-import { Engine } from '../../src/index.js';
+import { Engine } from 'bpmn-engine';
 import * as factory from '../helpers/factory.js';
 
 Feature('Call activity', () => {
   Scenario('call process in the same diagram', () => {
+    /** @type {Engine} */
     let engine;
     Given('a process with a call activity referencing a process', () => {
       const source = factory.resource('call-activity.bpmn');
@@ -24,6 +25,7 @@ Feature('Call activity', () => {
   });
 
   Scenario('called process throws', () => {
+    /** @type {Engine} */
     let engine;
     Given('a process with a call activity referencing a process that throws', () => {
       const source = `

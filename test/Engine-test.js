@@ -1,9 +1,16 @@
 import { EventEmitter } from 'node:events';
-import * as Bpmn from '../src/index.js';
+import * as Bpmn from 'bpmn-engine';
+import Engine from 'bpmn-engine';
 import * as factory from './helpers/factory.js';
 import * as testHelpers from './helpers/testHelpers.js';
 
 describe('Engine', () => {
+  describe('module', () => {
+    it('exports Engine class as default', () => {
+      expect(Bpmn.Engine).to.equal(Engine);
+    });
+  });
+
   describe('constructor', () => {
     it('instance of Engine', () => {
       const engine = new Bpmn.Engine();

@@ -1,4 +1,4 @@
-import { Engine } from '../../../src/index.js';
+import { Engine } from 'bpmn-engine';
 import * as factory from '../../helpers/factory.js';
 
 Feature('issue 163', () => {
