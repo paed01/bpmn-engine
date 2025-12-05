@@ -1,11 +1,11 @@
 # Changelog
 
-## [25.0.1] - 2025-11-14
+## v25.0.1 - 2025-11-14
 
 - provenance release to get green badge next to npm package version
 - bump all provenance updated packages
 
-## [25.0.0] - 2025-03-17
+## v25.0.0 - 2025-03-17
 
 It has been possible to recover a running engine. The execution was overwritten and all references to timers etc was lost. This stops with this version. Either stop the the execution or wait for it to end if the engine should be re-used. It is highly recommended to initiate a new Engine when recovering from state.
 
@@ -17,44 +17,44 @@ It has been possible to recover a running engine. The execution was overwritten 
 
 - minor update of moddle-context-serializer brings some performance improvement
 
-## [24.0.1] - 2025-03-14
+## v24.0.1 - 2025-03-14
 
 - fix recover engine with options not keeping scripts and logger from when initiated
 
 > NB! Next major versions will not accept recovering a running engine.
 
-## [24.0.0] - 2025-02-08
+## v24.0.0 - 2025-02-08
 
 - major update [`bpmn-elements@17`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md), something about mitigating weird formatting behaviour
 
-## [23.0.2] - 2024-10-22
+## v23.0.2 - 2024-10-22
 
 - move `smqp` to peerDependencies since it's included in `bpmn-elements`
 - patch [`bpmn-elements@16.2.1`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 - use optional chaining and remove futile object creations
 
-## [23.0.1] - 2024-09-08
+## v23.0.1 - 2024-09-08
 
 - patch [`bpmn-elements@16.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 - fix AppVeyor build badge
 
-## [23.0.0] - 2024-08-08
+## v23.0.0 - 2024-08-08
 
 ### Breaking
 
 - changed `ConditionalEventDefinition` behaviour in [`bpmn-elements@16`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 
-## [22.0.2] - 2024-07-10
+## v22.0.2 - 2024-07-10
 
 - patch [`bpmn-elements@15.0.3`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 
-## [22.0.1] - 2024-06-19
+## v22.0.1 - 2024-06-19
 
 - for a number of years the `extendFn` option has been accepted, but never passed to moddle-context-serializer. Now it is
 - fix type declaration for options `extendFn` and `TypeResolver`
 - type declare that a generic listener instance with an emit function works just as well as a full blown new EventEmitter
 
-## [22.0.0] - 2024-06-14
+## v22.0.0 - 2024-06-14
 
 Performance tweaks.
 
@@ -66,11 +66,11 @@ Performance tweaks.
 - drop support for node 14 and 16
 - JavaScripts.Script property scripts is now a Map
 
-## [21.1.0] - 2024-05-17
+## v21.1.0 - 2024-05-17
 
 - minor bump [`bpmn-elements@14.1.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md), addresses issue #180
 
-## [21.0.0] - 2024-05-04
+## v21.0.0 - 2024-05-04
 
 Stop execution if invalid time duration, cycle, or date is encountered.
 
@@ -78,36 +78,36 @@ Stop execution if invalid time duration, cycle, or date is encountered.
 
 - invalid `TimerEventDefinition` timer type value stops execution according to [`bpmn-elements@14`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md). Old behaviour can be achieved by using bpmn-elements@13
 
-## 20.0.2
+## v20.0.2
 
 - patch away package prettier from smqp
 
-## 20.0.1
+## v20.0.1
 
 - hoist current definition environment output to engine environment output if run fails
 - Major bump `bpmn-moddle@9`
 - Minor bump [`moddle-context-serializer@4.2`](https://github.com/paed01/moddle-context-serializer/blob/master/CHANGELOG.md)
 - Minor bump [`bpmn-elements@13.2.0`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 
-## 20.0.0
+## v20.0.0
 
 - turn into esm with exports for node
 - build with node >= 18, should still work with earlier versions but proceed with caution and make tests
 - remove eslint formatting rules in favor of prettier, touched basically all files but now it is "pretty"
 - prototype `ProcessOutputDataObject` and make properties id and type readonly
 
-## 19.0.1
+## v19.0.1
 
 - Patch [`bpmn-elements`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 
-## 19.0.0
+## v19.0.0
 
 Upgrade is recommended since nasty evergroving state size is fixed.
 
 - Major bump [`bpmn-elements@13`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md)
 - remove enumerable flag on prototype properties
 
-## 18.0.0
+## v18.0.0
 
 Only breaking if multi-instance sub-process executions are inspected after sub-process run is completed. Picture a multi-instance sequential sub-process with a cardinality of 100. One hundred items in a list occupies some memory. That will not stand. Consequently, they are now removed when iteration completes and eventually collected by gc.
 
