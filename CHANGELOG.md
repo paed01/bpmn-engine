@@ -1,5 +1,17 @@
 # Changelog
 
+## v26.0.0 - 2026-06-13
+
+### Breaking
+
+- major update [`bpmn-elements@18`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) — non-selected gateway flows are no longer discarded
+- update to [`moddle-context-serializer@6`](https://github.com/paed01/moddle-context-serializer/blob/master/CHANGELOG.md)
+- require `smqp@>=13` peer dependency
+
+### Other
+
+- ship hand-maintained TypeScript declarations
+
 ## v25.0.1 - 2025-11-14
 
 - provenance release to get green badge next to npm package version

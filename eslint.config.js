@@ -74,7 +74,7 @@ export default [
     languageOptions: {
       parserOptions: {
         sourceType: 'module',
-        ecmaVersion: 2020,
+        ecmaVersion: 2025,
       },
     },
     rules,
@@ -85,6 +85,17 @@ export default [
       globals: {
         ...globals.nodeBuiltin,
       },
+    },
+  },
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      'no-process-exit': 0,
     },
   },
   {

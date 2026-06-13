@@ -176,16 +176,14 @@ Feature('Issues', () => {
         return end;
       });
 
-      And('user task was discarded once', () => {
+      And('user task was taken once', () => {
         const task = execution.getActivityById('UserTask');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 1);
       });
 
-      And('end was discarded thrice', () => {
+      And('end was taken once', () => {
         const task = execution.getActivityById('End');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 3);
       });
 
       When('executed again', async () => {
@@ -229,16 +227,14 @@ Feature('Issues', () => {
         return end;
       });
 
-      And('user task was discarded once', () => {
+      And('user task was taken once', () => {
         const task = execution.getActivityById('UserTask');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 1);
       });
 
-      And('end was discarded thrice', () => {
+      And('end was taken once', () => {
         const task = execution.getActivityById('End');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 3);
       });
 
       When('execution is recovered with state from first run user task wait', () => {
@@ -279,16 +275,14 @@ Feature('Issues', () => {
         return end;
       });
 
-      And('user task was discarded once', () => {
+      And('user task was taken once', () => {
         const task = execution.getActivityById('UserTask');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 1);
       });
 
-      And('end was discarded thrice', () => {
+      And('end was taken once', () => {
         const task = execution.getActivityById('End');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 3);
       });
 
       Given('ran again', async () => {
@@ -336,8 +330,8 @@ Feature('Issues', () => {
         execution = await engine.resume();
       });
 
-      Then('end event is discarded once', () => {
-        expect(execution.getActivityById('End').counters).to.deep.equal({ taken: 0, discarded: 1 });
+      Then('end event is not taken', () => {
+        expect(execution.getActivityById('End').counters).to.deep.equal({ taken: 0, discarded: 0 });
       });
 
       When('user task is signaled', () => {
@@ -348,8 +342,8 @@ Feature('Issues', () => {
         return end;
       });
 
-      Then('end event is taken once and discarded thrice', () => {
-        expect(execution.getActivityById('End').counters).to.deep.equal({ taken: 1, discarded: 3 });
+      Then('end event is taken once', () => {
+        expect(execution.getActivityById('End').counters).to.deep.equal({ taken: 1, discarded: 0 });
       });
     });
 
@@ -419,16 +413,16 @@ Feature('Issues', () => {
         return end;
       });
 
-      And('user task was discarded twice', () => {
+      And('user task was taken once', () => {
         const task = execution.getActivityById('UserTask');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 2);
+        expect(task.counters).to.have.property('discarded', 0);
       });
 
-      And('end was discarded four times', () => {
+      And('end was taken once', () => {
         const task = execution.getActivityById('End');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 4);
+        expect(task.counters).to.have.property('discarded', 0);
       });
 
       When('executed again', async () => {
@@ -472,16 +466,16 @@ Feature('Issues', () => {
         return end;
       });
 
-      And('user task was discarded twice', () => {
+      And('user task was taken once', () => {
         const task = execution.getActivityById('UserTask');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 2);
+        expect(task.counters).to.have.property('discarded', 0);
       });
 
-      And('end was discarded four times', () => {
+      And('end was taken once', () => {
         const task = execution.getActivityById('End');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 4);
+        expect(task.counters).to.have.property('discarded', 0);
       });
 
       When('execution is recovered with state from first run user task wait', () => {
@@ -522,16 +516,16 @@ Feature('Issues', () => {
         return end;
       });
 
-      And('user task was discarded twice', () => {
+      And('user task was taken once', () => {
         const task = execution.getActivityById('UserTask');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 2);
+        expect(task.counters).to.have.property('discarded', 0);
       });
 
-      And('end was discarded four times', () => {
+      And('end was taken once', () => {
         const task = execution.getActivityById('End');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 4);
+        expect(task.counters).to.have.property('discarded', 0);
       });
 
       Given('ran again', async () => {
@@ -570,7 +564,7 @@ Feature('Issues', () => {
         end = engine.waitFor('end');
       });
 
-      Then('end event is still not discarded', async () => {
+      Then('end event is still not touched', async () => {
         const [definition] = await engine.getDefinitions();
         expect(definition.getActivityById('End').counters).to.deep.equal({ taken: 0, discarded: 0 });
       });
@@ -579,8 +573,8 @@ Feature('Issues', () => {
         execution = await engine.resume();
       });
 
-      Then('end event is discarded once', () => {
-        expect(execution.getActivityById('End').counters).to.deep.equal({ taken: 0, discarded: 1 });
+      Then('end event is not taken', () => {
+        expect(execution.getActivityById('End').counters).to.deep.equal({ taken: 0, discarded: 0 });
       });
 
       When('user task is signaled', () => {
@@ -591,16 +585,16 @@ Feature('Issues', () => {
         return end;
       });
 
-      And('user task was taken once and discarded twice', () => {
+      And('user task was taken once', () => {
         const task = execution.getActivityById('UserTask');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 2);
+        expect(task.counters).to.have.property('discarded', 0);
       });
 
-      And('end was taken once and discarded four times', () => {
+      And('end was taken once', () => {
         const task = execution.getActivityById('End');
         expect(task.counters).to.have.property('taken', 1);
-        expect(task.counters).to.have.property('discarded', 4);
+        expect(task.counters).to.have.property('discarded', 0);
       });
     });
   });
@@ -718,8 +712,8 @@ Feature('Issues', () => {
       expect(execution.getActivityById('task3').counters).to.deep.equal({ taken: 0, discarded: 0 });
     });
 
-    And('fourth user task was discarded', () => {
-      expect(execution.getActivityById('task4').counters).to.deep.equal({ taken: 0, discarded: 1 });
+    And('fourth user task was not taken', () => {
+      expect(execution.getActivityById('task4').counters).to.deep.equal({ taken: 0, discarded: 0 });
     });
 
     let end;
@@ -753,8 +747,8 @@ Feature('Issues', () => {
       expect(execution.getActivityById('task3').counters).to.deep.equal({ taken: 1, discarded: 0 });
     });
 
-    And('fourth user task was discarded', () => {
-      expect(execution.getActivityById('task4').counters).to.deep.equal({ taken: 0, discarded: 1 });
+    And('fourth user task was not taken', () => {
+      expect(execution.getActivityById('task4').counters).to.deep.equal({ taken: 0, discarded: 0 });
     });
 
     And('execution completed', () => {

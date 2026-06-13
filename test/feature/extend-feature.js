@@ -509,7 +509,7 @@ Feature('extending behaviour', () => {
 
     And('second flow was discarded', () => {
       const flow = execution.definitions[0].getProcesses()[0].context.getSequenceFlowById('flow3');
-      expect(flow.counters).to.have.property('discard', 1);
+      expect(flow.counters).to.have.property('take', 0);
     });
 
     Given('an engine with type resolver function with new behaviour', () => {
@@ -547,9 +547,9 @@ Feature('extending behaviour', () => {
       expect(flow.counters).to.have.property('take', 1);
     });
 
-    And('second flow was discarded', () => {
+    And('second flow was not taken', () => {
       const flow = execution.definitions[0].getProcesses()[0].context.getSequenceFlowById('flow3');
-      expect(flow.counters).to.have.property('discard', 1);
+      expect(flow.counters).to.have.property('take', 0);
     });
   });
 

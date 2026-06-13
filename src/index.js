@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import BpmnModdle from 'bpmn-moddle';
 import * as Elements from 'bpmn-elements';
 import { Broker } from 'smqp';
-import serializer, { deserialize, TypeResolver } from 'moddle-context-serializer';
+import { Serializer, deserialize, TypeResolver } from 'moddle-context-serializer';
 
 import DebugLogger from './Logger.js';
 import JavaScripts from './JavaScripts.js';
@@ -29,6 +29,10 @@ const kTypeResolver = Symbol.for('type resolver');
 export default Engine;
 export { JavaScripts };
 
+/**
+ * BPMN 2.0 execution engine.
+ * @param {import('types').BpmnEngineOptions} [options]
+ */
 export function Engine(options) {
   if (!(this instanceof Engine)) return new Engine(options);
 
@@ -114,6 +118,12 @@ Object.defineProperties(Engine.prototype, {
   },
 });
 
+/**
+ * Execute the loaded definitions.
+ * @param {import('types').BpmnEngineExecuteOptions | ((err: Error, execution?: Execution) => void)} [optionsOrCallback]
+ * @param {(err: Error, execution?: Execution) => void} [callback]
+ * @returns {Promise<Execution>}
+ */
 Engine.prototype.execute = async function execute(...args) {
   const [executeOptions, callback] = getOptionsAndCallback(...args);
   try {
@@ -127,12 +137,19 @@ Engine.prototype.execute = async function execute(...args) {
   return execution._execute(executeOptions, callback);
 };
 
+/** @returns {Promise<void>} */
 Engine.prototype.stop = function stop() {
   const execution = this.execution;
   if (!execution) return;
   return execution.stop();
 };
 
+/**
+ * Recover engine from saved state.
+ * @param {import('types').BpmnEngineExecutionState | null} savedState
+ * @param {import('types').BpmnEngineOptions} [recoverOptions]
+ * @returns {Engine}
+ */
 Engine.prototype.recover = function recover(savedState, recoverOptions) {
   if (this[kExecution]?.isRunning) {
     throw new Error('cannot recover a running engine');
@@ -178,6 +195,12 @@ Engine.prototype.recover = function recover(savedState, recoverOptions) {
   return this;
 };
 
+/**
+ * Resume execution from a previously recovered state.
+ * @param {import('types').BpmnEngineExecuteOptions | ((err: Error, execution?: Execution) => void)} [optionsOrCallback]
+ * @param {(err: Error, execution?: Execution) => void} [callback]
+ * @returns {Promise<Execution>}
+ */
 Engine.prototype.resume = async function resume(...args) {
   const [resumeOptions, callback] = getOptionsAndCallback(...args);
 
@@ -199,6 +222,10 @@ Engine.prototype.resume = async function resume(...args) {
   return execution._resume(resumeOptions, callback);
 };
 
+/**
+ * Add a pre-serialized source context to the engine.
+ * @param {{ sourceContext: import('types').SerializableContext }} [options]
+ */
 Engine.prototype.addSource = function addSource(options) {
   if (!options?.sourceContext) return;
   const loadedDefinitions = this[kLoadedDefinitions];
@@ -206,16 +233,25 @@ Engine.prototype.addSource = function addSource(options) {
   this[kPendingSources].add(options.sourceContext);
 };
 
+/**
+ * @param {import('types').BpmnEngineExecuteOptions} [executeOptions]
+ * @returns {Promise<import('bpmn-elements').Definition[]>}
+ */
 Engine.prototype.getDefinitions = function getDefinitions(executeOptions) {
   const loadedDefinitions = this[kLoadedDefinitions];
   if (loadedDefinitions?.length) return Promise.resolve(loadedDefinitions);
   return this._loadDefinitions(executeOptions);
 };
 
+/**
+ * @param {string} id
+ * @returns {Promise<import('bpmn-elements').Definition>}
+ */
 Engine.prototype.getDefinitionById = async function getDefinitionById(id) {
   return (await this.getDefinitions()).find((d) => d.id === id);
 };
 
+/** @returns {Promise<import('types').BpmnEngineExecutionState>} */
 Engine.prototype.getState = async function getState() {
   const execution = this.execution;
   if (execution) return execution.getState();
@@ -224,6 +260,11 @@ Engine.prototype.getState = async function getState() {
   return new Execution(this, definitions, this.options).getState();
 };
 
+/**
+ * @template R
+ * @param {import('types').BpmnEngineEvent} eventName
+ * @returns {Promise<R>}
+ */
 Engine.prototype.waitFor = function waitFor(eventName) {
   const self = this;
   return new Promise((resolve, reject) => {
@@ -241,12 +282,14 @@ Engine.prototype.waitFor = function waitFor(eventName) {
   });
 };
 
+/** @internal */
 Engine.prototype._loadDefinitions = async function loadDefinitions(executeOptions) {
   const runSources = await Promise.all(this[kPendingSources]);
   const loadedDefinitions = (this[kLoadedDefinitions] = runSources.map((source) => this._loadDefinition(source, executeOptions)));
   return loadedDefinitions;
 };
 
+/** @internal */
 Engine.prototype._loadDefinition = function loadDefinition(serializedContext, executeOptions) {
   const environment = this.environment;
   const context = new Elements.Context(
@@ -269,20 +312,29 @@ Engine.prototype._loadDefinition = function loadDefinition(serializedContext, ex
   return new Elements.Definition(context);
 };
 
+/** @internal */
 Engine.prototype._serializeSource = async function serializeSource(source) {
   const moddleContext = await this._getModdleContext(source);
   return this._serializeModdleContext(moddleContext);
 };
 
+/** @internal */
 Engine.prototype._serializeModdleContext = function serializeModdleContext(moddleContext) {
-  return serializer(moddleContext, this[kTypeResolver], this.options.extendFn);
+  return Serializer(moddleContext, this[kTypeResolver], this.options.extendFn);
 };
 
+/** @internal */
 Engine.prototype._getModdleContext = function getModdleContext(source) {
   const bpmnModdle = new BpmnModdle(this.options.moddleOptions);
   return bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim());
 };
 
+/**
+ * @param {Engine} engine
+ * @param {any[]} definitions
+ * @param {import('types').BpmnEngineExecuteOptions} [options]
+ * @param {boolean} [isRecovered]
+ */
 export function Execution(engine, definitions, options, isRecovered = false) {
   this.name = engine.name;
   this.options = options;
@@ -332,6 +384,7 @@ Object.defineProperties(Execution.prototype, {
   },
 });
 
+/** @internal */
 Execution.prototype._execute = function execute(executeOptions, callback) {
   this._setup(executeOptions);
   this[kStopped] = false;
@@ -353,6 +406,7 @@ Execution.prototype._execute = function execute(executeOptions, callback) {
   return this;
 };
 
+/** @internal */
 Execution.prototype._resume = function resume(resumeOptions, callback) {
   this._setup(resumeOptions);
 
@@ -366,6 +420,7 @@ Execution.prototype._resume = function resume(resumeOptions, callback) {
   return this;
 };
 
+/** @internal */
 Execution.prototype._addConsumerCallbacks = function addConsumerCallbacks(callback) {
   if (!callback) return;
 
@@ -416,6 +471,7 @@ Execution.prototype._addConsumerCallbacks = function addConsumerCallbacks(callba
   }
 };
 
+/** @returns {Promise<any>} */
 Execution.prototype.stop = async function stop() {
   const engine = this[kEngine];
   const prom = engine.waitFor('stop');
@@ -433,6 +489,7 @@ Execution.prototype.stop = async function stop() {
   return result;
 };
 
+/** @internal */
 Execution.prototype._setup = function setup(setupOptions) {
   const listener = setupOptions?.listener || this.options.listener;
   if (listener && typeof listener.emit !== 'function') throw new Error('listener.emit is not a function');
@@ -452,6 +509,7 @@ Execution.prototype._setup = function setup(setupOptions) {
   }
 };
 
+/** @internal */
 Execution.prototype._onChildMessage = function onChildMessage(routingKey, message, owner) {
   const { environment: ownerEnvironment } = owner;
   const listener = ownerEnvironment.options?.listener;
@@ -521,6 +579,7 @@ Execution.prototype._onChildMessage = function onChildMessage(routingKey, messag
   }
 };
 
+/** @internal */
 Execution.prototype._complete = function complete(eventType, content, messageProperties) {
   const timers = this.environment.timers;
   timers.executing.slice().forEach((ref) => timers.clearTimeout(ref));
@@ -528,11 +587,13 @@ Execution.prototype._complete = function complete(eventType, content, messagePro
   return eventType !== 'error' && this[kEngine].emit(eventType, this);
 };
 
+/** @internal */
 Execution.prototype._teardownDefinition = function teardownDefinition(definition) {
   this[kExecuting].delete(definition);
   definition.broker.cancel('_engine_definition');
 };
 
+/** @internal */
 Execution.prototype._saveOutput = function saveOutput(output) {
   if (!output || typeof output !== 'object') return;
 
@@ -548,6 +609,7 @@ Execution.prototype._saveOutput = function saveOutput(output) {
   }
 };
 
+/** @returns {import('types').BpmnEngineExecutionState} */
 Execution.prototype.getState = function getState() {
   const definitions = [];
   for (const definition of this.definitions) {
@@ -567,6 +629,10 @@ Execution.prototype.getState = function getState() {
   };
 };
 
+/**
+ * @param {string} activityId
+ * @returns {any}
+ */
 Execution.prototype.getActivityById = function getActivityById(activityId) {
   for (const definition of this.definitions) {
     const activity = definition.getActivityById(activityId);
@@ -574,6 +640,7 @@ Execution.prototype.getActivityById = function getActivityById(activityId) {
   }
 };
 
+/** @returns {any[]} */
 Execution.prototype.getPostponed = function getPostponed() {
   const definitions = this.stopped ? this.definitions : this[kExecuting];
   let result = [];
@@ -583,6 +650,10 @@ Execution.prototype.getPostponed = function getPostponed() {
   return result;
 };
 
+/**
+ * @param {import('types').BpmnMessage} [payload]
+ * @param {{ ignoreSameDefinition?: boolean }} [signalOptions]
+ */
 Execution.prototype.signal = function signal(payload, signalOptions) {
   for (const definition of this[kExecuting]) {
     if (signalOptions?.ignoreSameDefinition && payload?.parent?.id === definition.id) continue;
@@ -590,26 +661,35 @@ Execution.prototype.signal = function signal(payload, signalOptions) {
   }
 };
 
+/** @param {import('types').BpmnMessage} [payload] */
 Execution.prototype.cancelActivity = function cancelActivity(payload) {
   for (const definition of this[kExecuting]) {
     definition.cancelActivity(payload);
   }
 };
 
+/**
+ * @template T
+ * @param {import('types').BpmnEngineEvent} eventName
+ * @returns {Promise<T>}
+ */
 Execution.prototype.waitFor = function waitFor(...args) {
   return this[kEngine].waitFor(...args);
 };
 
+/** @internal */
 Execution.prototype._onBrokerReturn = function onBrokerReturn(message) {
   if (message.properties.type === 'error') {
     this[kEngine].emit('error', message.content);
   }
 };
 
+/** @internal */
 Execution.prototype._debug = function debug(msg) {
   this[kEngine].logger.debug(`<${this.name}> ${msg}`);
 };
 
+/** @internal */
 Execution.prototype._getActivityStatus = function getActivityStatus() {
   let status = 'idle';
   const executing = this[kExecuting];

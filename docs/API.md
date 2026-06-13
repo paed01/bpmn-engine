@@ -1,8 +1,4 @@
-<!-- version -->
-
-# 25.0.1 API Reference
-
-<!-- versionstop -->
+# API Reference
 
 <!-- toc -->
 
@@ -21,7 +17,7 @@
     - [`resume([options, [callback]])`](#resumeoptions-callback)
 - [Execution API](#execution-api)
   - [`getActivityById(activityId)`](#getactivitybyidactivityid)
-  - [`getState()`](#getstate)
+  - [`getState()`](#getstate-1)
   - [`signal(message[, options])`](#signalmessage-options)
   - [`cancelActivity(message)`](#cancelactivitymessage)
 - [Engine events](#engine-events)
@@ -319,7 +315,7 @@ import { EventEmitter } from 'node:events';
 import BpmnModdle from 'bpmn-moddle';
 import * as elements from 'bpmn-elements';
 import { Engine } from 'bpmn-engine';
-import Serializer, { TypeResolver } from 'moddle-context-serializer';
+import { Serializer, TypeResolver } from 'moddle-context-serializer';
 
 const engine = new Engine({
   name: 'add source',
@@ -413,11 +409,14 @@ Asynchronous function to get state of a running execution.
 
 The saved state will include the following content:
 
-- `state`: `running` or `idle`
+- `name`: engine name
+- `state`: `running`, `idle`, `stopped`, or `error`
+- `stopped`: boolean stopped
 - `engineVersion`: module package version
-- `moddleOptions`: Engine moddleOptions
+- `environment`: serialized engine environment
 - `definitions`: List of definitions
   - `state`: State of definition, `pending`, `running`, or `completed`
+  - `source`: serialized definition source
   - `processes`: Object with processes with id as key
     - `variables`: Execution variables
     - `services`: Execution services
