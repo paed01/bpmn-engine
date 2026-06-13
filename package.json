@@ -57,6 +57,14 @@
       "url": "https://github.com/paed01/bpmn-engine/master/LICENSE"
     }
   ],
+  "overrides": {
+    "c8": {
+      "yargs": "^18.0.0"
+    },
+    "mocha": {
+      "yargs": "^18.0.0"
+    }
+  },
   "devDependencies": {
     "@bonniernews/hot-bev": "^0.4.0",
     "@eslint/js": "^10.0.1",
