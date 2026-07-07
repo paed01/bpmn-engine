@@ -1105,11 +1105,11 @@ Feature('Issues', () => {
 
               let output;
               if (content.isMultiInstance) {
-                output = rawOutput.map(({ id, executionId /* eslint-disable-line no-unused-vars */, ...rest }) => {
+                output = rawOutput.map(({ id, executionId, ...rest }) => {
                   return rest;
                 });
               } else {
-                const { id, executionId, ...rest } = rawOutput; // eslint-disable-line no-unused-vars
+                const { id, executionId, ...rest } = rawOutput;
                 output = rest;
               }
 

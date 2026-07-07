@@ -598,7 +598,7 @@ Feature('extending behaviour', () => {
         for (const extension of activity.behaviour.extensionElements.values) {
           switch (extension.$type) {
             case 'camunda:ExecutionListener': {
-              myExtensions.push(ExecutionListener(extension));
+              if (extension.script) myExtensions.push(ExecutionListener(extension));
               break;
             }
           }

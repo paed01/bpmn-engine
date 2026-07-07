@@ -10,7 +10,8 @@ const rules = {
   'no-array-constructor': 2,
   'no-caller': 2,
   'no-catch-shadow': 2,
-  'no-console': 1,
+  'no-console': 'error',
+  'no-duplicate-imports': 'error',
   'no-eval': 2,
   'no-extend-native': 2,
   'no-extra-bind': 2,
@@ -43,7 +44,7 @@ const rules = {
   'no-undef': 2,
   'no-underscore-dangle': 0,
   'no-unused-expressions': 2,
-  'no-unused-vars': 2,
+  'no-unused-vars': ['error', { ignoreRestSiblings: true }],
   'no-use-before-define': [
     'error',
     {

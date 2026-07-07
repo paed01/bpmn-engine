@@ -1,5 +1,10 @@
 # Changelog
 
+## v26.0.1 - 2026-07-07
+
+- declare `bpmn-elements`, `bpmn-moddle`, `moddle-context-serializer`, and `debug` as peer dependencies (install and pin them yourself)
+- verify `bpmn-moddle` 9 and 10 both work — see [bpmn-moddle 9 vs 10](/docs/bpmn-moddle.md)
+
 ## v26.0.0 - 2026-06-13
 
 ### Breaking

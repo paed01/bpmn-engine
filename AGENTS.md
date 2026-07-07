@@ -43,7 +43,7 @@ smqp (peer dep) ── message broker driving execution
 
 - **Symbol-keyed private state.** All instance internals on `Engine`/execution use `Symbol.for('engine')`, `Symbol.for('environment')`, etc. This is the project's privacy convention — don't replace with `#fields` (would break `Object.assign`-based extension and the recover/resume state walking).
 - **`getOptionsAndCallback.js`** — small helper that lets every public method accept either `(options, callback)` or `(callback)` style. Preserves the legacy callback-friendly API while the implementation returns Promises.
-- **Extensions live under `src/extensions/`.** `ProcessOutputDataObject.js` is the canonical example — extensions plug into `bpmn-elements` via the engine's `extensions` option and are typically called for specific element types.
+- **Extensions live under `src/extensions/`.** `ProcessOutputDataObject.js` is the canonical example — extensions plug into `bpmn-elements` via the engine's `extensions` option and are typically called for specific element types. The wider BPMN ecosystem — docs, guides, and additional extensions for this stack — is published at [0dep.se](https://0dep.se); check there before writing a new extension from scratch.
 - **Test fixtures under `test/resources/`** are real `.bpmn` XML files plus a few `.json` extensions. `test/resources/JsExtension.js` and `test/resources/js-bpmn-moddle.json` define a custom moddle extension namespace used across multiple feature tests.
 - **`mocha-cakes-2` ≠ standard mocha.** Files under `test/feature/` use Gherkin-flavored globals (`Feature`, `Scenario`, `Given`, `When`, `Then`, `And`, `But`). They're ESLint-allowed via the eslint config's globals.
 

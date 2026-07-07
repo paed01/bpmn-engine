@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import * as Bpmn from 'bpmn-engine';
+// eslint-disable-next-line no-duplicate-imports
 import Engine from 'bpmn-engine';
 import * as factory from './helpers/factory.js';
 import * as testHelpers from './helpers/testHelpers.js';
