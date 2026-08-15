@@ -24,7 +24,7 @@ describe('issues', () => {
 
       const states = [];
 
-      listener.on('activity.start', (activity, engineApi) => {
+      listener.on('activity.start', (_activity, engineApi) => {
         states.push(engineApi.getState());
       });
 

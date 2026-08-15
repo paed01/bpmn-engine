@@ -4,5 +4,5 @@
   "timeout": 1000,
   "ui": "mocha-cakes-2",
   "spec": ["test/**/*-feature.js", "test/**/*-test.js"],
-  "require": ["chai/register-expect.js"]
+  "require": ["chai/register-expect.js", "./test/helpers/setup.js"]
 }

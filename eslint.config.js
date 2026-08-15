@@ -56,6 +56,7 @@ const rules = {
   ],
   'no-var': 2,
   'no-with': 2,
+  'prefer-arrow-callback': ['error', { allowNamedFunctions: true }],
   'prefer-const': ['error', { destructuring: 'all' }],
   'require-atomic-updates': 0,
   'require-await': 2,

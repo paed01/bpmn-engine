@@ -49,7 +49,7 @@ smqp (peer dep) ── message broker driving execution
 
 ## Build & publishing
 
-- `type: module` in `package.json`; ESM is `src/index.js`, CJS is `lib/index.cjs` (rollup), types are hand-maintained at `types/index.d.ts` (the published `declare module 'bpmn-engine'` surface) with shared interface definitions in `types/interfaces.d.ts` (referenced by `src` JSDoc via the tsconfig `types` path).
+- `type: module` in `package.json`; ESM is `src/index.js`, CJS is `lib/index.cjs` (rollup), types are hand-maintained at `types/index.d.ts` (the published `declare module 'bpmn-engine'` surface, referenced by `src` JSDoc via package self-reference `import('bpmn-engine')`).
 - `prepack` runs `dist`, so `npm publish` always ships a fresh CJS bundle. `lib/index.cjs` is tracked in git — regenerate (`npm run dist`) and commit alongside source changes that affect the public API.
 - Tests import via package self-reference (`import { Engine } from 'bpmn-engine'`), not `'../src/index.js'`. This exercises the same module resolution consumers use.
 

@@ -149,7 +149,7 @@ Feature('extending behaviour', () => {
           camunda,
         },
         services: {
-          serviceFn(scope, callback) {
+          serviceFn(_scope, callback) {
             callback(null, { data: 1 });
           },
         },
@@ -223,7 +223,7 @@ Feature('extending behaviour', () => {
         source,
         scripts: {
           register() {},
-          getScript(scriptType, activity) {
+          getScript(_scriptType, activity) {
             if (activity.id === 'task1') {
               return {
                 execute(scope, next) {
@@ -621,7 +621,7 @@ Feature('extending behaviour', () => {
               broker.subscribeTmp(
                 'event',
                 `activity.${extension.event}`,
-                (routingKey, message) => {
+                (_routingKey, message) => {
                   script.execute(message);
                 },
                 { noAck: true, consumerTag: '_my-extension' }

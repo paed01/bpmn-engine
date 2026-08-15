@@ -86,6 +86,7 @@ Feature('Backward compatability', () => {
       delete state.definitions[0].execution.processes[0].environment;
     });
 
+    /** @type {Engine} */
     let recovered;
     When('engine is recovered with old state in latest version', () => {
       const upgradedState = upgradeStateToVersion14(state);

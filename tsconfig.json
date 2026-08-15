@@ -1,5 +1,5 @@
 {
-  "include": ["src/**/*", "types/interfaces.d.ts"],
+  "include": ["src/**/*", "types/index.d.ts"],
   "compilerOptions": {
     "noEmit": true,
     "rootDir": "src",
@@ -18,8 +18,6 @@
     "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "paths": {
-      "types": ["./types/interfaces.d.ts"]
-    }
+    "types": ["node"]
   }
 }

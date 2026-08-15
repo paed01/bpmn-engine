@@ -31,7 +31,7 @@ export { JavaScripts };
 
 /**
  * BPMN 2.0 execution engine.
- * @param {import('types').BpmnEngineOptions} [options]
+ * @param {import('bpmn-engine').BpmnEngineOptions} [options]
  */
 export function Engine(options) {
   if (!(this instanceof Engine)) return new Engine(options);
@@ -120,7 +120,7 @@ Object.defineProperties(Engine.prototype, {
 
 /**
  * Execute the loaded definitions.
- * @param {import('types').BpmnEngineExecuteOptions | ((err: Error, execution?: Execution) => void)} [optionsOrCallback]
+ * @param {import('bpmn-engine').BpmnEngineExecuteOptions | ((err: Error, execution?: Execution) => void)} [optionsOrCallback]
  * @param {(err: Error, execution?: Execution) => void} [callback]
  * @returns {Promise<Execution>}
  */
@@ -146,8 +146,8 @@ Engine.prototype.stop = function stop() {
 
 /**
  * Recover engine from saved state.
- * @param {import('types').BpmnEngineExecutionState | null} savedState
- * @param {import('types').BpmnEngineOptions} [recoverOptions]
+ * @param {import('bpmn-engine').BpmnEngineExecutionState | null} savedState
+ * @param {import('bpmn-engine').BpmnEngineOptions} [recoverOptions]
  * @returns {Engine}
  */
 Engine.prototype.recover = function recover(savedState, recoverOptions) {
@@ -197,7 +197,7 @@ Engine.prototype.recover = function recover(savedState, recoverOptions) {
 
 /**
  * Resume execution from a previously recovered state.
- * @param {import('types').BpmnEngineExecuteOptions | ((err: Error, execution?: Execution) => void)} [optionsOrCallback]
+ * @param {import('bpmn-engine').BpmnEngineExecuteOptions | ((err: Error, execution?: Execution) => void)} [optionsOrCallback]
  * @param {(err: Error, execution?: Execution) => void} [callback]
  * @returns {Promise<Execution>}
  */
@@ -224,7 +224,7 @@ Engine.prototype.resume = async function resume(...args) {
 
 /**
  * Add a pre-serialized source context to the engine.
- * @param {{ sourceContext: import('types').SerializableContext }} [options]
+ * @param {{ sourceContext: import('moddle-context-serializer').SerializableContext }} [options]
  */
 Engine.prototype.addSource = function addSource(options) {
   if (!options?.sourceContext) return;
@@ -234,7 +234,7 @@ Engine.prototype.addSource = function addSource(options) {
 };
 
 /**
- * @param {import('types').BpmnEngineExecuteOptions} [executeOptions]
+ * @param {import('bpmn-engine').BpmnEngineExecuteOptions} [executeOptions]
  * @returns {Promise<import('bpmn-elements').Definition[]>}
  */
 Engine.prototype.getDefinitions = function getDefinitions(executeOptions) {
@@ -251,7 +251,7 @@ Engine.prototype.getDefinitionById = async function getDefinitionById(id) {
   return (await this.getDefinitions()).find((d) => d.id === id);
 };
 
-/** @returns {Promise<import('types').BpmnEngineExecutionState>} */
+/** @returns {Promise<import('bpmn-engine').BpmnEngineExecutionState>} */
 Engine.prototype.getState = async function getState() {
   const execution = this.execution;
   if (execution) return execution.getState();
@@ -262,7 +262,7 @@ Engine.prototype.getState = async function getState() {
 
 /**
  * @template R
- * @param {import('types').BpmnEngineEvent} eventName
+ * @param {import('bpmn-engine').BpmnEngineEvent} eventName
  * @returns {Promise<R>}
  */
 Engine.prototype.waitFor = function waitFor(eventName) {
@@ -332,7 +332,7 @@ Engine.prototype._getModdleContext = function getModdleContext(source) {
 /**
  * @param {Engine} engine
  * @param {any[]} definitions
- * @param {import('types').BpmnEngineExecuteOptions} [options]
+ * @param {import('bpmn-engine').BpmnEngineExecuteOptions} [options]
  * @param {boolean} [isRecovered]
  */
 export function Execution(engine, definitions, options, isRecovered = false) {
@@ -609,7 +609,7 @@ Execution.prototype._saveOutput = function saveOutput(output) {
   }
 };
 
-/** @returns {import('types').BpmnEngineExecutionState} */
+/** @returns {import('bpmn-engine').BpmnEngineExecutionState} */
 Execution.prototype.getState = function getState() {
   const definitions = [];
   for (const definition of this.definitions) {
@@ -651,7 +651,7 @@ Execution.prototype.getPostponed = function getPostponed() {
 };
 
 /**
- * @param {import('types').BpmnMessage} [payload]
+ * @param {import('bpmn-engine').BpmnMessage} [payload]
  * @param {{ ignoreSameDefinition?: boolean }} [signalOptions]
  */
 Execution.prototype.signal = function signal(payload, signalOptions) {
@@ -661,7 +661,7 @@ Execution.prototype.signal = function signal(payload, signalOptions) {
   }
 };
 
-/** @param {import('types').BpmnMessage} [payload] */
+/** @param {import('bpmn-engine').BpmnMessage} [payload] */
 Execution.prototype.cancelActivity = function cancelActivity(payload) {
   for (const definition of this[kExecuting]) {
     definition.cancelActivity(payload);
@@ -670,7 +670,7 @@ Execution.prototype.cancelActivity = function cancelActivity(payload) {
 
 /**
  * @template T
- * @param {import('types').BpmnEngineEvent} eventName
+ * @param {import('bpmn-engine').BpmnEngineEvent} eventName
  * @returns {Promise<T>}
  */
 Execution.prototype.waitFor = function waitFor(...args) {

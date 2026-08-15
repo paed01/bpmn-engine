@@ -3,7 +3,10 @@ import * as factory from '../../helpers/factory.js';
 
 Feature('issue 163', () => {
   Scenario('Get sub process postponed', () => {
-    let engine, execution;
+    /** @type {import('bpmn-engine').Engine} */
+    let engine;
+    /** @type {import('bpmn-engine').Execution} */
+    let execution;
     When('one usertask and two user tasks in sub process and finally a user task', async () => {
       const source = factory.resource('issue-163.bpmn');
 

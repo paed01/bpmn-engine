@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
+// @ts-ignore
 import BpmnModdle from 'bpmn-moddle';
 import * as Elements from 'bpmn-elements';
 import Logger from '../../src/Logger.js';

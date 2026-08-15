@@ -2,7 +2,9 @@ import { Engine } from 'bpmn-engine';
 
 Feature('Scripts', () => {
   Scenario('Process with scripts', () => {
-    let engine, source;
+    /** @type {Engine} */
+    let engine;
+    let source;
     Given('a bpmn source with empty script task', () => {
       source = `
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -50,7 +52,9 @@ Feature('Scripts', () => {
   });
 
   Scenario('Process with setTimeout in inline scripts task', () => {
-    let engine, source;
+    /** @type {Engine} */
+    let engine;
+    let source;
     Given('a bpmn source with script task with setTimeout', () => {
       source = `
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -86,7 +90,9 @@ Feature('Scripts', () => {
   });
 
   Scenario('Process with long running timer can be stopped', () => {
-    let engine, source;
+    /** @type {Engine} */
+    let engine;
+    let source;
     Given('a bpmn source with script task with setTimeout', () => {
       source = `
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"

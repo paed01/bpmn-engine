@@ -1,5 +1,10 @@
 # Changelog
 
+## v26.0.2 - 2026-08-15
+
+- fix type declarations: `typeResolver` option is a type resolver extender function, `JavaScripts` is callable without `new`, and `getScript` may return undefined
+- type-check the test suite with the corrected `bpmn-elements@18` type declarations
+
 ## v26.0.1 - 2026-07-07
 
 - declare `bpmn-elements`, `bpmn-moddle`, `moddle-context-serializer`, and `debug` as peer dependencies (install and pin them yourself)

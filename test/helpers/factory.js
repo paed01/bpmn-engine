@@ -83,6 +83,10 @@ export function multipleInbound() {
   </definitions>`;
 }
 
+/**
+ * @param {string} name
+ * @returns {Buffer}
+ */
 export function resource(name) {
   return fs.readFileSync(path.join('./test/resources', name));
 }

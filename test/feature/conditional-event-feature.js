@@ -5,7 +5,9 @@ const boundJsEventSource = factory.resource('conditional-bound-js-event.bpmn');
 
 Feature('Conditional event', () => {
   Scenario('A service with conditional bound expression event', () => {
-    let source, engine, serviceCallback;
+    /** @type {Engine} */
+    let engine;
+    let source, serviceCallback;
     Given('a source matching scenario', () => {
       source = `
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">

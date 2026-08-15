@@ -2,6 +2,7 @@ import { Engine } from 'bpmn-engine';
 
 Feature('Engine output', () => {
   Scenario('Process completes with output', () => {
+    /** @type {Engine} */
     let engine;
     Given('a process with output', () => {
       const source = `<?xml version="1.0" encoding="UTF-8"?>
@@ -77,6 +78,7 @@ Feature('Engine output', () => {
   });
 
   Scenario('process fails', () => {
+    /** @type {Engine} */
     let engine;
     Given('a process with output', () => {
       const source = `<?xml version="1.0" encoding="UTF-8"?>

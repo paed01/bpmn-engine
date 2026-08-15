@@ -118,7 +118,7 @@ Feature('Issues', () => {
           name: 'issue 105',
           source: source1,
           services: {
-            async doTask1(scope, callback) {
+            async doTask1(_scope, callback) {
               await sleep(50); // calling other heavy service...
               return callback(null);
             },
@@ -355,7 +355,7 @@ Feature('Issues', () => {
           name: 'issue 105',
           source: source2,
           services: {
-            async doTask1(scope, callback) {
+            async doTask1(_scope, callback) {
               await sleep(50); // calling other heavy service...
               return callback(null);
             },
@@ -1321,15 +1321,22 @@ function TimersWithoutScope(options) {
   }
 
   function registerTimeout(owner) {
-    return function registeredSetTimeout(...args) {
-      return timersApi.setTimeout.call(owner, ...args);
+    return function registeredSetTimeout(callback, delay, ...args) {
+      return timersApi.setTimeout.call(owner, callback, delay, ...args);
     };
   }
 
+  /** @this {any} */
   function wrappedSetTimeout(callback, delay, ...args) {
-    const ref = { timerId: `timer_${count++}`, callback, delay, args, owner: this };
+    const ref = {
+      timerId: `timer_${count++}`,
+      callback,
+      delay,
+      args,
+      owner: this,
+      timerRef: options.setTimeout.call(null, onTimeout, delay, ...args),
+    };
     executing.push(ref);
-    ref.timerRef = options.setTimeout.call(null, onTimeout, delay, ...args);
     return ref;
 
     function onTimeout(...rargs) {

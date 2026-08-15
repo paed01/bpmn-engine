@@ -4,7 +4,9 @@ import { Engine } from 'bpmn-engine';
 
 Feature('Resume execution', () => {
   Scenario('Execution is stopped and resumed', () => {
-    let engine, listener, source;
+    /** @type {Engine} */
+    let engine;
+    let listener, source;
     Given('a bpmn source with a sub processes with one user task', () => {
       source = `
       <definitions id="Def_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -280,7 +282,9 @@ Feature('Resume execution', () => {
   });
 
   Scenario('recover with options', () => {
-    let engine, listener, source;
+    /** @type {Engine} */
+    let engine;
+    let listener, source;
     Given('a bpmn source with user task, timer and script', () => {
       source = `
       <definitions id="Def_1" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">

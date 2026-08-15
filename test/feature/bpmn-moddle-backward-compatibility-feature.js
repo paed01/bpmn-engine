@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 
 import { Engine } from 'bpmn-engine';
+// @ts-ignore
 import BpmnModdle9 from 'bpmn-moddle';
 import { BpmnModdle as BpmnModdle10 } from 'bpmn-moddle-10';
 
@@ -27,7 +28,10 @@ Feature('bpmn-moddle 9/10 backward compatibility', () => {
       expect(BpmnModdle9, 'v9 default export').to.be.a('function');
     });
 
-    let engine, stopped;
+    /** @type {import('bpmn-engine').Engine} */
+    let engine;
+    /** @type {Promise<any>} */
+    let stopped;
     And('an engine started from that v9 moddle context', async () => {
       const moddleContext = await new BpmnModdle9().fromXML(source.trim());
       engine = new Engine({ name: 'saved on v9', moddleContext, services });
@@ -55,7 +59,10 @@ Feature('bpmn-moddle 9/10 backward compatibility', () => {
       slimmerState.definitions[0].source = undefined;
     });
 
-    let recovered, ended;
+    /** @type {import('bpmn-engine').Engine} */
+    let recovered;
+    /** @type {Promise<any>} */
+    let ended;
     When('a fresh engine parses the same source with bpmn-moddle@10 and recovers the state', async () => {
       expect(BpmnModdle10, 'v10 named export').to.be.a('function');
 

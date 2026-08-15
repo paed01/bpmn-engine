@@ -16,6 +16,7 @@ Feature('Timers', () => {
     });
     after(ck.reset);
 
+    /** @type {Engine} */
     let engine;
     Given('a time cycle start event, bound time duration event, throw time date event, and a user task with due date', async () => {
       const sourceContext = await testHelpers.context(timersSource, {
@@ -244,7 +245,9 @@ Feature('Timers', () => {
   });
 
   Scenario('engine with added arbitrary timers', () => {
-    let engine, source;
+    /** @type {Engine} */
+    let engine;
+    let source;
     Given('a source with user task and a bound timer event', () => {
       source = `<?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -357,7 +360,9 @@ Feature('Timers', () => {
   });
 
   Scenario('engine with invalid timers', () => {
-    let engine, source;
+    /** @type {Engine} */
+    let engine;
+    let source;
     Given('a source with user task and a bound timer event with invalid date', () => {
       source = `<?xml version="1.0" encoding="UTF-8"?>
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">

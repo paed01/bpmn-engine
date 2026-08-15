@@ -2,7 +2,7 @@ declare module 'bpmn-engine' {
   import type { EventEmitter } from 'node:events';
   import type { Broker } from 'smqp';
   import type { Definitions as BpmnModdleDefinitions } from 'bpmn-moddle';
-  import type { ExtendFn, SerializableContext, ResolverFn } from 'moddle-context-serializer';
+  import type { ExtendFn, SerializableContext, TypeResolverExtender } from 'moddle-context-serializer';
   import type {
     ActivityStatus,
     Definition,
@@ -16,7 +16,7 @@ declare module 'bpmn-engine' {
     Script,
   } from 'bpmn-elements';
 
-  export type BpmnEngineEvent = 'error' | 'stop' | 'end';
+  export type BpmnEngineEvent = 'error' | 'stop' | 'end' | 'wait';
 
   export type BpmnActivityEvent =
     | 'activity.enter'
@@ -49,16 +49,17 @@ declare module 'bpmn-engine' {
 
   export interface BpmnEngineOptions extends BpmnEngineExecuteOptions {
     name?: string;
-    source?: string;
+    source?: string | Buffer;
     sourceContext?: SerializableContext;
     elements?: Record<string, any>;
-    typeResolver?: ResolverFn;
+    typeResolver?: TypeResolverExtender;
     extendFn?: ExtendFn;
     moddleOptions?: any;
     moddleContext?: BpmnModdleDefinitions;
     Logger?: (scope: string) => ILogger;
     scripts?: IScripts;
     disableDummyScript?: boolean;
+    listener?: EventEmitter | IListenerEmitter;
     [x: string]: any;
   }
 
@@ -69,19 +70,19 @@ declare module 'bpmn-engine' {
   }
 
   export interface BpmnEngineExecutionState {
-    name: string;
-    engineVersion: string;
-    state: BpmnEngineRunningStatus;
-    stopped: boolean;
-    environment: EnvironmentState;
-    definitions: BpmnEngineDefinitionState[];
+    name?: string;
+    engineVersion?: string;
+    state?: BpmnEngineRunningStatus;
+    stopped?: boolean;
+    environment?: EnvironmentState;
+    definitions?: BpmnEngineDefinitionState[];
   }
 
   export function Engine(options?: BpmnEngineOptions): Engine;
   export class Engine extends EventEmitter {
     constructor(options?: BpmnEngineOptions);
     options: BpmnEngineOptions;
-    readonly name: string;
+    name: string;
     readonly broker: Broker;
     readonly logger: ILogger;
     readonly environment: Environment;
@@ -99,7 +100,7 @@ declare module 'bpmn-engine' {
     getDefinitions(executeOptions?: BpmnEngineExecuteOptions): Promise<Definition[]>;
     getState(): Promise<BpmnEngineExecutionState>;
 
-    recover(savedState: BpmnEngineExecutionState | null, recoverOptions?: BpmnEngineOptions): Engine;
+    recover(savedState?: BpmnEngineExecutionState | null, recoverOptions?: BpmnEngineOptions): Engine;
 
     resume(): Promise<Execution>;
     resume(options: BpmnEngineExecuteOptions): Promise<Execution>;
@@ -143,11 +144,15 @@ declare module 'bpmn-engine' {
     waitFor<R>(eventName: BpmnEngineEvent): Promise<R>;
   }
 
-  export class JavaScripts implements IScripts {
-    constructor(disableDummy?: boolean);
+  export interface JavaScripts extends IScripts {
     register(activity: any): Script | undefined;
-    getScript(language: string, identifier: { id: string; [x: string]: any }): Script;
+    getScript(language: string, identifier: { id: string; [x: string]: any }): Script | undefined;
   }
+  export const JavaScripts: {
+    new (disableDummy?: boolean): JavaScripts;
+    /** callable without new */
+    (disableDummy?: boolean): JavaScripts;
+  };
 
   export default Engine;
 }
