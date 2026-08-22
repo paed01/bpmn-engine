@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { EventEmitter } from 'node:events';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 import { Engine } from 'bpmn-engine';
@@ -116,8 +117,8 @@ Feature('bpmn-moddle 9/10 backward compatibility', () => {
       const helperDir = new URL('../helpers/bpmn-moddle-10/', import.meta.url);
       const { stdout } = await promisify(execFile)(process.execPath, [
         '--import',
-        new URL('./register.js', helperDir).pathname,
-        new URL('./run-engine-source.js', helperDir).pathname,
+        new URL('./register.js', helperDir).href,
+        fileURLToPath(new URL('./run-engine-source.js', helperDir)),
       ]);
       v10Run = JSON.parse(stdout);
     });
