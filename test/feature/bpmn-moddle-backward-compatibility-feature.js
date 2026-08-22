@@ -1,4 +1,6 @@
+import { execFile } from 'node:child_process';
 import { EventEmitter } from 'node:events';
+import { promisify } from 'node:util';
 
 import { Engine } from 'bpmn-engine';
 // @ts-ignore
@@ -99,6 +101,30 @@ Feature('bpmn-moddle 9/10 backward compatibility', () => {
 
     Then('both serialized contexts are equal', () => {
       expect(JSON.parse(v9Context.serialize())).to.deep.equal(JSON.parse(v10Context.serialize()));
+    });
+  });
+
+  Scenario('the engine parses raw source itself regardless of bpmn-moddle version', () => {
+    Given('the engine parses the source option with bpmn-moddle@9, the installed peer', async () => {
+      const definitions = await new Engine({ source }).getDefinitions();
+      expect(definitions[0]).to.have.property('id', 'Definitions_1');
+    });
+
+    let v10Run;
+    When('a child process where bpmn-moddle resolves to v10 runs the engine with the source option', async function whenSpawned() {
+      this.timeout(5000);
+      const helperDir = new URL('../helpers/bpmn-moddle-10/', import.meta.url);
+      const { stdout } = await promisify(execFile)(process.execPath, [
+        '--import',
+        new URL('./register.js', helperDir).pathname,
+        new URL('./run-engine-source.js', helperDir).pathname,
+      ]);
+      v10Run = JSON.parse(stdout);
+    });
+
+    Then('the child process resolved the v10 named export and the engine parsed the source', () => {
+      expect(v10Run.resolvedModdleExports, 'v10 exports').to.deep.equal(['BpmnModdle']);
+      expect(v10Run).to.have.property('definitionId', 'Definitions_1');
     });
   });
 });

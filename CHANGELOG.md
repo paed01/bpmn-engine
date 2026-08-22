@@ -1,5 +1,9 @@
 # Changelog
 
+## v26.0.3 - 2026-08-22
+
+- support both `bpmn-moddle` 9 and 10 as promised by package
+
 ## v26.0.2 - 2026-08-15
 
 - fix type declarations: `typeResolver` option is a type resolver extender function, `JavaScripts` is callable without `new`, and `getScript` may return undefined

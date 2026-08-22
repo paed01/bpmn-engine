@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import { EventEmitter } from 'node:events';
 import { fileURLToPath } from 'node:url';
 
-import BpmnModdle from 'bpmn-moddle';
+import * as bpmnModdle from 'bpmn-moddle';
 import * as Elements from 'bpmn-elements';
 import { Broker } from 'smqp';
 import { Serializer, deserialize, TypeResolver } from 'moddle-context-serializer';
@@ -14,6 +14,9 @@ import ProcessOutputDataObject from './extensions/ProcessOutputDataObject.js';
 
 const nodeRequire = createRequire(fileURLToPath(import.meta.url));
 const { version: engineVersion } = nodeRequire('../package.json');
+
+// bpmn-moddle@9 exposes the parser as default export, bpmn-moddle@10 as the named export BpmnModdle
+const BpmnModdle = bpmnModdle.BpmnModdle ?? bpmnModdle.default;
 
 const kEngine = Symbol.for('engine');
 const kEnvironment = Symbol.for('environment');
@@ -325,8 +328,8 @@ Engine.prototype._serializeModdleContext = function serializeModdleContext(moddl
 
 /** @internal */
 Engine.prototype._getModdleContext = function getModdleContext(source) {
-  const bpmnModdle = new BpmnModdle(this.options.moddleOptions);
-  return bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim());
+  const moddle = new BpmnModdle(this.options.moddleOptions);
+  return moddle.fromXML(Buffer.isBuffer(source) ? source.toString() : source.trim());
 };
 
 /**

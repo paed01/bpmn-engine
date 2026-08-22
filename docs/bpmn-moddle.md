@@ -27,15 +27,9 @@ import BpmnModdle from 'bpmn-moddle';
 import { BpmnModdle } from 'bpmn-moddle';
 ```
 
-`bpmn-engine`'s own source still imports the v9 default export (`import BpmnModdle from 'bpmn-moddle'`). If you let the engine parse XML for you (the `source` option, or `Engine.prototype._getModdleContext`), stay on the 9.x line. To run on 10.x, parse the XML yourself with the named export and pass the result to the engine via the `moddleContext` option:
+`bpmn-engine` resolves whichever export shape the installed version provides, so the `source` option — where the engine parses the XML for you — works on both lines. No code changes are needed to move between 9 and 10.
 
-```js
-import { Engine } from 'bpmn-engine';
-import { BpmnModdle } from 'bpmn-moddle'; // v10
-
-const moddleContext = await new BpmnModdle().fromXML(source);
-const engine = new Engine({ name: 'on v10', moddleContext });
-```
+One caveat for CommonJS consumers (`require('bpmn-engine')`): bpmn-moddle 10 is ESM-only, so the engine's CJS bundle reaches it through Node's `require(esm)` support — available since Node 20.19 / 22.12. On older Node, stay on bpmn-moddle 9 or migrate to `import`.
 
 ## Backward compatibility of persisted state
 
@@ -45,4 +39,5 @@ This is pinned down by the feature test [`test/feature/bpmn-moddle-backward-comp
 
 1. starts the _mother-of-all_ process from a context parsed with bpmn-moddle **9**, stops it at the first user task wait and saves the state;
 2. re-parses the same source with bpmn-moddle **10**, recovers the v9 runtime state against the v10 source context, and resumes it to completion;
-3. asserts that the source context serialized via 9 and via 10 are byte-for-byte equal.
+3. asserts that the source context serialized via 9 and via 10 are byte-for-byte equal;
+4. runs the engine with the raw `source` option in a child process where `bpmn-moddle` resolves to **10**, proving the engine's own parse path handles the named export.
