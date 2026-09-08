@@ -265,7 +265,7 @@ Engine.prototype.getState = async function getState() {
 
 /**
  * @template R
- * @param {import('bpmn-engine').BpmnEngineEvent} eventName
+ * @param {import('bpmn-engine').BpmnEngineEvent | string} eventName
  * @returns {Promise<R>}
  */
 Engine.prototype.waitFor = function waitFor(eventName) {
@@ -673,7 +673,7 @@ Execution.prototype.cancelActivity = function cancelActivity(payload) {
 
 /**
  * @template T
- * @param {import('bpmn-engine').BpmnEngineEvent} eventName
+ * @param {import('bpmn-engine').BpmnEngineEvent | string} eventName
  * @returns {Promise<T>}
  */
 Execution.prototype.waitFor = function waitFor(...args) {

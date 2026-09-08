@@ -637,6 +637,12 @@ Each activity and flow emits events when changing state.
 - `activity.start`: An activity is started
 - `activity.wait`: The activity is postponed for some reason, e.g. a user task is waiting to be signaled or a message is expected
 - `wait`: Same as above
+- `activity.timer`: A timer was started
+- `activity.timeout`: A timer timed out
+- `activity.signal`: The activity was signaled
+- `activity.catch`: The activity caught a message, signal, error, etc
+- `activity.discard`: The activity was discarded
+- `activity.cancel`: The activity was cancelled
 - `activity.end`: An activity has ended successfully
 - `activity.leave`: The execution left the activity
 - `activity.stop`: Activity run was stopped
@@ -659,8 +665,8 @@ Events are emitted with api with execution properties
 ## Sequence flow events
 
 - `flow.take`: The sequence flow was taken
-- `flow.discard`: The sequence flow was discarded
-- `flow.looped`: The sequence is looped
+
+Since [bpmn-elements@18](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) non-selected sequence flows are no longer discarded, hence `flow.discard` and `flow.looped` are no longer emitted.
 
 # Expressions
 

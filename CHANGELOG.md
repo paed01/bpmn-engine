@@ -1,5 +1,15 @@
 # Changelog
 
+## v26.0.4 - 2026-08-30
+
+- fix type declarations: `BpmnSequenceFlowEvent` is `flow.take` only since `bpmn-elements@18` no longer discards sequence flows, `flow.discard` and `flow.looped` are never emitted
+- remove `wait` from `BpmnEngineEvent` — the engine itself never emits it; `waitFor` accepts any event name for custom emits
+- add missing `activity.timer`, `activity.timeout`, `activity.signal`, `activity.catch`, `activity.discard`, and `activity.cancel` to `BpmnActivityEvent`
+- add `BpmnProcessEvent`, `BpmnDefinitionEvent`, and `BpmnListenerEvent` types and type `IListenerEmitter.emit` with `(eventName, elementApi, execution)`
+- document the above events in the API reference
+- update dev dependency `camunda-bpmn-moddle@8`
+- update peer dependency `smqp@14`
+
 ## v26.0.3 - 2026-08-22
 
 - support both `bpmn-moddle` 9 and 10 as promised by package
