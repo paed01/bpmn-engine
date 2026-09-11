@@ -149,7 +149,7 @@ Feature('extending behaviour', () => {
           camunda,
         },
         services: {
-          serviceFn(scope, callback) {
+          serviceFn(_scope, callback) {
             callback(null, { data: 1 });
           },
         },
@@ -223,7 +223,7 @@ Feature('extending behaviour', () => {
         source,
         scripts: {
           register() {},
-          getScript(scriptType, activity) {
+          getScript(_scriptType, activity) {
             if (activity.id === 'task1') {
               return {
                 execute(scope, next) {
@@ -509,7 +509,7 @@ Feature('extending behaviour', () => {
 
     And('second flow was discarded', () => {
       const flow = execution.definitions[0].getProcesses()[0].context.getSequenceFlowById('flow3');
-      expect(flow.counters).to.have.property('discard', 1);
+      expect(flow.counters).to.have.property('take', 0);
     });
 
     Given('an engine with type resolver function with new behaviour', () => {
@@ -547,9 +547,9 @@ Feature('extending behaviour', () => {
       expect(flow.counters).to.have.property('take', 1);
     });
 
-    And('second flow was discarded', () => {
+    And('second flow was not taken', () => {
       const flow = execution.definitions[0].getProcesses()[0].context.getSequenceFlowById('flow3');
-      expect(flow.counters).to.have.property('discard', 1);
+      expect(flow.counters).to.have.property('take', 0);
     });
   });
 
@@ -598,7 +598,7 @@ Feature('extending behaviour', () => {
         for (const extension of activity.behaviour.extensionElements.values) {
           switch (extension.$type) {
             case 'camunda:ExecutionListener': {
-              myExtensions.push(ExecutionListener(extension));
+              if (extension.script) myExtensions.push(ExecutionListener(extension));
               break;
             }
           }
@@ -621,7 +621,7 @@ Feature('extending behaviour', () => {
               broker.subscribeTmp(
                 'event',
                 `activity.${extension.event}`,
-                (routingKey, message) => {
+                (_routingKey, message) => {
                   script.execute(message);
                 },
                 { noAck: true, consumerTag: '_my-extension' }

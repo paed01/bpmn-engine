@@ -765,7 +765,7 @@ import { fileURLToPath } from 'node:url';
 import { Engine } from 'bpmn-engine';
 import BpmnModdle from 'bpmn-moddle';
 import * as elements from 'bpmn-elements';
-import Serializer, { TypeResolver } from 'moddle-context-serializer';
+import { Serializer, TypeResolver } from 'moddle-context-serializer';
 
 const camunda = createRequire(fileURLToPath(import.meta.url))('camunda-bpmn-moddle/resources/camunda.json');
 
@@ -828,23 +828,23 @@ In this example the state of the execution is published on a message broker. Sub
 ```js
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { fileURLToPath } = from 'node:url';
+import { fileURLToPath } from 'node:url';
+import { EventEmitter } from 'node:events';
 
 import { Engine } from 'bpmn-engine';
-import { EventEmitter } from 'ndoe:events';
 import { publish } from './dbbroker.js';
 import { getSourceSync, getAllowedServices, getExtensions } from './utils.js';
 
-const camundaModdle = createRequire(fileURLToPath(import.meta.url))('camunda-bpmn-moddle/resources/camunda.json')
+const camunda = createRequire(fileURLToPath(import.meta.url))('camunda-bpmn-moddle/resources/camunda.json');
 
 function ignite(executionId, options = {}) {
   const { name, settings } = options;
   const listener = new EventEmitter();
   listener.on('activity.wait', (_, execution) => {
-    return publishEvent('bpmn.state.update', {state: execution.getState()});
+    return publishEvent('bpmn.state.update', { state: execution.getState() });
   });
   listener.on('activity.end', (_, execution) => {
-    return publishEvent('bpmn.state.update', {state: execution.getState()});
+    return publishEvent('bpmn.state.update', { state: execution.getState() });
   });
   listener.on('activity.timer', (api, execution) => {
     return publishEvent('bpmn.state.expires', {
@@ -859,7 +859,7 @@ function ignite(executionId, options = {}) {
     });
   });
 
-  const engine = BpmnEngine({
+  const engine = new Engine({
     moddleOptions: {
       camunda,
     },
@@ -868,13 +868,13 @@ function ignite(executionId, options = {}) {
       ...settings,
       executionId,
       enableDummyService: false,
-    }
+    },
   });
   engine.once('end', () => {
     publishEvent('bpmn.completed');
   });
   engine.once('error', (err) => {
-    publishEvent('bpmn.error', {message: err.message, error: err});
+    publishEvent('bpmn.error', { message: err.message, error: err });
   });
 
   return { engine, listener };
@@ -888,7 +888,7 @@ function ignite(executionId, options = {}) {
   }
 }
 
-const {engine} = ignite(randomUUID(), {
+const { engine } = ignite(randomUUID(), {
   name: 'persisted engine #1',
   source: getSourceSync('./mother-of-all.bpmn'),
   services: getAllowedServices(),

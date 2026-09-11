@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import * as Bpmn from 'bpmn-engine';
+// eslint-disable-next-line no-duplicate-imports
 import Engine from 'bpmn-engine';
 import * as factory from './helpers/factory.js';
 import * as testHelpers from './helpers/testHelpers.js';
@@ -43,6 +44,7 @@ describe('Engine', () => {
 
     it('throws if unsupported source is passed', (done) => {
       const engine = Bpmn.Engine({
+        // @ts-expect-error
         source: {},
       });
 
@@ -65,6 +67,7 @@ describe('Engine', () => {
 
     it('but not function', (done) => {
       const engine = Bpmn.Engine({
+        // @ts-expect-error
         source() {},
       });
 
@@ -122,6 +125,7 @@ describe('Engine', () => {
       expect(() =>
         Bpmn.Engine({
           source: factory.valid(),
+          // @ts-expect-error
           Logger,
         })
       ).to.throw(TypeError, 'Logger is not a function');
@@ -305,7 +309,7 @@ describe('Engine', () => {
           input: 0,
         },
         services: {
-          get(context, next) {
+          get(_context, next) {
             next(new Error('Inner error'));
           },
         },
@@ -432,7 +436,7 @@ describe('Engine', () => {
         name: 'end test',
         source,
         services: {
-          get: (context, next) => {
+          get: (_context, next) => {
             next(new Error('Inner error'));
           },
         },
@@ -460,7 +464,7 @@ describe('Engine', () => {
         name: 'end test',
         source,
         services: {
-          get: (context, next) => {
+          get: (_context, next) => {
             next(new Error('Inner error'));
           },
         },
@@ -481,6 +485,7 @@ describe('Engine', () => {
 
       try {
         await engine.execute({
+          // @ts-expect-error
           listener: {},
         });
       } catch (e) {
@@ -1155,6 +1160,7 @@ describe('Engine', () => {
 
     it('execution api returns activities in a postponed state', async () => {
       const listener = new EventEmitter();
+      /** @type {import('bpmn-engine').Execution} */
       let engineApi;
       listener.once('wait', (_, api) => {
         engineApi = api;
@@ -1229,6 +1235,7 @@ describe('Engine', () => {
         sourceContext: updateContext,
       });
 
+      /** @type {import('bpmn-engine').Execution} */
       let engineApi;
       listener.once('wait', (_, api) => {
         engineApi = api;

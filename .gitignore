@@ -36,3 +36,7 @@ config/_revision
 package-lock.json
 
 *.log
+
+# Claude Code
+CLAUDE.md
+.claude

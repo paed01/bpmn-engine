@@ -13,9 +13,9 @@ export function extension(activity, context) {
   return {
     type: 'js:extension',
     extensions: { resultVariable, formKey },
-    activate(msg) {
-      if (resultVariable) resultVariable.activate(msg);
-      if (formKey) formKey.activate(msg);
+    activate() {
+      if (resultVariable) resultVariable.activate();
+      if (formKey) formKey.activate();
     },
     deactivate() {
       if (resultVariable) resultVariable.deactivate();

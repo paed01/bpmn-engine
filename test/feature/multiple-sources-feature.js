@@ -6,6 +6,18 @@ import { camundaBpmnModdle as camunda } from '../helpers/testHelpers.js';
 const signalsSource = factory.resource('signals.bpmn');
 const sendSignalSource = factory.resource('send-signal.bpmn');
 
+class DataStores {
+  constructor(data) {
+    this.data = data;
+  }
+  getDataStore(id) {
+    return this.data[id];
+  }
+  setDataStore(id, value) {
+    this.data[id] = value;
+  }
+}
+
 Feature('Multiple sources', () => {
   Scenario('Two definitions that communicates with signals', () => {
     let engine, signalContext, updateContext;
@@ -687,7 +699,7 @@ function getExtendedEngine(options) {
   engine.broker.subscribeTmp(
     'event',
     'activity.signal',
-    (routingKey, msg) => {
+    (_routingKey, msg) => {
       engine.execution.signal(msg.content.message, { ignoreSameDefinition: true });
     },
     { noAck: true }
@@ -713,7 +725,7 @@ function ServiceExpression(activity) {
   }
 }
 
-function formFormatting(activity, context, formData) {
+function formFormatting(activity, _context, formData) {
   const { broker, environment } = activity;
   broker.subscribeTmp(
     'event',
@@ -732,7 +744,7 @@ function formFormatting(activity, context, formData) {
   );
 }
 
-function ioFormatting(activity, context, ioData) {
+function ioFormatting(activity, _context, ioData) {
   const { broker, environment } = activity;
   if (ioData.inputParameters) {
     broker.subscribeTmp(
@@ -766,15 +778,3 @@ function ioFormatting(activity, context, ioData) {
     );
   }
 }
-
-function DataStores(data) {
-  this.data = data;
-}
-
-DataStores.prototype.getDataStore = function getDataStore(id) {
-  return this.data[id];
-};
-
-DataStores.prototype.setDataStore = function setDataStore(id, value) {
-  this.data[id] = value;
-};

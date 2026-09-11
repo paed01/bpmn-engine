@@ -1,8 +1,4 @@
-<!-- version -->
-
-# 25.0.1 API Reference
-
-<!-- versionstop -->
+# API Reference
 
 <!-- toc -->
 
@@ -21,7 +17,7 @@
     - [`resume([options, [callback]])`](#resumeoptions-callback)
 - [Execution API](#execution-api)
   - [`getActivityById(activityId)`](#getactivitybyidactivityid)
-  - [`getState()`](#getstate)
+  - [`getState()`](#getstate-1)
   - [`signal(message[, options])`](#signalmessage-options)
   - [`cancelActivity(message)`](#cancelactivitymessage)
 - [Engine events](#engine-events)
@@ -319,7 +315,7 @@ import { EventEmitter } from 'node:events';
 import BpmnModdle from 'bpmn-moddle';
 import * as elements from 'bpmn-elements';
 import { Engine } from 'bpmn-engine';
-import Serializer, { TypeResolver } from 'moddle-context-serializer';
+import { Serializer, TypeResolver } from 'moddle-context-serializer';
 
 const engine = new Engine({
   name: 'add source',
@@ -413,11 +409,14 @@ Asynchronous function to get state of a running execution.
 
 The saved state will include the following content:
 
-- `state`: `running` or `idle`
+- `name`: engine name
+- `state`: `running`, `idle`, `stopped`, or `error`
+- `stopped`: boolean stopped
 - `engineVersion`: module package version
-- `moddleOptions`: Engine moddleOptions
+- `environment`: serialized engine environment
 - `definitions`: List of definitions
   - `state`: State of definition, `pending`, `running`, or `completed`
+  - `source`: serialized definition source
   - `processes`: Object with processes with id as key
     - `variables`: Execution variables
     - `services`: Execution services
@@ -638,6 +637,12 @@ Each activity and flow emits events when changing state.
 - `activity.start`: An activity is started
 - `activity.wait`: The activity is postponed for some reason, e.g. a user task is waiting to be signaled or a message is expected
 - `wait`: Same as above
+- `activity.timer`: A timer was started
+- `activity.timeout`: A timer timed out
+- `activity.signal`: The activity was signaled
+- `activity.catch`: The activity caught a message, signal, error, etc
+- `activity.discard`: The activity was discarded
+- `activity.cancel`: The activity was cancelled
 - `activity.end`: An activity has ended successfully
 - `activity.leave`: The execution left the activity
 - `activity.stop`: Activity run was stopped
@@ -660,8 +665,8 @@ Events are emitted with api with execution properties
 ## Sequence flow events
 
 - `flow.take`: The sequence flow was taken
-- `flow.discard`: The sequence flow was discarded
-- `flow.looped`: The sequence is looped
+
+Since [bpmn-elements@18](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) non-selected sequence flows are no longer discarded, hence `flow.discard` and `flow.looped` are no longer emitted.
 
 # Expressions
 
