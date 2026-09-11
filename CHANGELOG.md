@@ -1,5 +1,10 @@
 # Changelog
 
+## v26.0.5 - 2026-09-11
+
+- require [smqp@>=15](https://github.com/paed01/smqp/blob/default/CHANGELOG.md) that have straighten out routing quirks
+- remove Execution function type indicating that no new is required, but it is
+
 ## v26.0.4 - 2026-08-30
 
 - fix type declarations: `BpmnSequenceFlowEvent` is `flow.take` only since `bpmn-elements@18` no longer discards sequence flows, `flow.discard` and `flow.looped` are never emitted

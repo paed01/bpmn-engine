@@ -334,7 +334,7 @@ Engine.prototype._getModdleContext = function getModdleContext(source) {
 
 /**
  * @param {Engine} engine
- * @param {any[]} definitions
+ * @param {import('bpmn-elements').Definition[]} definitions
  * @param {import('bpmn-engine').BpmnEngineExecuteOptions} [options]
  * @param {boolean} [isRecovered]
  */

@@ -183,12 +183,6 @@ declare module 'bpmn-engine' {
     waitFor<R>(eventName: BpmnEngineEvent | string): Promise<R>;
   }
 
-  export function Execution(
-    engine: Engine,
-    definitions: Definition[],
-    options?: BpmnEngineExecuteOptions,
-    isRecovered?: boolean
-  ): Execution;
   export class Execution {
     constructor(engine: Engine, definitions: Definition[], options?: BpmnEngineExecuteOptions, isRecovered?: boolean);
     options: BpmnEngineExecuteOptions;
