@@ -5,7 +5,10 @@ import { camundaBpmnModdle as camunda } from '../helpers/testHelpers.js';
 
 Feature('Engine', () => {
   Scenario('Mother of all', () => {
-    let engine, source;
+    /** @type {import('bpmn-engine').Engine} */
+    let engine;
+    /** @type {Buffer} */
+    let source;
     Given('a massive source with user task, sub process, lanes, and a loop back', () => {
       source = factory.resource('mother-of-all.bpmn');
     });
@@ -126,7 +129,10 @@ Feature('Engine', () => {
   });
 
   Scenario('A definition with lanes', () => {
-    let engine, source;
+    /** @type {import('bpmn-engine').Engine} */
+    let engine;
+    /** @type {Buffer} */
+    let source;
     Given('a bpmn source with two lanes with message flows', () => {
       source = factory.resource('lanes.bpmn');
     });
@@ -167,7 +173,10 @@ Feature('Engine', () => {
   });
 
   Scenario('Activity extension', () => {
-    let engine, source;
+    /** @type {import('bpmn-engine').Engine} */
+    let engine;
+    /** @type {string} */
+    let source;
     Given('a bpmn source with user tasks', () => {
       source = `
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -271,7 +280,10 @@ Feature('Engine', () => {
   });
 
   Scenario('Execute with callback', () => {
-    let engine, source;
+    /** @type {import('bpmn-engine').Engine} */
+    let engine;
+    /** @type {Buffer} */
+    let source;
     Given('a massive source with user task, timeouts, and the rest', () => {
       source = factory.resource('mother-of-all.bpmn');
     });
@@ -316,7 +328,10 @@ Feature('Engine', () => {
   });
 
   Scenario('Resume with callback', () => {
-    let engine, source;
+    /** @type {import('bpmn-engine').Engine} */
+    let engine;
+    /** @type {Buffer} */
+    let source;
     Given('a massive source with user task, timeouts, and the rest', () => {
       source = factory.resource('mother-of-all.bpmn');
     });
@@ -336,7 +351,7 @@ Feature('Engine', () => {
     let listener;
     And('expects to be stopped at first user task wait', () => {
       listener = new EventEmitter();
-      listener.once('activity.wait', (activityApi, engineApi) => {
+      listener.once('activity.wait', (_activityApi, engineApi) => {
         engineApi.stop();
       });
     });

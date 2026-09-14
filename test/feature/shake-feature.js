@@ -3,7 +3,9 @@ import { Engine } from 'bpmn-engine';
 
 Feature('Shake', () => {
   Scenario('Determine run sequences for an activity', () => {
-    let engine, source;
+    /** @type {Engine} */
+    let engine;
+    let source;
     Given('a bpmn source with user tasks', () => {
       source = `
       <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -17,6 +19,7 @@ Feature('Shake', () => {
       </definitions>`;
     });
 
+    /** @type {import('bpmn-elements').Definition} */
     let definition;
     And('an engine loaded with extension for fetching form and saving output', async () => {
       engine = Engine({

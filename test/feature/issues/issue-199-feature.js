@@ -36,6 +36,7 @@ next();</bpmn:script>
 
 Feature('issue 199 - Issue with Script Tasks After State Recovery in bpmn-engine', () => {
   Scenario('execute, recover resume with same engine instance', () => {
+    /** @type {import('bpmn-engine').Engine} */
     let engine;
     Given('an engine with user task flanked by two script tasks', () => {
       engine = new Engine({

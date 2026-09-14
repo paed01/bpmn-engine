@@ -2,6 +2,7 @@ import { Engine } from 'bpmn-engine';
 
 Feature('issue 172', () => {
   Scenario('Postpone intermediate throw event by formatting', () => {
+    /** @type {import('bpmn-engine').Engine} */
     let engine;
     const agiCalls = [];
     Given('start event, intermediate throw event, and end event', () => {

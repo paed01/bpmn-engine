@@ -1,29 +1,23 @@
 {
-  "include": ["src/**/*", "types"],
+  "include": ["src/**/*", "types/index.d.ts"],
   "compilerOptions": {
-    "emitDeclarationOnly": true,
-    "sourceMap": false,
+    "noEmit": true,
     "rootDir": "src",
-    "lib": ["es2017"],
-    "target": "es2017",
-    "outDir": "./tmp/ignore",
-    "declaration": true,
-    "noEmitOnError": true,
+    "lib": ["es2022"],
+    "target": "es2022",
     "noErrorTruncation": true,
+    "skipLibCheck": true,
     "allowJs": true,
     "checkJs": false,
-    "module": "esnext",
-    "moduleResolution": "node",
-    "resolveJsonModule": false,
-    "allowSyntheticDefaultImports": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolveJsonModule": true,
     "strict": true,
+    "strictNullChecks": false,
     "stripInternal": true,
     "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "typeRoots": ["./node_modules/@types"],
-    "paths": {
-      "types": ["./types/bpmn-engine.js"]
-    }
+    "types": ["node"]
   }
 }

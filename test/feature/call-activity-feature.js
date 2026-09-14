@@ -108,6 +108,7 @@ Feature('Call activity', () => {
   });
 
   Scenario('call activity is canceled', () => {
+    /** @type {Engine} */
     let engine;
     Given('a process with a call activity referencing a process', () => {
       const source = `
@@ -201,6 +202,7 @@ Feature('Call activity', () => {
   });
 
   Scenario('call activity is discarded mid run', () => {
+    /** @type {Engine} */
     let engine;
     Given('a process with a call activity referencing a process', () => {
       const source = `
@@ -244,6 +246,7 @@ Feature('Call activity', () => {
   });
 
   Scenario('a process with a parallel multi-instance call activity with cardinality of three', () => {
+    /** @type {Engine} */
     let engine;
     const serviceCalls = [];
     Given('two processes', () => {

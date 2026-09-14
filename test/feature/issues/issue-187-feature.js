@@ -6,6 +6,7 @@ const source = factory.resource('issue-187.bpmn');
 
 Feature('issue 187 - Complete condition in multi-instance loop with custom expression parser', () => {
   Scenario('user task is looped over list of handlers', () => {
+    /** @type {import('bpmn-engine').Engine} */
     let engine;
     Given('start event, intermediate throw event, and end event', () => {
       engine = getEngine187();

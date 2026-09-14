@@ -1,10 +1,11 @@
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
+// @ts-ignore
 import BpmnModdle from 'bpmn-moddle';
 import * as Elements from 'bpmn-elements';
 import Logger from '../../src/Logger.js';
-import serializer, { TypeResolver } from 'moddle-context-serializer';
+import { Serializer, TypeResolver } from 'moddle-context-serializer';
 
 const nodeRequire = createRequire(fileURLToPath(import.meta.url));
 export const camundaBpmnModdle = nodeRequire('camunda-bpmn-moddle/resources/camunda.json');
@@ -25,7 +26,7 @@ export async function context(source, options) {
     ...options?.elements,
   });
 
-  return serializer(moddleCtx, types, options?.extendFn);
+  return Serializer(moddleCtx, types, options?.extendFn);
 }
 
 export function moddleContext(source, options) {
