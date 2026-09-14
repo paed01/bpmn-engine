@@ -1,6 +1,6 @@
 # Changelog
 
-## v26.0.6 - 2026-09-14
+## v26.0.5 - 2026-09-14
 
 Runs on [`bpmn-elements@18`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) that no longer discards sequence flows. Most diagrams run unchanged; see the [upgrade guide](/docs/Upgrade.md) for migration details.
 
