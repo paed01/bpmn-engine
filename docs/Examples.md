@@ -16,7 +16,7 @@
 - [Traverse activities using definition shake](#traverse-activities-using-definition-shake)
 - [Persist state on events](#persist-state-on-events)
 
-<!-- tocstop -->
+<!-- /toc -->
 
 # Execute
 

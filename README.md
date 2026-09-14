@@ -2,23 +2,30 @@
 
 [![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
-[![Build](https://github.com/paed01/bpmn-engine/actions/workflows/build.yaml/badge.svg)](https://github.com/paed01/bpmn-engine/actions/workflows/build.yaml)[![Build status](https://ci.appveyor.com/api/projects/status/670n39fivq1g3nu5/branch/master?svg=true)](https://ci.appveyor.com/project/paed01/bpmn-engine/branch/master)[![Coverage Status](https://coveralls.io/repos/github/paed01/bpmn-engine/badge.svg?branch=master)](https://coveralls.io/github/paed01/bpmn-engine?branch=master)
+[![Build](https://github.com/paed01/bpmn-engine/actions/workflows/build.yaml/badge.svg)](https://github.com/paed01/bpmn-engine/actions/workflows/build.yaml)[![Build (Windows)](https://github.com/paed01/bpmn-engine/actions/workflows/build-windows.yaml/badge.svg)](https://github.com/paed01/bpmn-engine/actions/workflows/build-windows.yaml)[![Coverage Status](https://coveralls.io/repos/github/paed01/bpmn-engine/badge.svg?branch=master)](https://coveralls.io/github/paed01/bpmn-engine?branch=master)
 
 # Introduction
 
 BPMN 2.0 execution engine. Open source javascript workflow engine.
 
+Documentation:
+
 - [API](/docs/API.md)
-- [Changelog](/CHANGELOG.md)
 - [Examples](/docs/Examples.md)
 - [Upgrade version](/docs/Upgrade.md)
-- [Peer dependencies](#peer-dependencies)
 - [bpmn-moddle 9 vs 10](/docs/bpmn-moddle.md)
+- [Changelog](/CHANGELOG.md)
+
+<!-- toc -->
+
+- [Peer dependencies](#peer-dependencies)
 - [Supported elements](#supported-elements)
 - [Extensions](#extensions)
 - [Debug](#debug)
-- [Example process](#a-pretty-image-of-a-process)
+- [A pretty image of a process](#a-pretty-image-of-a-process)
 - [Acknowledgments](#acknowledgments)
+
+<!-- /toc -->
 
 # Peer dependencies
 
@@ -28,13 +35,13 @@ The runtime dependencies are declared as **peer dependencies**, so you install a
 npm install bpmn-engine bpmn-elements bpmn-moddle moddle-context-serializer debug smqp
 ```
 
-| Peer dependency                                                                    | Range     | Role                                              |
-| ---------------------------------------------------------------------------------- | --------- | ------------------------------------------------- |
-| [`bpmn-elements`](https://github.com/paed01/bpmn-elements)                         | `>=18`    | element behaviour functions                       |
-| [`bpmn-moddle`](https://github.com/bpmn-io/bpmn-moddle)                            | `>=9`     | BPMN XML parser ([9 vs 10](/docs/bpmn-moddle.md)) |
-| [`moddle-context-serializer`](https://github.com/paed01/moddle-context-serializer) | `>=6`     | persistable source context                        |
-| [`smqp`](https://github.com/paed01/smqp)                                           | `^13.0.1` | message broker driving execution                  |
-| [`debug`](https://github.com/debug-js/debug)                                       | `>=4`     | logging                                           |
+| Peer dependency                                                                    | Range       | Role                                              |
+| ---------------------------------------------------------------------------------- | ----------- | ------------------------------------------------- |
+| [`bpmn-elements`](https://github.com/paed01/bpmn-elements)                         | `>=18.0.25` | element behaviour functions                       |
+| [`bpmn-moddle`](https://github.com/bpmn-io/bpmn-moddle)                            | `>=9`       | BPMN XML parser ([9 vs 10](/docs/bpmn-moddle.md)) |
+| [`moddle-context-serializer`](https://github.com/paed01/moddle-context-serializer) | `>=6`       | persistable source context                        |
+| [`smqp`](https://github.com/paed01/smqp)                                           | `>=15`      | message broker driving execution                  |
+| [`debug`](https://github.com/debug-js/debug)                                       | `>=4`       | logging                                           |
 
 `bpmn-moddle` spans a major version on purpose — see [bpmn-moddle 9 vs 10](/docs/bpmn-moddle.md) for the import change and how persisted state stays compatible across the upgrade.
 

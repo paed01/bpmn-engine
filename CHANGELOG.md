@@ -1,45 +1,32 @@
 # Changelog
 
-## v26.0.5 - 2026-09-11
+## v26.0.6 - 2026-09-14
 
-- require [smqp@>=15](https://github.com/paed01/smqp/blob/default/CHANGELOG.md) that have straighten out routing quirks
-- remove Execution function type indicating that no new is required, but it is
-
-## v26.0.4 - 2026-08-30
-
-- fix type declarations: `BpmnSequenceFlowEvent` is `flow.take` only since `bpmn-elements@18` no longer discards sequence flows, `flow.discard` and `flow.looped` are never emitted
-- remove `wait` from `BpmnEngineEvent` — the engine itself never emits it; `waitFor` accepts any event name for custom emits
-- add missing `activity.timer`, `activity.timeout`, `activity.signal`, `activity.catch`, `activity.discard`, and `activity.cancel` to `BpmnActivityEvent`
-- add `BpmnProcessEvent`, `BpmnDefinitionEvent`, and `BpmnListenerEvent` types and type `IListenerEmitter.emit` with `(eventName, elementApi, execution)`
-- document the above events in the API reference
-- update dev dependency `camunda-bpmn-moddle@8`
-- update peer dependency `smqp@14`
-
-## v26.0.3 - 2026-08-22
-
-- support both `bpmn-moddle` 9 and 10 as promised by package
-
-## v26.0.2 - 2026-08-15
-
-- fix type declarations: `typeResolver` option is a type resolver extender function, `JavaScripts` is callable without `new`, and `getScript` may return undefined
-- type-check the test suite with the corrected `bpmn-elements@18` type declarations
-
-## v26.0.1 - 2026-07-07
-
-- declare `bpmn-elements`, `bpmn-moddle`, `moddle-context-serializer`, and `debug` as peer dependencies (install and pin them yourself)
-- verify `bpmn-moddle` 9 and 10 both work — see [bpmn-moddle 9 vs 10](/docs/bpmn-moddle.md)
-
-## v26.0.0 - 2026-06-13
+Runs on [`bpmn-elements@18`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) that no longer discards sequence flows. Most diagrams run unchanged; see the [upgrade guide](/docs/Upgrade.md) for migration details.
 
 ### Breaking
 
-- major update [`bpmn-elements@18`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) — non-selected gateway flows are no longer discarded
+- major update [`bpmn-elements@18`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) — non-selected gateway flows are no longer discarded, so `flow.discard` and `flow.looped` are never emitted
 - update to [`moddle-context-serializer@6`](https://github.com/paed01/moddle-context-serializer/blob/master/CHANGELOG.md)
-- require `smqp@>=13` peer dependency
+- declare `bpmn-elements`, `bpmn-moddle`, `moddle-context-serializer`, `debug`, and `smqp` as peer dependencies (install and pin them yourself), see [peer dependencies](/README.md#peer-dependencies)
+- require [`smqp@>=15`](https://github.com/paed01/smqp/blob/default/CHANGELOG.md) that has straightened out routing quirks
+- support both `bpmn-moddle` 9 and 10 — see [bpmn-moddle 9 vs 10](/docs/bpmn-moddle.md)
+
+### Types
+
+- ship hand-maintained TypeScript declarations and type-check the test suite with them
+- `typeResolver` option is a type resolver extender function, `JavaScripts` is callable without `new`, and `getScript` may return undefined
+- `Execution` requires `new`
+- `BpmnSequenceFlowEvent` is `flow.take` only
+- remove `wait` from `BpmnEngineEvent` — the engine itself never emits it; `waitFor` accepts any event name for custom emits
+- add missing `activity.timer`, `activity.timeout`, `activity.signal`, `activity.catch`, `activity.discard`, and `activity.cancel` to `BpmnActivityEvent`
+- add `BpmnProcessEvent`, `BpmnDefinitionEvent`, and `BpmnListenerEvent` types and type `IListenerEmitter.emit` with `(eventName, elementApi, execution)`
 
 ### Other
 
-- ship hand-maintained TypeScript declarations
+- document the above events in the API reference
+- generate table of contents with [`@0dep/toc`](https://0dep.se/toc/)
+- run the Windows build as a GitHub action instead of AppVeyor, Node version pinned by `.nvmrc`
 
 ## v25.0.1 - 2025-11-14
 

@@ -4,14 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-`.nvmrc` pins Node 18; `engines.node` is `>=18`. The test reporter `@bonniernews/hot-bev` and `mocha-cakes-2` UI handle parallel execution and Gherkin-style Features.
+`.nvmrc` pins Node 20 (the `toc` bin needs >=20); `engines.node` is `>=18`. The test reporter `@bonniernews/hot-bev` and `mocha-cakes-2` UI handle parallel execution and Gherkin-style Features.
 
-- `npm test` — runs `mocha -p` with the hot-bev reporter (parallel). `posttest` then runs `lint`, `toc` (regenerates API doc TOCs), and `dist`.
-- `npm run wintest` — same suite, plain `mocha` (no `-p`/parallel; for environments where worker pools misbehave).
+- `npm test` — runs `mocha -p` with the hot-bev reporter (parallel); the Windows CI build runs plain `npx mocha` (no `-p`, worker pools misbehave there). `posttest` then runs `lint`, `toc` (regenerates doc TOCs), `dist`, and `test:md`.
 - `npm run lint` — eslint (cached) + prettier check.
 - `npm run cov:html` / `npm run test:lcov` — coverage variants via c8.
-- `npm run toc` — regenerates the table of contents in `docs/API.md` and `docs/Examples.md` via the in-repo `scripts/generate-api-toc.js` (no `markdown-toc` dep). It takes the markdown files as a comma- or space-separated argument, rewrites the block between `<!-- toc -->` and `<!-- tocstop -->`, skips the first H1 (the doc title — `docs/API.md` keeps a plain `# API Reference` title for this), and disambiguates duplicate anchors GitHub-style (`#getstate`, `#getstate-1`).
-- `npm run test-md` — runs `texample` against `docs/API.md`, `docs/Examples.md`, `docs/Upgrade.md`. **Not** in the regular `posttest` chain; run manually when API doc examples change.
+- `npm run toc` — regenerates the table of contents in `README.md` and `docs/*.md` with [`@0dep/toc`](https://0dep.se/toc/). It rewrites the block between `<!-- toc -->` and `<!-- /toc -->` and lists every heading below the start marker, so the markers sit under the doc title to keep it out of the toc. Duplicate anchors are disambiguated GitHub-style (`#getstate`, `#getstate-1`). Output is prettier-compatible.
+- `npm run test:md` — runs `texample` against `docs/API.md`, `docs/Examples.md`, `docs/Upgrade.md`. Runs as the last step of `posttest`, and standalone when doc examples change. The examples that mock HTTP with `nock` currently fail with `StatusError: Not Found` on this branch, independent of doc edits.
 - `npm run dist` — rollup builds `src/index.js` → `lib/index.cjs`. The footer trick `module.exports = Object.assign(exports.default, exports)` is what lets the CJS bundle's `require('bpmn-engine')` return the `Engine` constructor _and_ expose named exports — don't remove it.
 - Single test file: `npx mocha test/Engine-test.js`. Single test: append `--grep "<pattern>"`. Default mocha timeout is 1000ms (see `.mocharc.json`); feature tests under `test/feature/` use the `mocha-cakes-2` BDD UI (`Feature`/`Scenario`/`Given`/`When`/`Then`).
 
