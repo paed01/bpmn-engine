@@ -31,10 +31,10 @@
     "types/"
   ],
   "scripts": {
-    "test": "mocha -p -R @bonniernews/hot-bev",
+    "test": "mocha -p",
     "posttest": "npm run lint && npm run toc && npm run dist && npm run test:md",
     "lint": "eslint . --cache && prettier . -c --cache",
-    "cov:html": "c8 -r html -r text mocha -p -R @bonniernews/hot-bev",
+    "cov:html": "c8 -r html -r text mocha -p",
     "test:lcov": "c8 -r lcov mocha && npm run lint",
     "toc": "toc README.md docs/API.md docs/Examples.md docs/Upgrade.md",
     "test:md": "texample ./docs/API.md,./docs/Examples.md,./docs/Upgrade.md -c .mocharc.json",
@@ -62,8 +62,7 @@
     }
   },
   "devDependencies": {
-    "@0dep/toc": "^1.0.1",
-    "@bonniernews/hot-bev": "^0.4.0",
+    "@0dep/toc": "^2.1.0",
     "@eslint/js": "^10.0.1",
     "@rollup/plugin-commonjs": "^29.0.0",
     "@types/bpmn-moddle": "^10.0.0",
@@ -81,8 +80,8 @@
     "debug": "^4.4.3",
     "eslint": "^10.5.0",
     "globals": "^17.6.0",
-    "mocha": "^11.0.1",
-    "mocha-cakes-2": "^3.3.0",
+    "mocha": "^12.0.3",
+    "mocha-scenarios": "^1.0.1",
     "moddle-context-serializer": "^6.0.0",
     "nock": "^14.0.17",
     "prettier": "^3.2.5",

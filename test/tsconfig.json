@@ -8,6 +8,6 @@
     "declaration": false,
     "noEmit": true,
     "noImplicitAny": false,
-    "types": ["node", "chai", "mocha"]
+    "types": ["node", "chai", "mocha", "../node_modules/mocha-scenarios"]
   }
 }

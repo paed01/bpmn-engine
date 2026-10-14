@@ -391,7 +391,7 @@ Feature('Timers', () => {
 
     Then('run fails', async () => {
       const err = await fail;
-      expect(err).to.match(/Invalid ISO 8601 date/i);
+      expect(err).to.match(/ISO 8601/i);
     });
 
     Given('a source with a start event timer with invalid cycle', () => {

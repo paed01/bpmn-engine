@@ -4,15 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-`.nvmrc` pins Node 20 (the `toc` bin needs >=20); `engines.node` is `>=18`. The test reporter `@bonniernews/hot-bev` and `mocha-cakes-2` UI handle parallel execution and Gherkin-style Features.
+`.nvmrc` pins Node 20 (the `toc` bin needs >=20); `engines.node` is `>=18`, but the dev toolchain (`mocha@12`, `mocha-scenarios`) needs Node `^20.19 || >=22.12`. Tests run on `mocha@12` with the `mocha-scenarios` UI (Gherkin-style Features) and mocha's default `spec` reporter.
 
-- `npm test` — runs `mocha -p` with the hot-bev reporter (parallel); the Windows CI build runs plain `npx mocha` (no `-p`, worker pools misbehave there). `posttest` then runs `lint`, `toc` (regenerates doc TOCs), `dist`, and `test:md`.
+- `npm test` — runs `mocha -p` (parallel); the Windows CI build runs plain `npx mocha` (no `-p`, worker pools misbehave there). `posttest` then runs `lint`, `toc` (regenerates doc TOCs), `dist`, and `test:md`.
 - `npm run lint` — eslint (cached) + prettier check.
 - `npm run cov:html` / `npm run test:lcov` — coverage variants via c8.
 - `npm run toc` — regenerates the table of contents in `README.md` and `docs/*.md` with [`@0dep/toc`](https://0dep.se/toc/). It rewrites the block between `<!-- toc -->` and `<!-- /toc -->` and lists every heading below the start marker, so the markers sit under the doc title to keep it out of the toc. Duplicate anchors are disambiguated GitHub-style (`#getstate`, `#getstate-1`). Output is prettier-compatible.
 - `npm run test:md` — runs `texample` against `docs/API.md`, `docs/Examples.md`, `docs/Upgrade.md`. Runs as the last step of `posttest`, and standalone when doc examples change. The examples that mock HTTP with `nock` currently fail with `StatusError: Not Found` on this branch, independent of doc edits.
 - `npm run dist` — rollup builds `src/index.js` → `lib/index.cjs`. The footer trick `module.exports = Object.assign(exports.default, exports)` is what lets the CJS bundle's `require('bpmn-engine')` return the `Engine` constructor _and_ expose named exports — don't remove it.
-- Single test file: `npx mocha test/Engine-test.js`. Single test: append `--grep "<pattern>"`. Default mocha timeout is 1000ms (see `.mocharc.json`); feature tests under `test/feature/` use the `mocha-cakes-2` BDD UI (`Feature`/`Scenario`/`Given`/`When`/`Then`).
+- Single test file: `npx mocha test/Engine-test.js`. Single test: append `--grep "<pattern>"`. Default mocha timeout is 1000ms (see `.mocharc.json`). `.mocharc.json` has no `spec` list — mocha's default `./test` glob applies recursively, with `test/helpers/**` and `test/resources/**` ignored, so any other `.js` file dropped under `test/` is picked up as a test. Feature tests under `test/feature/` use the `mocha-scenarios` UI (`Feature`/`Scenario`/`Given`/`When`/`Then`).
 
 ## Architecture
 
@@ -44,7 +44,7 @@ smqp (peer dep) ── message broker driving execution
 - **`getOptionsAndCallback.js`** — small helper that lets every public method accept either `(options, callback)` or `(callback)` style. Preserves the legacy callback-friendly API while the implementation returns Promises.
 - **Extensions live under `src/extensions/`.** `ProcessOutputDataObject.js` is the canonical example — extensions plug into `bpmn-elements` via the engine's `extensions` option and are typically called for specific element types. The wider BPMN ecosystem — docs, guides, and additional extensions for this stack — is published at [0dep.se](https://0dep.se); check there before writing a new extension from scratch.
 - **Test fixtures under `test/resources/`** are real `.bpmn` XML files plus a few `.json` extensions. `test/resources/JsExtension.js` and `test/resources/js-bpmn-moddle.json` define a custom moddle extension namespace used across multiple feature tests.
-- **`mocha-cakes-2` ≠ standard mocha.** Files under `test/feature/` use Gherkin-flavored globals (`Feature`, `Scenario`, `Given`, `When`, `Then`, `And`, `But`). They're ESLint-allowed via the eslint config's globals.
+- **`mocha-scenarios` ≠ standard mocha.** Files under `test/feature/` use Gherkin-flavored globals (`Feature`, `Scenario`, `Given`, `When`, `Then`, `And`, `But`, `beforeEachScenario`, `afterEachScenario`). ESLint gets them from `mocha-scenarios/globals` (spread into the eslint config) and TypeScript from the package's ambient declarations via `types` in `test/tsconfig.json` — don't hand-list them again in `eslint.config.js` or `test/globals.d.ts`. Unlike `mocha-cakes-2`: inherited hooks run outermost first (a Feature-level `beforeEachScenario` runs before a nested Scenario's), top-level hooks in one file don't leak into other files, and `.only` is mocha-native.
 
 ## Build & publishing
 
