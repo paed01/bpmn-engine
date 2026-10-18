@@ -5,16 +5,18 @@ on:
   push:
     branches:
       - master
+      - labeled
+      - assigned
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v8
       - name: Use Node.js from .nvmrc
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v8
         with:
           node-version-file: .nvmrc
       - run: npm i
-      - run: npx mocha
+      - run: npx mochj
