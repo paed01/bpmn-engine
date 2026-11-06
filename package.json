@@ -1,7 +1,7 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "26.0.5",
+  "version": "26.0.6",
   "type": "module",
   "module": "./src/index.js",
   "main": "./lib/index.cjs",
@@ -31,12 +31,12 @@
     "types/"
   ],
   "scripts": {
-    "test": "mocha -p",
+    "test": "mocha -p -R @bonniernews/hot-bev",
     "posttest": "npm run lint && npm run toc && npm run dist && npm run test:md",
     "lint": "eslint . --cache && prettier . -c --cache",
     "cov:html": "c8 -r html -r text mocha -p",
     "test:lcov": "c8 -r lcov mocha && npm run lint",
-    "toc": "toc README.md docs/API.md docs/Examples.md docs/Upgrade.md",
+    "toc": "toc -c README.md docs/API.md docs/Examples.md docs/Upgrade.md",
     "test:md": "texample ./docs/API.md,./docs/Examples.md,./docs/Upgrade.md -c .mocharc.json",
     "dist": "rollup -c",
     "prepack": "npm run dist"
@@ -56,13 +56,9 @@
       "url": "https://github.com/paed01/bpmn-engine/master/LICENSE"
     }
   ],
-  "overrides": {
-    "mocha": {
-      "yargs": "^18.0.0"
-    }
-  },
   "devDependencies": {
     "@0dep/toc": "^2.1.0",
+    "@bonniernews/hot-bev": "^0.5.0",
     "@eslint/js": "^10.0.1",
     "@rollup/plugin-commonjs": "^29.0.0",
     "@types/bpmn-moddle": "^10.0.0",

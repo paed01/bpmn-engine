@@ -1,5 +1,10 @@
 # Changelog
 
+## v26.0.6 - 2026-11-06
+
+- add ecosystem section in readme
+- re-introduce [@bonniernews/hot-bev](https://www.npmjs.com/package/@bonniernews/hot-bev) mocha reporter that now supports `mocha@12`
+
 ## v26.0.5 - 2026-09-14
 
 Runs on [`bpmn-elements@18`](https://github.com/paed01/bpmn-elements/blob/master/CHANGELOG.md) that no longer discards sequence flows. Most diagrams run unchanged; see the [upgrade guide](/docs/Upgrade.md) for migration details.
