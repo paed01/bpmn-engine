@@ -1,45 +1,42 @@
 {
   "name": "bpmn-engine",
   "description": "BPMN 2.0 execution engine. Open source javascript workflow engine.",
-  "version": "26.0.6",
+  "version": "27.0.0",
   "type": "module",
   "module": "./src/index.js",
-  "main": "./lib/index.cjs",
+  "main": "./src/index.js",
   "types": "./types/index.d.ts",
   "sideEffects": false,
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
-      "require": "./lib/index.cjs",
-      "import": "./src/index.js"
+      "default": "./src/index.js"
     }
   },
   "repository": {
     "type": "git",
     "url": "git://github.com/paed01/bpmn-engine.git"
   },
+  "homepage": "https://0dep.se/run/",
   "author": {
     "name": "Pål Edman",
-    "url": "https://github.com/paed01"
+    "url": "https://0dep.se/about/"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "files": [
-    "lib/",
     "src/",
     "types/"
   ],
   "scripts": {
     "test": "mocha -p -R @bonniernews/hot-bev",
-    "posttest": "npm run lint && npm run toc && npm run dist && npm run test:md",
+    "posttest": "npm run lint && npm run toc && npm run test:md",
     "lint": "eslint . --cache && prettier . -c --cache",
     "cov:html": "c8 -r html -r text mocha -p",
     "test:lcov": "c8 -r lcov mocha && npm run lint",
     "toc": "toc -c README.md docs/API.md docs/Examples.md docs/Upgrade.md",
-    "test:md": "texample ./docs/API.md,./docs/Examples.md,./docs/Upgrade.md -c .mocharc.json",
-    "dist": "rollup -c",
-    "prepack": "npm run dist"
+    "test:md": "texample ./docs/API.md ./docs/Examples.md ./docs/Upgrade.md -c .mocharc.json"
   },
   "keywords": [
     "workflow",
@@ -53,22 +50,21 @@
   "licenses": [
     {
       "type": "MIT",
-      "url": "https://github.com/paed01/bpmn-engine/master/LICENSE"
+      "url": "https://github.com/paed01/bpmn-engine/main/LICENSE"
     }
   ],
   "devDependencies": {
     "@0dep/toc": "^2.1.0",
     "@bonniernews/hot-bev": "^0.5.0",
     "@eslint/js": "^10.0.1",
-    "@rollup/plugin-commonjs": "^29.0.0",
     "@types/bpmn-moddle": "^10.0.0",
     "@types/chai": "^5.2.3",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^20.19.40",
+    "@types/node": "^22.20.5",
     "bent": "^7.3.12",
     "bpmn-elements": "^18.0.24",
-    "bpmn-moddle": "^9.0.4",
-    "bpmn-moddle-10": "npm:bpmn-moddle@^10.0.0",
+    "bpmn-moddle": "^10.3.1",
+    "bpmn-moddle-9": "npm:bpmn-moddle@^9.0.4",
     "c8": "^12.0.0",
     "camunda-bpmn-moddle": "^8.0.1",
     "chai": "^6.2.0",
@@ -78,16 +74,15 @@
     "globals": "^17.6.0",
     "mocha": "^12.0.3",
     "mocha-scenarios": "^1.0.1",
-    "moddle-context-serializer": "^6.0.0",
+    "moddle-context-serializer": "^7.0.0",
     "nock": "^14.0.17",
     "prettier": "^3.2.5",
-    "rollup": "^4.10.0",
-    "texample": "^1.0.2",
+    "texample": "^2.0.0",
     "typescript": "^7.0.2"
   },
   "peerDependencies": {
     "bpmn-elements": ">=18.0.25",
-    "bpmn-moddle": ">=9",
+    "bpmn-moddle": ">=10",
     "debug": ">=4",
     "moddle-context-serializer": ">=6",
     "smqp": ">=15"

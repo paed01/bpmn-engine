@@ -1,7 +1,7 @@
 declare module 'bpmn-engine' {
   import type { EventEmitter } from 'node:events';
   import type { Broker } from 'smqp';
-  import type { Definitions as BpmnModdleDefinitions } from 'bpmn-moddle';
+  import type { BPMNModel } from 'bpmn-moddle';
   import type { ExtendFn, SerializableContext, TypeResolverExtender } from 'moddle-context-serializer';
   import type {
     ActivityStatus,
@@ -124,7 +124,7 @@ declare module 'bpmn-engine' {
     typeResolver?: TypeResolverExtender;
     extendFn?: ExtendFn;
     moddleOptions?: any;
-    moddleContext?: BpmnModdleDefinitions;
+    moddleContext?: BPMNModel;
     Logger?: (scope: string) => ILogger;
     scripts?: IScripts;
     disableDummyScript?: boolean;

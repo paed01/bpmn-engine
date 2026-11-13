@@ -1,10 +1,8 @@
-import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
+import moddleOptions from './js-bpmn-moddle.json' with { type: 'json' };
 
 const safePattern = /[./\\#*:\s]/g;
 
-const nodeRequire = createRequire(fileURLToPath(import.meta.url));
-export const moddleOptions = nodeRequire('./js-bpmn-moddle.json');
+export { moddleOptions };
 
 export function extension(activity, context) {
   const resultVariable = ResultVariableIo(activity, context);

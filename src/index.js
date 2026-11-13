@@ -1,8 +1,6 @@
-import { createRequire } from 'node:module';
 import { EventEmitter } from 'node:events';
-import { fileURLToPath } from 'node:url';
 
-import * as bpmnModdle from 'bpmn-moddle';
+import { BpmnModdle } from 'bpmn-moddle';
 import * as Elements from 'bpmn-elements';
 import { Broker } from 'smqp';
 import { Serializer, deserialize, TypeResolver } from 'moddle-context-serializer';
@@ -11,12 +9,9 @@ import DebugLogger from './Logger.js';
 import JavaScripts from './JavaScripts.js';
 import getOptionsAndCallback from './getOptionsAndCallback.js';
 import ProcessOutputDataObject from './extensions/ProcessOutputDataObject.js';
+import pkg from '../package.json' with { type: 'json' };
 
-const nodeRequire = createRequire(fileURLToPath(import.meta.url));
-const { version: engineVersion } = nodeRequire('../package.json');
-
-// bpmn-moddle@9 exposes the parser as default export, bpmn-moddle@10 as the named export BpmnModdle
-const BpmnModdle = bpmnModdle.BpmnModdle ?? bpmnModdle.default;
+const engineVersion = pkg.version;
 
 const kEngine = Symbol.for('engine');
 const kEnvironment = Symbol.for('environment');

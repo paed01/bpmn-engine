@@ -4,14 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-`.nvmrc` pins Node 20 (the `toc` bin needs >=20); `engines.node` is `>=18`, but the dev toolchain (`mocha@12`, `mocha-scenarios`) needs Node `^20.19 || >=22.12`. Tests run on `mocha@12` with the `mocha-scenarios` UI (Gherkin-style Features) and mocha's default `spec` reporter.
+`.nvmrc` pins Node 24 for local dev and the Windows CI build; `engines.node` is `>=22` and the supported Node versions are the ones in the `.github/workflows/build.yaml` matrix (22, 24, latest). The dev toolchain (`mocha@12`, `mocha-scenarios`, `eslint@10`) needs Node `>=22.13` on the 22 line. Tests run on `mocha@12` with the `mocha-scenarios` UI (Gherkin-style Features); `npm test` reports with `@bonniernews/hot-bev`, plain `npx mocha` with the `spec` reporter from `.mocharc.json`.
 
-- `npm test` — runs `mocha -p` (parallel); the Windows CI build runs plain `npx mocha` (no `-p`, worker pools misbehave there). `posttest` then runs `lint`, `toc` (regenerates doc TOCs), `dist`, and `test:md`.
+- `npm test` — runs `mocha -p` (parallel); the Windows CI build runs plain `npx mocha` (no `-p`, worker pools misbehave there). `posttest` then runs `lint`, `toc` (regenerates doc TOCs), and `test:md`.
 - `npm run lint` — eslint (cached) + prettier check.
 - `npm run cov:html` / `npm run test:lcov` — coverage variants via c8.
 - `npm run toc` — regenerates the table of contents in `README.md` and `docs/*.md` with [`@0dep/toc`](https://0dep.se/toc/). It rewrites the block between `<!-- toc -->` and `<!-- /toc -->` and lists every heading below the start marker, so the markers sit under the doc title to keep it out of the toc. Duplicate anchors are disambiguated GitHub-style (`#getstate`, `#getstate-1`). Output is prettier-compatible.
-- `npm run test:md` — runs `texample` against `docs/API.md`, `docs/Examples.md`, `docs/Upgrade.md`. Runs as the last step of `posttest`, and standalone when doc examples change. The examples that mock HTTP with `nock` currently fail with `StatusError: Not Found` on this branch, independent of doc edits.
-- `npm run dist` — rollup builds `src/index.js` → `lib/index.cjs`. The footer trick `module.exports = Object.assign(exports.default, exports)` is what lets the CJS bundle's `require('bpmn-engine')` return the `Engine` constructor _and_ expose named exports — don't remove it.
+- `npm run test:md` — runs `texample@2` against `docs/API.md`, `docs/Examples.md`, `docs/Upgrade.md`, passed as separate arguments. It executes every `javascript` fence, tag a snippet `js` to skip it. Runs as the last step of `posttest`, and standalone when doc examples change. The `getState()` example writes to the git-ignored `./tmp/`, which has to exist or the run aborts with `ENOENT`. The examples that request `https://example.com/test` with `bent` hit the live site, nothing mocks them, and currently fail with `StatusError: Not Found`, independent of doc edits.
 - Single test file: `npx mocha test/Engine-test.js`. Single test: append `--grep "<pattern>"`. Default mocha timeout is 1000ms (see `.mocharc.json`). `.mocharc.json` has no `spec` list — mocha's default `./test` glob applies recursively, with `test/helpers/**` and `test/resources/**` ignored, so any other `.js` file dropped under `test/` is picked up as a test. Feature tests under `test/feature/` use the `mocha-scenarios` UI (`Feature`/`Scenario`/`Given`/`When`/`Then`).
 
 ## Architecture
@@ -48,8 +47,8 @@ smqp (peer dep) ── message broker driving execution
 
 ## Build & publishing
 
-- `type: module` in `package.json`; ESM is `src/index.js`, CJS is `lib/index.cjs` (rollup), types are hand-maintained at `types/index.d.ts` (the published `declare module 'bpmn-engine'` surface, referenced by `src` JSDoc via package self-reference `import('bpmn-engine')`).
-- `prepack` runs `dist`, so `npm publish` always ships a fresh CJS bundle. `lib/index.cjs` is tracked in git — regenerate (`npm run dist`) and commit alongside source changes that affect the public API.
+- `type: module` in `package.json`; the package ships `src/` as ES modules only — `main`, `module`, and `exports` all resolve to `src/index.js` — and types are hand-maintained at `types/index.d.ts` (the published `declare module 'bpmn-engine'` surface, referenced by `src` JSDoc via package self-reference `import('bpmn-engine')`).
+- There is no build or `prepack` step: `npm publish` ships `src/` and `types/` as they are. CommonJS hosts load the package through Node's `require(esm)` and get the module namespace, so `require('bpmn-engine')` is not the `Engine` constructor — keep `Engine` (and everything else public) available as a named export.
 - Tests import via package self-reference (`import { Engine } from 'bpmn-engine'`), not `'../src/index.js'`. This exercises the same module resolution consumers use.
 
 ## Dependency notes
@@ -57,7 +56,7 @@ smqp (peer dep) ── message broker driving execution
 - **`moddle-context-serializer`** — this engine is the primary consumer that calls `.serialize()` / `deserialize()` for state persistence. The serialized JSON is a _runtime persistence format_ for live engines, so changes to it break upgrade-path for deployed engines, not just code. Keep that in mind when bumping the dep — even a "harmless" field rename in the serializer's output ripples here.
 - **`bpmn-elements`** — supplies the behaviour function registry passed to `TypeResolver`. Adding new element types means adding an entry there first.
 - **`smqp`** is a `peerDependency` (`>=9`) — same-maintainer message broker that drives both engine-level and definition-level event flow. Consumers install it directly. Coordinated breaking changes are feasible since the same hand maintains it.
-- **`bpmn-moddle`** is a regular dep (currently `^9.0.4`). v10 changed default → named export but `src/index.js` still does `import BpmnModdle from 'bpmn-moddle'` — bumping to v10 will break the import.
+- **`bpmn-moddle`** is a `peerDependency` (`>=10`), imported as the named export `BpmnModdle`. v9 (default export) is no longer supported, but the `bpmn-moddle-9` dev alias (`npm:bpmn-moddle@^9`) stays for `test/feature/bpmn-moddle-backward-compatibility-feature.js`, which pins that state saved from a v9 moddle context keeps resuming on v10.
 
 ## Downstream consumers
 

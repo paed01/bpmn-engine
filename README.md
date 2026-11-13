@@ -2,7 +2,7 @@
 
 [![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
-[![Build](https://github.com/paed01/bpmn-engine/actions/workflows/build.yaml/badge.svg)](https://github.com/paed01/bpmn-engine/actions/workflows/build.yaml)[![Build (Windows)](https://github.com/paed01/bpmn-engine/actions/workflows/build-windows.yaml/badge.svg)](https://github.com/paed01/bpmn-engine/actions/workflows/build-windows.yaml)[![Coverage Status](https://coveralls.io/repos/github/paed01/bpmn-engine/badge.svg?branch=master)](https://coveralls.io/github/paed01/bpmn-engine?branch=master)
+[![Build](https://github.com/paed01/bpmn-engine/actions/workflows/build.yaml/badge.svg)](https://github.com/paed01/bpmn-engine/actions/workflows/build.yaml)[![Build (Windows)](https://github.com/paed01/bpmn-engine/actions/workflows/build-windows.yaml/badge.svg)](https://github.com/paed01/bpmn-engine/actions/workflows/build-windows.yaml)[![Coverage Status](https://coveralls.io/repos/github/paed01/bpmn-engine/badge.svg?branch=main)](https://coveralls.io/github/paed01/bpmn-engine?branch=main)
 
 ## Introduction
 
@@ -13,7 +13,7 @@ Documentation:
 - [API](/docs/API.md)
 - [Examples](/docs/Examples.md)
 - [Upgrade version](/docs/Upgrade.md)
-- [bpmn-moddle 9 vs 10](/docs/bpmn-moddle.md)
+- [bpmn-moddle 9 → 10](/docs/bpmn-moddle.md)
 - [Changelog](/CHANGELOG.md)
 
 <!-- toc -->
@@ -36,15 +36,15 @@ The runtime dependencies are declared as **peer dependencies**, so you install a
 npm install bpmn-engine bpmn-elements bpmn-moddle moddle-context-serializer debug smqp
 ```
 
-| Peer dependency                                                                    | Range       | Role                                              |
-| ---------------------------------------------------------------------------------- | ----------- | ------------------------------------------------- |
-| [`bpmn-elements`](https://github.com/paed01/bpmn-elements)                         | `>=18.0.25` | element behaviour functions                       |
-| [`bpmn-moddle`](https://github.com/bpmn-io/bpmn-moddle)                            | `>=9`       | BPMN XML parser ([9 vs 10](/docs/bpmn-moddle.md)) |
-| [`moddle-context-serializer`](https://github.com/paed01/moddle-context-serializer) | `>=6`       | persistable source context                        |
-| [`smqp`](https://github.com/paed01/smqp)                                           | `>=15`      | message broker driving execution                  |
-| [`debug`](https://github.com/debug-js/debug)                                       | `>=4`       | logging                                           |
+| Peer dependency                                                                    | Range       | Role                                             |
+| ---------------------------------------------------------------------------------- | ----------- | ------------------------------------------------ |
+| [`bpmn-elements`](https://github.com/paed01/bpmn-elements)                         | `>=18.0.25` | element behaviour functions                      |
+| [`bpmn-moddle`](https://github.com/bpmn-io/bpmn-moddle)                            | `>=10`      | BPMN XML parser ([9 → 10](/docs/bpmn-moddle.md)) |
+| [`moddle-context-serializer`](https://github.com/paed01/moddle-context-serializer) | `>=6`       | persistable source context                       |
+| [`smqp`](https://github.com/paed01/smqp)                                           | `>=15`      | message broker driving execution                 |
+| [`debug`](https://github.com/debug-js/debug)                                       | `>=4`       | logging                                          |
 
-`bpmn-moddle` spans a major version on purpose — see [bpmn-moddle 9 vs 10](/docs/bpmn-moddle.md) for the import change and how persisted state stays compatible across the upgrade.
+`bpmn-moddle` 9 is no longer supported — see [bpmn-moddle 9 → 10](/docs/bpmn-moddle.md) for the import change and how persisted state stays compatible across the upgrade.
 
 ## Supported elements
 
@@ -85,7 +85,7 @@ $env:DEBUG=''
 
 ## A pretty image of a process
 
-![Mother of all](https://raw.github.com/paed01/bpmn-engine/master/images/mother-of-all.png)
+![Mother of all](https://raw.github.com/paed01/bpmn-engine/main/images/mother-of-all.png)
 
 ## Ecosystem
 

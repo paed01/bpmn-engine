@@ -1,21 +1,17 @@
-import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
-
-// @ts-ignore
-import BpmnModdle from 'bpmn-moddle';
+import { BpmnModdle } from 'bpmn-moddle';
 import * as Elements from 'bpmn-elements';
+import camundaBpmnModdle from 'camunda-bpmn-moddle/resources/camunda.json' with { type: 'json' };
 import Logger from '../../src/Logger.js';
 import { Serializer, TypeResolver } from 'moddle-context-serializer';
 
-const nodeRequire = createRequire(fileURLToPath(import.meta.url));
-export const camundaBpmnModdle = nodeRequire('camunda-bpmn-moddle/resources/camunda.json');
+export { camundaBpmnModdle };
 
 export async function context(source, options) {
   const logger = Logger('test-helpers:context');
   const moddleCtx = await moddleContext(source, options);
 
   if (moddleCtx.warnings) {
-    moddleCtx.warnings.forEach(({ error, message, element, property }) => {
+    /** @type {any[]} */ (moddleCtx.warnings).forEach(({ error, message, element, property }) => {
       if (error) return logger.error(message);
       logger.error(`<${element.id}> ${property}:`, message);
     });
@@ -34,8 +30,8 @@ export function moddleContext(source, options) {
   return bpmnModdle.fromXML(Buffer.isBuffer(source) ? source.toString() : source);
 }
 
-export function serializeModdleContext({ rootElement, rootHandler, elementsById, references, warnings }) {
-  const serializedRoot = JSON.parse(JSON.stringify(rootElement || rootHandler.element));
+export function serializeModdleContext({ rootElement, elementsById, references, warnings }) {
+  const serializedRoot = JSON.parse(JSON.stringify(rootElement));
 
   const clonedContext = {
     rootElement: serializedRoot,

@@ -79,12 +79,9 @@ Returns:
 
 ```javascript
 import fs from 'node:fs';
-import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
 
 import { Engine } from 'bpmn-engine';
-
-const camunda = createRequire(fileURLToPath(import.meta.url))('camunda-bpmn-moddle/resources/camunda.json');
+import camunda from 'camunda-bpmn-moddle/resources/camunda.json' with { type: 'json' };
 
 const engine = new Engine({
   name: 'mother of all',
@@ -312,7 +309,7 @@ Arguments:
 ```javascript
 import { EventEmitter } from 'node:events';
 
-import BpmnModdle from 'bpmn-moddle';
+import { BpmnModdle } from 'bpmn-moddle';
 import * as elements from 'bpmn-elements';
 import { Engine } from 'bpmn-engine';
 import { Serializer, TypeResolver } from 'moddle-context-serializer';

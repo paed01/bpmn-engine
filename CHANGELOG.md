@@ -1,5 +1,19 @@
 # Changelog
 
+## v27.0.0
+
+Published as ES modules only, for node 22 and later, on `bpmn-moddle` 10. Execution behaviour and persisted state are unchanged; see the [upgrade guide](/docs/Upgrade.md) for migration details.
+
+### Breaking
+
+- drop support for node 18 and 20, node 22 is the lowest supported version and declared as package `engines`
+- remove the bundled CommonJS build: the `lib` folder is no longer published, and package `main` and `exports` resolve to the ES module source in `src`. A CommonJS host can still `require('bpmn-engine')`, node loads the ES module natively (unflagged since node 22.12), but must destructure: `const { Engine } = require('bpmn-engine')` — `require(...)` no longer returns the `Engine` constructor directly
+- require [`bpmn-moddle@>=10`](https://github.com/bpmn-io/bpmn-moddle), `bpmn-moddle` 9 is no longer supported. State saved while running on 9 keeps resuming — see [bpmn-moddle 9 → 10](/docs/bpmn-moddle.md)
+
+### Types
+
+- `moddleContext` option is declared as `BPMNModel`, what `fromXML()` resolves to, instead of `Definitions`
+
 ## v26.0.6 - 2026-11-06
 
 - add ecosystem section in readme
